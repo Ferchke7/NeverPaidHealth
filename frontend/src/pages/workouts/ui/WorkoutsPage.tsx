@@ -57,7 +57,7 @@ const PROGRAM_CATEGORIES = [
 
 export const WorkoutsPage: React.FC = () => {
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState<'library' | 'my_routines'>('library');
+  const [activeTab, setActiveTab] = useState<'my_routines' | 'library'>('my_routines');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [isCreateRoutineOpen, setIsCreateRoutineOpen] = useState(false);
@@ -368,18 +368,6 @@ export const WorkoutsPage: React.FC = () => {
         <div className="flex items-center justify-between border-b border-dark-800 pb-2">
           <div className="flex items-center gap-2">
             <button
-              onClick={() => setActiveTab('library')}
-              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                activeTab === 'library'
-                  ? 'bg-brand-500 text-dark-950 shadow-md shadow-brand-500/20'
-                  : 'text-zinc-400 hover:text-white hover:bg-dark-800'
-              }`}
-            >
-              <BookOpen className="w-3.5 h-3.5" />
-              <span>Program Library ({libraryRoutines.length})</span>
-            </button>
-
-            <button
               onClick={() => setActiveTab('my_routines')}
               className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
                 activeTab === 'my_routines'
@@ -389,6 +377,18 @@ export const WorkoutsPage: React.FC = () => {
             >
               <Layers className="w-3.5 h-3.5" />
               <span>My Routines ({userRoutines.length})</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('library')}
+              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                activeTab === 'library'
+                  ? 'bg-brand-500 text-dark-950 shadow-md shadow-brand-500/20'
+                  : 'text-zinc-400 hover:text-white hover:bg-dark-800'
+              }`}
+            >
+              <BookOpen className="w-3.5 h-3.5" />
+              <span>Program Library ({libraryRoutines.length})</span>
             </button>
           </div>
 
@@ -409,13 +409,13 @@ export const WorkoutsPage: React.FC = () => {
         </div>
 
         {/* Tab Subtitle Notice */}
-        {activeTab === 'library' ? (
+        {activeTab === 'my_routines' ? (
           <p className="text-[11px] text-zinc-400 italic">
-            📚 <strong>Program Library</strong> contains reference templates. Tap any program to preview exercises, or click <strong>«+ Add to My Routines»</strong> to copy and customize sets and reps for yourself.
+            ⭐ <strong>My Routines</strong> contains your personal customized splits. You can edit, reorder, and adjust them anytime.
           </p>
         ) : (
           <p className="text-[11px] text-zinc-400 italic">
-            ⭐ <strong>My Routines</strong> contains your personal customized splits. You can edit, reorder, and adjust them anytime.
+            📚 <strong>Program Library</strong> contains reference templates. Tap any program to preview exercises, or click <strong>«+ Add to My Routines»</strong> to copy and customize sets and reps for yourself.
           </p>
         )}
 
@@ -424,7 +424,7 @@ export const WorkoutsPage: React.FC = () => {
           <div className="relative">
             <Search className="w-4 h-4 text-zinc-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
             <Input
-              placeholder={`Search in ${activeTab === 'library' ? 'Programs Library' : 'My Routines'}...`}
+              placeholder={`Search in ${activeTab === 'my_routines' ? 'My Routines' : 'Programs Library'}...`}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10 text-xs"
