@@ -1,0 +1,1443 @@
+openapi: 3.1.0
+info:
+  title: NeverPaidHealth Master REST API
+  version: 1.0.0
+  description: >
+    **NeverPaidHealth** is a high-performance, privacy-first, enterprise-grade strength training and athletic health platform.
+    
+    This specification unifies all REST microservices behind the API Gateway (`/api/v1`):
+    - **Identity & Access**: Authentication, user profiles, and unit preferences.
+    - **Exercise Catalog**: 870+ illustrated movements, muscle groups, and equipment filters.
+    - **Training Engine**: Live Hevy-style workout tracker, sets/reps logging, routines management, and NATS event dispatch.
+    - **Progress & Analytics**: Volume progression, MEV/MRV hypertrophy tracking, strength standards, and PR Hall of Fame.
+    - **Body & Health**: Height, weight, automatic BMI, body fat estimation, and daily TDEE calculations.
+    - **AI Strength Coach**: Central Nervous System (CNS) readiness scoring (0-100), progressive overload targets, plateau alerts, and sports science chat.
+  contact:
+    name: NeverPaidHealth Engineering
+    url: https://github.com/Ferchke7/NeverPaidHealth
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Local API Gateway (Development)
+  - url: http://54.38.156.226:3002/api/v1
+    description: Production Environment (codeguru.ovh)
+
+tags:
+  - name: Auth & Identity
+    description: User authentication, JWT issuance, profile settings, and unit preferences.
+  - name: Exercises
+    description: Exercise catalog, muscle targeting, equipment classifications, and form guides.
+  - name: Routines
+    description: Pre-built program libraries and custom workout routine management.
+  - name: Workouts
+    description: Real-time workout tracking, set/rep logging, E1RM calculations, and history logs.
+  - name: Progress & Analytics
+    description: Athlete KPIs, volume trends, calendar views, consistency heatmaps, and Personal Records.
+  - name: Body & Health
+    description: Anthropometric tracking, bodyweight logs, BMI, and TDEE caloric calculators.
+  - name: AI Strength Coach
+    description: CNS recovery modeling, progressive overload prescriptions, and interactive sports science consultations.
+
+paths:
+  # =========================================================================
+  # 1. AUTH & IDENTITY
+  # =========================================================================
+  /auth/dev-login:
+    post:
+      tags:
+        - Auth & Identity
+      summary: Development Login Bypass
+      description: Issues a valid JWT access token for rapid local testing and development. Available when `AUTH_DEV_MODE=true`.
+      operationId: devLogin
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DevLoginRequest'
+      responses:
+        '200':
+          description: Successfully authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+  /auth/google:
+    post:
+      tags:
+        - Auth & Identity
+      summary: Google OAuth Authentication
+      description: Verifies Google OAuth ID Token and returns user session credentials.
+      operationId: authenticateGoogle
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GoogleAuthRequest'
+      responses:
+        '200':
+          description: Successfully authenticated with Google
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /profile/me:
+    get:
+      tags:
+        - Auth & Identity
+      summary: Get Current Athlete Profile
+      description: Returns athlete details, lifetime training statistics, PRO membership state, and unit preferences.
+      operationId: getProfile
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Athlete profile details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /profile/units:
+    put:
+      tags:
+        - Auth & Identity
+      summary: Update Unit Preference (KG / LB)
+      description: Updates the athlete's preferred measurement unit for weights and measurements.
+      operationId: updateUnitPreference
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUnitPreferenceRequest'
+      responses:
+        '200':
+          description: Unit preference successfully updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  # =========================================================================
+  # 2. EXERCISE CATALOG
+  # =========================================================================
+  /exercises:
+    get:
+      tags:
+        - Exercises
+      summary: Search & List Movement Catalog
+      description: Returns a filterable list of 870+ exercises with target muscle groups, required equipment, and visual thumbnails.
+      operationId: listExercises
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: muscle_group
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [chest, back, shoulders, biceps, triceps, quads, hamstrings, glutes, calves, core, full_body]
+          description: Filter by primary target muscle group
+        - name: equipment
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [barbell, dumbbell, cable, machine, bodyweight, kettlebell, bands, other]
+          description: Filter by required training equipment
+        - name: search
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Substring match on exercise title or aliases
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 50
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: List of matching exercises
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Exercise'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+    post:
+      tags:
+        - Exercises
+      summary: Create Custom Exercise
+      description: Allows athletes to register a custom movement with custom target muscles and equipment.
+      operationId: createExercise
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateExerciseRequest'
+      responses:
+        '201':
+          description: Exercise created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Exercise'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /exercises/{id}:
+    get:
+      tags:
+        - Exercises
+      summary: Get Exercise Details & Form Guide
+      description: Returns full movement instructions, secondary muscle involvement, and media visual URLs.
+      operationId: getExerciseById
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Exercise details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Exercise'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  # =========================================================================
+  # 3. ROUTINES
+  # =========================================================================
+  /routines:
+    get:
+      tags:
+        - Routines
+      summary: List Workout Routines
+      description: Retrieves pre-built library programs (PPL, Arnold Split, Upper/Lower) and user-created custom templates.
+      operationId: listRoutines
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Array of available workout routines
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Routine'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+    post:
+      tags:
+        - Routines
+      summary: Create Workout Routine Template
+      description: Creates a reusable routine template with planned exercises, target sets, and target rep ranges.
+      operationId: createRoutine
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRoutineRequest'
+      responses:
+        '201':
+          description: Routine created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Routine'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /routines/{id}:
+    get:
+      tags:
+        - Routines
+      summary: Get Routine Details
+      description: Fetches full routine template with exercise ordering and target rep/set prescriptions.
+      operationId: getRoutineById
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Routine template details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Routine'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+    put:
+      tags:
+        - Routines
+      summary: Update Routine Template
+      operationId: updateRoutine
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRoutineRequest'
+      responses:
+        '200':
+          description: Routine updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Routine'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+    delete:
+      tags:
+        - Routines
+      summary: Delete Routine Template
+      operationId: deleteRoutine
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Routine successfully removed
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  # =========================================================================
+  # 4. WORKOUT TRACKER & ACTIVE SESSIONS
+  # =========================================================================
+  /workouts:
+    post:
+      tags:
+        - Workouts
+      summary: Start Live Workout Session
+      description: Initializes an active workout session. If `routine_id` is supplied, pre-populates exercises and target sets.
+      operationId: startWorkout
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StartWorkoutRequest'
+      responses:
+        '201':
+          description: Live workout initialized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkoutSession'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /workouts/active:
+    get:
+      tags:
+        - Workouts
+      summary: Get Current In-Progress Workout
+      description: Returns the user's active session state including logged sets, elapsed time, and live volume.
+      operationId: getActiveWorkout
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Active workout session
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkoutSession'
+        '204':
+          description: No active workout in progress
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /workouts/active/exercises:
+    post:
+      tags:
+        - Workouts
+      summary: Add Exercise to Active Workout
+      operationId: addExerciseToActiveWorkout
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddExerciseToWorkoutRequest'
+      responses:
+        '200':
+          description: Exercise added to active workout
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkoutSession'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /workouts/active/exercises/{exerciseId}/sets:
+    post:
+      tags:
+        - Workouts
+      summary: Log Set in Active Workout
+      description: Logs a new set (normal, warmup, drop, failure) with weight in kg, reps, and optional RPE. Automatically computes E1RM.
+      operationId: logWorkoutSet
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: exerciseId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LogSetRequest'
+      responses:
+        '201':
+          description: Set successfully logged
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkoutSet'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /workouts/active/sets/{setId}:
+    put:
+      tags:
+        - Workouts
+      summary: Update Set Metrics in Active Workout
+      operationId: updateWorkoutSet
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: setId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LogSetRequest'
+      responses:
+        '200':
+          description: Set updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkoutSet'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+    delete:
+      tags:
+        - Workouts
+      summary: Delete Set from Active Workout
+      operationId: deleteWorkoutSet
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: setId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Set deleted
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /workouts/active/finish:
+    post:
+      tags:
+        - Workouts
+      summary: Finish Active Workout Session
+      description: >
+        Finalizes active workout, calculates session volume, duration, and PR achievements.
+        Emits domain event `WorkoutFinished` to NATS JetStream for asynchronous analytics aggregation.
+      operationId: finishWorkout
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Completed workout summary with PR detections
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkoutSummary'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /workouts/active/discard:
+    post:
+      tags:
+        - Workouts
+      summary: Discard Active Workout Session
+      description: Permanently cancels the active session without saving or affecting statistics.
+      operationId: discardWorkout
+      security:
+        - BearerAuth: []
+      responses:
+        '204':
+          description: Workout session discarded
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /workouts/history:
+    get:
+      tags:
+        - Workouts
+      summary: List Workout History
+      description: Retrieves paginated historical completed workout logs.
+      operationId: listWorkoutHistory
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: List of historical workout sessions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/WorkoutSummary'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  # =========================================================================
+  # 5. PROGRESS & ANALYTICS
+  # =========================================================================
+  /progress/summary:
+    get:
+      tags:
+        - Progress & Analytics
+      summary: Get Overall Athlete Progress KPIs
+      description: Returns lifetime tonnage, total workouts completed, PR count, and total training hours.
+      operationId: getProgressSummary
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Athlete lifetime analytics summary
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProgressSummary'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /progress/records:
+    get:
+      tags:
+        - Progress & Analytics
+      summary: Personal Records (PRs) Hall of Fame
+      description: Returns personal bests across all exercises (Heaviest Weight, Best 1RM, Max Volume Set, Max Reps).
+      operationId: getPersonalRecords
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of personal records grouped by exercise
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ExerciseRecordGroup'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /progress/volume-history:
+    get:
+      tags:
+        - Progress & Analytics
+      summary: Volume Progression Time Series
+      description: Retrieves volume load over time for progression charts and trend analysis.
+      operationId: getVolumeHistory
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Volume progression chart points
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/VolumeHistoryPoint'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  # =========================================================================
+  # 6. BODY & HEALTH CALCULATOR
+  # =========================================================================
+  /body/measurements:
+    get:
+      tags:
+        - Body & Health
+      summary: Get Latest Body Metrics & BMI
+      description: Returns latest bodyweight, height, automatic BMI classification, body fat %, and TDEE calorie estimate.
+      operationId: getBodyMeasurements
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Latest anthropometric metrics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BodyMetrics'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+    post:
+      tags:
+        - Body & Health
+      summary: Log Body Measurement Entry
+      description: Logs new bodyweight and height, computing BMI, category (Normal, Overweight, etc.), and TDEE energy target.
+      operationId: logBodyMeasurement
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LogBodyMeasurementRequest'
+      responses:
+        '201':
+          description: Measurement logged successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BodyMetrics'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  # =========================================================================
+  # 7. AI STRENGTH COACH
+  # =========================================================================
+  /coach/insights:
+    get:
+      tags:
+        - AI Strength Coach
+      summary: Get AI Coach Insights & CNS Recovery Score
+      description: Evaluates acute-to-chronic workload, calculates readiness score (0-100), and provides progressive overload prescriptions.
+      operationId: getCoachInsights
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: AI Strength Coach insights
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CoachInsights'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /coach/chat:
+    post:
+      tags:
+        - AI Strength Coach
+      summary: Interactive AI Coach Consultation
+      description: Sports science consultation utilizing athlete training context, volume history, and exercise PRs.
+      operationId: chatWithCoach
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatRequest'
+      responses:
+        '200':
+          description: Coach response and follow-up prompts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+# ===========================================================================
+# COMPONENTS: SCHEMAS & RESPONSES
+# ===========================================================================
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Standard RFC 6750 JWT Bearer token obtained from login endpoints.
+
+  responses:
+    BadRequestError:
+      description: 400 Bad Request - Validation or format failure
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    UnauthorizedError:
+      description: 401 Unauthorized - Missing or invalid Bearer token
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    ForbiddenError:
+      description: 403 Forbidden - Operation not permitted in current context
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    NotFoundError:
+      description: 404 Not Found - Requested entity does not exist
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+
+  schemas:
+    # --- Common RFC 7807 Error ---
+    ProblemDetails:
+      type: object
+      required:
+        - type
+        - title
+        - status
+        - detail
+      properties:
+        type:
+          type: string
+          format: uri
+          example: "https://neverpaid.health/errors/not-found"
+        title:
+          type: string
+          example: "Entity Not Found"
+        status:
+          type: integer
+          example: 404
+        detail:
+          type: string
+          example: "Workout with the specified ID was not found."
+        code:
+          type: string
+          example: "ERR_WORKOUT_NOT_FOUND"
+
+    # --- Identity & Profile ---
+    DevLoginRequest:
+      type: object
+      required:
+        - email
+      properties:
+        email:
+          type: string
+          format: email
+          example: "athlete@neverpaid.health"
+        display_name:
+          type: string
+          example: "Pro Lifter"
+
+    GoogleAuthRequest:
+      type: object
+      required:
+        - id_token
+      properties:
+        id_token:
+          type: string
+          example: "eyJhbGciOiJSUzI1NiIs..."
+
+    AuthResponse:
+      type: object
+      required:
+        - access_token
+        - token_type
+        - user
+      properties:
+        access_token:
+          type: string
+          example: "eyJhbGciOiJFUzI1NiIs..."
+        token_type:
+          type: string
+          example: "Bearer"
+        user:
+          $ref: '#/components/schemas/UserProfile'
+
+    UserProfile:
+      type: object
+      required:
+        - id
+        - email
+        - display_name
+        - unit_preference
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "c7913361-b485-48fa-8698-c117b1ecba3a"
+        email:
+          type: string
+          format: email
+          example: "athlete@neverpaid.health"
+        display_name:
+          type: string
+          example: "Alex Johnson"
+        avatar_url:
+          type:
+            - string
+            - "null"
+          format: uri
+          example: "https://lh3.googleusercontent.com/a/sample"
+        unit_preference:
+          type: string
+          enum: [kg, lb]
+          example: "kg"
+        is_pro:
+          type: boolean
+          example: true
+
+    UpdateUnitPreferenceRequest:
+      type: object
+      required:
+        - unit_preference
+      properties:
+        unit_preference:
+          type: string
+          enum: [kg, lb]
+          example: "kg"
+
+    # --- Exercises ---
+    Exercise:
+      type: object
+      required:
+        - id
+        - name
+        - primary_muscle
+        - category
+        - measurement_type
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d"
+        name:
+          type: string
+          example: "Barbell Incline Bench Press"
+        primary_muscle:
+          type: string
+          enum: [chest, back, shoulders, biceps, triceps, quads, hamstrings, glutes, calves, core, full_body]
+          example: "chest"
+        secondary_muscles:
+          type: array
+          items:
+            type: string
+          example: ["shoulders", "triceps"]
+        category:
+          type: string
+          enum: [barbell, dumbbell, cable, machine, bodyweight, other]
+          example: "barbell"
+        measurement_type:
+          type: string
+          enum: [weight_reps, reps_only, time_distance, time_only]
+          example: "weight_reps"
+        instructions:
+          type:
+            - string
+            - "null"
+          example: "Set bench angle to 30 degrees. Retract scapula, lower bar to upper chest, and press explosively."
+        thumbnail_url:
+          type:
+            - string
+            - "null"
+          format: uri
+
+    CreateExerciseRequest:
+      type: object
+      required:
+        - name
+        - primary_muscle
+        - category
+      properties:
+        name:
+          type: string
+          example: "Bulgarian Split Squat"
+        primary_muscle:
+          type: string
+          example: "quads"
+        category:
+          type: string
+          example: "dumbbell"
+        measurement_type:
+          type: string
+          default: "weight_reps"
+
+    # --- Routines ---
+    Routine:
+      type: object
+      required:
+        - id
+        - name
+        - exercises
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          example: "Jeff Nippard PPL: Push 1"
+        description:
+          type:
+            - string
+            - "null"
+          example: "Chest & Tricep Hypertrophy emphasis"
+        split_type:
+          type: string
+          example: "push"
+        is_custom:
+          type: boolean
+          example: false
+        exercises:
+          type: array
+          items:
+            $ref: '#/components/schemas/RoutineExercise'
+
+    RoutineExercise:
+      type: object
+      required:
+        - exercise_id
+        - exercise_name
+        - order_index
+        - target_sets
+      properties:
+        exercise_id:
+          type: string
+          format: uuid
+        exercise_name:
+          type: string
+          example: "Barbell Bench Press"
+        order_index:
+          type: integer
+          example: 1
+        target_sets:
+          type: integer
+          example: 4
+        target_reps_min:
+          type: integer
+          example: 6
+        target_reps_max:
+          type: integer
+          example: 10
+        rest_seconds:
+          type: integer
+          default: 90
+
+    CreateRoutineRequest:
+      type: object
+      required:
+        - name
+        - exercises
+      properties:
+        name:
+          type: string
+          example: "Upper Power Session"
+        description:
+          type: string
+          example: "Heavy compound session"
+        exercises:
+          type: array
+          items:
+            $ref: '#/components/schemas/RoutineExercise'
+
+    # --- Workout Tracker ---
+    StartWorkoutRequest:
+      type: object
+      properties:
+        routine_id:
+          type:
+            - string
+            - "null"
+          format: uuid
+        name:
+          type: string
+          example: "Push Hypertrophy Day"
+
+    WorkoutSession:
+      type: object
+      required:
+        - id
+        - user_id
+        - name
+        - status
+        - started_at
+        - exercises
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          example: "Chest & Triceps"
+        status:
+          type: string
+          enum: [in_progress, completed, discarded]
+          example: "in_progress"
+        started_at:
+          type: string
+          format: date-time
+        finished_at:
+          type:
+            - string
+            - "null"
+          format: date-time
+        exercises:
+          type: array
+          items:
+            $ref: '#/components/schemas/WorkoutExercise'
+
+    WorkoutExercise:
+      type: object
+      required:
+        - exercise_id
+        - exercise_name
+        - sets
+      properties:
+        exercise_id:
+          type: string
+          format: uuid
+        exercise_name:
+          type: string
+        measurement_type:
+          type: string
+          default: "weight_reps"
+        sets:
+          type: array
+          items:
+            $ref: '#/components/schemas/WorkoutSet'
+
+    WorkoutSet:
+      type: object
+      required:
+        - id
+        - set_number
+        - set_type
+        - weight_kg
+        - reps
+        - completed
+      properties:
+        id:
+          type: string
+          format: uuid
+        set_number:
+          type: integer
+          example: 1
+        set_type:
+          type: string
+          enum: [normal, warmup, drop, failure]
+          example: "normal"
+        weight_kg:
+          type: number
+          example: 100.0
+        reps:
+          type: integer
+          example: 10
+        rpe:
+          type:
+            - number
+            - "null"
+          example: 8.5
+        completed:
+          type: boolean
+          example: true
+        e1rm_kg:
+          type:
+            - number
+            - "null"
+          example: 133.3
+
+    AddExerciseToWorkoutRequest:
+      type: object
+      required:
+        - exercise_id
+        - exercise_name
+      properties:
+        exercise_id:
+          type: string
+          format: uuid
+        exercise_name:
+          type: string
+          example: "Incline Dumbbell Press"
+
+    LogSetRequest:
+      type: object
+      required:
+        - weight_kg
+        - reps
+      properties:
+        set_number:
+          type: integer
+          example: 1
+        set_type:
+          type: string
+          enum: [normal, warmup, drop, failure]
+          default: "normal"
+        weight_kg:
+          type: number
+          example: 80.0
+        reps:
+          type: integer
+          example: 12
+        rpe:
+          type:
+            - number
+            - "null"
+          example: 8.0
+        completed:
+          type: boolean
+          default: true
+
+    WorkoutSummary:
+      type: object
+      required:
+        - id
+        - name
+        - duration_seconds
+        - total_volume_kg
+        - completed_sets_count
+        - pr_count
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          example: "Heavy Push Workout"
+        duration_seconds:
+          type: integer
+          example: 3720
+        total_volume_kg:
+          type: number
+          example: 14500.0
+        completed_sets_count:
+          type: integer
+          example: 18
+        pr_count:
+          type: integer
+          example: 2
+
+    # --- Analytics & Progress ---
+    ProgressSummary:
+      type: object
+      required:
+        - total_volume_kg
+        - total_workouts
+        - total_prs
+        - total_training_hours
+      properties:
+        total_volume_kg:
+          type: number
+          example: 254800.0
+        total_workouts:
+          type: integer
+          example: 48
+        total_prs:
+          type: integer
+          example: 14
+        total_training_hours:
+          type: number
+          example: 62.5
+
+    ExerciseRecordGroup:
+      type: object
+      required:
+        - exercise_id
+        - exercise_name
+        - records
+      properties:
+        exercise_id:
+          type: string
+          format: uuid
+        exercise_name:
+          type: string
+          example: "Barbell Bench Press"
+        records:
+          type: array
+          items:
+            $ref: '#/components/schemas/PersonalRecord'
+
+    PersonalRecord:
+      type: object
+      required:
+        - pr_type
+        - value
+        - achieved_at
+        - workout_id
+      properties:
+        pr_type:
+          type: string
+          enum: [heaviest_weight, best_e1rm, max_volume_set, max_reps]
+          example: "heaviest_weight"
+        value:
+          type: number
+          example: 140.0
+        achieved_at:
+          type: string
+          format: date-time
+        workout_id:
+          type: string
+          format: uuid
+
+    VolumeHistoryPoint:
+      type: object
+      required:
+        - date
+        - volume_kg
+        - workout_name
+      properties:
+        date:
+          type: string
+          format: date
+          example: "2026-10-05"
+        volume_kg:
+          type: number
+          example: 12400.0
+        workout_name:
+          type: string
+          example: "Push Day"
+
+    # --- Body & Health ---
+    BodyMetrics:
+      type: object
+      required:
+        - weight_kg
+        - height_cm
+        - bmi
+        - bmi_category
+      properties:
+        weight_kg:
+          type: number
+          example: 78.5
+        height_cm:
+          type: number
+          example: 182.0
+        bmi:
+          type: number
+          example: 23.7
+        bmi_category:
+          type: string
+          enum: [Underweight, Normal, Overweight, Obese]
+          example: "Normal"
+        body_fat_percentage:
+          type:
+            - number
+            - "null"
+          example: 14.5
+        tdee_kcal:
+          type:
+            - integer
+            - "null"
+          example: 2650
+        measured_at:
+          type: string
+          format: date-time
+
+    LogBodyMeasurementRequest:
+      type: object
+      required:
+        - weight_kg
+      properties:
+        weight_kg:
+          type: number
+          example: 78.5
+        height_cm:
+          type:
+            - number
+            - "null"
+          example: 182.0
+        body_fat_percentage:
+          type:
+            - number
+            - "null"
+          example: 14.5
+        notes:
+          type:
+            - string
+            - "null"
+
+    # --- AI Coach ---
+    CoachInsights:
+      type: object
+      required:
+        - readiness_score
+        - recovery_status
+        - weekly_workouts_count
+        - weekly_volume_kg
+        - suggested_split
+      properties:
+        readiness_score:
+          type: integer
+          example: 88
+        recovery_status:
+          type: string
+          example: "Optimal"
+        weekly_workouts_count:
+          type: integer
+          example: 4
+        weekly_volume_kg:
+          type: number
+          example: 18500.0
+        days_since_last_train:
+          type: integer
+          example: 1
+        suggested_split:
+          type: string
+          example: "Push Hypertrophy"
+
+    ChatRequest:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+          example: "How should I structure my warmup sets for heavy squats?"
+
+    ChatResponse:
+      type: object
+      required:
+        - reply
+      properties:
+        reply:
+          type: string
+          example: "Perform 1 set with empty bar (10-15 reps), 50% working weight × 5, 70% × 3, 90% × 1 before starting working sets."
+        suggestions:
+          type: array
+          items:
+            type: string

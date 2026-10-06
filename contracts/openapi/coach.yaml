@@ -1,0 +1,349 @@
+openapi: 3.1.0
+info:
+  title: AI Strength Coach API
+  version: 1.0.0
+  description: >
+    Intelligent AI-driven Strength Coach microservice for NeverPaidHealth.
+    Provides real-time Central Nervous System (CNS) readiness scoring, progressive overload recommendations,
+    plateau detection for compound movements, and interactive sports science consultation.
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Local API Gateway
+  - url: http://54.38.156.226:3002/api/v1
+    description: Production Environment
+
+paths:
+  /coach/insights:
+    get:
+      summary: Retrieve AI Strength Coach Insights & Readiness Score
+      description: >
+        Calculates user CNS readiness score (0-100), recovery status, weekly training metrics,
+        personalized progressive overload targets, plateau alerts, and muscle set volume distribution.
+      operationId: getCoachInsights
+      tags:
+        - Coach
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Successfully generated coach insights
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CoachInsights'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /coach/chat:
+    post:
+      summary: Interactive AI Strength Coach Consultation
+      description: >
+        Engages in bilingual (English/Russian) sports-science chat with an AI coach equipped with
+        the user's training history, volume trends, and PR records.
+      operationId: chatWithCoach
+      tags:
+        - Coach
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatRequest'
+            example:
+              message: "How can I break through my bench press plateau?"
+              history:
+                - role: "user"
+                  content: "I have been stuck at 100kg bench press for 3 weeks."
+                - role: "coach"
+                  content: "Let's examine your weekly volume and consider adding pause reps or close-grip variations."
+      responses:
+        '200':
+          description: AI Coach response with actionable advice and quick prompts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatResponse'
+              example:
+                reply: "Based on your recent 100 kg × 5 sets, your estimated 1RM is 115 kg. I recommend a 1-week deload followed by adding 3 sets of pause bench press on your secondary push day."
+                suggestions:
+                  - "How do I structure a deload week?"
+                  - "What accessory exercises improve tricep lockout?"
+                  - "Should I increase my protein intake?"
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Enter the JWT bearer token obtained from /auth/dev-login or /auth/google
+
+  responses:
+    BadRequestError:
+      description: Invalid request body or parameters
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    UnauthorizedError:
+      description: Missing or invalid authentication token
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    InternalServerError:
+      description: Unexpected server failure
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+
+  schemas:
+    CoachInsights:
+      type: object
+      required:
+        - readiness_score
+        - recovery_status
+        - weekly_workouts_count
+        - weekly_volume_kg
+        - days_since_last_train
+        - suggested_split
+        - overload_targets
+        - plateau_alerts
+        - muscle_distribution
+        - insights
+        - generated_at
+      properties:
+        readiness_score:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: CNS readiness score from 0 (exhausted) to 100 (fully primed)
+          example: 85
+        recovery_status:
+          type: string
+          enum: ["Fully Recovered", "Optimal", "Fatigued", "Deload Recommended"]
+          example: "Optimal"
+        weekly_workouts_count:
+          type: integer
+          example: 4
+        weekly_volume_kg:
+          type: number
+          format: double
+          example: 18450.5
+        days_since_last_train:
+          type: integer
+          example: 1
+        suggested_split:
+          type: string
+          example: "Upper Body Hypertrophy"
+        overload_targets:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProgressiveOverloadTarget'
+        plateau_alerts:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlateauAlert'
+        muscle_distribution:
+          type: array
+          items:
+            $ref: '#/components/schemas/MuscleVolume'
+        insights:
+          type: array
+          items:
+            $ref: '#/components/schemas/Insight'
+        generated_at:
+          type: string
+          format: date-time
+          example: "2026-10-06T12:00:00Z"
+
+    ProgressiveOverloadTarget:
+      type: object
+      required:
+        - exercise_id
+        - exercise_name
+        - last_best_weight_kg
+        - last_best_reps
+        - target_weight_kg
+        - target_reps
+        - recommendation
+      properties:
+        exercise_id:
+          type: string
+          format: uuid
+        exercise_name:
+          type: string
+          example: "Barbell Bench Press"
+        last_best_weight_kg:
+          type: number
+          example: 100.0
+        last_best_reps:
+          type: integer
+          example: 8
+        target_weight_kg:
+          type: number
+          example: 102.5
+        target_reps:
+          type: integer
+          example: 8
+        recommendation:
+          type: string
+          example: "Increase weight by +2.5 kg while maintaining 8 reps with strict form."
+
+    PlateauAlert:
+      type: object
+      required:
+        - exercise_id
+        - exercise_name
+        - stagnant_days
+        - current_1rm_kg
+        - advice
+      properties:
+        exercise_id:
+          type: string
+          format: uuid
+        exercise_name:
+          type: string
+          example: "Barbell Overhead Press"
+        stagnant_days:
+          type: integer
+          example: 21
+        current_1rm_kg:
+          type: number
+          example: 65.0
+        advice:
+          type: string
+          example: "Weight progression has stalled for 3 weeks. Consider dropping load by 10% for volume sets or introducing pin presses."
+
+    MuscleVolume:
+      type: object
+      required:
+        - muscle_name
+        - total_sets
+        - volume_kg
+        - percentage
+      properties:
+        muscle_name:
+          type: string
+          example: "Chest"
+        total_sets:
+          type: integer
+          example: 16
+        volume_kg:
+          type: number
+          example: 5200.0
+        percentage:
+          type: number
+          example: 28.2
+
+    Insight:
+      type: object
+      required:
+        - id
+        - category
+        - severity
+        - title
+        - message
+      properties:
+        id:
+          type: string
+          example: "insight-01"
+        category:
+          type: string
+          enum: [OVERLOAD, RECOVERY, PLATEAU, BALANCE, MOTIVATION]
+          example: "OVERLOAD"
+        severity:
+          type: string
+          enum: [INFO, SUCCESS, WARNING]
+          example: "SUCCESS"
+        title:
+          type: string
+          example: "Supercompensation Peak"
+        message:
+          type: string
+          example: "You have rested 48 hours since your heavy leg day. Perfect window for high-intensity pulling movements."
+        action_item:
+          type: string
+          example: "Prioritize Barbell Deadlift as first compound movement today."
+
+    ChatMessage:
+      type: object
+      required:
+        - role
+        - content
+      properties:
+        role:
+          type: string
+          enum: [user, coach]
+          example: "user"
+        content:
+          type: string
+          example: "What is the optimal rest interval between heavy squat sets?"
+        sent_at:
+          type: string
+          format: date-time
+
+    ChatRequest:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+          example: "What is my optimal rest time between heavy compound sets?"
+        history:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChatMessage'
+
+    ChatResponse:
+      type: object
+      required:
+        - reply
+      properties:
+        reply:
+          type: string
+          example: "For heavy compound lifts (>80% 1RM), 3–5 minutes rest allows full ATP-CP system recovery and maintains force output across all working sets."
+        suggestions:
+          type: array
+          items:
+            type: string
+          example:
+            - "How does rest time affect hypertrophy?"
+            - "When should I use drop sets?"
+
+    ProblemDetails:
+      type: object
+      required:
+        - type
+        - title
+        - status
+        - detail
+      properties:
+        type:
+          type: string
+          format: uri
+          example: "https://neverpaid.health/errors/unauthorized"
+        title:
+          type: string
+          example: "Unauthorized"
+        status:
+          type: integer
+          example: 401
+        detail:
+          type: string
+          example: "Valid Bearer token is required."
+        code:
+          type: string
+          example: "ERR_UNAUTHORIZED"

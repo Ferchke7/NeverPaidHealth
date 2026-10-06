@@ -104,12 +104,31 @@ jobs:
         run: go build -o bin/coach ./services/coach/cmd/server
 
   # -------------------------------------------------------------
+  # OpenAPI: Validate REST specifications
+  # -------------------------------------------------------------
+  openapi:
+    name: OpenAPI Lint & Validation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Validate OpenAPI 3.1 Specifications
+        run: npx @redocly/cli lint contracts/openapi/openapi.yaml contracts/openapi/coach.yaml
+
+  # -------------------------------------------------------------
   # Docker: Verify multi-stage container builds
   # -------------------------------------------------------------
   docker-validation:
     name: Docker Build Validation
     runs-on: ubuntu-latest
-    needs: [frontend, backend]
+    needs: [frontend, backend, openapi]
 
     steps:
       - name: Checkout Code
