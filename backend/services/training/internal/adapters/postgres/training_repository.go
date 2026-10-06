@@ -43,7 +43,7 @@ func (r *TrainingRepository) ListByUserID(ctx context.Context, userID uuid.UUID)
 		SELECT id, user_id, name, notes, exercises, created_at, updated_at 
 		FROM routines 
 		WHERE user_id = $1 OR user_id = '00000000-0000-0000-0000-000000000000' 
-		ORDER BY (user_id = '00000000-0000-0000-0000-000000000000') ASC, created_at DESC
+		ORDER BY (user_id = '00000000-0000-0000-0000-000000000000') ASC, id ASC, created_at ASC
 	`
 	rows, err := r.pool.Query(ctx, query, userID)
 	if err != nil {

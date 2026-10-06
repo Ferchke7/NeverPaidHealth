@@ -41,12 +41,10 @@ interface Routine {
 }
 
 const PROGRAM_CATEGORIES = [
-  { id: 'all', label: 'All Programs' },
-  { id: 'ppl', label: 'Push / Pull / Legs' },
-  { id: 'arnold', label: 'Arnold Golden Era' },
-  { id: 'upper_lower', label: 'Upper / Lower' },
-  { id: 'full_body', label: 'Full Body' },
-  { id: 'bro_split', label: '5-Day Bro Split' },
+  { id: 'all', label: 'All 6 Days' },
+  { id: 'push', label: 'Push Days (2)' },
+  { id: 'pull', label: 'Pull Days (2)' },
+  { id: 'legs', label: 'Legs Days (2)' },
 ];
 
 interface ProgramsPageProps {
@@ -173,11 +171,9 @@ export const ProgramsPage: React.FC<ProgramsPageProps> = ({ onNavigateToWorkouts
 
       if (selectedCategory !== 'all') {
         const nameLower = r.name.toLowerCase();
-        if (selectedCategory === 'ppl' && !nameLower.includes('ppl') && !nameLower.includes('push') && !nameLower.includes('pull') && !nameLower.includes('legs')) return false;
-        if (selectedCategory === 'arnold' && !nameLower.includes('arnold')) return false;
-        if (selectedCategory === 'upper_lower' && !nameLower.includes('upper') && !nameLower.includes('lower')) return false;
-        if (selectedCategory === 'full_body' && !nameLower.includes('full body')) return false;
-        if (selectedCategory === 'bro_split' && !nameLower.includes('bro split')) return false;
+        if (selectedCategory === 'push' && !nameLower.includes('push')) return false;
+        if (selectedCategory === 'pull' && !nameLower.includes('pull')) return false;
+        if (selectedCategory === 'legs' && !nameLower.includes('legs')) return false;
       }
 
       return matchesSearch;
@@ -193,11 +189,11 @@ export const ProgramsPage: React.FC<ProgramsPageProps> = ({ onNavigateToWorkouts
             <BookOpen className="w-5 h-5 text-brand-400" />
             <span>Program Library</span>
             <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-brand-500/20 text-brand-400 border border-brand-500/30">
-              Official Splits
+              Jeff Nippard 6-Day PPL
             </span>
           </h1>
           <p className="text-xs text-zinc-400 mt-0.5">
-            Science-backed training programs, Arnold splits, PPL routines, and hypertrophy templates. Tap to preview or copy into your routines.
+            Official Jeff Nippard 6-Day Push / Pull / Legs Hypertrophy Split. Science-backed volume and exercise selection.
           </p>
         </div>
 
@@ -219,7 +215,7 @@ export const ProgramsPage: React.FC<ProgramsPageProps> = ({ onNavigateToWorkouts
         <div className="relative">
           <Search className="w-4 h-4 text-zinc-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
           <Input
-            placeholder="Search programs by name or exercise (e.g. Incline Bench, Arnold, Pull)..."
+            placeholder="Search exercises or days (e.g. Dumbbell Bench, Military Press, Squat)..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10 text-xs"

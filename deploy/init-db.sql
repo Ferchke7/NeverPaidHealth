@@ -57,6 +57,7 @@ INSERT INTO exercises (id, name, primary_muscle_group, secondary_muscle_groups, 
 ('10000000-0000-0000-0000-000000000010', 'Machine Chest Press', 'chest', '{"triceps"}', 'machine', 'weight_reps', false, null),
 ('10000000-0000-0000-0000-000000000011', 'Pec Deck Fly', 'chest', '{}', 'machine', 'weight_reps', false, null),
 ('10000000-0000-0000-0000-000000000012', 'Smith Machine Bench Press', 'chest', '{"triceps"}', 'smith_machine', 'weight_reps', false, null),
+('10000000-0000-0000-0000-000000000013', 'Upper Chest Crossover', 'chest', '{"shoulders"}', 'cable', 'weight_reps', false, null),
 
 -- Back
 ('20000000-0000-0000-0000-000000000001', 'Deadlift', 'back', '{"hamstrings", "core", "quads"}', 'barbell', 'weight_reps', false, null),
@@ -69,6 +70,11 @@ INSERT INTO exercises (id, name, primary_muscle_group, secondary_muscle_groups, 
 ('20000000-0000-0000-0000-000000000008', 'T-Bar Row', 'back', '{"biceps"}', 'barbell', 'weight_reps', false, null),
 ('20000000-0000-0000-0000-000000000009', 'Face Pull', 'back', '{"shoulders"}', 'cable', 'weight_reps', false, null),
 ('20000000-0000-0000-0000-000000000010', 'Hyperextension', 'back', '{"hamstrings"}', 'bodyweight', 'bodyweight_reps', false, null),
+('20000000-0000-0000-0000-000000000011', 'Weighted Pull Up', 'back', '{"biceps"}', 'bodyweight', 'weight_reps', false, null),
+('20000000-0000-0000-0000-000000000012', 'Cable Seated Row', 'back', '{"biceps"}', 'cable', 'weight_reps', false, null),
+('20000000-0000-0000-0000-000000000013', 'Cable Lat Pulldown', 'back', '{"biceps"}', 'cable', 'weight_reps', false, null),
+('20000000-0000-0000-0000-000000000014', 'Reverse Lat Pulldown', 'back', '{"biceps"}', 'cable', 'weight_reps', false, null),
+('20000000-0000-0000-0000-000000000015', 'Kneeling Cable Pullover', 'back', '{"triceps"}', 'cable', 'weight_reps', false, null),
 
 -- Quads & Legs
 ('30000000-0000-0000-0000-000000000001', 'Barbell Squat', 'quads', '{"hamstrings", "core"}', 'barbell', 'weight_reps', false, null),
@@ -86,6 +92,7 @@ INSERT INTO exercises (id, name, primary_muscle_group, secondary_muscle_groups, 
 ('40000000-0000-0000-0000-000000000003', 'Lying Leg Curl', 'hamstrings', '{}', 'machine', 'weight_reps', false, null),
 ('40000000-0000-0000-0000-000000000004', 'Seated Leg Curl', 'hamstrings', '{}', 'machine', 'weight_reps', false, null),
 ('40000000-0000-0000-0000-000000000005', 'Barbell Hip Thrust', 'hamstrings', '{}', 'barbell', 'weight_reps', false, null),
+('40000000-0000-0000-0000-000000000006', 'Hip Thrust', 'hamstrings', '{}', 'barbell', 'weight_reps', false, null),
 
 -- Shoulders
 ('50000000-0000-0000-0000-000000000001', 'Overhead Press', 'shoulders', '{"triceps", "core"}', 'barbell', 'weight_reps', false, null),
@@ -95,6 +102,9 @@ INSERT INTO exercises (id, name, primary_muscle_group, secondary_muscle_groups, 
 ('50000000-0000-0000-0000-000000000005', 'Rear Delt Fly', 'shoulders', '{"back"}', 'dumbbell', 'weight_reps', false, null),
 ('50000000-0000-0000-0000-000000000006', 'Arnold Press', 'shoulders', '{"triceps"}', 'dumbbell', 'weight_reps', false, null),
 ('50000000-0000-0000-0000-000000000007', 'Upright Row', 'shoulders', '{"back"}', 'barbell', 'weight_reps', false, null),
+('50000000-0000-0000-0000-000000000008', 'Military Press', 'shoulders', '{"triceps"}', 'barbell', 'weight_reps', false, null),
+('50000000-0000-0000-0000-000000000009', 'Reverse Fly', 'shoulders', '{"back"}', 'dumbbell', 'weight_reps', false, null),
+('50000000-0000-0000-0000-000000000010', 'Lateral Raise', 'shoulders', '{}', 'dumbbell', 'weight_reps', false, null),
 
 -- Biceps
 ('60000000-0000-0000-0000-000000000001', 'Barbell Bicep Curl', 'biceps', '{}', 'barbell', 'weight_reps', false, null),
@@ -103,6 +113,9 @@ INSERT INTO exercises (id, name, primary_muscle_group, secondary_muscle_groups, 
 ('60000000-0000-0000-0000-000000000004', 'Incline Dumbbell Curl', 'biceps', '{}', 'dumbbell', 'weight_reps', false, null),
 ('60000000-0000-0000-0000-000000000005', 'Preacher Curl', 'biceps', '{}', 'barbell', 'weight_reps', false, null),
 ('60000000-0000-0000-0000-000000000006', 'Cable Bicep Curl', 'biceps', '{}', 'cable', 'weight_reps', false, null),
+('60000000-0000-0000-0000-000000000007', 'EZ Bar Curl', 'biceps', '{}', 'barbell', 'weight_reps', false, null),
+('60000000-0000-0000-0000-000000000008', 'Reverse Curl', 'biceps', '{}', 'barbell', 'weight_reps', false, null),
+('60000000-0000-0000-0000-000000000009', 'Incline Curl', 'biceps', '{}', 'dumbbell', 'weight_reps', false, null),
 
 -- Triceps
 ('70000000-0000-0000-0000-000000000001', 'Tricep Pushdown', 'triceps', '{}', 'cable', 'weight_reps', false, null),
@@ -110,16 +123,22 @@ INSERT INTO exercises (id, name, primary_muscle_group, secondary_muscle_groups, 
 ('70000000-0000-0000-0000-000000000003', 'Overhead Tricep Extension', 'triceps', '{}', 'dumbbell', 'weight_reps', false, null),
 ('70000000-0000-0000-0000-000000000004', 'Close-Grip Bench Press', 'triceps', '{"chest"}', 'barbell', 'weight_reps', false, null),
 ('70000000-0000-0000-0000-000000000005', 'Tricep Dip', 'triceps', '{"chest"}', 'bodyweight', 'bodyweight_reps', false, null),
+('70000000-0000-0000-0000-000000000006', 'Dip', 'triceps', '{"chest"}', 'bodyweight', 'bodyweight_reps', false, null),
+('70000000-0000-0000-0000-000000000007', 'EZ Bar Tricep Extension', 'triceps', '{}', 'barbell', 'weight_reps', false, null),
+('70000000-0000-0000-0000-000000000008', 'Cable Tricep Kickback', 'triceps', '{}', 'cable', 'weight_reps', false, null),
 
 -- Core
 ('80000000-0000-0000-0000-000000000001', 'Plank', 'core', '{}', 'bodyweight', 'duration', false, null),
 ('80000000-0000-0000-0000-000000000002', 'Hanging Leg Raise', 'core', '{}', 'bodyweight', 'bodyweight_reps', false, null),
 ('80000000-0000-0000-0000-000000000003', 'Cable Crunch', 'core', '{}', 'cable', 'weight_reps', false, null),
 ('80000000-0000-0000-0000-000000000004', 'Ab Wheel Rollout', 'core', '{}', 'bodyweight', 'bodyweight_reps', false, null),
+('80000000-0000-0000-0000-000000000005', 'Hanging Knee Raise', 'core', '{}', 'bodyweight', 'bodyweight_reps', false, null),
+('80000000-0000-0000-0000-000000000006', 'Decline Crunch', 'core', '{}', 'bodyweight', 'bodyweight_reps', false, null),
 
 -- Calves
 ('90000000-0000-0000-0000-000000000001', 'Standing Calf Raise', 'calves', '{}', 'machine', 'weight_reps', false, null),
-('90000000-0000-0000-0000-000000000002', 'Seated Calf Raise', 'calves', '{}', 'machine', 'weight_reps', false, null)
+('90000000-0000-0000-0000-000000000002', 'Seated Calf Raise', 'calves', '{}', 'machine', 'weight_reps', false, null),
+('90000000-0000-0000-0000-000000000003', 'Calf Raise', 'calves', '{}', 'machine', 'weight_reps', false, null)
 ON CONFLICT (id) DO NOTHING;
 
 
@@ -169,7 +188,7 @@ CREATE INDEX IF NOT EXISTS idx_outbox_unpublished ON outbox(created_at) WHERE pu
 -- Seed Standard Routines Library
 INSERT INTO routines (id, user_id, name, notes, exercises, created_at, updated_at) VALUES
 ('e1111111-1111-1111-1111-111111111101', '00000000-0000-0000-0000-000000000000', 'Jeff Nippard PPL: Push 1 (Chest Focus)', 'Chest emphasis with secondary shoulder and triceps hypertrophy.', '[{"exercise_id": "10000000-0000-0000-0000-000000000004", "exercise_name": "Dumbbell Bench Press", "order_index": 0, "target_sets": 4, "target_reps_min": 8, "target_reps_max": 12}, {"exercise_id": "50000000-0000-0000-0000-000000000006", "exercise_name": "Arnold Press", "order_index": 1, "target_sets": 3, "target_reps_min": 8, "target_reps_max": 12}, {"exercise_id": "70000000-0000-0000-0000-000000000006", "exercise_name": "Dip", "order_index": 2, "target_sets": 3, "target_reps_min": 8, "target_reps_max": 12}, {"exercise_id": "70000000-0000-0000-0000-000000000007", "exercise_name": "EZ Bar Tricep Extension", "order_index": 3, "target_sets": 3, "target_reps_min": 10, "target_reps_max": 12}, {"exercise_id": "50000000-0000-0000-0000-000000000004", "exercise_name": "Cable Lateral Raise", "order_index": 4, "target_sets": 3, "target_reps_min": 12, "target_reps_max": 15}, {"exercise_id": "70000000-0000-0000-0000-000000000008", "exercise_name": "Cable Tricep Kickback", "order_index": 5, "target_sets": 3, "target_reps_min": 12, "target_reps_max": 15}]'::jsonb, NOW(), NOW()),
-('e1111111-1111-1111-1111-111111111102', '00000000-0000-0000-0000-000000000000', 'Jeff Nippard PPL: Pull 1 (Lat Focus)', 'Lat width emphasis with bicep development.', '[{"exercise_id": "20000000-0000-0000-0000-000000000011", "exercise_name": "Weighted Pull Up", "order_index": 0, "target_sets": 3, "target_reps_min": 6, "target_reps_max": 10}, {"exercise_id": "20000000-0000-0000-0000-000000000012", "exercise_name": "Cable Seated Row", "order_index": 1, "target_sets": 3, "target_reps_min": 8, "target_reps_max": 12}, {"exercise_id": "20000000-0000-0000-0000-000000000013", "exercise_name": "Cable Lat Pulldown", "order_index": 2, "target_sets": 3, "target_reps_min": 10, "target_reps_max": 12}, {"exercise_id": "60000000-0000-0000-0000-000000000003", "exercise_name": "Hammer Curl", "order_index": 3, "target_sets": 3, "target_reps_min": 10, "target_reps_max": 12}, {"exercise_id": "60000000-0000-0000-0000-000000000009", "exercise_name": "Incline Curl", "order_index": 4, "target_sets": 2, "target_reps_min": 10, "target_reps_max": 12}]'::jsonb, NOW(), NOW()),
+('e1111111-1111-1111-1111-111111111102', '00000000-0000-0000-0000-000000000000', 'Jeff Nippard PPL: Pull 1 (Lat Focus)', 'Lat width emphasis with bicep development.', '[{"exercise_id": "20000000-0000-0000-0000-000000000011", "exercise_name": "Weighted Pull Up", "order_index": 0, "target_sets": 3, "target_reps_min": 6, "target_reps_max": 10}, {"exercise_id": "20000000-0000-0000-0000-000000000012", "exercise_name": "Cable Seated Row", "order_index": 1, "target_sets": 3, "target_reps_min": 8, "target_reps_max": 12}, {"exercise_id": "20000000-0000-0000-0000-000000000015", "exercise_name": "Kneeling Cable Pullover", "order_index": 2, "target_sets": 3, "target_reps_min": 15, "target_reps_max": 20}, {"exercise_id": "60000000-0000-0000-0000-000000000003", "exercise_name": "Hammer Curl", "order_index": 3, "target_sets": 3, "target_reps_min": 10, "target_reps_max": 12}, {"exercise_id": "60000000-0000-0000-0000-000000000009", "exercise_name": "Incline Curl", "order_index": 4, "target_sets": 2, "target_reps_min": 10, "target_reps_max": 15}]'::jsonb, NOW(), NOW()),
 ('e1111111-1111-1111-1111-111111111103', '00000000-0000-0000-0000-000000000000', 'Jeff Nippard PPL: Legs 1 (Posterior Chain)', 'Deadlift, hamstrings, glutes, and core focus.', '[{"exercise_id": "20000000-0000-0000-0000-000000000001", "exercise_name": "Deadlift", "order_index": 0, "target_sets": 3, "target_reps_min": 5, "target_reps_max": 8}, {"exercise_id": "30000000-0000-0000-0000-000000000008", "exercise_name": "Goblet Squat", "order_index": 1, "target_sets": 3, "target_reps_min": 8, "target_reps_max": 12}, {"exercise_id": "40000000-0000-0000-0000-000000000006", "exercise_name": "Hip Thrust", "order_index": 2, "target_sets": 2, "target_reps_min": 8, "target_reps_max": 12}, {"exercise_id": "40000000-0000-0000-0000-000000000004", "exercise_name": "Seated Leg Curl", "order_index": 3, "target_sets": 2, "target_reps_min": 10, "target_reps_max": 12}, {"exercise_id": "20000000-0000-0000-0000-000000000010", "exercise_name": "Hyperextension", "order_index": 4, "target_sets": 2, "target_reps_min": 12, "target_reps_max": 15}, {"exercise_id": "90000000-0000-0000-0000-000000000003", "exercise_name": "Calf Raise", "order_index": 5, "target_sets": 2, "target_reps_min": 15, "target_reps_max": 20}, {"exercise_id": "80000000-0000-0000-0000-000000000005", "exercise_name": "Hanging Knee Raise", "order_index": 6, "target_sets": 3, "target_reps_min": 12, "target_reps_max": 15}]'::jsonb, NOW(), NOW()),
 ('e1111111-1111-1111-1111-111111111104', '00000000-0000-0000-0000-000000000000', 'Jeff Nippard PPL: Push 2 (Shoulder Focus)', 'Overhead pressing and upper chest emphasis.', '[{"exercise_id": "50000000-0000-0000-0000-000000000008", "exercise_name": "Military Press", "order_index": 0, "target_sets": 4, "target_reps_min": 6, "target_reps_max": 10}, {"exercise_id": "70000000-0000-0000-0000-000000000004", "exercise_name": "Close-Grip Bench Press", "order_index": 1, "target_sets": 3, "target_reps_min": 8, "target_reps_max": 12}, {"exercise_id": "10000000-0000-0000-0000-000000000013", "exercise_name": "Upper Chest Crossover", "order_index": 2, "target_sets": 3, "target_reps_min": 10, "target_reps_max": 15}, {"exercise_id": "70000000-0000-0000-0000-000000000003", "exercise_name": "Overhead Tricep Extension", "order_index": 3, "target_sets": 3, "target_reps_min": 10, "target_reps_max": 12}, {"exercise_id": "50000000-0000-0000-0000-000000000010", "exercise_name": "Lateral Raise", "order_index": 4, "target_sets": 3, "target_reps_min": 12, "target_reps_max": 15}]'::jsonb, NOW(), NOW()),
 ('e1111111-1111-1111-1111-111111111105', '00000000-0000-0000-0000-000000000000', 'Jeff Nippard PPL: Pull 2 (Mid-Back Focus)', 'Thickness, rhomboids, rear delts, and arm work.', '[{"exercise_id": "20000000-0000-0000-0000-000000000005", "exercise_name": "Lat Pulldown", "order_index": 0, "target_sets": 3, "target_reps_min": 8, "target_reps_max": 12}, {"exercise_id": "20000000-0000-0000-0000-000000000008", "exercise_name": "T-Bar Row", "order_index": 1, "target_sets": 3, "target_reps_min": 8, "target_reps_max": 12}, {"exercise_id": "20000000-0000-0000-0000-000000000014", "exercise_name": "Reverse Lat Pulldown", "order_index": 2, "target_sets": 3, "target_reps_min": 10, "target_reps_max": 12}, {"exercise_id": "20000000-0000-0000-0000-000000000009", "exercise_name": "Face Pull", "order_index": 3, "target_sets": 3, "target_reps_min": 12, "target_reps_max": 15}, {"exercise_id": "50000000-0000-0000-0000-000000000009", "exercise_name": "Reverse Fly", "order_index": 4, "target_sets": 2, "target_reps_min": 12, "target_reps_max": 15}, {"exercise_id": "60000000-0000-0000-0000-000000000007", "exercise_name": "EZ Bar Curl", "order_index": 5, "target_sets": 3, "target_reps_min": 8, "target_reps_max": 12}, {"exercise_id": "60000000-0000-0000-0000-000000000008", "exercise_name": "Reverse Curl", "order_index": 6, "target_sets": 3, "target_reps_min": 10, "target_reps_max": 12}]'::jsonb, NOW(), NOW()),

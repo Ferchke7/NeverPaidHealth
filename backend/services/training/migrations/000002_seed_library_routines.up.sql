@@ -27,9 +27,9 @@ INSERT INTO routines (id, user_id, name, notes, exercises, created_at, updated_a
   '[
     {"exercise_id": "20000000-0000-0000-0000-000000000011", "exercise_name": "Weighted Pull Up", "order_index": 0, "target_sets": 3, "target_reps_min": 6, "target_reps_max": 10},
     {"exercise_id": "20000000-0000-0000-0000-000000000012", "exercise_name": "Cable Seated Row", "order_index": 1, "target_sets": 3, "target_reps_min": 8, "target_reps_max": 12},
-    {"exercise_id": "20000000-0000-0000-0000-000000000013", "exercise_name": "Cable Lat Pulldown", "order_index": 2, "target_sets": 3, "target_reps_min": 10, "target_reps_max": 12},
+    {"exercise_id": "20000000-0000-0000-0000-000000000015", "exercise_name": "Kneeling Cable Pullover", "order_index": 2, "target_sets": 3, "target_reps_min": 15, "target_reps_max": 20},
     {"exercise_id": "60000000-0000-0000-0000-000000000003", "exercise_name": "Hammer Curl", "order_index": 3, "target_sets": 3, "target_reps_min": 10, "target_reps_max": 12},
-    {"exercise_id": "60000000-0000-0000-0000-000000000009", "exercise_name": "Incline Curl", "order_index": 4, "target_sets": 2, "target_reps_min": 10, "target_reps_max": 12}
+    {"exercise_id": "60000000-0000-0000-0000-000000000009", "exercise_name": "Incline Curl", "order_index": 4, "target_sets": 2, "target_reps_min": 10, "target_reps_max": 15}
   ]'::jsonb,
   NOW(),
   NOW()
@@ -101,73 +101,6 @@ INSERT INTO routines (id, user_id, name, notes, exercises, created_at, updated_a
     {"exercise_id": "90000000-0000-0000-0000-000000000003", "exercise_name": "Calf Raise", "order_index": 5, "target_sets": 3, "target_reps_min": 15, "target_reps_max": 20},
     {"exercise_id": "80000000-0000-0000-0000-000000000006", "exercise_name": "Decline Crunch", "order_index": 6, "target_sets": 2, "target_reps_min": 12, "target_reps_max": 15},
     {"exercise_id": "80000000-0000-0000-0000-000000000001", "exercise_name": "Plank", "order_index": 7, "target_sets": 2, "target_reps_min": 60, "target_reps_max": 60}
-  ]'::jsonb,
-  NOW(),
-  NOW()
-),
--- 7. Arnold Split: Chest & Back
-(
-  'e2222222-2222-2222-2222-222222222201',
-  '00000000-0000-0000-0000-000000000000',
-  'Arnold Golden Era: Chest & Back',
-  'Classic agonist/antagonist superset pairing for maximum chest and lat pump.',
-  '[
-    {"exercise_id": "10000000-0000-0000-0000-000000000001", "exercise_name": "Barbell Bench Press", "order_index": 0, "target_sets": 4, "target_reps_min": 6, "target_reps_max": 10},
-    {"exercise_id": "20000000-0000-0000-0000-000000000002", "exercise_name": "Barbell Bent Over Row", "order_index": 1, "target_sets": 4, "target_reps_min": 8, "target_reps_max": 12},
-    {"exercise_id": "10000000-0000-0000-0000-000000000005", "exercise_name": "Incline Dumbbell Press", "order_index": 2, "target_sets": 4, "target_reps_min": 8, "target_reps_max": 12},
-    {"exercise_id": "20000000-0000-0000-0000-000000000003", "exercise_name": "Pull Up", "order_index": 3, "target_sets": 4, "target_reps_min": 8, "target_reps_max": 12},
-    {"exercise_id": "10000000-0000-0000-0000-000000000006", "exercise_name": "Dumbbell Fly", "order_index": 4, "target_sets": 3, "target_reps_min": 10, "target_reps_max": 15}
-  ]'::jsonb,
-  NOW(),
-  NOW()
-),
--- 8. Arnold Split: Shoulders & Arms
-(
-  'e2222222-2222-2222-2222-222222222202',
-  '00000000-0000-0000-0000-000000000000',
-  'Arnold Golden Era: Shoulders & Arms',
-  'Total shoulder capping and bicep/tricep direct volume.',
-  '[
-    {"exercise_id": "50000000-0000-0000-0000-000000000001", "exercise_name": "Overhead Press", "order_index": 0, "target_sets": 4, "target_reps_min": 6, "target_reps_max": 10},
-    {"exercise_id": "50000000-0000-0000-0000-000000000003", "exercise_name": "Dumbbell Lateral Raise", "order_index": 1, "target_sets": 4, "target_reps_min": 12, "target_reps_max": 15},
-    {"exercise_id": "60000000-0000-0000-0000-000000000001", "exercise_name": "Barbell Bicep Curl", "order_index": 2, "target_sets": 4, "target_reps_min": 8, "target_reps_max": 12},
-    {"exercise_id": "70000000-0000-0000-0000-000000000002", "exercise_name": "Skull Crusher", "order_index": 3, "target_sets": 4, "target_reps_min": 8, "target_reps_max": 12},
-    {"exercise_id": "60000000-0000-0000-0000-000000000004", "exercise_name": "Incline Dumbbell Curl", "order_index": 4, "target_sets": 3, "target_reps_min": 10, "target_reps_max": 12},
-    {"exercise_id": "70000000-0000-0000-0000-000000000001", "exercise_name": "Tricep Pushdown", "order_index": 5, "target_sets": 3, "target_reps_min": 12, "target_reps_max": 15}
-  ]'::jsonb,
-  NOW(),
-  NOW()
-),
--- 9. Classic Upper A
-(
-  'e3333333-3333-3333-3333-333333333301',
-  '00000000-0000-0000-0000-000000000000',
-  'Upper / Lower: Upper A (Strength Focus)',
-  'Heavy compound pressing and pulling for upper body foundation.',
-  '[
-    {"exercise_id": "10000000-0000-0000-0000-000000000001", "exercise_name": "Barbell Bench Press", "order_index": 0, "target_sets": 4, "target_reps_min": 5, "target_reps_max": 8},
-    {"exercise_id": "20000000-0000-0000-0000-000000000002", "exercise_name": "Barbell Bent Over Row", "order_index": 1, "target_sets": 4, "target_reps_min": 6, "target_reps_max": 8},
-    {"exercise_id": "50000000-0000-0000-0000-000000000001", "exercise_name": "Overhead Press", "order_index": 2, "target_sets": 3, "target_reps_min": 6, "target_reps_max": 10},
-    {"exercise_id": "20000000-0000-0000-0000-000000000003", "exercise_name": "Pull Up", "order_index": 3, "target_sets": 3, "target_reps_min": 6, "target_reps_max": 10},
-    {"exercise_id": "60000000-0000-0000-0000-000000000003", "exercise_name": "Hammer Curl", "order_index": 4, "target_sets": 3, "target_reps_min": 10, "target_reps_max": 12},
-    {"exercise_id": "70000000-0000-0000-0000-000000000001", "exercise_name": "Tricep Pushdown", "order_index": 5, "target_sets": 3, "target_reps_min": 10, "target_reps_max": 12}
-  ]'::jsonb,
-  NOW(),
-  NOW()
-),
--- 10. Classic Lower A
-(
-  'e3333333-3333-3333-3333-333333333302',
-  '00000000-0000-0000-0000-000000000000',
-  'Upper / Lower: Lower A (Quad Focus)',
-  'Heavy squats with posterior chain assistance.',
-  '[
-    {"exercise_id": "30000000-0000-0000-0000-000000000001", "exercise_name": "Barbell Squat", "order_index": 0, "target_sets": 4, "target_reps_min": 5, "target_reps_max": 8},
-    {"exercise_id": "40000000-0000-0000-0000-000000000001", "exercise_name": "Romanian Deadlift", "order_index": 1, "target_sets": 3, "target_reps_min": 8, "target_reps_max": 10},
-    {"exercise_id": "30000000-0000-0000-0000-000000000003", "exercise_name": "Leg Press", "order_index": 2, "target_sets": 3, "target_reps_min": 10, "target_reps_max": 12},
-    {"exercise_id": "40000000-0000-0000-0000-000000000003", "exercise_name": "Lying Leg Curl", "order_index": 3, "target_sets": 3, "target_reps_min": 10, "target_reps_max": 12},
-    {"exercise_id": "90000000-0000-0000-0000-000000000001", "exercise_name": "Standing Calf Raise", "order_index": 4, "target_sets": 4, "target_reps_min": 12, "target_reps_max": 15},
-    {"exercise_id": "80000000-0000-0000-0000-000000000002", "exercise_name": "Hanging Leg Raise", "order_index": 5, "target_sets": 3, "target_reps_min": 12, "target_reps_max": 15}
   ]'::jsonb,
   NOW(),
   NOW()

@@ -398,7 +398,7 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = ({ onNavigateToPrograms
           </h3>
           <p className="text-xs text-zinc-500 max-w-sm mx-auto mt-1 mb-4">
             {userRoutines.length === 0
-              ? 'Explore the Program Library to adopt a science-backed split (PPL, Arnold, Upper/Lower) or create your own from scratch.'
+              ? 'Explore the Program Library to adopt the Jeff Nippard 6-Day PPL split or create your own from scratch.'
               : 'Try clearing your search query to see all your saved routines.'}
           </p>
 
