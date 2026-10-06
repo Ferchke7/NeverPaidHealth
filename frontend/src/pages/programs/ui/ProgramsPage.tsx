@@ -2,10 +2,8 @@ import React, { useState, useMemo } from 'react';
 import {
   BookOpen,
   Search,
-  Dumbbell,
   Clock,
   Layers,
-  Star,
   Play,
   Copy,
   Plus,
@@ -63,10 +61,6 @@ export const ProgramsPage: React.FC<ProgramsPageProps> = ({ onNavigateToWorkouts
   const [customizingRoutine, setCustomizingRoutine] = useState<Routine | null>(null);
   const [copiedRoutineId, setCopiedRoutineId] = useState<string | null>(null);
 
-  const [activeProgramId, setActiveProgramId] = useState<string | null>(() => {
-    return localStorage.getItem('np_active_program_id') || null;
-  });
-
   const startWorkout = useActiveWorkoutStore((s) => s.startWorkout);
   const activeWorkout = useActiveWorkoutStore((s) => s.workout);
   const openSheet = useActiveWorkoutStore((s) => s.openSheet);
@@ -109,16 +103,6 @@ export const ProgramsPage: React.FC<ProgramsPageProps> = ({ onNavigateToWorkouts
       setTimeout(() => setCopiedRoutineId(null), 3000);
     },
   });
-
-  const handleToggleActiveProgram = (routine: Routine) => {
-    if (activeProgramId === routine.id) {
-      setActiveProgramId(null);
-      localStorage.removeItem('np_active_program_id');
-    } else {
-      setActiveProgramId(routine.id);
-      localStorage.setItem('np_active_program_id', routine.id);
-    }
-  };
 
   const handleStartRoutine = async (routine: Routine) => {
     if (activeWorkout) {
@@ -291,68 +275,36 @@ export const ProgramsPage: React.FC<ProgramsPageProps> = ({ onNavigateToWorkouts
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {filteredPrograms.map((routine) => {
-            const isActive = activeProgramId === routine.id;
             const isJustCopied = copiedRoutineId === routine.id;
 
             return (
               <Card
                 key={routine.id}
                 onClick={() => setSelectedRoutinePreview(routine)}
-                className={`p-4 bg-dark-800/90 border transition-all flex flex-col justify-between shadow-lg cursor-pointer group ${
-                  isActive
-                    ? 'border-brand-500/80 ring-1 ring-brand-500/30'
-                    : 'border-dark-700/80 hover:border-brand-500/50'
-                }`}
+                className="p-4 bg-dark-800/90 border border-dark-700/80 hover:border-brand-500/50 transition-all flex flex-col justify-between shadow-lg cursor-pointer group"
               >
                 <div className="space-y-3">
                   <div className="flex items-start justify-between gap-2">
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <div className="w-10 h-10 rounded-xl bg-dark-700/80 text-brand-400 flex items-center justify-center border border-dark-600/40 group-hover:scale-105 transition-transform shrink-0">
-                        <Dumbbell className="w-5 h-5" />
-                      </div>
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <h3 className="text-sm font-bold text-white leading-snug group-hover:text-brand-400 transition-colors truncate">
-                            {routine.name}
-                          </h3>
-                          {isActive && (
-                            <span className="inline-flex items-center gap-1 text-[9px] font-bold text-amber-300 bg-amber-500/20 border border-amber-500/30 px-1.5 py-0.2 rounded-full font-mono shrink-0">
-                              <Star className="w-2.5 h-2.5 fill-amber-300" />
-                              <span>Active Split</span>
-                            </span>
-                          )}
-                        </div>
+                    <div className="min-w-0 flex-1">
+                      <h3 className="text-sm sm:text-base font-bold text-white leading-snug group-hover:text-brand-400 transition-colors break-words">
+                        {routine.name}
+                      </h3>
 
-                        <div className="flex items-center gap-2 text-[11px] text-zinc-400 mt-0.5">
-                          <span className="flex items-center gap-1">
-                            <Layers className="w-3 h-3 text-zinc-500" />
-                            {routine.exercises?.length || 0} exercises
-                          </span>
-                          <span>•</span>
-                          <span className="flex items-center gap-1">
-                            <Clock className="w-3 h-3 text-zinc-500" />
-                            ~{(routine.exercises?.length || 0) * 10} min
-                          </span>
-                          <span>•</span>
-                          <span className="text-[10px] text-brand-400 font-semibold bg-brand-500/10 px-1.5 py-0.2 rounded border border-brand-500/20">
-                            Template
-                          </span>
-                        </div>
+                      <div className="flex items-center gap-2 text-[11px] text-zinc-400 mt-1">
+                        <span className="flex items-center gap-1">
+                          <Layers className="w-3.5 h-3.5 text-zinc-500" />
+                          {routine.exercises?.length || 0} exercises
+                        </span>
+                        <span>•</span>
+                        <span className="flex items-center gap-1">
+                          <Clock className="w-3.5 h-3.5 text-zinc-500" />
+                          ~{(routine.exercises?.length || 0) * 10} min
+                        </span>
+                        <span>•</span>
+                        <span className="text-[10px] text-brand-400 font-semibold bg-brand-500/10 px-1.5 py-0.2 rounded border border-brand-500/20">
+                          Template
+                        </span>
                       </div>
-                    </div>
-
-                    <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                      <button
-                        onClick={() => handleToggleActiveProgram(routine)}
-                        className={`p-1.5 rounded-lg transition-colors ${
-                          isActive
-                            ? 'text-amber-400 bg-amber-500/15'
-                            : 'text-zinc-500 hover:text-amber-400 hover:bg-dark-700'
-                        }`}
-                        title={isActive ? 'Unmark active split' : 'Mark as my active program split'}
-                      >
-                        <Star className={`w-3.5 h-3.5 ${isActive ? 'fill-amber-400' : ''}`} />
-                      </button>
                     </div>
                   </div>
 
@@ -456,8 +408,6 @@ export const ProgramsPage: React.FC<ProgramsPageProps> = ({ onNavigateToWorkouts
       <RoutineDetailModal
         isOpen={Boolean(selectedRoutinePreview)}
         routine={selectedRoutinePreview}
-        isActiveProgram={activeProgramId === selectedRoutinePreview?.id}
-        onToggleActiveProgram={(r) => handleToggleActiveProgram(r as Routine)}
         onClose={() => setSelectedRoutinePreview(null)}
         onEditRoutine={(r) => {
           setSelectedRoutinePreview(null);

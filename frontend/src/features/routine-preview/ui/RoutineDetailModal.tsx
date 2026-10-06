@@ -8,7 +8,6 @@ import {
   Layers,
   Plus,
   Copy,
-  Star,
 } from 'lucide-react';
 import { Button } from '../../../shared/ui/button.tsx';
 import { ExerciseThumbnail } from '../../../entities/exercise/ui/ExerciseThumbnail.tsx';
@@ -47,8 +46,6 @@ interface RoutineDetailModalProps {
   onStartWorkout: (routine: RoutineDetail) => void;
   onEditRoutine?: (routine: RoutineDetail) => void;
   onCloneToMyRoutines?: (routine: RoutineDetail) => void;
-  isActiveProgram?: boolean;
-  onToggleActiveProgram?: (routine: RoutineDetail) => void;
 }
 
 export const RoutineDetailModal: React.FC<RoutineDetailModalProps> = ({
@@ -58,8 +55,6 @@ export const RoutineDetailModal: React.FC<RoutineDetailModalProps> = ({
   onStartWorkout,
   onEditRoutine,
   onCloneToMyRoutines,
-  isActiveProgram = false,
-  onToggleActiveProgram,
 }) => {
   const [inspectingExercise, setInspectingExercise] = useState<{
     name: string;
@@ -160,26 +155,10 @@ export const RoutineDetailModal: React.FC<RoutineDetailModalProps> = ({
               <strong className="text-zinc-200">{totalExercises}</strong> exercises
             </span>
 
-            <div className="flex items-center gap-3">
-              {onToggleActiveProgram && (
-                <button
-                  onClick={() => onToggleActiveProgram(routine)}
-                  className={`flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-lg border transition-all ${
-                    isActiveProgram
-                      ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
-                      : 'bg-dark-800 text-zinc-400 border-dark-700 hover:text-white'
-                  }`}
-                >
-                  <Star className={`w-3 h-3 ${isActiveProgram ? 'fill-amber-400 text-amber-400' : ''}`} />
-                  <span>{isActiveProgram ? 'Active Split' : 'Set as Active'}</span>
-                </button>
-              )}
-
-              <span className="flex items-center gap-1.5">
-                <Clock className="w-3.5 h-3.5 text-zinc-500" />
-                ~{estimatedDuration} min
-              </span>
-            </div>
+            <span className="flex items-center gap-1.5">
+              <Clock className="w-3.5 h-3.5 text-zinc-500" />
+              ~{estimatedDuration} min
+            </span>
           </div>
 
           {/* Exercise Items List */}
