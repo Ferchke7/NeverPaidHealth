@@ -12,6 +12,9 @@ import {
   Clock,
   Edit3,
   Star,
+  ArrowUp,
+  ArrowDown,
+  ArrowUpDown,
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../../shared/api/client.ts';
@@ -63,6 +66,15 @@ export const WorkoutsPage: React.FC = () => {
   const [activeProgramId, setActiveProgramId] = useState<string | null>(() => {
     return localStorage.getItem('np_active_program_id') || null;
   });
+  const [customRoutineOrder, setCustomRoutineOrder] = useState<string[]>(() => {
+    try {
+      const stored = localStorage.getItem('np_my_routines_custom_order');
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [isReorderMode, setIsReorderMode] = useState(false);
 
   const startWorkout = useActiveWorkoutStore((s) => s.startWorkout);
   const activeWorkout = useActiveWorkoutStore((s) => s.workout);
@@ -118,6 +130,36 @@ export const WorkoutsPage: React.FC = () => {
       setActiveProgramId(routine.id);
       localStorage.setItem('np_active_program_id', routine.id);
     }
+  };
+
+  const handleMoveRoutine = (routineId: string, direction: 'up' | 'down') => {
+    const isSystem = (r: Routine) =>
+      !r.user_id || r.user_id === '00000000-0000-0000-0000-000000000000';
+    const users = routines.filter((r) => !isSystem(r));
+    const sortedUserIds = [...users]
+      .sort((a, b) => {
+        const idxA = customRoutineOrder.indexOf(a.id);
+        const idxB = customRoutineOrder.indexOf(b.id);
+        if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+        if (idxA !== -1) return -1;
+        if (idxB !== -1) return 1;
+        return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
+      })
+      .map((r) => r.id);
+
+    const index = sortedUserIds.indexOf(routineId);
+    if (index === -1) return;
+
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= sortedUserIds.length) return;
+
+    const updated = [...sortedUserIds];
+    const temp = updated[index];
+    updated[index] = updated[targetIndex];
+    updated[targetIndex] = temp;
+
+    setCustomRoutineOrder(updated);
+    localStorage.setItem('np_my_routines_custom_order', JSON.stringify(updated));
   };
 
   const handleStartEmptyWorkout = async () => {
@@ -218,9 +260,17 @@ export const WorkoutsPage: React.FC = () => {
 
     const lib = routines.filter(isSystem);
     const user = routines.filter((r) => !isSystem(r));
+    const sortedUser = [...user].sort((a, b) => {
+      const idxA = customRoutineOrder.indexOf(a.id);
+      const idxB = customRoutineOrder.indexOf(b.id);
+      if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+      if (idxA !== -1) return -1;
+      if (idxB !== -1) return 1;
+      return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
+    });
 
-    return { libraryRoutines: lib, userRoutines: user };
-  }, [routines]);
+    return { libraryRoutines: lib, userRoutines: sortedUser };
+  }, [routines, customRoutineOrder]);
 
   const currentList = activeTab === 'library' ? libraryRoutines : userRoutines;
 
@@ -341,6 +391,21 @@ export const WorkoutsPage: React.FC = () => {
               <span>My Routines ({userRoutines.length})</span>
             </button>
           </div>
+
+          {activeTab === 'my_routines' && userRoutines.length > 1 && (
+            <button
+              onClick={() => setIsReorderMode((prev) => !prev)}
+              className={`text-xs px-3 py-1.5 rounded-xl font-bold flex items-center gap-1.5 transition-all border ${
+                isReorderMode
+                  ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-sm'
+                  : 'bg-dark-800 text-zinc-400 border-dark-700 hover:text-white hover:bg-dark-700'
+              }`}
+              title="Toggle routine reordering arrows"
+            >
+              <ArrowUpDown className="w-3.5 h-3.5 text-brand-400" />
+              <span>{isReorderMode ? 'Done Reordering' : 'Reorder Order'}</span>
+            </button>
+          )}
         </div>
 
         {/* Tab Subtitle Notice */}
@@ -439,6 +504,8 @@ export const WorkoutsPage: React.FC = () => {
             const isSystem =
               !routine.user_id || routine.user_id === '00000000-0000-0000-0000-000000000000';
             const isActive = activeProgramId === routine.id;
+            const orderIndex = !isSystem ? userRoutines.findIndex((r) => r.id === routine.id) : -1;
+            const totalUserRoutines = userRoutines.length;
 
             return (
               <Card
@@ -453,8 +520,13 @@ export const WorkoutsPage: React.FC = () => {
                 <div className="space-y-3">
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-2.5 min-w-0">
-                      <div className="w-10 h-10 rounded-xl bg-dark-700/80 text-brand-400 flex items-center justify-center border border-dark-600/40 group-hover:scale-105 transition-transform shrink-0">
+                      <div className="w-10 h-10 rounded-xl bg-dark-700/80 text-brand-400 flex items-center justify-center border border-dark-600/40 group-hover:scale-105 transition-transform shrink-0 relative">
                         <Dumbbell className="w-5 h-5" />
+                        {!isSystem && orderIndex !== -1 && (
+                          <span className="absolute -top-1.5 -left-1.5 px-1 py-0.2 bg-dark-900 border border-brand-500/40 text-[9px] font-mono font-bold text-brand-400 rounded-md shadow">
+                            #{orderIndex + 1}
+                          </span>
+                        )}
                       </div>
                       <div className="min-w-0">
                         <div className="flex items-center gap-1.5 flex-wrap">
@@ -491,7 +563,34 @@ export const WorkoutsPage: React.FC = () => {
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                    <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+                      {!isSystem && (
+                        <div className="flex items-center bg-dark-900/90 rounded-lg p-0.5 border border-dark-700/80 mr-1 shadow-sm">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleMoveRoutine(routine.id, 'up');
+                            }}
+                            disabled={orderIndex <= 0}
+                            className="p-1 text-zinc-400 hover:text-brand-400 disabled:opacity-20 disabled:hover:text-zinc-400 transition-colors rounded hover:bg-dark-700"
+                            title="Move Routine Up"
+                          >
+                            <ArrowUp className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleMoveRoutine(routine.id, 'down');
+                            }}
+                            disabled={orderIndex === -1 || orderIndex >= totalUserRoutines - 1}
+                            className="p-1 text-zinc-400 hover:text-brand-400 disabled:opacity-20 disabled:hover:text-zinc-400 transition-colors rounded hover:bg-dark-700"
+                            title="Move Routine Down"
+                          >
+                            <ArrowDown className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      )}
+
                       <button
                         onClick={() => handleToggleActiveProgram(routine)}
                         className={`p-1.5 rounded-lg transition-colors ${
