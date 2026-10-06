@@ -3,6 +3,7 @@ import { useAuthStore } from '../entities/user/model/authStore.ts';
 import { LoginPage } from '../pages/login/ui/LoginPage.tsx';
 import { DashboardLayout, NavTab } from '../pages/dashboard/ui/DashboardLayout.tsx';
 import { WorkoutsPage } from '../pages/workouts/ui/WorkoutsPage.tsx';
+import { ProgramsPage } from '../pages/programs/ui/ProgramsPage.tsx';
 import { HistoryPage } from '../pages/history/ui/HistoryPage.tsx';
 import { ExercisesPage } from '../pages/exercises/ui/ExercisesPage.tsx';
 import { ProgressPage } from '../pages/progress/ui/ProgressPage.tsx';
@@ -21,7 +22,12 @@ export const App: React.FC = () => {
 
   return (
     <DashboardLayout activeTab={activeTab} onSelectTab={setActiveTab}>
-      {activeTab === 'workouts' && <WorkoutsPage />}
+      {activeTab === 'workouts' && (
+        <WorkoutsPage onNavigateToPrograms={() => setActiveTab('programs')} />
+      )}
+      {activeTab === 'programs' && (
+        <ProgramsPage onNavigateToWorkouts={() => setActiveTab('workouts')} />
+      )}
       {activeTab === 'history' && <HistoryPage />}
       {activeTab === 'coach' && <AICoachPage />}
       {activeTab === 'progress' && <ProgressPage />}

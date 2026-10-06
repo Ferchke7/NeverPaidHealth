@@ -1,10 +1,10 @@
 import React from 'react';
-import { Dumbbell, History, LineChart, BookOpen, LogOut, Bot, User } from 'lucide-react';
+import { Dumbbell, History, LineChart, BookOpen, LogOut, Bot, User, Activity } from 'lucide-react';
 import { useAuthStore } from '../../../entities/user/model/authStore.ts';
 import { UserAvatar } from '../../../entities/user/ui/UserAvatar.tsx';
 import { UnitSwitchToggle } from '../../../features/switch-units/ui/UnitSwitchToggle.tsx';
 
-export type NavTab = 'workouts' | 'history' | 'coach' | 'progress' | 'exercises' | 'body' | 'profile';
+export type NavTab = 'workouts' | 'programs' | 'exercises' | 'history' | 'coach' | 'progress' | 'body' | 'profile';
 
 interface DashboardLayoutProps {
   activeTab: NavTab;
@@ -21,12 +21,13 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   const logout = useAuthStore((s) => s.logout);
 
   const navItems: { id: NavTab; label: string; icon: React.ReactNode; isAI?: boolean }[] = [
-    { id: 'workouts', label: 'Workouts', icon: <Dumbbell className="w-5 h-5" /> },
-    { id: 'history', label: 'History', icon: <History className="w-5 h-5" /> },
-    { id: 'coach', label: 'AI Coach', icon: <Bot className="w-5 h-5 text-brand-400" />, isAI: true },
-    { id: 'progress', label: 'Progress', icon: <LineChart className="w-5 h-5" /> },
-    { id: 'exercises', label: 'Exercises', icon: <BookOpen className="w-5 h-5" /> },
-    { id: 'profile', label: 'Profile', icon: <User className="w-5 h-5" /> },
+    { id: 'workouts', label: 'Workouts', icon: <Dumbbell className="w-4 h-4 md:w-5 md:h-5" /> },
+    { id: 'programs', label: 'Programs', icon: <BookOpen className="w-4 h-4 md:w-5 md:h-5" /> },
+    { id: 'exercises', label: 'Exercises', icon: <Activity className="w-4 h-4 md:w-5 md:h-5" /> },
+    { id: 'history', label: 'History', icon: <History className="w-4 h-4 md:w-5 md:h-5" /> },
+    { id: 'coach', label: 'AI Coach', icon: <Bot className="w-4 h-4 md:w-5 md:h-5 text-brand-400" />, isAI: true },
+    { id: 'progress', label: 'Progress', icon: <LineChart className="w-4 h-4 md:w-5 md:h-5" /> },
+    { id: 'profile', label: 'Profile', icon: <User className="w-4 h-4 md:w-5 md:h-5" /> },
   ];
 
   return (
@@ -103,19 +104,19 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
       </main>
 
       {/* Bottom Mobile Navigation Bar */}
-      <nav className="fixed bottom-0 left-0 right-0 z-40 bg-dark-900/95 backdrop-blur border-t border-dark-800 md:hidden flex items-center justify-around py-2 px-1">
+      <nav className="fixed bottom-0 left-0 right-0 z-40 bg-dark-900/95 backdrop-blur border-t border-dark-800 md:hidden flex items-center justify-around py-1.5 px-1">
         {navItems.map((item) => {
           const isActive = activeTab === item.id;
           return (
             <button
               key={item.id}
               onClick={() => onSelectTab(item.id)}
-              className={`flex flex-col items-center gap-1 py-1 px-2.5 rounded-xl transition-all relative ${
-                isActive ? 'text-brand-500 font-semibold' : 'text-zinc-400 hover:text-zinc-200'
+              className={`flex flex-col items-center gap-0.5 py-1 px-1 rounded-xl transition-all relative min-w-0 flex-1 ${
+                isActive ? 'text-brand-500 font-bold' : 'text-zinc-400 hover:text-zinc-200'
               }`}
             >
               {item.icon}
-              <span className="text-[10px] tracking-tight">{item.label}</span>
+              <span className="text-[9px] tracking-tight truncate">{item.label}</span>
               {item.isAI && (
                 <span className="w-1.5 h-1.5 rounded-full bg-brand-400 absolute top-1 right-2 animate-pulse" />
               )}
