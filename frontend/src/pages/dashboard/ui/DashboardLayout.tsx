@@ -43,7 +43,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               <Dumbbell className="w-4 h-4" />
             </div>
             <span className="font-bold text-base tracking-tight hidden sm:inline">
-              NeverPaid<span className="text-brand-500">Health</span>
+              duda<span className="text-brand-500">.uz</span>
             </span>
           </button>
 

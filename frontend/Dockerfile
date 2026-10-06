@@ -7,7 +7,9 @@ COPY package.json package-lock.json* ./
 RUN npm ci || npm install
 
 COPY . ./
-# Pass API base URL for production (relative /api/v1 so it routes through same origin Nginx reverse proxy)
+# Pass API base URL & Google Client ID for production
+ARG VITE_GOOGLE_CLIENT_ID=""
+ENV VITE_GOOGLE_CLIENT_ID=$VITE_GOOGLE_CLIENT_ID
 ENV VITE_API_BASE_URL=/api/v1
 RUN npm run build
 

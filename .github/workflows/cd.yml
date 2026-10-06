@@ -36,6 +36,19 @@ jobs:
           script: |
             cd ~/NeverPaidHealth || cd /opt/neverpaidhealth || git clone https://github.com/${{ github.repository }}.git ~/NeverPaidHealth && cd ~/NeverPaidHealth
             git pull origin main
+            
+            # Write production environment variables if secrets exist
+            if [ -n "${{ secrets.GOOGLE_CLIENT_ID }}" ]; then
+              echo "GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}" > .env
+              echo "VITE_GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}" >> .env
+            fi
+            if [ -n "${{ secrets.GOOGLE_CLIENT_SECRET }}" ]; then
+              echo "GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}" >> .env
+            fi
+            if [ -n "${{ secrets.GEMINI_API_KEY }}" ]; then
+              echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" >> .env
+            fi
+            
             docker compose -f deploy/docker-compose.prod.yml build
             docker compose -f deploy/docker-compose.prod.yml up -d --remove-orphans
             docker image prune -f

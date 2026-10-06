@@ -12,7 +12,7 @@ export const LoginPage: React.FC = () => {
             <Dumbbell className="w-8 h-8" />
           </div>
           <h1 className="text-3xl font-extrabold tracking-tight text-white">
-            NeverPaid<span className="text-brand-500">Health</span>
+            duda<span className="text-brand-500">.uz</span>
           </h1>
           <p className="text-sm text-zinc-400 max-w-sm mx-auto">
             The free, open, and mathematically exact workout tracker. Unlimited routines, local resilience, and instant analytics.

@@ -40,7 +40,8 @@ services:
     environment:
       PORT: "8081"
       DATABASE_URL: "postgres://neverpaid:neverpaid_prod_password@postgres:5432/identity_db?sslmode=disable"
-      AUTH_DEV_MODE: "true"
+      AUTH_DEV_MODE: "${AUTH_DEV_MODE:-true}"
+      GOOGLE_CLIENT_ID: "${GOOGLE_CLIENT_ID:-mock-google-client-id}"
     depends_on:
       postgres:
         condition: service_healthy
@@ -170,6 +171,8 @@ services:
     build:
       context: ../frontend
       dockerfile: Dockerfile
+      args:
+        VITE_GOOGLE_CLIENT_ID: "${VITE_GOOGLE_CLIENT_ID:-}"
     container_name: neverpaid-frontend
     restart: always
     ports:
@@ -178,6 +181,7 @@ services:
       - gateway
     networks:
       - neverpaid-net
+      - duda-shared
 
 volumes:
   pgdata:
@@ -185,3 +189,5 @@ volumes:
 networks:
   neverpaid-net:
     driver: bridge
+  duda-shared:
+    external: true
