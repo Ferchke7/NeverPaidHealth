@@ -1,0 +1,63 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "NeverPaidHealth Golden Calculation Test Vectors",
+  "e1rm": [
+    {
+      "weight_kg": 100.0,
+      "reps": 1,
+      "expected_e1rm_kg": 100.0,
+      "description": "1 rep returns exact weight"
+    },
+    {
+      "weight_kg": 100.0,
+      "reps": 5,
+      "expected_e1rm_kg": 116.7,
+      "description": "Epley formula 100 * (1 + 5/30) = 116.666... -> rounded to 116.7"
+    },
+    {
+      "weight_kg": 80.0,
+      "reps": 10,
+      "expected_e1rm_kg": 106.7,
+      "description": "Epley formula 80 * (1 + 10/30) = 106.666... -> rounded to 106.7"
+    },
+    {
+      "weight_kg": 60.0,
+      "reps": 12,
+      "expected_e1rm_kg": 84.0,
+      "description": "Epley formula 60 * (1 + 12/30) = 84.0"
+    },
+    {
+      "weight_kg": 100.0,
+      "reps": 13,
+      "expected_e1rm_kg": null,
+      "description": "Reps > 12 are unreliable, returns null"
+    }
+  ],
+  "volume": [
+    {
+      "description": "Standard 3 sets with 1 warmup and 1 uncompleted set",
+      "sets": [
+        { "weight_kg": 100.0, "reps": 5, "type": "normal", "completed": true },
+        { "weight_kg": 60.0, "reps": 10, "type": "warmup", "completed": true },
+        { "weight_kg": 100.0, "reps": 5, "type": "normal", "completed": false },
+        { "weight_kg": 90.0, "reps": 6, "type": "drop", "completed": true }
+      ],
+      "expected_volume_kg": 1040.0
+    }
+  ],
+  "bmi": [
+    { "weight_kg": 80.0, "height_cm": 180.0, "expected_bmi": 24.7 },
+    { "weight_kg": 95.0, "height_cm": 175.0, "expected_bmi": 31.0 },
+    { "weight_kg": 65.0, "height_cm": 170.0, "expected_bmi": 22.5 }
+  ],
+  "moving_average_7day": [
+    {
+      "weights_kg": [80.0, 80.5, 80.2, 79.8, 80.1, 79.9, 80.3],
+      "expected_avg_kg": 80.1
+    },
+    {
+      "weights_kg": [85.0, 84.5, 84.0],
+      "expected_avg_kg": 84.5
+    }
+  ]
+}

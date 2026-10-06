@@ -1,0 +1,3 @@
+DROP TABLE IF EXISTS outbox;
+DROP TABLE IF EXISTS workouts;
+DROP TABLE IF EXISTS routines;

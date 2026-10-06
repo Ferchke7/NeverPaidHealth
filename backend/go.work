@@ -1,0 +1,13 @@
+go 1.24
+
+use (
+	./pkg
+	./gateway
+	./archtest
+	./services/identity
+	./services/exercise
+	./services/training
+	./services/progress
+	./services/body
+	./services/coach
+)

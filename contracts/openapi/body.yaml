@@ -1,0 +1,261 @@
+openapi: 3.1.0
+info:
+  title: Body Metrics API
+  version: 1.0.0
+  description: Body weight, body fat %, circumferences, and moving average trend analytics for NeverPaidHealth.
+servers:
+  - url: http://localhost:8080/api/v1
+paths:
+  /body/logs:
+    get:
+      summary: List body measurement logs (chronological range)
+      operationId: listBodyLogs
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: from_date
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: to_date
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: List of body logs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BodyLog'
+
+    post:
+      summary: Log or update body measurement for date (upsert)
+      operationId: logBodyMeasurement
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LogBodyMeasurementRequest'
+      responses:
+        '200':
+          description: Body log recorded/updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BodyLog'
+        '400':
+          $ref: '#/components/responses/ProblemDetailsResponse'
+
+  /body/logs/{date}:
+    delete:
+      summary: Delete body measurement for date
+      operationId: deleteBodyLog
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: date
+          in: path
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        '204':
+          description: Deleted successfully
+
+  /body/trend:
+    get:
+      summary: Get 7-day Simple Moving Average trend and deltas
+      operationId: getBodyTrend
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Trend metrics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BodyTrendResponse'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  responses:
+    ProblemDetailsResponse:
+      description: RFC 7807 ProblemDetails error
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+
+  schemas:
+    BodyLog:
+      type: object
+      required:
+        - id
+        - user_id
+        - log_date
+        - weight_kg
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        log_date:
+          type: string
+          format: date
+        weight_kg:
+          type: number
+        body_fat_percentage:
+          type: number
+          nullable: true
+        waist_cm:
+          type: number
+          nullable: true
+        chest_cm:
+          type: number
+          nullable: true
+        arms_cm:
+          type: number
+          nullable: true
+        thighs_cm:
+          type: number
+          nullable: true
+        calves_cm:
+          type: number
+          nullable: true
+        neck_cm:
+          type: number
+          nullable: true
+        calculated_bmi:
+          type: number
+          nullable: true
+
+    LogBodyMeasurementRequest:
+      type: object
+      required:
+        - log_date
+        - weight_kg
+      properties:
+        log_date:
+          type: string
+          format: date
+        weight_kg:
+          type: number
+          minimum: 20
+          maximum: 400
+        height_cm:
+          type: number
+          minimum: 50
+          maximum: 250
+          nullable: true
+        body_fat_percentage:
+          type: number
+          minimum: 2
+          maximum: 70
+          nullable: true
+        waist_cm:
+          type: number
+          minimum: 10
+          maximum: 250
+          nullable: true
+        chest_cm:
+          type: number
+          minimum: 10
+          maximum: 250
+          nullable: true
+        arms_cm:
+          type: number
+          minimum: 10
+          maximum: 250
+          nullable: true
+        thighs_cm:
+          type: number
+          minimum: 10
+          maximum: 250
+          nullable: true
+        calves_cm:
+          type: number
+          minimum: 10
+          maximum: 250
+          nullable: true
+        neck_cm:
+          type: number
+          minimum: 10
+          maximum: 250
+          nullable: true
+
+    BodyTrendResponse:
+      type: object
+      required:
+        - current_weight_kg
+        - current_7day_sma_kg
+        - delta_30day_kg
+      properties:
+        current_weight_kg:
+          type: number
+        current_7day_sma_kg:
+          type: number
+        delta_7day_kg:
+          type: number
+          nullable: true
+        delta_30day_kg:
+          type: number
+          nullable: true
+        delta_90day_kg:
+          type: number
+          nullable: true
+        trend_points:
+          type: array
+          items:
+            $ref: '#/components/schemas/BodyTrendPoint'
+
+    BodyTrendPoint:
+      type: object
+      required:
+        - date
+        - weight_kg
+        - sma_7day_kg
+      properties:
+        date:
+          type: string
+          format: date
+        weight_kg:
+          type: number
+        sma_7day_kg:
+          type: number
+
+    ProblemDetails:
+      type: object
+      required:
+        - type
+        - title
+        - status
+        - detail
+      properties:
+        type:
+          type: string
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        code:
+          type: string

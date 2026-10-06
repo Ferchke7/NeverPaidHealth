@@ -1,0 +1,187 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: neverpaid-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: neverpaid
+      POSTGRES_PASSWORD: neverpaid_prod_password
+      POSTGRES_DB: postgres
+    volumes:
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init.sql
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U neverpaid -d postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - neverpaid-net
+
+  nats:
+    image: nats:latest
+    container_name: neverpaid-nats
+    restart: always
+    command: ["-js", "-m", "8222"]
+    networks:
+      - neverpaid-net
+
+  identity-service:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+      args:
+        SERVICE_NAME: identity
+        CMD_PATH: ./services/identity/cmd/server
+    container_name: neverpaid-identity
+    restart: always
+    environment:
+      PORT: "8081"
+      DATABASE_URL: "postgres://neverpaid:neverpaid_prod_password@postgres:5432/identity_db?sslmode=disable"
+      AUTH_DEV_MODE: "true"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - neverpaid-net
+
+  exercise-service:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+      args:
+        SERVICE_NAME: exercise
+        CMD_PATH: ./services/exercise/cmd/server
+    container_name: neverpaid-exercise
+    restart: always
+    environment:
+      PORT: "8082"
+      DATABASE_URL: "postgres://neverpaid:neverpaid_prod_password@postgres:5432/exercise_db?sslmode=disable"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - neverpaid-net
+
+  training-service:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+      args:
+        SERVICE_NAME: training
+        CMD_PATH: ./services/training/cmd/server
+    container_name: neverpaid-training
+    restart: always
+    environment:
+      PORT: "8083"
+      DATABASE_URL: "postgres://neverpaid:neverpaid_prod_password@postgres:5432/training_db?sslmode=disable"
+      NATS_URL: "nats://nats:4222"
+    depends_on:
+      - postgres
+      - nats
+    networks:
+      - neverpaid-net
+
+  progress-service:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+      args:
+        SERVICE_NAME: progress
+        CMD_PATH: ./services/progress/cmd/server
+    container_name: neverpaid-progress
+    restart: always
+    environment:
+      PORT: "8084"
+      DATABASE_URL: "postgres://neverpaid:neverpaid_prod_password@postgres:5432/progress_db?sslmode=disable"
+      NATS_URL: "nats://nats:4222"
+    depends_on:
+      - postgres
+      - nats
+    networks:
+      - neverpaid-net
+
+  body-service:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+      args:
+        SERVICE_NAME: body
+        CMD_PATH: ./services/body/cmd/server
+    container_name: neverpaid-body
+    restart: always
+    environment:
+      PORT: "8085"
+      DATABASE_URL: "postgres://neverpaid:neverpaid_prod_password@postgres:5432/body_db?sslmode=disable"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - neverpaid-net
+
+  coach-service:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+      args:
+        SERVICE_NAME: coach
+        CMD_PATH: ./services/coach/cmd/server
+    container_name: neverpaid-coach
+    restart: always
+    environment:
+      PORT: "8086"
+      DATABASE_URL: "postgres://neverpaid:neverpaid_prod_password@postgres:5432/training_db?sslmode=disable"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - neverpaid-net
+
+  gateway:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+      args:
+        SERVICE_NAME: gateway
+        CMD_PATH: ./gateway/cmd/server
+    container_name: neverpaid-gateway
+    restart: always
+    environment:
+      PORT: "8080"
+      IDENTITY_SERVICE_URL: "http://identity-service:8081"
+      EXERCISE_SERVICE_URL: "http://exercise-service:8082"
+      TRAINING_SERVICE_URL: "http://training-service:8083"
+      PROGRESS_SERVICE_URL: "http://progress-service:8084"
+      BODY_SERVICE_URL: "http://body-service:8085"
+      COACH_SERVICE_URL: "http://coach-service:8086"
+    depends_on:
+      - identity-service
+      - exercise-service
+      - training-service
+      - progress-service
+      - body-service
+      - coach-service
+    networks:
+      - neverpaid-net
+
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+    container_name: neverpaid-frontend
+    restart: always
+    ports:
+      - "3002:80"
+    depends_on:
+      - gateway
+    networks:
+      - neverpaid-net
+
+volumes:
+  pgdata:
+
+networks:
+  neverpaid-net:
+    driver: bridge

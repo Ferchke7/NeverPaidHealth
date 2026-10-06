@@ -1,0 +1,50 @@
+version: '3'
+
+tasks:
+  dev:db:
+    desc: Start PostgreSQL and NATS services via Docker Compose
+    cmds:
+      - docker compose -f deploy/docker-compose.yml up -d
+
+  dev:db:down:
+    desc: Stop local infrastructure
+    cmds:
+      - docker compose -f deploy/docker-compose.yml down
+
+  test:go:
+    desc: Run all Go unit tests across all backend services
+    dir: backend
+    cmds:
+      - go test -v ./pkg/... ./gateway/... ./services/identity/... ./services/exercise/... ./services/training/... ./services/progress/... ./services/body/... ./services/coach/... ./archtest/...
+
+  test:fe:
+    desc: Run frontend unit tests with Vitest
+    dir: frontend
+    cmds:
+      - npm test
+
+  test:
+    desc: Run full unit test suite (Go + Frontend)
+    cmds:
+      - task: test:go
+      - task: test:fe
+
+  build:fe:
+    desc: Build frontend production bundle
+    dir: frontend
+    cmds:
+      - npm run build
+
+  typecheck:
+    desc: Run TypeScript typecheck
+    dir: frontend
+    cmds:
+      - npm run typecheck
+
+  verify:
+    desc: Master verification gate (tests, types, build)
+    cmds:
+      - task: test:go
+      - task: test:fe
+      - task: typecheck
+      - task: build:fe

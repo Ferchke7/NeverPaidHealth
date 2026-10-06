@@ -1,0 +1,222 @@
+openapi: 3.1.0
+info:
+  title: Identity & Access API
+  version: 1.0.0
+  description: Authentication, user profiles, and unit preference management for NeverPaidHealth.
+servers:
+  - url: http://localhost:8080/api/v1
+paths:
+  /auth/google:
+    post:
+      summary: Authenticate with Google ID Token
+      operationId: authenticateGoogle
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GoogleAuthRequest'
+      responses:
+        '200':
+          description: Successfully authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          $ref: '#/components/responses/ProblemDetailsResponse'
+        '401':
+          $ref: '#/components/responses/ProblemDetailsResponse'
+
+  /auth/dev-login:
+    post:
+      summary: Development login bypass (available only when AUTH_DEV_MODE=true)
+      operationId: devLogin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DevLoginRequest'
+      responses:
+        '200':
+          description: Successfully authenticated via dev mode
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '403':
+          $ref: '#/components/responses/ProblemDetailsResponse'
+
+  /auth/refresh:
+    post:
+      summary: Rotate refresh token and issue new access token
+      operationId: refreshToken
+      responses:
+        '200':
+          description: Successfully refreshed access token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          $ref: '#/components/responses/ProblemDetailsResponse'
+
+  /auth/logout:
+    post:
+      summary: Invalidate refresh token and logout
+      operationId: logout
+      responses:
+        '204':
+          description: Successfully logged out
+        '401':
+          $ref: '#/components/responses/ProblemDetailsResponse'
+
+  /me:
+    get:
+      summary: Retrieve current authenticated user profile
+      operationId: getCurrentUser
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Current user profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+        '401':
+          $ref: '#/components/responses/ProblemDetailsResponse'
+
+  /profile/unit-preference:
+    put:
+      summary: Update user unit preference (kg or lb)
+      operationId: updateUnitPreference
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUnitPreferenceRequest'
+      responses:
+        '200':
+          description: Updated user profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+        '400':
+          $ref: '#/components/responses/ProblemDetailsResponse'
+        '401':
+          $ref: '#/components/responses/ProblemDetailsResponse'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  responses:
+    ProblemDetailsResponse:
+      description: Error response in RFC 7807 ProblemDetails format
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+
+  schemas:
+    GoogleAuthRequest:
+      type: object
+      required:
+        - id_token
+      properties:
+        id_token:
+          type: string
+          description: Google JWT ID token issued by Google Identity Services
+
+    DevLoginRequest:
+      type: object
+      required:
+        - email
+      properties:
+        email:
+          type: string
+          format: email
+          example: "dev@neverpaidhealth.local"
+        display_name:
+          type: string
+          example: "Dev Athlete"
+
+    AuthResponse:
+      type: object
+      required:
+        - access_token
+        - expires_in
+        - user
+      properties:
+        access_token:
+          type: string
+          description: Ed25519-signed JWT access token (valid 15 minutes)
+        expires_in:
+          type: integer
+          example: 900
+        user:
+          $ref: '#/components/schemas/UserProfile'
+
+    UserProfile:
+      type: object
+      required:
+        - id
+        - email
+        - display_name
+        - unit_preference
+        - created_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        display_name:
+          type: string
+        avatar_url:
+          type: string
+          nullable: true
+        unit_preference:
+          type: string
+          enum: [kg, lb]
+        created_at:
+          type: string
+          format: date-time
+
+    UpdateUnitPreferenceRequest:
+      type: object
+      required:
+        - unit_preference
+      properties:
+        unit_preference:
+          type: string
+          enum: [kg, lb]
+
+    ProblemDetails:
+      type: object
+      required:
+        - type
+        - title
+        - status
+        - detail
+      properties:
+        type:
+          type: string
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        code:
+          type: string

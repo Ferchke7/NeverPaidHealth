@@ -1,0 +1,138 @@
+name: CI - Test & Build
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  # -------------------------------------------------------------
+  # Frontend: Typecheck, Vitest unit tests, and Vite production build
+  # -------------------------------------------------------------
+  frontend:
+    name: Frontend CI (React / TypeScript / Vite)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./frontend
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Run Unit Tests
+        run: npm test -- --run
+
+      - name: Build Production Assets
+        run: npm run build
+        env:
+          VITE_API_BASE_URL: /api/v1
+
+  # -------------------------------------------------------------
+  # Backend: Go workspace tests, Architecture tests & Service builds
+  # -------------------------------------------------------------
+  backend:
+    name: Backend CI (Go 1.24 / Microservices / Clean Architecture)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./backend
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Go 1.24
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+          cache: true
+          cache-dependency-path: |
+            backend/go.work.sum
+            backend/**/go.sum
+
+      - name: Sync Go Workspaces
+        run: go work sync
+
+      - name: Run Unit & Architecture Tests
+        run: |
+          go test -v -race \
+            ./pkg/... \
+            ./gateway/... \
+            ./services/identity/... \
+            ./services/exercise/... \
+            ./services/training/... \
+            ./services/progress/... \
+            ./services/body/... \
+            ./services/coach/... \
+            ./archtest/...
+
+      - name: Build Gateway Binary
+        run: go build -o bin/gateway ./gateway/cmd/server
+
+      - name: Build Identity Service Binary
+        run: go build -o bin/identity ./services/identity/cmd/server
+
+      - name: Build Exercise Service Binary
+        run: go build -o bin/exercise ./services/exercise/cmd/server
+
+      - name: Build Training Service Binary
+        run: go build -o bin/training ./services/training/cmd/server
+
+      - name: Build Progress Service Binary
+        run: go build -o bin/progress ./services/progress/cmd/server
+
+      - name: Build Body Service Binary
+        run: go build -o bin/body ./services/body/cmd/server
+
+      - name: Build Coach Service Binary
+        run: go build -o bin/coach ./services/coach/cmd/server
+
+  # -------------------------------------------------------------
+  # Docker: Verify multi-stage container builds
+  # -------------------------------------------------------------
+  docker-validation:
+    name: Docker Build Validation
+    runs-on: ubuntu-latest
+    needs: [frontend, backend]
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: actions/setup-buildx-action@v3
+
+      - name: Build Frontend Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          file: ./frontend/Dockerfile
+          push: false
+          tags: neverpaid-frontend:ci-test
+
+      - name: Build Backend Gateway Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          build-args: |
+            SERVICE_NAME=gateway
+            CMD_PATH=./gateway/cmd/server
+          push: false
+          tags: neverpaid-gateway:ci-test

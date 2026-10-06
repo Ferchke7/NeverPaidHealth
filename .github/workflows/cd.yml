@@ -1,0 +1,41 @@
+name: CD - Deploy to Production
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy to Production Server
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Check Secrets Configuration
+        id: check_secrets
+        run: |
+          if [ -z "${{ secrets.SERVER_HOST }}" ] || [ -z "${{ secrets.SSH_PRIVATE_KEY }}" ]; then
+            echo "configured=false" >> $GITHUB_OUTPUT
+            echo "⚠️ Production server secrets (SERVER_HOST, SSH_PRIVATE_KEY) are not configured."
+            echo "Skipping direct SSH deployment. Configure repository secrets in GitHub Settings > Secrets to enable automated CD."
+          else
+            echo "configured=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Deploy via SSH & Docker Compose
+        if: steps.check_secrets.outputs.configured == 'true'
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER || 'ferdavs' }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SERVER_PORT || 22 }}
+          script: |
+            cd ~/NeverPaidHealth || cd /opt/neverpaidhealth || git clone https://github.com/${{ github.repository }}.git ~/NeverPaidHealth && cd ~/NeverPaidHealth
+            git pull origin main
+            docker compose -f deploy/docker-compose.prod.yml build
+            docker compose -f deploy/docker-compose.prod.yml up -d --remove-orphans
+            docker image prune -f

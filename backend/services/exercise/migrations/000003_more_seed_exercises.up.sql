@@ -1,0 +1,20 @@
+INSERT INTO exercises (id, name, primary_muscle_group, secondary_muscle_groups, equipment, measurement_type, is_custom, created_by_user_id) VALUES
+('10000000-0000-0000-0000-000000000013', 'Upper Chest Crossover', 'chest', '{"shoulders"}', 'cable', 'weight_reps', false, null),
+('20000000-0000-0000-0000-000000000011', 'Weighted Pull Up', 'back', '{"biceps"}', 'bodyweight', 'weight_reps', false, null),
+('20000000-0000-0000-0000-000000000012', 'Cable Seated Row', 'back', '{"biceps"}', 'cable', 'weight_reps', false, null),
+('20000000-0000-0000-0000-000000000013', 'Cable Lat Pulldown', 'back', '{"biceps"}', 'cable', 'weight_reps', false, null),
+('20000000-0000-0000-0000-000000000014', 'Reverse Lat Pulldown', 'back', '{"biceps"}', 'cable', 'weight_reps', false, null),
+('40000000-0000-0000-0000-000000000006', 'Hip Thrust', 'hamstrings', '{}', 'barbell', 'weight_reps', false, null),
+('50000000-0000-0000-0000-000000000008', 'Military Press', 'shoulders', '{"triceps"}', 'barbell', 'weight_reps', false, null),
+('50000000-0000-0000-0000-000000000009', 'Reverse Fly', 'shoulders', '{"back"}', 'dumbbell', 'weight_reps', false, null),
+('50000000-0000-0000-0000-000000000010', 'Lateral Raise', 'shoulders', '{}', 'dumbbell', 'weight_reps', false, null),
+('60000000-0000-0000-0000-000000000007', 'EZ Bar Curl', 'biceps', '{}', 'barbell', 'weight_reps', false, null),
+('60000000-0000-0000-0000-000000000008', 'Reverse Curl', 'biceps', '{}', 'barbell', 'weight_reps', false, null),
+('60000000-0000-0000-0000-000000000009', 'Incline Curl', 'biceps', '{}', 'dumbbell', 'weight_reps', false, null),
+('70000000-0000-0000-0000-000000000006', 'Dip', 'triceps', '{"chest"}', 'bodyweight', 'bodyweight_reps', false, null),
+('70000000-0000-0000-0000-000000000007', 'EZ Bar Tricep Extension', 'triceps', '{}', 'barbell', 'weight_reps', false, null),
+('70000000-0000-0000-0000-000000000008', 'Cable Tricep Kickback', 'triceps', '{}', 'cable', 'weight_reps', false, null),
+('80000000-0000-0000-0000-000000000005', 'Hanging Knee Raise', 'core', '{}', 'bodyweight', 'bodyweight_reps', false, null),
+('80000000-0000-0000-0000-000000000006', 'Decline Crunch', 'core', '{}', 'bodyweight', 'bodyweight_reps', false, null),
+('90000000-0000-0000-0000-000000000003', 'Calf Raise', 'calves', '{}', 'machine', 'weight_reps', false, null)
+ON CONFLICT (id) DO NOTHING;

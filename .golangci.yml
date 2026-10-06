@@ -1,0 +1,34 @@
+run:
+  timeout: 3m
+  modules-download-mode: readonly
+
+linters:
+  enable:
+    - errcheck
+    - gosimple
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+    - depguard
+    - gosec
+    - revive
+
+linters-settings:
+  depguard:
+    rules:
+      domain_pure:
+        list-mode: lax
+        files:
+          - "**/internal/domain/**"
+        deny:
+          - pkg: "net/http"
+            desc: "Domain layer must not depend on HTTP transport"
+          - pkg: "database/sql"
+            desc: "Domain layer must not depend on database drivers"
+          - pkg: "github.com/jackc/pgx"
+            desc: "Domain layer must not depend on pgx"
+          - pkg: "github.com/go-chi/chi"
+            desc: "Domain layer must not depend on chi router"
+          - pkg: "github.com/nats-io/nats.go"
+            desc: "Domain layer must not depend on NATS"

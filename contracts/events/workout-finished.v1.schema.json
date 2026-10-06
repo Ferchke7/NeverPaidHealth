@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "WorkoutFinishedV1",
+  "type": "object",
+  "required": [
+    "event_id",
+    "occurred_at",
+    "user_id",
+    "workout_id",
+    "duration_seconds",
+    "total_volume_kg",
+    "completed_sets_count",
+    "exercises"
+  ],
+  "properties": {
+    "event_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "occurred_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "user_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "workout_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "duration_seconds": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "total_volume_kg": {
+      "type": "number",
+      "minimum": 0
+    },
+    "completed_sets_count": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "exercises": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["exercise_id", "exercise_name", "sets"],
+        "properties": {
+          "exercise_id": { "type": "string", "format": "uuid" },
+          "exercise_name": { "type": "string" },
+          "sets": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["set_type", "weight_kg", "reps", "completed"],
+              "properties": {
+                "set_type": { "type": "string", "enum": ["normal", "warmup", "drop", "failure"] },
+                "weight_kg": { "type": "number" },
+                "reps": { "type": "integer" },
+                "rpe": { "type": ["number", "null"] },
+                "completed": { "type": "boolean" },
+                "calculated_e1rm_kg": { "type": ["number", "null"] }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

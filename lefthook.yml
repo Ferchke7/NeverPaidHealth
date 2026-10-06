@@ -1,0 +1,10 @@
+pre-commit:
+  parallel: true
+  commands:
+    go-vet:
+      run: go vet ./...
+    golangci-lint:
+      run: golangci-lint run ./...
+    frontend-lint:
+      root: frontend/
+      run: npm run lint

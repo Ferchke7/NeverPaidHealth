@@ -1,0 +1,211 @@
+openapi: 3.1.0
+info:
+  title: Exercise Catalog API
+  version: 1.0.0
+  description: Exercise catalog, muscle groups, equipment, and custom exercise management for NeverPaidHealth.
+servers:
+  - url: http://localhost:8080/api/v1
+paths:
+  /exercises:
+    get:
+      summary: List all exercises with optional filtering
+      operationId: listExercises
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: muscle_group
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: equipment
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: search
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of exercises
+          headers:
+            ETag:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Exercise'
+        '304':
+          description: Not Modified (cached client catalog matches server)
+        '401':
+          $ref: '#/components/responses/ProblemDetailsResponse'
+
+    post:
+      summary: Create a custom user exercise
+      operationId: createCustomExercise
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateExerciseRequest'
+      responses:
+        '201':
+          description: Created custom exercise
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Exercise'
+        '400':
+          $ref: '#/components/responses/ProblemDetailsResponse'
+        '401':
+          $ref: '#/components/responses/ProblemDetailsResponse'
+
+  /exercises/{id}:
+    get:
+      summary: Get single exercise by ID
+      operationId: getExerciseById
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Exercise details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Exercise'
+        '404':
+          $ref: '#/components/responses/ProblemDetailsResponse'
+
+    delete:
+      summary: Delete a custom user exercise (seeded exercises cannot be deleted)
+      operationId: deleteCustomExercise
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Exercise deleted successfully
+        '400':
+          $ref: '#/components/responses/ProblemDetailsResponse'
+        '404':
+          $ref: '#/components/responses/ProblemDetailsResponse'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  responses:
+    ProblemDetailsResponse:
+      description: Error response in RFC 7807 format
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+
+  schemas:
+    Exercise:
+      type: object
+      required:
+        - id
+        - name
+        - primary_muscle_group
+        - secondary_muscle_groups
+        - equipment
+        - measurement_type
+        - is_custom
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          example: "Barbell Bench Press"
+        primary_muscle_group:
+          type: string
+          enum: [chest, back, quads, hamstrings, shoulders, biceps, triceps, core, calves, full_body]
+        secondary_muscle_groups:
+          type: array
+          items:
+            type: string
+        equipment:
+          type: string
+          enum: [barbell, dumbbell, machine, cable, bodyweight, kettlebell, smith_machine]
+        measurement_type:
+          type: string
+          enum: [weight_reps, bodyweight_reps, duration, distance_duration]
+        is_custom:
+          type: boolean
+        created_by_user_id:
+          type: string
+          format: uuid
+          nullable: true
+
+    CreateExerciseRequest:
+      type: object
+      required:
+        - name
+        - primary_muscle_group
+        - equipment
+        - measurement_type
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 80
+        primary_muscle_group:
+          type: string
+          enum: [chest, back, quads, hamstrings, shoulders, biceps, triceps, core, calves, full_body]
+        secondary_muscle_groups:
+          type: array
+          items:
+            type: string
+        equipment:
+          type: string
+          enum: [barbell, dumbbell, machine, cable, bodyweight, kettlebell, smith_machine]
+        measurement_type:
+          type: string
+          enum: [weight_reps, bodyweight_reps, duration, distance_duration]
+
+    ProblemDetails:
+      type: object
+      required:
+        - type
+        - title
+        - status
+        - detail
+      properties:
+        type:
+          type: string
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        code:
+          type: string

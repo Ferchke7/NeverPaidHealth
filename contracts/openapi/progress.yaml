@@ -1,0 +1,158 @@
+openapi: 3.1.0
+info:
+  title: Progress & Records API
+  version: 1.0.0
+  description: Personal Records and progression history analytics for NeverPaidHealth.
+servers:
+  - url: http://localhost:8080/api/v1
+paths:
+  /progress/records:
+    get:
+      summary: Get all Personal Records for current user
+      operationId: getPersonalRecords
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of personal records grouped by exercise
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ExerciseRecordGroup'
+
+  /progress/history/{exerciseId}:
+    get:
+      summary: Get historical 1RM and volume chart series for an exercise
+      operationId: getExerciseHistorySeries
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: exerciseId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Historical time series for charts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExerciseHistoryResponse'
+        '404':
+          $ref: '#/components/responses/ProblemDetailsResponse'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  responses:
+    ProblemDetailsResponse:
+      description: RFC 7807 ProblemDetails error
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+
+  schemas:
+    ExerciseRecordGroup:
+      type: object
+      required:
+        - exercise_id
+        - exercise_name
+        - records
+      properties:
+        exercise_id:
+          type: string
+          format: uuid
+        exercise_name:
+          type: string
+        records:
+          type: array
+          items:
+            $ref: '#/components/schemas/PersonalRecord'
+
+    PersonalRecord:
+      type: object
+      required:
+        - pr_type
+        - value
+        - achieved_at
+        - workout_id
+      properties:
+        pr_type:
+          type: string
+          enum: [heaviest_weight, best_e1rm, max_volume_set, max_reps]
+        value:
+          type: number
+        achieved_at:
+          type: string
+          format: date-time
+        workout_id:
+          type: string
+          format: uuid
+
+    ExerciseHistoryResponse:
+      type: object
+      required:
+        - exercise_id
+        - exercise_name
+        - data_points
+      properties:
+        exercise_id:
+          type: string
+          format: uuid
+        exercise_name:
+          type: string
+        data_points:
+          type: array
+          items:
+            $ref: '#/components/schemas/HistoryDataPoint'
+
+    HistoryDataPoint:
+      type: object
+      required:
+        - workout_id
+        - date
+        - best_weight_kg
+        - best_e1rm_kg
+        - total_exercise_volume_kg
+      properties:
+        workout_id:
+          type: string
+          format: uuid
+        date:
+          type: string
+          format: date
+        best_weight_kg:
+          type: number
+        best_e1rm_kg:
+          type: number
+          nullable: true
+        total_exercise_volume_kg:
+          type: number
+
+    ProblemDetails:
+      type: object
+      required:
+        - type
+        - title
+        - status
+        - detail
+      properties:
+        type:
+          type: string
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        code:
+          type: string

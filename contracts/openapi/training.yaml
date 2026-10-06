@@ -1,0 +1,615 @@
+openapi: 3.1.0
+info:
+  title: Training API
+  version: 1.0.0
+  description: Routine templates, workout sessions, and set logging for NeverPaidHealth.
+servers:
+  - url: http://localhost:8080/api/v1
+paths:
+  /routines:
+    get:
+      summary: List user routines
+      operationId: listRoutines
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of user routines
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Routine'
+    post:
+      summary: Create a new routine template
+      operationId: createRoutine
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRoutineRequest'
+      responses:
+        '201':
+          description: Routine created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Routine'
+        '400':
+          $ref: '#/components/responses/ProblemDetailsResponse'
+
+  /routines/{id}:
+    get:
+      summary: Get routine by ID
+      operationId: getRoutineById
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Routine details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Routine'
+        '404':
+          $ref: '#/components/responses/ProblemDetailsResponse'
+    delete:
+      summary: Delete routine
+      operationId: deleteRoutine
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Routine deleted
+
+  /workouts:
+    get:
+      summary: List past workouts (paginated)
+      operationId: listWorkouts
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Paginated workout history
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkoutHistoryPage'
+
+    post:
+      summary: Start a new workout session (empty or from routine)
+      operationId: startWorkout
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StartWorkoutRequest'
+      responses:
+        '201':
+          description: Workout started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Workout'
+
+  /workouts/active:
+    get:
+      summary: Get current in-progress workout (if any)
+      operationId: getActiveWorkout
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Active workout session or null
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Workout'
+        '204':
+          description: No active workout
+
+  /workouts/{id}:
+    get:
+      summary: Get workout details by ID
+      operationId: getWorkoutById
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Full workout session details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Workout'
+        '404':
+          $ref: '#/components/responses/ProblemDetailsResponse'
+
+  /workouts/{id}/finish:
+    post:
+      summary: Finish workout session and compute summary
+      operationId: finishWorkout
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Workout finished
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Workout'
+        '400':
+          $ref: '#/components/responses/ProblemDetailsResponse'
+
+  /workouts/{id}/cancel:
+    post:
+      summary: Cancel and discard active workout session
+      operationId: cancelWorkout
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Workout discarded
+
+  /workouts/{id}/exercises:
+    post:
+      summary: Add exercise to in-progress workout
+      operationId: addExerciseToWorkout
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddExerciseToWorkoutRequest'
+      responses:
+        '201':
+          description: Exercise added
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkoutExercise'
+
+  /workouts/{id}/exercises/{exerciseId}/sets:
+    post:
+      summary: Log a new set
+      operationId: logSet
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: exerciseId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LogSetRequest'
+      responses:
+        '201':
+          description: Set logged
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkoutSet'
+
+  /workouts/{id}/sets/{setId}:
+    put:
+      summary: Update set details or mark complete
+      operationId: updateSet
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: setId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateSetRequest'
+      responses:
+        '200':
+          description: Set updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkoutSet'
+
+    delete:
+      summary: Remove set
+      operationId: deleteSet
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: setId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Set deleted
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  responses:
+    ProblemDetailsResponse:
+      description: RFC 7807 ProblemDetails error
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+
+  schemas:
+    Routine:
+      type: object
+      required:
+        - id
+        - name
+        - exercises
+        - created_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        notes:
+          type: string
+          nullable: true
+        exercises:
+          type: array
+          items:
+            $ref: '#/components/schemas/RoutineExercise'
+        created_at:
+          type: string
+          format: date-time
+
+    RoutineExercise:
+      type: object
+      required:
+        - exercise_id
+        - exercise_name
+        - order_index
+        - target_sets
+      properties:
+        exercise_id:
+          type: string
+          format: uuid
+        exercise_name:
+          type: string
+        order_index:
+          type: integer
+        target_sets:
+          type: integer
+        target_reps_min:
+          type: integer
+          nullable: true
+        target_reps_max:
+          type: integer
+          nullable: true
+
+    CreateRoutineRequest:
+      type: object
+      required:
+        - name
+        - exercises
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        notes:
+          type: string
+        exercises:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/RoutineExerciseInput'
+
+    RoutineExerciseInput:
+      type: object
+      required:
+        - exercise_id
+        - target_sets
+      properties:
+        exercise_id:
+          type: string
+          format: uuid
+        target_sets:
+          type: integer
+          minimum: 1
+        target_reps_min:
+          type: integer
+          minimum: 1
+        target_reps_max:
+          type: integer
+          minimum: 1
+
+    StartWorkoutRequest:
+      type: object
+      properties:
+        routine_id:
+          type: string
+          format: uuid
+          nullable: true
+        name:
+          type: string
+          nullable: true
+
+    Workout:
+      type: object
+      required:
+        - id
+        - user_id
+        - status
+        - started_at
+        - exercises
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        status:
+          type: string
+          enum: [in_progress, finished, cancelled]
+        started_at:
+          type: string
+          format: date-time
+        finished_at:
+          type: string
+          format: date-time
+          nullable: true
+        duration_seconds:
+          type: integer
+          nullable: true
+        total_volume_kg:
+          type: number
+          nullable: true
+        exercises:
+          type: array
+          items:
+            $ref: '#/components/schemas/WorkoutExercise'
+
+    WorkoutExercise:
+      type: object
+      required:
+        - exercise_id
+        - exercise_name
+        - measurement_type
+        - sets
+      properties:
+        exercise_id:
+          type: string
+          format: uuid
+        exercise_name:
+          type: string
+        measurement_type:
+          type: string
+          enum: [weight_reps, bodyweight_reps, duration, distance_duration]
+        sets:
+          type: array
+          items:
+            $ref: '#/components/schemas/WorkoutSet'
+
+    WorkoutSet:
+      type: object
+      required:
+        - id
+        - set_number
+        - set_type
+        - weight_kg
+        - reps
+        - completed
+      properties:
+        id:
+          type: string
+          format: uuid
+        set_number:
+          type: integer
+        set_type:
+          type: string
+          enum: [normal, warmup, drop, failure]
+        weight_kg:
+          type: number
+        reps:
+          type: integer
+        rpe:
+          type: number
+          nullable: true
+        duration_seconds:
+          type: integer
+          nullable: true
+        completed:
+          type: boolean
+        calculated_e1rm_kg:
+          type: number
+          nullable: true
+
+    AddExerciseToWorkoutRequest:
+      type: object
+      required:
+        - exercise_id
+      properties:
+        exercise_id:
+          type: string
+          format: uuid
+
+    LogSetRequest:
+      type: object
+      required:
+        - set_type
+        - weight_kg
+        - reps
+      properties:
+        set_type:
+          type: string
+          enum: [normal, warmup, drop, failure]
+        weight_kg:
+          type: number
+          minimum: 0
+        reps:
+          type: integer
+          minimum: 1
+        rpe:
+          type: number
+          minimum: 6
+          maximum: 10
+          nullable: true
+        duration_seconds:
+          type: integer
+          nullable: true
+
+    UpdateSetRequest:
+      type: object
+      properties:
+        set_type:
+          type: string
+          enum: [normal, warmup, drop, failure]
+        weight_kg:
+          type: number
+          minimum: 0
+        reps:
+          type: integer
+          minimum: 1
+        rpe:
+          type: number
+          minimum: 6
+          maximum: 10
+          nullable: true
+        duration_seconds:
+          type: integer
+          nullable: true
+        completed:
+          type: boolean
+
+    WorkoutHistoryPage:
+      type: object
+      required:
+        - items
+        - next_cursor
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Workout'
+        next_cursor:
+          type: string
+          nullable: true
+
+    ProblemDetails:
+      type: object
+      required:
+        - type
+        - title
+        - status
+        - detail
+      properties:
+        type:
+          type: string
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        code:
+          type: string
