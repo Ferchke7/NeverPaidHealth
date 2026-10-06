@@ -12,7 +12,6 @@ import {
   Clock,
   Edit3,
   Star,
-  Check,
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../../shared/api/client.ts';
@@ -64,7 +63,6 @@ export const WorkoutsPage: React.FC = () => {
   const [activeProgramId, setActiveProgramId] = useState<string | null>(() => {
     return localStorage.getItem('np_active_program_id') || null;
   });
-  const [clonedSuccessId, setClonedSuccessId] = useState<string | null>(null);
 
   const startWorkout = useActiveWorkoutStore((s) => s.startWorkout);
   const activeWorkout = useActiveWorkoutStore((s) => s.workout);
@@ -106,13 +104,9 @@ export const WorkoutsPage: React.FC = () => {
         }),
       });
     },
-    onSuccess: (_data: any, routine: Routine) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['routines'] });
-      setClonedSuccessId(routine.id);
-      setTimeout(() => {
-        setClonedSuccessId(null);
-        setActiveTab('my_routines');
-      }, 800);
+      setActiveTab('my_routines');
     },
   });
 
@@ -581,45 +575,37 @@ export const WorkoutsPage: React.FC = () => {
                   className="mt-4 pt-3 border-t border-dark-700/60 flex items-center justify-between gap-2"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  {isSystem ? (
+                  <div className="flex items-center gap-1.5">
                     <button
-                      onClick={() => cloneRoutineMutation.mutate(routine)}
-                      disabled={cloneRoutineMutation.isPending}
+                      onClick={() => {
+                        setEditingRoutine(routine);
+                        setIsCreateRoutineOpen(true);
+                      }}
                       className="text-xs font-semibold px-2.5 py-1.5 rounded-xl bg-brand-500/10 hover:bg-brand-500/20 text-brand-400 border border-brand-500/25 transition-all flex items-center gap-1.5 shadow-sm"
-                      title="Add a customizable copy to My Routines"
+                      title={isSystem ? "Customize exercises, sets and reps for this routine" : "Edit routine"}
                     >
-                      {clonedSuccessId === routine.id ? (
-                        <>
-                          <Check className="w-3.5 h-3.5 text-emerald-400" />
-                          <span className="text-emerald-400">Added to My Routines!</span>
-                        </>
-                      ) : (
-                        <>
-                          <Plus className="w-3.5 h-3.5" />
-                          <span>Add to My Routines</span>
-                        </>
-                      )}
+                      <Edit3 className="w-3.5 h-3.5 text-brand-400" />
+                      <span>{isSystem ? 'Customize' : 'Edit'}</span>
                     </button>
-                  ) : (
+
                     <button
                       onClick={() => cloneRoutineMutation.mutate(routine)}
                       disabled={cloneRoutineMutation.isPending}
-                      className="text-xs text-zinc-400 hover:text-white px-2 py-1.5 rounded-lg hover:bg-dark-700 transition-colors flex items-center gap-1.5 font-medium"
-                      title="Clone Routine"
+                      className="text-xs text-zinc-400 hover:text-white p-1.5 rounded-lg hover:bg-dark-700 transition-colors"
+                      title="Clone as duplicate copy"
                     >
                       <Copy className="w-3.5 h-3.5 text-zinc-500" />
-                      <span>Clone</span>
                     </button>
-                  )}
+                  </div>
 
                   <Button
                     variant="primary"
                     size="sm"
-                    className="text-xs font-bold flex items-center justify-center gap-1.5 px-4 shadow-sm"
+                    className="text-xs font-bold flex items-center justify-center gap-1.5 px-3.5 shadow-sm"
                     onClick={() => handleStartRoutine(routine)}
                   >
                     <Play className="w-3.5 h-3.5 fill-current" />
-                    <span>Start Routine</span>
+                    <span>Start</span>
                   </Button>
                 </div>
               </Card>

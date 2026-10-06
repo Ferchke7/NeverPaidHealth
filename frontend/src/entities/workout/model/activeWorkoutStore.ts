@@ -11,6 +11,7 @@ interface ActiveWorkoutState {
   openSheet: () => void;
   closeSheet: () => void;
   addExercise: (exerciseId: string, exerciseName: string, measurementType: string) => void;
+  replaceExercise: (oldExerciseId: string, newExerciseId: string, newExerciseName: string, measurementType: string) => void;
   removeExercise: (exerciseId: string) => void;
   addSet: (exerciseId: string, setType?: SetType) => void;
   updateSet: (exerciseId: string, setId: string, updates: Partial<ActiveSet>) => void;
@@ -87,6 +88,24 @@ export const useActiveWorkoutStore = create<ActiveWorkoutState>((set, get) => ({
         ...state.workout,
         exercises: [...state.workout.exercises, newEx],
       };
+      persistState(updated);
+      return { workout: updated };
+    });
+  },
+
+  replaceExercise: (oldExerciseId, newExerciseId, newExerciseName, measurementType) => {
+    set((state) => {
+      if (!state.workout) return state;
+      const updatedExercises = state.workout.exercises.map((ex) => {
+        if (ex.exerciseId !== oldExerciseId) return ex;
+        return {
+          ...ex,
+          exerciseId: newExerciseId,
+          exerciseName: newExerciseName,
+          measurementType: measurementType || ex.measurementType,
+        };
+      });
+      const updated = { ...state.workout, exercises: updatedExercises };
       persistState(updated);
       return { workout: updated };
     });

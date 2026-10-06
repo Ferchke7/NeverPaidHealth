@@ -10,6 +10,7 @@ import {
   Trophy,
   CheckCircle2,
   Flame,
+  ArrowLeftRight,
 } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useActiveWorkoutStore } from '../../../entities/workout/model/activeWorkoutStore.ts';
@@ -35,6 +36,7 @@ export const ActiveWorkoutSheet: React.FC = () => {
   const openSheet = useActiveWorkoutStore((s) => s.openSheet);
   const closeSheet = useActiveWorkoutStore((s) => s.closeSheet);
   const addExercise = useActiveWorkoutStore((s) => s.addExercise);
+  const replaceExercise = useActiveWorkoutStore((s) => s.replaceExercise);
   const removeExercise = useActiveWorkoutStore((s) => s.removeExercise);
   const addSet = useActiveWorkoutStore((s) => s.addSet);
   const updateSet = useActiveWorkoutStore((s) => s.updateSet);
@@ -53,6 +55,7 @@ export const ActiveWorkoutSheet: React.FC = () => {
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [restRemaining, setRestRemaining] = useState(0);
   const [isPickerOpen, setIsPickerOpen] = useState(false);
+  const [replacingExerciseId, setReplacingExerciseId] = useState<string | null>(null);
   const [isDiscardConfirmOpen, setIsDiscardConfirmOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [summary, setSummary] = useState<FinishedWorkoutSummary | null>(null);
@@ -234,13 +237,17 @@ export const ActiveWorkoutSheet: React.FC = () => {
   };
 
   const handleSelectExercise = (exercise: Exercise) => {
-    addExercise(
-      exercise.id,
-      exercise.name,
+    const measType =
       typeof exercise.measurement_type === 'string'
         ? exercise.measurement_type
-        : 'weight_reps'
-    );
+        : 'weight_reps';
+
+    if (replacingExerciseId) {
+      replaceExercise(replacingExerciseId, exercise.id, exercise.name, measType);
+      setReplacingExerciseId(null);
+    } else {
+      addExercise(exercise.id, exercise.name, measType);
+    }
   };
 
   return (
@@ -433,6 +440,17 @@ export const ActiveWorkoutSheet: React.FC = () => {
                       </div>
 
                       <div className="flex items-center gap-1 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setReplacingExerciseId(exercise.exerciseId);
+                            setIsPickerOpen(true);
+                          }}
+                          className="text-zinc-500 hover:text-brand-400 p-1.5 rounded-xl hover:bg-dark-800 transition-colors"
+                          title="Replace Exercise / Swap Movement"
+                        >
+                          <ArrowLeftRight className="w-4 h-4" />
+                        </button>
                         <button
                           type="button"
                           onClick={() => setInspectingExerciseName(exercise.exerciseName)}

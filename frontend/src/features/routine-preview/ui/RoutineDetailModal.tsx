@@ -115,17 +115,18 @@ export const RoutineDetailModal: React.FC<RoutineDetailModalProps> = ({
               </div>
             </div>
 
-            {/* Top Right Action: Edit (if user routine) or Clone (if library) */}
-            {!isSystemRoutine && onEditRoutine ? (
+            {/* Top Right Action: Edit or Customize */}
+            {onEditRoutine ? (
               <button
                 onClick={() => {
                   onClose();
                   onEditRoutine(routine);
                 }}
-                className="px-3 py-1.5 rounded-xl bg-dark-800 hover:bg-dark-700 text-brand-400 font-semibold text-xs flex items-center gap-1 border border-dark-700 transition-colors"
+                className="px-3 py-1.5 rounded-xl bg-brand-500/15 hover:bg-brand-500/25 text-brand-400 font-bold text-xs flex items-center gap-1 border border-brand-500/30 transition-colors"
+                title={isSystemRoutine ? "Customize this workout routine" : "Edit workout routine"}
               >
                 <Edit3 className="w-3.5 h-3.5" />
-                <span>Edit</span>
+                <span>{isSystemRoutine ? 'Customize' : 'Edit'}</span>
               </button>
             ) : isSystemRoutine && onCloneToMyRoutines ? (
               <button
@@ -276,8 +277,21 @@ export const RoutineDetailModal: React.FC<RoutineDetailModalProps> = ({
 
           {/* Footer Actions */}
           <div className="p-4 border-t border-dark-800 bg-dark-900/90 shadow-2xl">
-            {isSystemRoutine && onCloneToMyRoutines ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              {onEditRoutine ? (
+                <Button
+                  variant="outline"
+                  size="md"
+                  className="font-bold text-xs flex items-center justify-center gap-1.5 border-dark-700 hover:border-brand-500/50 hover:bg-brand-500/10 text-zinc-200 hover:text-white"
+                  onClick={() => {
+                    onClose();
+                    onEditRoutine(routine);
+                  }}
+                >
+                  <Edit3 className="w-3.5 h-3.5 text-brand-400" />
+                  <span>{isSystemRoutine ? 'Customize Routine' : 'Edit Routine'}</span>
+                </Button>
+              ) : onCloneToMyRoutines ? (
                 <Button
                   variant="outline"
                   size="md"
@@ -288,27 +302,14 @@ export const RoutineDetailModal: React.FC<RoutineDetailModalProps> = ({
                   }}
                 >
                   <Copy className="w-3.5 h-3.5 text-brand-400" />
-                  <span>Add to My Routines</span>
+                  <span>Save as My Routine</span>
                 </Button>
+              ) : null}
 
-                <Button
-                  variant="primary"
-                  size="md"
-                  className="font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-brand-500/20"
-                  onClick={() => {
-                    onClose();
-                    onStartWorkout(routine);
-                  }}
-                >
-                  <Play className="w-4 h-4 fill-current ml-0.5" />
-                  <span>Start Workout</span>
-                </Button>
-              </div>
-            ) : (
               <Button
                 variant="primary"
-                size="lg"
-                className="w-full font-bold text-sm flex items-center justify-center gap-2 py-3 shadow-lg shadow-brand-500/20"
+                size="md"
+                className="font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-brand-500/20"
                 onClick={() => {
                   onClose();
                   onStartWorkout(routine);
@@ -317,7 +318,7 @@ export const RoutineDetailModal: React.FC<RoutineDetailModalProps> = ({
                 <Play className="w-4 h-4 fill-current ml-0.5" />
                 <span>Start Workout</span>
               </Button>
-            )}
+            </div>
           </div>
         </div>
       </div>

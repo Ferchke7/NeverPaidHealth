@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
-import { X, Plus, Trash2, ChevronUp, ChevronDown, Dumbbell } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Plus, Trash2, ChevronUp, ChevronDown, Dumbbell, ArrowLeftRight, Edit3 } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../../shared/api/client.ts';
 import { Button } from '../../../shared/ui/button.tsx';
 import { Input } from '../../../shared/ui/input.tsx';
 import { ExercisePickerModal } from '../../exercise-picker/ui/ExercisePickerModal.tsx';
 import { Exercise } from '../../../entities/exercise/model/types.ts';
+import { ExerciseThumbnail } from '../../../entities/exercise/ui/ExerciseThumbnail.tsx';
 
 interface RoutineExerciseFormItem {
   exercise_id: string;
@@ -50,11 +51,22 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
   const [notes, setNotes] = useState('');
   const [exercises, setExercises] = useState<RoutineExerciseFormItem[]>([]);
   const [isPickerOpen, setIsPickerOpen] = useState(false);
+  const [replacingIndex, setReplacingIndex] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  React.useEffect(() => {
+  const isSystemRoutine =
+    !initialRoutine?.user_id ||
+    initialRoutine?.user_id === '00000000-0000-0000-0000-000000000000';
+
+  useEffect(() => {
     if (isOpen && initialRoutine) {
-      setName(initialRoutine.name || '');
+      const defaultName = isSystemRoutine
+        ? initialRoutine.name?.includes('(Custom)')
+          ? initialRoutine.name
+          : `${initialRoutine.name || 'PPL Workout'} (Custom)`
+        : initialRoutine.name || '';
+
+      setName(defaultName);
       setNotes(initialRoutine.notes || '');
       const initialExs = (initialRoutine.exercises || []).map((e) => ({
         exercise_id: e.exercise_id || e.exerciseId || e.id || '',
@@ -69,7 +81,7 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
       setNotes('');
       setExercises([]);
     }
-  }, [isOpen, initialRoutine]);
+  }, [isOpen, initialRoutine, isSystemRoutine]);
 
   const saveMutation = useMutation({
     mutationFn: async () => {
@@ -80,19 +92,31 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
         throw new Error('Add at least one exercise to the routine');
       }
 
+      const payload = {
+        name: name.trim(),
+        notes: notes.trim() || undefined,
+        exercises: exercises.map((ex, idx) => ({
+          exercise_id: ex.exercise_id,
+          exercise_name: ex.exercise_name,
+          order_index: idx,
+          target_sets: Number(ex.target_sets),
+          target_reps_min: Number(ex.target_reps_min),
+          target_reps_max: Number(ex.target_reps_max),
+        })),
+      };
+
+      // If user is editing their existing routine (not a system library routine), update it via PUT
+      if (initialRoutine?.id && !isSystemRoutine) {
+        return apiClient(`/routines/${initialRoutine.id}`, {
+          method: 'PUT',
+          body: JSON.stringify(payload),
+        });
+      }
+
+      // Otherwise create a new routine (cloning / customizing)
       return apiClient('/routines', {
         method: 'POST',
-        body: JSON.stringify({
-          name: name.trim(),
-          notes: notes.trim() || undefined,
-          exercises: exercises.map((ex) => ({
-            exercise_id: ex.exercise_id,
-            exercise_name: ex.exercise_name,
-            target_sets: Number(ex.target_sets),
-            target_reps_min: Number(ex.target_reps_min),
-            target_reps_max: Number(ex.target_reps_max),
-          })),
-        }),
+        body: JSON.stringify(payload),
       });
     },
     onSuccess: (data: any) => {
@@ -114,9 +138,26 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
   if (!isOpen) return null;
 
   const handleSelectExercise = (exercise: Exercise) => {
+    if (replacingIndex !== null) {
+      setExercises((prev) =>
+        prev.map((item, i) =>
+          i === replacingIndex
+            ? {
+                ...item,
+                exercise_id: exercise.id,
+                exercise_name: exercise.name,
+              }
+            : item
+        )
+      );
+      setReplacingIndex(null);
+      return;
+    }
+
     if (exercises.some((e) => e.exercise_id === exercise.id)) {
       return;
     }
+
     setExercises((prev) => [
       ...prev,
       {
@@ -152,19 +193,32 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in">
-      <div className="bg-dark-900 border border-dark-700 w-full max-w-lg rounded-2xl flex flex-col max-h-[90vh] shadow-2xl overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-sm animate-in fade-in">
+      <div className="bg-dark-900 border border-dark-700 w-full max-w-lg rounded-2xl flex flex-col max-h-[90vh] shadow-2xl overflow-hidden animate-in zoom-in-95">
         {/* Header */}
         <div className="p-4 border-b border-dark-800 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-brand-500/10 text-brand-500 flex items-center justify-center">
-              <Dumbbell className="w-4 h-4" />
+            <div className="w-8 h-8 rounded-lg bg-brand-500/10 text-brand-400 flex items-center justify-center">
+              {initialRoutine ? <Edit3 className="w-4 h-4" /> : <Dumbbell className="w-4 h-4" />}
             </div>
-            <h2 className="text-lg font-bold text-white">Create Routine Template</h2>
+            <div>
+              <h2 className="text-base font-extrabold text-white">
+                {initialRoutine
+                  ? isSystemRoutine
+                    ? 'Customize Workout Routine'
+                    : 'Edit Routine'
+                  : 'Create Routine Template'}
+              </h2>
+              {isSystemRoutine && initialRoutine && (
+                <p className="text-[11px] text-brand-400 font-medium">
+                  Customizing from {initialRoutine.name}
+                </p>
+              )}
+            </div>
           </div>
           <button
             onClick={onClose}
-            className="text-zinc-400 hover:text-white p-1 rounded-lg hover:bg-dark-800 transition-colors"
+            className="text-zinc-400 hover:text-white p-1.5 rounded-lg hover:bg-dark-800 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -184,7 +238,7 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
                 Routine Name *
               </label>
               <Input
-                placeholder="e.g. Upper Body Push A"
+                placeholder="e.g. Push Hypertrophy Day"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 autoFocus
@@ -196,7 +250,7 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
                 Notes (optional)
               </label>
               <Input
-                placeholder="e.g. Focus on chest stretch and progressive overload"
+                placeholder="e.g. Focus on chest stretch, RIR 1-2 on last sets"
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
               />
@@ -213,68 +267,112 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() => setIsPickerOpen(true)}
-                className="text-xs flex items-center gap-1.5"
+                onClick={() => {
+                  setReplacingIndex(null);
+                  setIsPickerOpen(true);
+                }}
+                className="text-xs flex items-center gap-1.5 border-dashed hover:border-brand-500/50"
               >
-                <Plus className="w-3.5 h-3.5" />
+                <Plus className="w-3.5 h-3.5 text-brand-400" />
                 Add Exercise
               </Button>
             </div>
 
             {exercises.length === 0 ? (
-              <div className="text-center py-8 border border-dashed border-dark-700 rounded-xl">
-                <p className="text-sm text-zinc-500">No exercises added yet.</p>
-                <p className="text-xs text-zinc-600 mt-1">
-                  Add exercises to define targets and rep ranges.
+              <div className="text-center py-8 border-2 border-dashed border-dark-800 rounded-2xl p-6 bg-dark-900/30">
+                <Dumbbell className="w-8 h-8 text-zinc-600 mx-auto mb-2" />
+                <p className="text-sm font-semibold text-zinc-400">No exercises added yet.</p>
+                <p className="text-xs text-zinc-500 mt-1 mb-4">
+                  Add movements from the 870+ catalog to build your workout routine.
                 </p>
+                <Button
+                  type="button"
+                  variant="primary"
+                  size="sm"
+                  onClick={() => {
+                    setReplacingIndex(null);
+                    setIsPickerOpen(true);
+                  }}
+                  className="gap-1.5 text-xs font-bold"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  Add First Exercise
+                </Button>
               </div>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-2.5">
                 {exercises.map((item, idx) => (
                   <div
-                    key={item.exercise_id}
-                    className="bg-dark-800 border border-dark-700 p-3 rounded-xl space-y-2"
+                    key={`${item.exercise_id}-${idx}`}
+                    className="bg-dark-800/80 border border-dark-700/80 p-3 rounded-2xl space-y-2.5 shadow-sm"
                   >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-zinc-500 w-4">
-                          {idx + 1}.
-                        </span>
-                        <span className="text-sm font-semibold text-white">
-                          {item.exercise_name}
-                        </span>
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                        <ExerciseThumbnail
+                          exerciseName={item.exercise_name}
+                          size="sm"
+                          className="shrink-0"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-xs font-bold text-zinc-500 shrink-0">
+                              #{idx + 1}
+                            </span>
+                            <span className="text-sm font-bold text-white truncate">
+                              {item.exercise_name}
+                            </span>
+                          </div>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-1">
+
+                      {/* Action Controls: Replace, Move Up, Move Down, Delete */}
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setReplacingIndex(idx);
+                            setIsPickerOpen(true);
+                          }}
+                          className="text-zinc-500 hover:text-brand-400 p-1.5 rounded-lg hover:bg-dark-700 transition-colors"
+                          title="Replace this exercise with another movement"
+                        >
+                          <ArrowLeftRight className="w-3.5 h-3.5" />
+                        </button>
                         <button
                           type="button"
                           disabled={idx === 0}
                           onClick={() => moveExercise(idx, 'up')}
-                          className="text-zinc-500 hover:text-zinc-300 disabled:opacity-30 p-1"
+                          className="text-zinc-500 hover:text-zinc-300 disabled:opacity-30 p-1.5 rounded-lg hover:bg-dark-700 transition-colors"
+                          title="Move up"
                         >
-                          <ChevronUp className="w-4 h-4" />
+                          <ChevronUp className="w-3.5 h-3.5" />
                         </button>
                         <button
                           type="button"
                           disabled={idx === exercises.length - 1}
                           onClick={() => moveExercise(idx, 'down')}
-                          className="text-zinc-500 hover:text-zinc-300 disabled:opacity-30 p-1"
+                          className="text-zinc-500 hover:text-zinc-300 disabled:opacity-30 p-1.5 rounded-lg hover:bg-dark-700 transition-colors"
+                          title="Move down"
                         >
-                          <ChevronDown className="w-4 h-4" />
+                          <ChevronDown className="w-3.5 h-3.5" />
                         </button>
                         <button
                           type="button"
                           onClick={() => removeExercise(idx)}
-                          className="text-zinc-500 hover:text-red-400 p-1"
+                          className="text-zinc-500 hover:text-red-400 p-1.5 rounded-lg hover:bg-dark-700 transition-colors"
+                          title="Remove exercise"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     </div>
 
                     {/* Set and Rep targets */}
-                    <div className="grid grid-cols-3 gap-2 pt-1 text-xs">
+                    <div className="grid grid-cols-3 gap-2 pt-1 text-xs bg-dark-900/60 p-2 rounded-xl border border-dark-700/50">
                       <div>
-                        <label className="text-zinc-400 block mb-1">Target Sets</label>
+                        <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 block mb-1">
+                          Sets
+                        </label>
                         <input
                           type="number"
                           min={1}
@@ -285,11 +383,13 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
                               target_sets: Math.max(1, parseInt(e.target.value) || 1),
                             })
                           }
-                          className="w-full bg-dark-900 border border-dark-600 rounded-lg px-2.5 py-1.5 text-center font-mono font-bold text-white focus:outline-none focus:border-brand-500"
+                          className="w-full bg-dark-800 border border-dark-600 rounded-lg px-2 py-1 text-center font-mono font-bold text-white focus:outline-none focus:border-brand-500"
                         />
                       </div>
                       <div>
-                        <label className="text-zinc-400 block mb-1">Min Reps</label>
+                        <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 block mb-1">
+                          Min Reps
+                        </label>
                         <input
                           type="number"
                           min={1}
@@ -300,11 +400,13 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
                               target_reps_min: Math.max(1, parseInt(e.target.value) || 1),
                             })
                           }
-                          className="w-full bg-dark-900 border border-dark-600 rounded-lg px-2.5 py-1.5 text-center font-mono font-bold text-white focus:outline-none focus:border-brand-500"
+                          className="w-full bg-dark-800 border border-dark-600 rounded-lg px-2 py-1 text-center font-mono font-bold text-white focus:outline-none focus:border-brand-500"
                         />
                       </div>
                       <div>
-                        <label className="text-zinc-400 block mb-1">Max Reps</label>
+                        <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 block mb-1">
+                          Max Reps
+                        </label>
                         <input
                           type="number"
                           min={1}
@@ -315,7 +417,7 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
                               target_reps_max: Math.max(1, parseInt(e.target.value) || 1),
                             })
                           }
-                          className="w-full bg-dark-900 border border-dark-600 rounded-lg px-2.5 py-1.5 text-center font-mono font-bold text-white focus:outline-none focus:border-brand-500"
+                          className="w-full bg-dark-800 border border-dark-600 rounded-lg px-2 py-1 text-center font-mono font-bold text-white focus:outline-none focus:border-brand-500"
                         />
                       </div>
                     </div>
@@ -327,24 +429,29 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-dark-800 flex items-center justify-end gap-2 bg-dark-900/50">
-          <Button variant="ghost" onClick={onClose}>
+        <div className="p-4 border-t border-dark-800 flex items-center justify-end gap-2 bg-dark-900/80 shadow-lg">
+          <Button variant="ghost" onClick={onClose} size="sm">
             Cancel
           </Button>
           <Button
             variant="primary"
+            size="sm"
             isLoading={saveMutation.isPending}
             onClick={() => saveMutation.mutate()}
             disabled={!name.trim() || exercises.length === 0}
+            className="font-bold px-4 shadow-lg shadow-brand-500/20"
           >
-            Save Routine
+            {initialRoutine && !isSystemRoutine ? 'Save Changes' : 'Save as My Routine'}
           </Button>
         </div>
       </div>
 
       <ExercisePickerModal
         isOpen={isPickerOpen}
-        onClose={() => setIsPickerOpen(false)}
+        onClose={() => {
+          setIsPickerOpen(false);
+          setReplacingIndex(null);
+        }}
         onSelectExercise={handleSelectExercise}
       />
     </div>
