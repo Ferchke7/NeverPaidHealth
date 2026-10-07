@@ -25,6 +25,7 @@ import { generateUUID } from '../../../shared/lib/uuid.ts';
 import { RoutineEditorModal } from '../../../features/routine-builder/ui/RoutineEditorModal.tsx';
 import { RoutineDetailModal } from '../../../features/routine-preview/ui/RoutineDetailModal.tsx';
 import { ExerciseThumbnail } from '../../../entities/exercise/ui/ExerciseThumbnail.tsx';
+import { useTranslation } from '../../../shared/lib/i18n/i18n.ts';
 
 interface RoutineExercise {
   exercise_id: string;
@@ -49,6 +50,7 @@ interface WorkoutsPageProps {
 }
 
 export const WorkoutsPage: React.FC<WorkoutsPageProps> = ({ onNavigateToPrograms }) => {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState('');
   const [isCreateRoutineOpen, setIsCreateRoutineOpen] = useState(false);
@@ -262,13 +264,13 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = ({ onNavigateToPrograms
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-extrabold tracking-tight text-white flex items-center gap-2">
-            <span>Workouts & Routines</span>
+            <span>{t('workouts.title')}</span>
             <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-brand-500/20 text-brand-400 border border-brand-500/30">
               Pro Hub
             </span>
           </h1>
           <p className="text-xs text-zinc-400 mt-0.5">
-            Log active workout sessions, start routines, and customize your personal training split order.
+            {t('workouts.quickWorkoutDesc')}
           </p>
         </div>
 
@@ -279,10 +281,10 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = ({ onNavigateToPrograms
               size="sm"
               className="text-xs flex items-center gap-1.5"
               onClick={onNavigateToPrograms}
-              title="Browse ready-to-use programs and splits"
+              title={t('workouts.exploreLibrary')}
             >
               <BookOpen className="w-4 h-4 text-brand-400" />
-              <span>Explore Programs</span>
+              <span>{t('workouts.exploreLibrary')}</span>
             </Button>
           )}
 
@@ -296,7 +298,7 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = ({ onNavigateToPrograms
             }}
           >
             <Plus className="w-4 h-4" />
-            <span>New Routine</span>
+            <span>{t('workouts.newRoutine')}</span>
           </Button>
         </div>
       </div>
@@ -313,7 +315,7 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = ({ onNavigateToPrograms
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-base font-bold text-white">
-                  {activeWorkout ? 'Workout In Progress' : 'Quick Empty Workout'}
+                  {activeWorkout ? t('activeWorkout.title') : t('workouts.quickWorkout')}
                 </h2>
                 {activeWorkout && (
                   <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-400 bg-emerald-950/80 border border-emerald-800/60 px-2 py-0.5 rounded-full animate-pulse">
@@ -323,8 +325,8 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = ({ onNavigateToPrograms
               </div>
               <p className="text-xs text-zinc-400 mt-0.5">
                 {activeWorkout
-                  ? `Currently logging "${activeWorkout.name}" with ${activeWorkout.exercises.length} exercises.`
-                  : 'Start from a clean slate and add exercises freely on the fly.'}
+                  ? `${activeWorkout.name} (${activeWorkout.exercises.length} ${t('workouts.exercisesCount', { count: activeWorkout.exercises.length })})`
+                  : t('workouts.quickWorkoutDesc')}
               </p>
             </div>
           </div>
@@ -335,7 +337,7 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = ({ onNavigateToPrograms
             className="w-full sm:w-auto font-bold text-xs shadow-md shadow-brand-500/25 px-6"
             onClick={handleStartEmptyWorkout}
           >
-            {activeWorkout ? 'Resume Active Session' : 'Start Empty Workout'}
+            {activeWorkout ? t('workouts.start') : t('workouts.quickWorkout')}
           </Button>
         </div>
       </Card>
@@ -346,7 +348,7 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = ({ onNavigateToPrograms
           <div className="flex items-center gap-2">
             <Layers className="w-4 h-4 text-brand-400" />
             <h2 className="text-sm font-bold text-white">
-              My Routines ({userRoutines.length})
+              {t('workouts.title')} ({userRoutines.length})
             </h2>
           </div>
 
@@ -362,7 +364,7 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = ({ onNavigateToPrograms
                 title="Toggle routine reordering mode"
               >
                 <ArrowUpDown className="w-3.5 h-3.5 text-brand-400" />
-                <span>{isReorderMode ? 'Done Reordering' : 'Reorder Order'}</span>
+                <span>{isReorderMode ? t('workouts.reorderDone') : t('workouts.reorder')}</span>
               </button>
             )}
           </div>
@@ -372,7 +374,7 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = ({ onNavigateToPrograms
         <div className="relative">
           <Search className="w-4 h-4 text-zinc-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
           <Input
-            placeholder="Search in your routines or exercises..."
+            placeholder={t('workouts.searchPlaceholder')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10 text-xs"
@@ -394,12 +396,12 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = ({ onNavigateToPrograms
         <div className="text-center py-16 border border-dashed border-dark-800 rounded-2xl p-6 bg-dark-900/40">
           <FolderPlus className="w-12 h-12 text-zinc-600 mx-auto mb-3" />
           <h3 className="text-sm font-bold text-zinc-300">
-            {userRoutines.length === 0 ? 'No personal routines yet' : 'No routines matching your search'}
+            {userRoutines.length === 0 ? t('workouts.noRoutines') : t('common.search')}
           </h3>
           <p className="text-xs text-zinc-500 max-w-sm mx-auto mt-1 mb-4">
             {userRoutines.length === 0
-              ? 'Explore the Program Library to adopt the Jeff Nippard 6-Day PPL split or create your own from scratch.'
-              : 'Try clearing your search query to see all your saved routines.'}
+              ? t('workouts.noRoutinesDesc')
+              : t('common.clearFilters')}
           </p>
 
           <div className="flex items-center justify-center gap-3">
@@ -411,7 +413,7 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = ({ onNavigateToPrograms
                 className="text-xs"
               >
                 <BookOpen className="w-3.5 h-3.5 mr-1 text-brand-400" />
-                Explore Program Library
+                {t('workouts.exploreLibrary')}
               </Button>
             )}
             <Button
@@ -424,7 +426,7 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = ({ onNavigateToPrograms
               className="text-xs"
             >
               <Plus className="w-3.5 h-3.5 mr-1" />
-              Create Custom Routine
+              {t('workouts.createFirstRoutine')}
             </Button>
           </div>
         </div>

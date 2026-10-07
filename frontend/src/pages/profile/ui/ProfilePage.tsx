@@ -22,12 +22,15 @@ import { Button } from '../../../shared/ui/button.tsx';
 import { Input } from '../../../shared/ui/input.tsx';
 import { UserAvatar } from '../../../entities/user/ui/UserAvatar.tsx';
 import { BMICalculatorCard } from '../../../features/bmi-calculator/ui/BMICalculatorCard.tsx';
+import { LanguageSwitchToggle } from '../../../features/switch-language/ui/LanguageSwitchToggle.tsx';
+import { useTranslation } from '../../../shared/lib/i18n/i18n.ts';
 
 export const ProfilePage: React.FC = () => {
   const queryClient = useQueryClient();
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
   const setUnitPreference = useAuthStore((s) => s.setUnitPreference);
+  const { t } = useTranslation();
 
   const [displayName, setDisplayName] = useState(user?.display_name || '');
   const [unitPref, setUnitPref] = useState<'kg' | 'lb'>(user?.unit_preference || 'kg');
@@ -208,10 +211,18 @@ export const ProfilePage: React.FC = () => {
             />
           </div>
 
+          {/* Language Preference */}
+          <div className="space-y-2">
+            <label className="text-xs font-semibold text-zinc-300 uppercase tracking-wider">
+              {t('profile.languagePreference')}
+            </label>
+            <LanguageSwitchToggle variant="inline" />
+          </div>
+
           {/* Unit System */}
           <div className="space-y-2">
             <label className="text-xs font-semibold text-zinc-300 uppercase tracking-wider">
-              Weight Measurement Units
+              {t('profile.unitPreference')}
             </label>
             <div className="grid grid-cols-2 gap-3 max-w-sm">
               <button
@@ -243,7 +254,7 @@ export const ProfilePage: React.FC = () => {
           <div className="space-y-2">
             <label className="text-xs font-semibold text-zinc-300 uppercase tracking-wider flex items-center gap-1.5">
               <Clock className="w-3.5 h-3.5 text-zinc-400" />
-              Default Rest Timer Interval
+              {t('profile.defaultRestTimer')}
             </label>
             <div className="grid grid-cols-5 gap-2 max-w-md">
               {[30, 60, 90, 120, 180].map((secs) => (

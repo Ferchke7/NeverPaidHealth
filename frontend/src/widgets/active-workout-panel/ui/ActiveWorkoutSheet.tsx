@@ -28,8 +28,10 @@ import { WorkoutSummaryModal, FinishedWorkoutSummary } from '../../workout-summa
 import { ExerciseThumbnail } from '../../../entities/exercise/ui/ExerciseThumbnail.tsx';
 import { ExerciseInfoModal } from '../../../features/exercise-detail/ui/ExerciseInfoModal.tsx';
 import { HelpCircle } from 'lucide-react';
+import { useTranslation } from '../../../shared/lib/i18n/i18n.ts';
 
 export const ActiveWorkoutSheet: React.FC = () => {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const workout = useActiveWorkoutStore((s) => s.workout);
   const isOpen = useActiveWorkoutStore((s) => s.isOpen);
@@ -283,7 +285,7 @@ export const ActiveWorkoutSheet: React.FC = () => {
 
           <div className="flex items-center gap-2">
             <Button size="sm" variant="primary" onClick={openSheet} className="text-xs font-bold shadow-md shadow-brand-500/30">
-              Resume
+              {t('workouts.start')}
             </Button>
           </div>
         </div>
@@ -322,7 +324,7 @@ export const ActiveWorkoutSheet: React.FC = () => {
                   className="text-red-400 hover:text-red-300 hover:bg-red-950/30 text-xs px-2.5 sm:px-3 h-8"
                   onClick={() => setIsDiscardConfirmOpen(true)}
                 >
-                  Discard
+                  {t('common.discard')}
                 </Button>
                 <Button
                   variant="primary"
@@ -332,7 +334,7 @@ export const ActiveWorkoutSheet: React.FC = () => {
                   onClick={handleFinishWorkout}
                 >
                   <CheckCircle2 className="w-3.5 h-3.5" />
-                  <span>Finish</span>
+                  <span>{t('common.done')}</span>
                 </Button>
               </div>
             </div>
@@ -471,10 +473,10 @@ export const ActiveWorkoutSheet: React.FC = () => {
 
                     {/* Table Column Headers: SET | PREVIOUS | +KG | REPS | ✓ */}
                     <div className="grid grid-cols-12 gap-1.5 sm:gap-2 text-[10px] font-extrabold uppercase tracking-wider text-zinc-400 px-2 sm:px-2.5 pb-1 border-b border-dark-800/60 items-center">
-                      <span className="col-span-2 text-center">SET</span>
-                      <span className="col-span-3 text-center">PREVIOUS</span>
+                      <span className="col-span-2 text-center">{t('activeWorkout.set')}</span>
+                      <span className="col-span-3 text-center">{t('activeWorkout.previous')}</span>
                       <span className="col-span-3 text-center">{unitPref === 'lb' ? '+LBS' : '+KG'}</span>
-                      <span className="col-span-2 text-center">REPS</span>
+                      <span className="col-span-2 text-center">{t('activeWorkout.reps')}</span>
                       <span className="col-span-2 text-center">✓</span>
                     </div>
 
@@ -513,7 +515,7 @@ export const ActiveWorkoutSheet: React.FC = () => {
                         className="flex-1 py-2 bg-dark-800/80 hover:bg-dark-700 text-zinc-200 hover:text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all border border-dark-700/80 active:scale-[0.98]"
                       >
                         <Plus className="w-3.5 h-3.5 text-brand-400" />
-                        <span>Add Set</span>
+                        <span>{t('activeWorkout.addSet')}</span>
                       </button>
 
                       <button
@@ -538,7 +540,7 @@ export const ActiveWorkoutSheet: React.FC = () => {
                 onClick={() => setIsPickerOpen(true)}
               >
                 <Plus className="w-4 h-4 text-brand-400" />
-                Add Exercise
+                {t('activeWorkout.addExercise')}
               </Button>
             )}
           </main>
@@ -553,11 +555,10 @@ export const ActiveWorkoutSheet: React.FC = () => {
               <div className="p-2 rounded-xl bg-red-950/50 border border-red-800/40">
                 <AlertTriangle className="w-5 h-5" />
               </div>
-              <h3 className="text-base font-bold text-white">Discard Workout?</h3>
+              <h3 className="text-base font-bold text-white">{t('activeWorkout.discardWorkout')}</h3>
             </div>
             <p className="text-xs text-zinc-400 leading-relaxed">
-              Are you sure you want to discard this workout? All logged sets and progress in this
-              session will be permanently lost.
+              {t('activeWorkout.discardConfirm')}
             </p>
             <div className="flex items-center justify-end gap-2 pt-2">
               <Button
@@ -565,14 +566,14 @@ export const ActiveWorkoutSheet: React.FC = () => {
                 size="sm"
                 onClick={() => setIsDiscardConfirmOpen(false)}
               >
-                Keep Logging
+                {t('common.cancel')}
               </Button>
               <Button
                 variant="danger"
                 size="sm"
                 onClick={handleDiscard}
               >
-                Discard
+                {t('common.discard')}
               </Button>
             </div>
           </div>

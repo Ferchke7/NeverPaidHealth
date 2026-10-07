@@ -21,6 +21,7 @@ import { generateUUID } from '../../../shared/lib/uuid.ts';
 import { RoutineDetailModal } from '../../../features/routine-preview/ui/RoutineDetailModal.tsx';
 import { RoutineEditorModal } from '../../../features/routine-builder/ui/RoutineEditorModal.tsx';
 import { ExerciseThumbnail } from '../../../entities/exercise/ui/ExerciseThumbnail.tsx';
+import { useTranslation } from '../../../shared/lib/i18n/i18n.ts';
 
 interface RoutineExercise {
   exercise_id: string;
@@ -40,19 +41,24 @@ interface Routine {
   created_at: string;
 }
 
-const PROGRAM_CATEGORIES = [
-  { id: 'all', label: 'All 6 Days' },
-  { id: 'push', label: 'Push Days (2)' },
-  { id: 'pull', label: 'Pull Days (2)' },
-  { id: 'legs', label: 'Legs Days (2)' },
-];
-
 interface ProgramsPageProps {
   onNavigateToWorkouts?: () => void;
 }
 
 export const ProgramsPage: React.FC<ProgramsPageProps> = ({ onNavigateToWorkouts }) => {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
+
+  const programCategories = useMemo(
+    () => [
+      { id: 'all', label: t('programs.allDays') },
+      { id: 'push', label: t('programs.pushDays') },
+      { id: 'pull', label: t('programs.pullDays') },
+      { id: 'legs', label: t('programs.legsDays') },
+    ],
+    [t]
+  );
+
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRoutinePreview, setSelectedRoutinePreview] = useState<Routine | null>(null);
@@ -187,13 +193,13 @@ export const ProgramsPage: React.FC<ProgramsPageProps> = ({ onNavigateToWorkouts
         <div>
           <h1 className="text-xl font-extrabold tracking-tight text-white flex items-center gap-2">
             <BookOpen className="w-5 h-5 text-brand-400" />
-            <span>Program Library</span>
+            <span>{t('programs.title')}</span>
             <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-brand-500/20 text-brand-400 border border-brand-500/30">
-              Jeff Nippard 6-Day PPL
+              {t('programs.badge')}
             </span>
           </h1>
           <p className="text-xs text-zinc-400 mt-0.5">
-            Official Jeff Nippard 6-Day Push / Pull / Legs Hypertrophy Split. Science-backed volume and exercise selection.
+            {t('programs.subtitle')}
           </p>
         </div>
 
@@ -204,7 +210,7 @@ export const ProgramsPage: React.FC<ProgramsPageProps> = ({ onNavigateToWorkouts
             className="text-xs flex items-center gap-1.5 self-start sm:self-auto"
             onClick={onNavigateToWorkouts}
           >
-            <span>My Routines</span>
+            <span>{t('workouts.title')}</span>
             <ArrowRight className="w-3.5 h-3.5 text-brand-400" />
           </Button>
         )}
@@ -215,7 +221,7 @@ export const ProgramsPage: React.FC<ProgramsPageProps> = ({ onNavigateToWorkouts
         <div className="relative">
           <Search className="w-4 h-4 text-zinc-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
           <Input
-            placeholder="Search exercises or days (e.g. Dumbbell Bench, Military Press, Squat)..."
+            placeholder={t('programs.searchPlaceholder')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10 text-xs"
@@ -223,7 +229,7 @@ export const ProgramsPage: React.FC<ProgramsPageProps> = ({ onNavigateToWorkouts
         </div>
 
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
-          {PROGRAM_CATEGORIES.map((cat) => (
+          {programCategories.map((cat) => (
             <button
               key={cat.id}
               onClick={() => setSelectedCategory(cat.id)}
@@ -357,7 +363,7 @@ export const ProgramsPage: React.FC<ProgramsPageProps> = ({ onNavigateToWorkouts
                       title="Customize sets, reps and exercises in editor"
                     >
                       <Plus className="w-3.5 h-3.5 text-brand-400" />
-                      <span>Customize</span>
+                      <span>{t('common.edit')}</span>
                     </button>
 
                     <button
@@ -368,17 +374,17 @@ export const ProgramsPage: React.FC<ProgramsPageProps> = ({ onNavigateToWorkouts
                           ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
                           : 'bg-dark-900 hover:bg-dark-700 text-zinc-300 border-dark-700'
                       }`}
-                      title="Add direct copy to My Routines"
+                      title={t('programs.copyToMyRoutines')}
                     >
                       {isJustCopied ? (
                         <>
                           <Check className="w-3.5 h-3.5 text-emerald-400" />
-                          <span>Added!</span>
+                          <span>{t('programs.copied')}</span>
                         </>
                       ) : (
                         <>
                           <Copy className="w-3.5 h-3.5 text-zinc-400" />
-                          <span>Add to My Routines</span>
+                          <span>{t('programs.copyToMyRoutines')}</span>
                         </>
                       )}
                     </button>
@@ -391,7 +397,7 @@ export const ProgramsPage: React.FC<ProgramsPageProps> = ({ onNavigateToWorkouts
                     onClick={() => handleStartRoutine(routine)}
                   >
                     <Play className="w-3.5 h-3.5 fill-current" />
-                    <span>Start</span>
+                    <span>{t('workouts.start')}</span>
                   </Button>
                 </div>
               </Card>

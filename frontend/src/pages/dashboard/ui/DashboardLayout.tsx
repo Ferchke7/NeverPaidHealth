@@ -3,6 +3,8 @@ import { Dumbbell, History, LineChart, BookOpen, LogOut, Bot, User, Activity } f
 import { useAuthStore } from '../../../entities/user/model/authStore.ts';
 import { UserAvatar } from '../../../entities/user/ui/UserAvatar.tsx';
 import { UnitSwitchToggle } from '../../../features/switch-units/ui/UnitSwitchToggle.tsx';
+import { LanguageSwitchToggle } from '../../../features/switch-language/ui/LanguageSwitchToggle.tsx';
+import { useTranslation } from '../../../shared/lib/i18n/i18n.ts';
 
 export type NavTab = 'workouts' | 'programs' | 'exercises' | 'history' | 'coach' | 'progress' | 'body' | 'profile';
 
@@ -19,15 +21,16 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
 }) => {
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
+  const { t } = useTranslation();
 
   const navItems: { id: NavTab; label: string; icon: React.ReactNode; isAI?: boolean }[] = [
-    { id: 'workouts', label: 'Workouts', icon: <Dumbbell className="w-4 h-4 md:w-5 md:h-5" /> },
-    { id: 'programs', label: 'Programs', icon: <BookOpen className="w-4 h-4 md:w-5 md:h-5" /> },
-    { id: 'exercises', label: 'Exercises', icon: <Activity className="w-4 h-4 md:w-5 md:h-5" /> },
-    { id: 'history', label: 'History', icon: <History className="w-4 h-4 md:w-5 md:h-5" /> },
-    { id: 'coach', label: 'AI Coach', icon: <Bot className="w-4 h-4 md:w-5 md:h-5 text-brand-400" />, isAI: true },
-    { id: 'progress', label: 'Progress', icon: <LineChart className="w-4 h-4 md:w-5 md:h-5" /> },
-    { id: 'profile', label: 'Profile', icon: <User className="w-4 h-4 md:w-5 md:h-5" /> },
+    { id: 'workouts', label: t('nav.workouts'), icon: <Dumbbell className="w-4 h-4 md:w-5 md:h-5" /> },
+    { id: 'programs', label: t('nav.programs'), icon: <BookOpen className="w-4 h-4 md:w-5 md:h-5" /> },
+    { id: 'exercises', label: t('nav.exercises'), icon: <Activity className="w-4 h-4 md:w-5 md:h-5" /> },
+    { id: 'history', label: t('nav.history'), icon: <History className="w-4 h-4 md:w-5 md:h-5" /> },
+    { id: 'coach', label: t('nav.coach'), icon: <Bot className="w-4 h-4 md:w-5 md:h-5 text-brand-400" />, isAI: true },
+    { id: 'progress', label: t('nav.progress'), icon: <LineChart className="w-4 h-4 md:w-5 md:h-5" /> },
+    { id: 'profile', label: t('nav.profile'), icon: <User className="w-4 h-4 md:w-5 md:h-5" /> },
   ];
 
   return (
@@ -72,7 +75,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           </nav>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <LanguageSwitchToggle variant="header" />
           <UnitSwitchToggle />
           <div className="flex items-center gap-2 pl-2 border-l border-dark-700">
             <button
@@ -80,7 +84,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               className={`flex items-center gap-2 p-1 rounded-lg transition-colors ${
                 activeTab === 'profile' ? 'ring-2 ring-brand-500/50 bg-dark-800' : 'hover:bg-dark-800'
               }`}
-              title="Open Profile"
+              title={t('nav.profile')}
             >
               <UserAvatar user={user} size="sm" />
               <span className="text-xs font-medium text-zinc-300 hidden sm:inline max-w-[100px] truncate">
@@ -90,7 +94,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
             <button
               onClick={logout}
               className="text-zinc-500 hover:text-red-400 p-1.5 rounded-md transition-colors"
-              title="Logout"
+              title={t('nav.logout')}
             >
               <LogOut className="w-4 h-4" />
             </button>
