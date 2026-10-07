@@ -1,6 +1,7 @@
 export const ru = {
   // Навигация
   'nav.workouts': 'Тренировки',
+  'nav.todo': 'Todo & План',
   'nav.programs': 'Программы',
   'nav.exercises': 'Упражнения',
   'nav.history': 'История',

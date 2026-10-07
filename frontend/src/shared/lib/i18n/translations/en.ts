@@ -1,6 +1,7 @@
 export const en = {
   // Navigation
   'nav.workouts': 'Workouts',
+  'nav.todo': 'Todo & Plan',
   'nav.programs': 'Programs',
   'nav.exercises': 'Exercises',
   'nav.history': 'History',

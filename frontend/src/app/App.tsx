@@ -10,8 +10,10 @@ import { ProgressPage } from '../pages/progress/ui/ProgressPage.tsx';
 import { BodyPage } from '../pages/body/ui/BodyPage.tsx';
 import { AICoachPage } from '../pages/coach/ui/AICoachPage.tsx';
 import { NutritionPage } from '../pages/nutrition/ui/NutritionPage.tsx';
+import { TodoCalendarPage } from '../pages/todo/ui/TodoCalendarPage.tsx';
 import { ProfilePage } from '../pages/profile/ui/ProfilePage.tsx';
 import { ActiveWorkoutSheet } from '../widgets/active-workout-panel/ui/ActiveWorkoutSheet.tsx';
+import { FloatingFocusTimer } from '../features/focus-timer/ui/FloatingFocusTimer.tsx';
 
 export const App: React.FC = () => {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -26,6 +28,7 @@ export const App: React.FC = () => {
       {activeTab === 'workouts' && (
         <WorkoutsPage onNavigateToPrograms={() => setActiveTab('programs')} />
       )}
+      {activeTab === 'todo' && <TodoCalendarPage />}
       {activeTab === 'programs' && (
         <ProgramsPage onNavigateToWorkouts={() => setActiveTab('workouts')} />
       )}
@@ -39,6 +42,9 @@ export const App: React.FC = () => {
 
       {/* Floating / Fullsheet Active Workout Logger */}
       <ActiveWorkoutSheet />
+
+      {/* Floating / Fullscreen Focus & Pomodoro Timer */}
+      <FloatingFocusTimer />
     </DashboardLayout>
   );
 };

@@ -1,6 +1,7 @@
 export const uz = {
   // Navigatsiya
   'nav.workouts': 'Mashg‘ulotlar',
+  'nav.todo': 'Reja & Todo',
   'nav.programs': 'Dasturlar',
   'nav.exercises': 'Mashqlar',
   'nav.history': 'Tarix',

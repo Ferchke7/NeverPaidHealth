@@ -142,6 +142,24 @@ services:
     networks:
       - neverpaid-net
 
+  todo-service:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+      args:
+        SERVICE_NAME: todo
+        CMD_PATH: ./services/todo/cmd/server
+    container_name: neverpaid-todo
+    restart: always
+    environment:
+      PORT: "8087"
+      DATABASE_URL: "postgres://neverpaid:neverpaid_prod_password@postgres:5432/todo_db?sslmode=disable"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - neverpaid-net
+
   gateway:
     build:
       context: ../backend
@@ -159,6 +177,7 @@ services:
       PROGRESS_SERVICE_URL: "http://progress-service:8084"
       BODY_SERVICE_URL: "http://body-service:8085"
       COACH_SERVICE_URL: "http://coach-service:8086"
+      TODO_SERVICE_URL: "http://todo-service:8087"
     depends_on:
       - identity-service
       - exercise-service
@@ -166,6 +185,7 @@ services:
       - progress-service
       - body-service
       - coach-service
+      - todo-service
     networks:
       - neverpaid-net
 

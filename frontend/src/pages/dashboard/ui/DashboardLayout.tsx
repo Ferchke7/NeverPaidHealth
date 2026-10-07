@@ -1,5 +1,4 @@
-import React from 'react';
-import { Dumbbell, History, LineChart, BookOpen, LogOut, Bot, User, Utensils } from 'lucide-react';
+import { Dumbbell, History, LineChart, BookOpen, LogOut, Bot, User, Utensils, ListTodo } from 'lucide-react';
 import { useAuthStore } from '../../../entities/user/model/authStore.ts';
 import { UserAvatar } from '../../../entities/user/ui/UserAvatar.tsx';
 import { UnitSwitchToggle } from '../../../features/switch-units/ui/UnitSwitchToggle.tsx';
@@ -8,7 +7,7 @@ import { PWAInstallBanner } from '../../../features/pwa-install/ui/PWAInstallBan
 import { PWAInstallButton } from '../../../features/pwa-install/ui/PWAInstallButton.tsx';
 import { useTranslation } from '../../../shared/lib/i18n/i18n.ts';
 
-export type NavTab = 'workouts' | 'programs' | 'exercises' | 'history' | 'coach' | 'nutrition' | 'progress' | 'body' | 'profile';
+export type NavTab = 'workouts' | 'programs' | 'todo' | 'exercises' | 'history' | 'coach' | 'nutrition' | 'progress' | 'body' | 'profile';
 
 interface DashboardLayoutProps {
   activeTab: NavTab;
@@ -27,6 +26,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
 
   const navItems: { id: NavTab; label: string; icon: React.ReactNode; isAI?: boolean }[] = [
     { id: 'workouts', label: t('nav.workouts'), icon: <Dumbbell className="w-4 h-4 md:w-5 md:h-5" /> },
+    { id: 'todo', label: t('nav.todo') || 'Todo & План', icon: <ListTodo className="w-4 h-4 md:w-5 md:h-5 text-brand-400" /> },
     { id: 'programs', label: t('nav.programs'), icon: <BookOpen className="w-4 h-4 md:w-5 md:h-5" /> },
     { id: 'nutrition', label: t('nav.nutrition'), icon: <Utensils className="w-4 h-4 md:w-5 md:h-5 text-emerald-400" /> },
     { id: 'coach', label: t('nav.coach'), icon: <Bot className="w-4 h-4 md:w-5 md:h-5 text-brand-400" />, isAI: true },

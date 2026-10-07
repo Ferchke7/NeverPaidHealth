@@ -12,6 +12,7 @@ type Config struct {
 	ProgressURL  string
 	BodyURL      string
 	CoachURL     string
+	TodoURL      string
 	CORSOrigin   string
 }
 
@@ -24,6 +25,7 @@ func Load() *Config {
 		ProgressURL: getEnv("PROGRESS_SERVICE_URL", "http://localhost:8084"),
 		BodyURL:     getEnv("BODY_SERVICE_URL", "http://localhost:8085"),
 		CoachURL:    getEnv("COACH_SERVICE_URL", "http://localhost:8086"),
+		TodoURL:     getEnv("TODO_SERVICE_URL", "http://localhost:8087"),
 		CORSOrigin:  getEnv("CORS_ORIGIN", "http://localhost:5173"),
 	}
 }

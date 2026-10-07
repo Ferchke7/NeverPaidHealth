@@ -41,6 +41,7 @@ func NewRouter(cfg *config.Config, tokenService *jwtauth.TokenService) http.Hand
 	progressProxy := newReverseProxy(cfg.ProgressURL)
 	bodyProxy := newReverseProxy(cfg.BodyURL)
 	coachProxy := newReverseProxy(cfg.CoachURL)
+	todoProxy := newReverseProxy(cfg.TodoURL)
 
 	authMw := AuthMiddleware(tokenService)
 
@@ -61,6 +62,9 @@ func NewRouter(cfg *config.Config, tokenService *jwtauth.TokenService) http.Hand
 			authed.Mount("/body", bodyProxy)
 			authed.Mount("/coach", coachProxy)
 			authed.Mount("/nutrition", coachProxy)
+			authed.Mount("/todos", todoProxy)
+			authed.Mount("/schedule", todoProxy)
+			authed.Mount("/activity-logs", todoProxy)
 		})
 	})
 
