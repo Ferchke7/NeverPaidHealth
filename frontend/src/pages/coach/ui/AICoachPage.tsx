@@ -255,15 +255,6 @@ export const AICoachPage: React.FC = () => {
 
   const handlePhotoCaptured = (photo: CompressedPhoto) => {
     setAttachedPhoto(photo);
-    if (!inputMessage.trim()) {
-      setInputMessage(
-        language === 'en'
-          ? 'Please assess my physique, body composition, and give training/diet advice.'
-          : language === 'uz'
-          ? "Mening formam va tana tuzilishimni baholab, mashg'ulot va ovqatlanish bo'yicha maslahat bering."
-          : 'Оцени мою форму и телосложение по фото, дай честную оценку и рекомендации по тренировкам и питанию.'
-      );
-    }
   };
 
   const handleSendMessage = (textToSend?: string) => {
@@ -273,10 +264,10 @@ export const AICoachPage: React.FC = () => {
     const messageText =
       text ||
       (language === 'en'
-        ? 'Please evaluate my physique from this photo.'
+        ? 'Please analyze this photo: if it is food, estimate calories & macros; if physique/exercise, evaluate form & symmetry.'
         : language === 'uz'
-        ? "Ushbu rasm bo'yicha formamni baholang."
-        : 'Оцени мою форму по этому фото.');
+        ? "Ushbu rasmni tahlil qiling: agar taom bo'lsa kaloriya va BJU hisoblang, agar forma bo'lsa texnikani baholang."
+        : 'Проанализируй фото: если это еда — рассчитай калории и БЖУ; если форма — оцени пропорции и технику.');
 
     const userMsg: ChatMessage = {
       id: String(Date.now()),

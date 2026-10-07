@@ -108,13 +108,28 @@ func (p *CompositeAIProvider) getCandidateModels(ctx context.Context, key string
 			"gemini-3.1-flash-lite",
 			"gemini-pro-latest",
 			"gemini-3-flash-preview",
+			"gemini-2.5-flash",
+			"gemini-2.5-pro",
+			"gemini-flash-lite-latest",
+			"gemini-2.5-flash-lite",
 		}
 
 		rawValid := []string{}
 		for _, m := range res.Models {
 			name := strings.TrimPrefix(m.Name, "models/")
-			// Filter out specialized non-chat / non-vision models (TTS, Lyria music, Audio transcribe, Robotics)
-			if strings.Contains(name, "tts") || strings.Contains(name, "lyria") || strings.Contains(name, "transcribe") || strings.Contains(name, "robotics") || strings.Contains(name, "clip") {
+			// Filter out non-vision, generation-only, or experimental models
+			if strings.Contains(name, "tts") ||
+				strings.Contains(name, "lyria") ||
+				strings.Contains(name, "transcribe") ||
+				strings.Contains(name, "robotics") ||
+				strings.Contains(name, "clip") ||
+				strings.Contains(name, "image") ||
+				strings.Contains(name, "gemma") ||
+				strings.Contains(name, "banana") ||
+				strings.Contains(name, "deep-research") ||
+				strings.Contains(name, "antigravity") ||
+				strings.Contains(name, "computer-use") ||
+				strings.Contains(name, "customtools") {
 				continue
 			}
 			// Must support generateContent
@@ -146,6 +161,11 @@ func (p *CompositeAIProvider) getCandidateModels(ctx context.Context, key string
 			if !alreadyIn {
 				discovered = append(discovered, m)
 			}
+		}
+
+		// Limit candidate pool to top 6 to prevent slow failover cascades
+		if len(discovered) > 6 {
+			discovered = discovered[:6]
 		}
 
 		slog.Info("Filtered active multimodal Gemini models", "count", len(discovered), "models", discovered)
@@ -269,7 +289,7 @@ func (p *CompositeAIProvider) callGemini(ctx context.Context, req coach.ChatRequ
 		nutritionStats = fmt.Sprintf("Today's Nutrition: %d kcal (Protein: %.1f g)", telemetry.TodayCalories, telemetry.TodayProteinG)
 	}
 
-	systemPrompt := fmt.Sprintf(`You are duda.uz AI Coach — an elite, evidence-based strength & conditioning coach and sports scientist.
+	systemPrompt := fmt.Sprintf(`You are duda.uz AI Coach — an elite, evidence-based strength & conditioning coach and sports nutritionist.
 The user is named %s.
 
 Current User Profile & Telemetry:
@@ -289,12 +309,17 @@ Guidelines:
 - Always factor in the user's current body weight and protein intake when giving training or nutrition recommendations.
 - Answer in the same language as the user (Russian if user asks in Russian, Uzbek if user asks in Uzbek, English if user asks in English).
 - Focus on progressive overload, recovery, biomechanics, macros, and periodization.
-- When the user sends a photo (physique/body check, posture, form evaluation, progress picture):
-  1. Provide a professional, encouraging, and honest assessment of their physique, conditioning, posture, and muscular symmetry (chest, shoulders, back, arms, core, legs).
-  2. Estimate body composition & approximate body fat percentage range if visible.
-  3. Highlight key strengths and standout muscle groups.
-  4. Identify lagging muscle groups or areas to prioritize with specific exercise selections and weekly volume.
-  5. Give concrete recommendations on nutrition (calorie surplus/deficit, protein target in grams) and training adjustments.`,
+- When the user sends a photo:
+  A. IF THE PHOTO IS FOOD, A MEAL, DISH, DRINK, OR SNACK:
+     1. Accurately identify the dish or meal name (e.g. "Плов по-чайхански", "Куриная грудка с рисом и брокколи", "Самса с мясом", "Овсяная каша с ягодами", etc.).
+     2. Estimate visual portion weights in grams.
+     3. Provide a clear breakdown of estimated Calories (kcal), Protein (g), Carbohydrates (g), and Fat (g).
+     4. Give practical sports nutrition recommendations (pre/post workout timing, fitting into daily calorie & protein goals).
+  B. IF THE PHOTO IS PHYSIQUE, BODY CHECK, POSTURE, OR EXERCISE FORM:
+     1. Provide a professional, encouraging, and honest assessment of physique, conditioning, posture, and muscular symmetry (chest, shoulders, back, arms, core, legs).
+     2. Estimate approximate body fat percentage range if visible.
+     3. Highlight standout muscle groups and lagging areas with specific exercise selections.
+     4. Give concrete recommendations on nutrition (calorie surplus/deficit, protein target in grams) and training adjustments.`,
 		userName, bodyStats, nutritionStats, telemetry.ReadinessScore, telemetry.RecoveryStatus, telemetry.WeeklyWorkoutsCount,
 		telemetry.WeeklyVolumeKg, telemetry.DaysSinceLastTrain, telemetry.SuggestedSplit,
 		telemetry.OverloadTargets, telemetry.PlateauAlerts, telemetry.RecentTopPRs)
@@ -536,24 +561,49 @@ Format:
 			continue
 		}
 
-		if len(geminiResp.Candidates) == 0 || len(geminiResp.Candidates[0].Content.Parts) == 0 {
+		var rawText string
+		for _, cand := range geminiResp.Candidates {
+			for _, part := range cand.Content.Parts {
+				if part.Text != "" {
+					rawText += part.Text
+				}
+			}
+		}
+
+		rawText = strings.TrimSpace(rawText)
+		if rawText == "" {
 			lastErr = fmt.Errorf("empty vision response from model %s", model)
 			continue
 		}
 
-		rawText := strings.TrimSpace(geminiResp.Candidates[0].Content.Parts[0].Text)
-		rawText = strings.TrimPrefix(rawText, "```json")
-		rawText = strings.TrimPrefix(rawText, "```")
-		rawText = strings.TrimSuffix(rawText, "```")
-		rawText = strings.TrimSpace(rawText)
-
-		var analysis coach.MealAnalysisResult
-		if err := json.Unmarshal([]byte(rawText), &analysis); err != nil {
-			lastErr = fmt.Errorf("failed to parse vision json: %w (raw: %s)", err, rawText)
+		// Robust JSON block extraction (find outermost { and })
+		start := strings.Index(rawText, "{")
+		end := strings.LastIndex(rawText, "}")
+		if start == -1 || end == -1 || end <= start {
+			lastErr = fmt.Errorf("could not find JSON object in response: %s", rawText)
+			slog.Warn("No JSON block found in Gemini Vision output", "model", model, "raw", rawText)
 			continue
 		}
 
-		slog.Info("Gemini Vision analysis successful", "model", model, "meal", analysis.MealName)
+		jsonStr := rawText[start : end+1]
+		var analysis coach.MealAnalysisResult
+		if err := json.Unmarshal([]byte(jsonStr), &analysis); err != nil {
+			lastErr = fmt.Errorf("failed to parse vision json (%w): %s", err, jsonStr)
+			slog.Warn("Failed to unmarshal Gemini Vision JSON", "model", model, "error", err, "json", jsonStr)
+			continue
+		}
+
+		// Ensure total calories and macros are non-zero if items exist
+		if analysis.TotalCalories == 0 && len(analysis.Items) > 0 {
+			for _, item := range analysis.Items {
+				analysis.TotalCalories += item.Calories
+				analysis.TotalProteinG += item.ProteinG
+				analysis.TotalCarbsG += item.CarbsG
+				analysis.TotalFatG += item.FatG
+			}
+		}
+
+		slog.Info("Gemini Vision analysis successful", "model", model, "meal", analysis.MealName, "calories", analysis.TotalCalories)
 		return analysis, nil
 	}
 
