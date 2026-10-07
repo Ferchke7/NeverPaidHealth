@@ -54,10 +54,6 @@ export const LoginPage: React.FC = () => {
           </div>
           <DevLoginModal />
         </div>
-
-        <p className="text-xs text-zinc-600">
-          Built with Clean Architecture, Domain-Driven Design & Khorikov testing standards.
-        </p>
       </div>
     </div>
   );
