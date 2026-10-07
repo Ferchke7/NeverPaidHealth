@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   X,
   Clock,
   Calendar,
   Video,
   Check,
+  AlertTriangle,
+  Sparkles,
 } from 'lucide-react';
 import { Button } from '../../../shared/ui/button.tsx';
 import { Input } from '../../../shared/ui/input.tsx';
@@ -31,6 +33,7 @@ interface CreateTodoModalProps {
   }) => void;
   initialTodo?: TodoItem | null;
   defaultDate?: string;
+  existingTodos?: TodoItem[];
 }
 
 const CATEGORIES: { id: TodoCategory; labelRu: string; labelEn: string; color: string }[] = [
@@ -57,6 +60,7 @@ export const CreateTodoModal: React.FC<CreateTodoModalProps> = ({
   onSubmit,
   initialTodo,
   defaultDate,
+  existingTodos = [],
 }) => {
   const today = defaultDate || new Date().toISOString().split('T')[0];
 
@@ -96,6 +100,71 @@ export const CreateTodoModal: React.FC<CreateTodoModalProps> = ({
       setMeetingUrl('');
     }
   }, [initialTodo, isOpen, today]);
+
+  // Helper: parse "HH:MM" to minutes from midnight
+  const parseTimeToMin = (t?: string | null): number | null => {
+    if (!t) return null;
+    const parts = t.split(':');
+    if (parts.length < 2) return null;
+    const h = parseInt(parts[0], 10);
+    const m = parseInt(parts[1], 10);
+    if (isNaN(h) || isNaN(m)) return null;
+    return h * 60 + m;
+  };
+
+  const formatMinToTime = (min: number): string => {
+    const total = ((min % 1440) + 1440) % 1440;
+    const h = Math.floor(total / 60);
+    const m = total % 60;
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+  };
+
+  // Real-time time conflict validation against existing scheduled tasks
+  const conflict = useMemo(() => {
+    const currentStartMin = parseTimeToMin(startTime);
+    if (currentStartMin === null) return null;
+
+    let currentEndMin = parseTimeToMin(endTime);
+    if (currentEndMin === null || currentEndMin <= currentStartMin) {
+      currentEndMin = currentStartMin + (Number(targetDuration) || 25);
+    }
+
+    const filtered = (existingTodos || []).filter((t) => {
+      if (initialTodo && t.id === initialTodo.id) return false;
+      const targetDay = startDate || today;
+      const matchDay = (!t.start_date && !startDate) || (t.start_date <= targetDay && t.end_date >= targetDay);
+      return matchDay && Boolean(t.start_time);
+    });
+
+    for (const other of filtered) {
+      const otherStart = parseTimeToMin(other.start_time);
+      if (otherStart === null) continue;
+
+      let otherEnd = parseTimeToMin(other.end_time);
+      if (otherEnd === null || otherEnd <= otherStart) {
+        otherEnd = otherStart + (other.target_duration_minutes || 30);
+      }
+
+      // Interval overlap test: currentStart < otherEnd && currentEnd > otherStart
+      if (currentStartMin < otherEnd && currentEndMin > otherStart) {
+        return {
+          conflictingTodo: other,
+          conflictRange: `${other.start_time || '00:00'} – ${other.end_time || formatMinToTime(otherEnd)}`,
+          suggestedNextStartMin: otherEnd,
+          suggestedNextStartTime: formatMinToTime(otherEnd),
+        };
+      }
+    }
+
+    return null;
+  }, [startTime, endTime, targetDuration, startDate, today, existingTodos, initialTodo]);
+
+  const handleApplySuggestedTime = () => {
+    if (!conflict) return;
+    setStartTime(conflict.suggestedNextStartTime);
+    const dur = Number(targetDuration) || 25;
+    setEndTime(formatMinToTime(conflict.suggestedNextStartMin + dur));
+  };
 
   if (!isOpen) return null;
 
@@ -222,34 +291,62 @@ export const CreateTodoModal: React.FC<CreateTodoModalProps> = ({
           </div>
 
           {/* 4. Scheduled Time Window (09:00 - 10:30) */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-bold text-zinc-300 mb-1.5 flex items-center gap-1.5">
-                <Clock className="w-3.5 h-3.5 text-brand-400" />
-                Время начала (опционально)
-              </label>
-              <Input
-                type="time"
-                value={startTime}
-                onChange={(e) => setStartTime(e.target.value)}
-                placeholder="09:00"
-                className="bg-dark-800 border-dark-700 text-xs"
-              />
+          <div className="space-y-2">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-bold text-zinc-300 mb-1.5 flex items-center gap-1.5">
+                  <Clock className="w-3.5 h-3.5 text-brand-400" />
+                  Время начала (опционально)
+                </label>
+                <Input
+                  type="time"
+                  value={startTime}
+                  onChange={(e) => setStartTime(e.target.value)}
+                  placeholder="09:00"
+                  className={`bg-dark-800 text-xs ${conflict ? 'border-amber-500/80 focus:border-amber-400' : 'border-dark-700'}`}
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-zinc-300 mb-1.5 flex items-center gap-1.5">
+                  <Clock className="w-3.5 h-3.5 text-zinc-400" />
+                  Время окончания
+                </label>
+                <Input
+                  type="time"
+                  value={endTime}
+                  onChange={(e) => setEndTime(e.target.value)}
+                  placeholder="10:30"
+                  className={`bg-dark-800 text-xs ${conflict ? 'border-amber-500/80 focus:border-amber-400' : 'border-dark-700'}`}
+                />
+              </div>
             </div>
 
-            <div>
-              <label className="block text-xs font-bold text-zinc-300 mb-1.5 flex items-center gap-1.5">
-                <Clock className="w-3.5 h-3.5 text-zinc-400" />
-                Время окончания
-              </label>
-              <Input
-                type="time"
-                value={endTime}
-                onChange={(e) => setEndTime(e.target.value)}
-                placeholder="10:30"
-                className="bg-dark-800 border-dark-700 text-xs"
-              />
-            </div>
+            {/* Time Conflict Alert Banner */}
+            {conflict && (
+              <div className="bg-amber-500/15 border border-amber-500/40 rounded-2xl p-3 space-y-2 animate-in fade-in">
+                <div className="flex items-start gap-2 text-amber-300 text-xs">
+                  <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                  <div className="min-w-0 flex-1">
+                    <span className="font-extrabold text-amber-200">Пересечение времени!</span>
+                    <p className="text-zinc-300 text-[11px] mt-0.5">
+                      На это время уже запланировано:{' '}
+                      <strong className="text-white font-semibold">«{conflict.conflictingTodo.title}»</strong>{' '}
+                      <span className="font-mono font-bold text-amber-300">({conflict.conflictRange})</span>
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleApplySuggestedTime}
+                  className="w-full text-xs font-bold py-1.5 px-3 rounded-xl bg-amber-500/25 hover:bg-amber-500/40 text-amber-200 border border-amber-500/50 flex items-center justify-center gap-1.5 transition-all active:scale-95 shadow-sm"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Перенести на свободный слот ({conflict.suggestedNextStartTime})</span>
+                </button>
+              </div>
+            )}
           </div>
 
           {/* 5. Target Duration in Day (Сколько тратить в день) */}

@@ -25,21 +25,39 @@ func (h *Handler) Routes() http.Handler {
 
 	r.Use(httpx.ExtractUserHeaderMiddleware)
 
-	// Todos CRUD
+	// Route group for /todos
+	r.Route("/todos", func(tr chi.Router) {
+		tr.Get("/", h.handleGetDailySchedule)
+		tr.Get("/schedule", h.handleGetDailySchedule)
+		tr.Post("/", h.handleCreateTodo)
+		tr.Post("/focus-sessions", h.handleLogFocusSession)
+		tr.Get("/activity-logs", h.handleGetActivityLogs)
+		tr.Get("/stats", h.handleGetStats)
+		tr.Put("/{id}", h.handleUpdateTodo)
+		tr.Delete("/{id}", h.handleDeleteTodo)
+		tr.Post("/{id}/toggle", h.handleToggleTodo)
+		tr.Post("/{id}/log-session", h.handleLogFocusSession)
+	})
+
+	// Route group for /schedule
+	r.Route("/schedule", func(sr chi.Router) {
+		sr.Get("/", h.handleGetDailySchedule)
+		sr.Post("/", h.handleCreateTodo)
+		sr.Get("/stats", h.handleGetStats)
+	})
+
+	// Standalone endpoints
+	r.Get("/activity-logs", h.handleGetActivityLogs)
+	r.Get("/stats", h.handleGetStats)
+	r.Post("/focus-sessions", h.handleLogFocusSession)
+
+	// Root routes fallback
 	r.Get("/", h.handleGetDailySchedule)
-	r.Get("/schedule", h.handleGetDailySchedule)
 	r.Post("/", h.handleCreateTodo)
 	r.Put("/{id}", h.handleUpdateTodo)
 	r.Delete("/{id}", h.handleDeleteTodo)
 	r.Post("/{id}/toggle", h.handleToggleTodo)
-
-	// Focus Timers & Pomodoro Sessions
-	r.Post("/focus-sessions", h.handleLogFocusSession)
 	r.Post("/{id}/log-session", h.handleLogFocusSession)
-
-	// History & Activity Audit Log ("Что я делал")
-	r.Get("/activity-logs", h.handleGetActivityLogs)
-	r.Get("/stats", h.handleGetStats)
 
 	return r
 }

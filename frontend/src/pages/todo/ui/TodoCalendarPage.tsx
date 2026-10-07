@@ -16,6 +16,7 @@ import {
   Flame,
   ListTodo,
   History,
+  AlertTriangle,
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../../shared/api/client.ts';
@@ -426,6 +427,16 @@ export const TodoCalendarPage: React.FC = () => {
                               {timeString}
                             </span>
                           )}
+
+                          {item.has_conflict && (
+                            <span
+                              className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-rose-500/15 text-rose-300 border border-rose-500/30 flex items-center gap-1 shrink-0"
+                              title={`Пересекается по времени: ${item.conflicting_with || ''}`}
+                            >
+                              <AlertTriangle className="w-3 h-3 text-rose-400 shrink-0" />
+                              <span>Пересечение: {item.conflicting_with || 'Конфликт'}</span>
+                            </span>
+                          )}
                         </div>
 
                         {item.description && (
@@ -670,6 +681,7 @@ export const TodoCalendarPage: React.FC = () => {
         }}
         initialTodo={editingTodo}
         defaultDate={selectedDate}
+        existingTodos={todos}
       />
     </div>
   );

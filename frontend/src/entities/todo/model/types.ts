@@ -21,6 +21,8 @@ export interface TodoItem {
   completed_at?: string;
   meeting_url?: string;
   external_calendar_id?: string;
+  has_conflict?: boolean;
+  conflicting_with?: string;
   created_at: string;
   updated_at: string;
 }

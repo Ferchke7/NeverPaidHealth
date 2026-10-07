@@ -205,6 +205,36 @@ func (s *TodoService) DeleteTodo(ctx context.Context, userID, todoID uuid.UUID) 
 	return s.repo.Delete(ctx, userID, todoID)
 }
 
+func parseTimeToMinutes(tStr *string) (int, bool) {
+	if tStr == nil || *tStr == "" {
+		return 0, false
+	}
+	parts := strings.Split(*tStr, ":")
+	if len(parts) < 2 {
+		return 0, false
+	}
+	var h, m int
+	_, err1 := fmt.Sscanf(parts[0], "%d", &h)
+	_, err2 := fmt.Sscanf(parts[1], "%d", &m)
+	if err1 != nil || err2 != nil {
+		return 0, false
+	}
+	return h*60 + m, true
+}
+
+func formatTimeRange(startStr, endStr *string, calculatedEndMin int) string {
+	start := "00:00"
+	if startStr != nil && *startStr != "" {
+		start = *startStr
+	}
+	if endStr != nil && *endStr != "" {
+		return fmt.Sprintf("%s–%s", start, *endStr)
+	}
+	h := calculatedEndMin / 60
+	m := calculatedEndMin % 60
+	return fmt.Sprintf("%s–%02d:%02d", start, h, m)
+}
+
 func (s *TodoService) GetDailySchedule(ctx context.Context, userID uuid.UUID, dateStr string) (*todo.DailyScheduleSummary, error) {
 	if dateStr == "" {
 		dateStr = time.Now().Format("2006-01-02")
@@ -218,6 +248,47 @@ func (s *TodoService) GetDailySchedule(ctx context.Context, userID uuid.UUID, da
 	logs, err := s.repo.GetActivityLogs(ctx, userID, dateStr)
 	if err != nil {
 		logs = make([]todo.ActivityLog, 0)
+	}
+
+	// Detect and annotate schedule time conflicts
+	for i := range todos {
+		startMin, ok := parseTimeToMinutes(todos[i].StartTime)
+		if !ok {
+			continue
+		}
+		endMin, hasEnd := parseTimeToMinutes(todos[i].EndTime)
+		if !hasEnd || endMin <= startMin {
+			dur := todos[i].TargetDurationMinutes
+			if dur <= 0 {
+				dur = 30
+			}
+			endMin = startMin + dur
+		}
+
+		for j := range todos {
+			if i == j {
+				continue
+			}
+			otherStart, otherOk := parseTimeToMinutes(todos[j].StartTime)
+			if !otherOk {
+				continue
+			}
+			otherEnd, otherHasEnd := parseTimeToMinutes(todos[j].EndTime)
+			if !otherHasEnd || otherEnd <= otherStart {
+				dur := todos[j].TargetDurationMinutes
+				if dur <= 0 {
+					dur = 30
+				}
+				otherEnd = otherStart + dur
+			}
+
+			if startMin < otherEnd && endMin > otherStart {
+				todos[i].HasConflict = true
+				conflictMsg := fmt.Sprintf("%s (%s)", todos[j].Title, formatTimeRange(todos[j].StartTime, todos[j].EndTime, otherEnd))
+				todos[i].ConflictingWith = &conflictMsg
+				break
+			}
+		}
 	}
 
 	completedCount := 0

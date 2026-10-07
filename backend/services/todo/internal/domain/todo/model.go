@@ -42,6 +42,8 @@ type Todo struct {
 	CompletedAt           *time.Time `json:"completed_at,omitempty"`
 	MeetingURL            *string    `json:"meeting_url,omitempty"`   // Google Meet / Zoom link
 	ExternalCalendarID    *string    `json:"external_calendar_id,omitempty"`
+	HasConflict           bool       `json:"has_conflict,omitempty"`
+	ConflictingWith       *string    `json:"conflicting_with,omitempty"`
 	CreatedAt             time.Time  `json:"created_at"`
 	UpdatedAt             time.Time  `json:"updated_at"`
 }
