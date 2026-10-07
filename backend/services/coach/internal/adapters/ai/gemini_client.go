@@ -71,7 +71,11 @@ type geminiResponse struct {
 }
 
 func (p *CompositeAIProvider) callGemini(ctx context.Context, req coach.ChatRequest, telemetry coach.CoachInsights, userName string) (coach.ChatResponse, error) {
-	apiURL := fmt.Sprintf("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=%s", p.geminiKey)
+	modelName := os.Getenv("GEMINI_MODEL")
+	if modelName == "" {
+		modelName = "gemini-1.5-flash"
+	}
+	apiURL := fmt.Sprintf("https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s", modelName, p.geminiKey)
 
 	systemPrompt := fmt.Sprintf(`You are NeverPaidHealth AI Coach — an elite, evidence-based strength & conditioning coach and sports scientist.
 The user is named %s.
