@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"os"
 	"strings"
@@ -40,6 +41,9 @@ func (p *CompositeAIProvider) GenerateChatResponse(ctx context.Context, req coac
 		if err == nil && res.Reply != "" {
 			return res, nil
 		}
+		slog.Warn("Gemini API call failed, falling back to sports science rule engine", "error", err)
+	} else {
+		slog.Info("GEMINI_API_KEY not provided, using built-in sports science engine")
 	}
 
 	// Intelligent Rule-Based Sports Science Engine Fallback (Zero external dependencies)
