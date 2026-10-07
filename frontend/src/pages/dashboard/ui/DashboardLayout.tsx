@@ -1,3 +1,5 @@
+import React from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Dumbbell, History, LineChart, BookOpen, LogOut, Bot, User, Utensils, ListTodo } from 'lucide-react';
 import { useAuthStore } from '../../../entities/user/model/authStore.ts';
 import { UserAvatar } from '../../../entities/user/ui/UserAvatar.tsx';
@@ -10,19 +12,32 @@ import { useTranslation } from '../../../shared/lib/i18n/i18n.ts';
 export type NavTab = 'workouts' | 'programs' | 'todo' | 'exercises' | 'history' | 'coach' | 'nutrition' | 'progress' | 'body' | 'profile';
 
 interface DashboardLayoutProps {
-  activeTab: NavTab;
-  onSelectTab: (tab: NavTab) => void;
+  activeTab?: NavTab;
+  onSelectTab?: (tab: NavTab) => void;
   children: React.ReactNode;
 }
 
 export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
-  activeTab,
+  activeTab: explicitActiveTab,
   onSelectTab,
   children,
 }) => {
+  const location = useLocation();
+  const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
   const { t } = useTranslation();
+
+  // Derive active tab from URL path
+  const pathSegment = location.pathname.replace(/^\//, '').split('/')[0] as NavTab;
+  const currentTab: NavTab = explicitActiveTab || pathSegment || 'workouts';
+
+  const handleNavClick = (tabId: NavTab) => {
+    if (onSelectTab) {
+      onSelectTab(tabId);
+    }
+    navigate(`/${tabId}`);
+  };
 
   const navItems: { id: NavTab; label: string; icon: React.ReactNode; isAI?: boolean }[] = [
     { id: 'workouts', label: t('nav.workouts'), icon: <Dumbbell className="w-4 h-4 md:w-5 md:h-5" /> },
@@ -41,7 +56,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
       <header className="sticky top-0 z-40 bg-dark-900/95 backdrop-blur border-b border-dark-800 px-4 py-2.5 pt-[calc(0.625rem+env(safe-area-inset-top,0px))] flex items-center justify-between">
         <div className="flex items-center gap-6">
           <button
-            onClick={() => onSelectTab('workouts')}
+            onClick={() => handleNavClick('workouts')}
             className="flex items-center gap-2.5 hover:opacity-90 transition-opacity"
           >
             <div className="w-8 h-8 rounded-lg bg-brand-500/10 border border-brand-500/30 flex items-center justify-center text-brand-500 font-bold shadow-sm">
@@ -55,11 +70,11 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           {/* Desktop Navigation Links */}
           <nav className="hidden md:flex items-center gap-1">
             {navItems.map((item) => {
-              const isActive = activeTab === item.id;
+              const isActive = currentTab === item.id;
               return (
                 <button
                   key={item.id}
-                  onClick={() => onSelectTab(item.id)}
+                  onClick={() => handleNavClick(item.id)}
                   className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
                     isActive
                       ? 'bg-brand-500/15 text-brand-400 border border-brand-500/30 shadow-sm'
@@ -83,9 +98,9 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           <UnitSwitchToggle />
           <div className="flex items-center gap-2 pl-2 border-l border-dark-700">
             <button
-              onClick={() => onSelectTab('profile')}
+              onClick={() => handleNavClick('profile')}
               className={`flex items-center gap-2 p-1 rounded-lg transition-colors ${
-                activeTab === 'profile' ? 'ring-2 ring-brand-500/50 bg-dark-800' : 'hover:bg-dark-800'
+                currentTab === 'profile' ? 'ring-2 ring-brand-500/50 bg-dark-800' : 'hover:bg-dark-800'
               }`}
               title={t('nav.profile')}
             >
@@ -108,23 +123,23 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
       {/* Main Content Area */}
       <main
         className={
-          activeTab === 'coach'
+          currentTab === 'coach'
             ? 'flex-1 w-full max-w-5xl mx-auto flex flex-col min-h-0 p-0 pb-[calc(54px+env(safe-area-inset-bottom,0px))] md:pb-3 md:pt-2 md:px-4 h-[calc(100dvh-53px)] md:h-[calc(100dvh-57px)] overflow-hidden'
             : 'flex-1 max-w-4xl w-full mx-auto p-4 pb-[calc(6rem+env(safe-area-inset-bottom,0px))] md:pb-8'
         }
       >
-        {activeTab !== 'coach' && <PWAInstallBanner />}
+        {currentTab !== 'coach' && <PWAInstallBanner />}
         {children}
       </main>
 
       {/* Bottom Mobile Navigation Bar */}
       <nav className="fixed bottom-0 left-0 right-0 z-40 bg-dark-900/95 backdrop-blur border-t border-dark-800 md:hidden flex items-center justify-around py-1.5 px-1 pb-[calc(0.375rem+env(safe-area-inset-bottom,0px))]">
         {navItems.map((item) => {
-          const isActive = activeTab === item.id;
+          const isActive = currentTab === item.id;
           return (
             <button
               key={item.id}
-              onClick={() => onSelectTab(item.id)}
+              onClick={() => handleNavClick(item.id)}
               className={`flex flex-col items-center gap-0.5 py-1 px-1 rounded-xl transition-all relative min-w-0 flex-1 ${
                 isActive ? 'text-brand-500 font-bold' : 'text-zinc-400 hover:text-zinc-200'
               }`}
