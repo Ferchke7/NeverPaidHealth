@@ -57,7 +57,9 @@ export const BMICalculatorCard: React.FC<BMICalculatorCardProps> = ({
   const [gender, setGender] = useState<'male' | 'female'>(user?.gender || 'male');
   const [age, setAge] = useState<string>('26');
   const [activity, setActivity] = useState<string>('moderate');
-  const [goal, setGoal] = useState<'cut' | 'maintain' | 'bulk'>('maintain');
+  const [goal, setGoal] = useState<'cut' | 'maintain' | 'bulk'>(() => {
+    return user?.diet_goal || (localStorage.getItem('np_diet_goal') as any) || 'maintain';
+  });
   const [saveSuccess, setSaveSuccess] = useState(false);
 
   // Parse numeric values
@@ -112,7 +114,18 @@ export const BMICalculatorCard: React.FC<BMICalculatorCardProps> = ({
         height_cm: numericHeight,
         weight_kg: numericWeightKg,
         gender,
+        target_calories: targetCalories,
+        target_protein_g: macros.proteinG,
+        target_carbs_g: macros.carbG,
+        target_fat_g: macros.fatG,
+        diet_goal: goal,
       });
+
+      localStorage.setItem('np_nutrition_target_calories', targetCalories.toString());
+      localStorage.setItem('np_nutrition_target_protein_g', macros.proteinG.toString());
+      localStorage.setItem('np_nutrition_target_carbs_g', macros.carbG.toString());
+      localStorage.setItem('np_nutrition_target_fat_g', macros.fatG.toString());
+      localStorage.setItem('np_diet_goal', goal);
 
       if (onSaveStats) {
         onSaveStats({ heightCm: numericHeight, weightKg: numericWeightKg });

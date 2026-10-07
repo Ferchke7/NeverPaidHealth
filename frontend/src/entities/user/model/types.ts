@@ -9,6 +9,11 @@ export interface UserProfile {
   height_cm?: number;
   weight_kg?: number;
   target_weight_kg?: number;
+  target_calories?: number;
+  target_protein_g?: number;
+  target_carbs_g?: number;
+  target_fat_g?: number;
+  diet_goal?: 'cut' | 'maintain' | 'bulk';
   gender?: 'male' | 'female';
   birth_year?: number;
   activity_level?: string;

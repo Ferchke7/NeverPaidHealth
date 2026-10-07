@@ -30,6 +30,7 @@ export const ProfilePage: React.FC = () => {
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
   const setUnitPreference = useAuthStore((s) => s.setUnitPreference);
+  const updateUserStats = useAuthStore((s) => s.updateUserStats);
   const { t } = useTranslation();
 
   const [displayName, setDisplayName] = useState(user?.display_name || '');
@@ -39,6 +40,18 @@ export const ProfilePage: React.FC = () => {
   });
   const [soundEnabled, setSoundEnabled] = useState<boolean>(() => {
     return localStorage.getItem('np_sound_enabled') !== 'false';
+  });
+  const [profileTargetCalories, setProfileTargetCalories] = useState<string>(() => {
+    return String(user?.target_calories || localStorage.getItem('np_nutrition_target_calories') || '2500');
+  });
+  const [profileTargetProtein, setProfileTargetProtein] = useState<string>(() => {
+    return String(user?.target_protein_g || localStorage.getItem('np_nutrition_target_protein_g') || '170');
+  });
+  const [profileTargetCarbs, setProfileTargetCarbs] = useState<string>(() => {
+    return String(user?.target_carbs_g || localStorage.getItem('np_nutrition_target_carbs_g') || '280');
+  });
+  const [profileTargetFat, setProfileTargetFat] = useState<string>(() => {
+    return String(user?.target_fat_g || localStorage.getItem('np_nutrition_target_fat_g') || '70');
   });
   const [saveSuccess, setSaveSuccess] = useState(false);
 
@@ -77,6 +90,26 @@ export const ProfilePage: React.FC = () => {
     e.preventDefault();
     localStorage.setItem('np_default_rest_secs', defaultRestSecs.toString());
     localStorage.setItem('np_sound_enabled', soundEnabled.toString());
+
+    const parsedCal = parseInt(profileTargetCalories, 10) || 2500;
+    const parsedP = parseFloat(profileTargetProtein) || 170;
+    const parsedC = parseFloat(profileTargetCarbs) || 280;
+    const parsedF = parseFloat(profileTargetFat) || 70;
+
+    localStorage.setItem('np_nutrition_target_calories', parsedCal.toString());
+    localStorage.setItem('np_nutrition_target_protein_g', parsedP.toString());
+    localStorage.setItem('np_nutrition_target_carbs_g', parsedC.toString());
+    localStorage.setItem('np_nutrition_target_fat_g', parsedF.toString());
+
+    updateUserStats({
+      display_name: displayName,
+      target_calories: parsedCal,
+      target_protein_g: parsedP,
+      target_carbs_g: parsedC,
+      target_fat_g: parsedF,
+    });
+
+    queryClient.invalidateQueries({ queryKey: ['nutrition', 'today'] });
 
     if (unitPref !== user?.unit_preference) {
       updateUnitMutation.mutate(unitPref);
@@ -271,6 +304,66 @@ export const ProfilePage: React.FC = () => {
                   {secs >= 60 ? `${secs / 60}m` : `${secs}s`}
                 </button>
               ))}
+            </div>
+          </div>
+
+          {/* Target Daily Nutrition & Macros */}
+          <div className="space-y-3 pt-2 border-t border-dark-700/80">
+            <div>
+              <label className="text-xs font-semibold text-zinc-300 uppercase tracking-wider flex items-center gap-1.5">
+                <Flame className="w-3.5 h-3.5 text-brand-400" />
+                Дневные цели питания и калорий (Nutrition Targets)
+              </label>
+              <p className="text-[11px] text-zinc-400 mt-0.5">
+                Укажите свои индивидуальные цели калорий и БЖУ. Они автоматически используются на странице питания и тренером.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-xl">
+              <div>
+                <label className="text-[10px] uppercase font-bold text-brand-400 block mb-1">
+                  Калории (ккал)
+                </label>
+                <Input
+                  type="number"
+                  value={profileTargetCalories}
+                  onChange={(e) => setProfileTargetCalories(e.target.value)}
+                  className="bg-dark-900/90 font-mono font-bold"
+                />
+              </div>
+              <div>
+                <label className="text-[10px] uppercase font-bold text-emerald-400 block mb-1">
+                  Белки (г)
+                </label>
+                <Input
+                  type="number"
+                  value={profileTargetProtein}
+                  onChange={(e) => setProfileTargetProtein(e.target.value)}
+                  className="bg-dark-900/90 font-mono font-bold"
+                />
+              </div>
+              <div>
+                <label className="text-[10px] uppercase font-bold text-blue-400 block mb-1">
+                  Углеводы (г)
+                </label>
+                <Input
+                  type="number"
+                  value={profileTargetCarbs}
+                  onChange={(e) => setProfileTargetCarbs(e.target.value)}
+                  className="bg-dark-900/90 font-mono font-bold"
+                />
+              </div>
+              <div>
+                <label className="text-[10px] uppercase font-bold text-amber-400 block mb-1">
+                  Жиры (г)
+                </label>
+                <Input
+                  type="number"
+                  value={profileTargetFat}
+                  onChange={(e) => setProfileTargetFat(e.target.value)}
+                  className="bg-dark-900/90 font-mono font-bold"
+                />
+              </div>
             </div>
           </div>
 

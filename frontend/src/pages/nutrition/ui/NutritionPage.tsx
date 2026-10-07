@@ -18,6 +18,7 @@ import { Card } from '../../../shared/ui/card.tsx';
 import { Button } from '../../../shared/ui/button.tsx';
 import { Input } from '../../../shared/ui/input.tsx';
 import { useTranslation } from '../../../shared/lib/i18n/i18n.ts';
+import { useAuthStore } from '../../../entities/user/model/authStore.ts';
 
 interface MealItem {
   name: string;
@@ -217,24 +218,47 @@ export const NutritionPage: React.FC = () => {
     });
   };
 
+  // User Profile Nutrition Targets
+  const user = useAuthStore((s) => s.user);
+
+  const targetCals =
+    user?.target_calories ||
+    Number(localStorage.getItem('np_nutrition_target_calories')) ||
+    summary?.target_calories ||
+    2500;
+
+  const targetProtein =
+    user?.target_protein_g ||
+    Number(localStorage.getItem('np_nutrition_target_protein_g')) ||
+    summary?.target_protein_g ||
+    170;
+
+  const targetCarbs =
+    user?.target_carbs_g ||
+    Number(localStorage.getItem('np_nutrition_target_carbs_g')) ||
+    summary?.target_carbs_g ||
+    280;
+
+  const targetFat =
+    user?.target_fat_g ||
+    Number(localStorage.getItem('np_nutrition_target_fat_g')) ||
+    summary?.target_fat_g ||
+    70;
+
   // Calculations
   const totalCals = summary?.total_calories || 0;
-  const targetCals = summary?.target_calories || 2500;
   const remCals = targetCals - totalCals;
   const calsPct = Math.min(100, Math.round((totalCals / targetCals) * 100));
 
   const totalProtein = Math.round(summary?.total_protein_g || 0);
-  const targetProtein = Math.round(summary?.target_protein_g || 170);
   const remProtein = targetProtein - totalProtein;
   const proteinPct = Math.min(100, Math.round((totalProtein / targetProtein) * 100));
 
   const totalCarbs = Math.round(summary?.total_carbs_g || 0);
-  const targetCarbs = Math.round(summary?.target_carbs_g || 280);
   const remCarbs = targetCarbs - totalCarbs;
   const carbsPct = Math.min(100, Math.round((totalCarbs / targetCarbs) * 100));
 
   const totalFat = Math.round(summary?.total_fat_g || 0);
-  const targetFat = Math.round(summary?.target_fat_g || 70);
   const remFat = targetFat - totalFat;
   const fatPct = Math.min(100, Math.round((totalFat / targetFat) * 100));
 
