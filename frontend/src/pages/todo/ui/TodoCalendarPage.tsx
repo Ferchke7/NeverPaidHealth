@@ -178,7 +178,7 @@ export const TodoCalendarPage: React.FC = () => {
 
           <div className="flex items-center gap-2 flex-wrap">
             <button
-              onClick={() => startQuickSession('Фокус-сессия', 'work', 'pomodoro')}
+              onClick={() => startQuickSession('Фокус-сессия', 'work', 25, '25m', 'pomodoro')}
               className="px-3 py-2 rounded-xl bg-dark-800 hover:bg-dark-750 border border-dark-700 text-brand-400 font-bold text-xs flex items-center gap-1.5 transition-all active:scale-95 shadow-sm"
               title="Запустить свободный 25-минутный Помодоро"
             >

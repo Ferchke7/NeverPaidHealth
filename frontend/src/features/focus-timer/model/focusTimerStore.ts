@@ -5,6 +5,60 @@ import { TodoCategory } from '../../../entities/todo/model/types.ts';
 
 export type TimerMode = 'pomodoro' | 'target_timer' | 'stopwatch';
 export type PomodoroPhase = 'work' | 'short_break' | 'long_break';
+export type SplitStrategy = '25m' | '30m' | '50m' | 'equal2' | 'single';
+
+export function calculatePomodoroPlan(
+  targetTotalMinutes: number,
+  strategy: SplitStrategy = '25m',
+  customWorkMinutes?: number
+): { rounds: number[]; totalWorkSec: number } {
+  const totalMin = Math.max(1, targetTotalMinutes || 25);
+
+  if (strategy === 'single') {
+    return {
+      rounds: [totalMin * 60],
+      totalWorkSec: totalMin * 60,
+    };
+  }
+
+  if (strategy === 'equal2') {
+    const half1 = Math.ceil(totalMin / 2);
+    const half2 = Math.max(1, totalMin - half1);
+    return {
+      rounds: [half1 * 60, half2 * 60],
+      totalWorkSec: totalMin * 60,
+    };
+  }
+
+  let blockSize = 25;
+  if (strategy === '30m') blockSize = 30;
+  else if (strategy === '50m') blockSize = 50;
+  else if (customWorkMinutes) blockSize = customWorkMinutes;
+
+  if (totalMin <= blockSize) {
+    return {
+      rounds: [totalMin * 60],
+      totalWorkSec: totalMin * 60,
+    };
+  }
+
+  const rounds: number[] = [];
+  let remaining = totalMin;
+  while (remaining > 0) {
+    if (remaining <= blockSize) {
+      rounds.push(remaining * 60);
+      remaining = 0;
+    } else {
+      rounds.push(blockSize * 60);
+      remaining -= blockSize;
+    }
+  }
+
+  return {
+    rounds,
+    totalWorkSec: totalMin * 60,
+  };
+}
 
 interface FocusTimerState {
   isActive: boolean;
@@ -17,7 +71,11 @@ interface FocusTimerState {
   pomodoroRound: number;
   totalPomodoroRounds: number;
 
-  workDurationSec: number;       // default 25 * 60 = 1500
+  targetTotalMinutes: number;
+  splitStrategy: SplitStrategy;
+  roundDurationsSec: number[];
+
+  workDurationSec: number;       // duration of current active work round
   shortBreakDurationSec: number; // default 5 * 60 = 300
   longBreakDurationSec: number;  // default 15 * 60 = 900
   targetDurationSec: number;     // for target_timer mode
@@ -37,15 +95,23 @@ interface FocusTimerState {
     title: string;
     category: TodoCategory;
     targetDurationMinutes?: number;
+    strategy?: SplitStrategy;
     mode?: TimerMode;
     workMinutes?: number;
   }) => void;
-  startQuickSession: (title: string, category: TodoCategory, mode?: TimerMode, workMinutes?: number) => void;
+  startQuickSession: (
+    title: string,
+    category: TodoCategory,
+    targetDurationMinutes?: number,
+    strategy?: SplitStrategy,
+    mode?: TimerMode
+  ) => void;
   setMode: (mode: TimerMode) => void;
+  setSplitStrategy: (strategy: SplitStrategy) => void;
+  setTargetTotalMinutes: (minutes: number) => void;
   setWorkDurationMinutes: (minutes: number) => void;
   setBreakDurationMinutes: (minutes: number) => void;
   setLongBreakDurationMinutes: (minutes: number) => void;
-  setTargetDurationMinutes: (minutes: number) => void;
   pause: () => void;
   resume: () => void;
   syncTick: () => void;
@@ -118,7 +184,11 @@ export const useFocusTimerStore = create<FocusTimerState>()(
       mode: 'pomodoro',
       pomodoroPhase: 'work',
       pomodoroRound: 1,
-      totalPomodoroRounds: 4,
+      totalPomodoroRounds: 1,
+
+      targetTotalMinutes: 25,
+      splitStrategy: '25m',
+      roundDurationsSec: [25 * 60],
 
       workDurationSec: 25 * 60,
       shortBreakDurationSec: 5 * 60,
@@ -143,10 +213,19 @@ export const useFocusTimerStore = create<FocusTimerState>()(
         }
       },
 
-      startForTodo: ({ todoId, title, category, targetDurationMinutes = 25, mode = 'pomodoro', workMinutes = 25 }) => {
-        const targetSec = Math.max(1, targetDurationMinutes) * 60;
-        const workSec = Math.max(1, workMinutes) * 60;
-        const initialRemaining = mode === 'pomodoro' ? workSec : targetSec;
+      startForTodo: ({
+        todoId,
+        title,
+        category,
+        targetDurationMinutes = 25,
+        strategy = '25m',
+        mode = 'pomodoro',
+        workMinutes,
+      }) => {
+        const totalMin = Math.max(1, targetDurationMinutes || 25);
+        const { rounds } = calculatePomodoroPlan(totalMin, strategy, workMinutes);
+        const initialRoundDuration = rounds[0] || 25 * 60;
+        const initialRemaining = mode === 'pomodoro' ? initialRoundDuration : totalMin * 60;
         const now = Date.now();
 
         get().requestNotificationPermission();
@@ -160,8 +239,12 @@ export const useFocusTimerStore = create<FocusTimerState>()(
           mode,
           pomodoroPhase: 'work',
           pomodoroRound: 1,
-          workDurationSec: workSec,
-          targetDurationSec: targetSec,
+          totalPomodoroRounds: rounds.length,
+          targetTotalMinutes: totalMin,
+          splitStrategy: strategy,
+          roundDurationsSec: rounds,
+          workDurationSec: initialRoundDuration,
+          targetDurationSec: totalMin * 60,
           targetEndTime: mode === 'stopwatch' ? null : now + initialRemaining * 1000,
           currentSegmentStartedAt: now,
           accumulatedWorkSeconds: 0,
@@ -174,9 +257,17 @@ export const useFocusTimerStore = create<FocusTimerState>()(
         playChimeSound('work');
       },
 
-      startQuickSession: (title, category, mode = 'pomodoro', workMinutes = 25) => {
-        const workSec = Math.max(1, workMinutes) * 60;
-        const initialRemaining = workSec;
+      startQuickSession: (
+        title,
+        category,
+        targetDurationMinutes = 25,
+        strategy = '25m',
+        mode = 'pomodoro'
+      ) => {
+        const totalMin = Math.max(1, targetDurationMinutes || 25);
+        const { rounds } = calculatePomodoroPlan(totalMin, strategy);
+        const initialRoundDuration = rounds[0] || 25 * 60;
+        const initialRemaining = mode === 'pomodoro' ? initialRoundDuration : totalMin * 60;
         const now = Date.now();
 
         get().requestNotificationPermission();
@@ -190,8 +281,12 @@ export const useFocusTimerStore = create<FocusTimerState>()(
           mode,
           pomodoroPhase: 'work',
           pomodoroRound: 1,
-          workDurationSec: workSec,
-          targetDurationSec: workSec,
+          totalPomodoroRounds: rounds.length,
+          targetTotalMinutes: totalMin,
+          splitStrategy: strategy,
+          roundDurationsSec: rounds,
+          workDurationSec: initialRoundDuration,
+          targetDurationSec: totalMin * 60,
           targetEndTime: mode === 'stopwatch' ? null : now + initialRemaining * 1000,
           currentSegmentStartedAt: now,
           accumulatedWorkSeconds: 0,
@@ -207,7 +302,7 @@ export const useFocusTimerStore = create<FocusTimerState>()(
       setMode: (mode: TimerMode) => {
         const state = get();
         let initialRemaining = state.workDurationSec;
-        if (mode === 'target_timer') initialRemaining = state.targetDurationSec;
+        if (mode === 'target_timer') initialRemaining = state.targetTotalMinutes * 60;
         if (mode === 'stopwatch') initialRemaining = 0;
 
         const now = Date.now();
@@ -216,6 +311,50 @@ export const useFocusTimerStore = create<FocusTimerState>()(
           pomodoroPhase: 'work',
           secondsRemaining: initialRemaining,
           targetEndTime: state.isRunning && mode !== 'stopwatch' ? now + initialRemaining * 1000 : null,
+        });
+      },
+
+      setSplitStrategy: (strategy: SplitStrategy) => {
+        const state = get();
+        const { rounds } = calculatePomodoroPlan(state.targetTotalMinutes, strategy);
+        const newTotalRounds = rounds.length;
+        const currentRoundIdx = Math.min(state.pomodoroRound, newTotalRounds);
+        const currentRoundSec = rounds[currentRoundIdx - 1] || rounds[0];
+
+        const now = Date.now();
+        const nextRemaining = state.pomodoroPhase === 'work' ? currentRoundSec : state.secondsRemaining;
+
+        set({
+          splitStrategy: strategy,
+          roundDurationsSec: rounds,
+          totalPomodoroRounds: newTotalRounds,
+          pomodoroRound: currentRoundIdx,
+          workDurationSec: currentRoundSec,
+          secondsRemaining: nextRemaining,
+          targetEndTime: state.isRunning && state.mode !== 'stopwatch' ? now + nextRemaining * 1000 : null,
+        });
+      },
+
+      setTargetTotalMinutes: (minutes: number) => {
+        const state = get();
+        const totalMin = Math.max(1, minutes);
+        const { rounds } = calculatePomodoroPlan(totalMin, state.splitStrategy);
+        const newTotalRounds = rounds.length;
+        const currentRoundIdx = 1;
+        const currentRoundSec = rounds[0];
+
+        const now = Date.now();
+        const nextRemaining = state.mode === 'target_timer' ? totalMin * 60 : currentRoundSec;
+
+        set({
+          targetTotalMinutes: totalMin,
+          targetDurationSec: totalMin * 60,
+          roundDurationsSec: rounds,
+          totalPomodoroRounds: newTotalRounds,
+          pomodoroRound: currentRoundIdx,
+          workDurationSec: currentRoundSec,
+          secondsRemaining: nextRemaining,
+          targetEndTime: state.isRunning && state.mode !== 'stopwatch' ? now + nextRemaining * 1000 : null,
         });
       },
 
@@ -242,15 +381,6 @@ export const useFocusTimerStore = create<FocusTimerState>()(
         const state = get();
         set({ longBreakDurationSec: sec });
         if (state.pomodoroPhase === 'long_break' && !state.isRunning) {
-          set({ secondsRemaining: sec });
-        }
-      },
-
-      setTargetDurationMinutes: (minutes: number) => {
-        const sec = Math.max(1, minutes) * 60;
-        const state = get();
-        set({ targetDurationSec: sec });
-        if (state.mode === 'target_timer' && !state.isRunning) {
           set({ secondsRemaining: sec });
         }
       },
@@ -347,9 +477,25 @@ export const useFocusTimerStore = create<FocusTimerState>()(
 
         // Pomodoro State Machine transitions
         if (state.pomodoroPhase === 'work') {
+          // Check if this was the final work round!
+          if (state.pomodoroRound >= state.totalPomodoroRounds) {
+            playChimeSound('complete');
+            sendBrowserNotification('Все помодоро завершены! 🎉', `Задача «${state.taskTitle}» выполнена на 100%.`);
+            set({
+              secondsRemaining: 0,
+              secondsElapsedTotal: currentTotalElapsed,
+              accumulatedWorkSeconds: currentTotalElapsed,
+              isRunning: false,
+              targetEndTime: null,
+              currentSegmentStartedAt: null,
+            });
+            return;
+          }
+
+          // Move to break
           playChimeSound('break');
           sendBrowserNotification('Время отдохнуть!', `Помодоро #${state.pomodoroRound} завершен. Сделайте перерыв.`);
-          const isLongBreak = state.pomodoroRound >= state.totalPomodoroRounds;
+          const isLongBreak = state.pomodoroRound % 4 === 0;
           const nextPhase: PomodoroPhase = isLongBreak ? 'long_break' : 'short_break';
           const nextDuration = isLongBreak ? state.longBreakDurationSec : state.shortBreakDurationSec;
 
@@ -364,17 +510,18 @@ export const useFocusTimerStore = create<FocusTimerState>()(
         } else {
           // Break ended -> Next work round
           playChimeSound('work');
-          const nextRound = state.pomodoroPhase === 'long_break' ? 1 : state.pomodoroRound + 1;
-          sendBrowserNotification('Время работать!', `Помодоро #${nextRound} начинается.`);
-          const workDuration = state.workDurationSec;
+          const nextRound = state.pomodoroRound + 1;
+          const nextRoundSec = state.roundDurationsSec[nextRound - 1] || state.workDurationSec;
+          sendBrowserNotification('Время работать!', `Помодоро #${nextRound} из ${state.totalPomodoroRounds} начинается.`);
 
           set({
             pomodoroPhase: 'work',
             pomodoroRound: nextRound,
-            secondsRemaining: workDuration,
+            workDurationSec: nextRoundSec,
+            secondsRemaining: nextRoundSec,
             secondsElapsedTotal: currentTotalElapsed,
             currentSegmentStartedAt: now,
-            targetEndTime: now + workDuration * 1000,
+            targetEndTime: now + nextRoundSec * 1000,
           });
         }
       },
@@ -393,7 +540,18 @@ export const useFocusTimerStore = create<FocusTimerState>()(
           : 0;
 
         if (state.pomodoroPhase === 'work') {
-          const isLong = state.pomodoroRound >= state.totalPomodoroRounds;
+          if (state.pomodoroRound >= state.totalPomodoroRounds) {
+            playChimeSound('complete');
+            set({
+              secondsRemaining: 0,
+              isRunning: false,
+              targetEndTime: null,
+              currentSegmentStartedAt: null,
+            });
+            return;
+          }
+
+          const isLong = state.pomodoroRound % 4 === 0;
           const nextPhase: PomodoroPhase = isLong ? 'long_break' : 'short_break';
           const nextDuration = isLong ? state.longBreakDurationSec : state.shortBreakDurationSec;
           const updatedAccumulated = state.accumulatedWorkSeconds + segmentElapsed;
@@ -407,27 +565,28 @@ export const useFocusTimerStore = create<FocusTimerState>()(
             targetEndTime: state.isRunning ? now + nextDuration * 1000 : null,
           });
         } else {
-          const nextRound = state.pomodoroPhase === 'long_break' ? 1 : state.pomodoroRound + 1;
-          const workDuration = state.workDurationSec;
+          const nextRound = Math.min(state.pomodoroRound + 1, state.totalPomodoroRounds);
+          const nextRoundSec = state.roundDurationsSec[nextRound - 1] || state.workDurationSec;
 
           set({
             pomodoroPhase: 'work',
             pomodoroRound: nextRound,
-            secondsRemaining: workDuration,
+            workDurationSec: nextRoundSec,
+            secondsRemaining: nextRoundSec,
             currentSegmentStartedAt: state.isRunning ? now : null,
-            targetEndTime: state.isRunning ? now + workDuration * 1000 : null,
+            targetEndTime: state.isRunning ? now + nextRoundSec * 1000 : null,
           });
         }
       },
 
       resetCurrentPhase: () => {
         const state = get();
-        let dur = state.workDurationSec;
+        let dur = state.roundDurationsSec[state.pomodoroRound - 1] || state.workDurationSec;
         if (state.mode === 'pomodoro') {
           if (state.pomodoroPhase === 'short_break') dur = state.shortBreakDurationSec;
           if (state.pomodoroPhase === 'long_break') dur = state.longBreakDurationSec;
         } else if (state.mode === 'target_timer') {
-          dur = state.targetDurationSec;
+          dur = state.targetTotalMinutes * 60;
         } else {
           dur = 0;
         }
@@ -500,7 +659,7 @@ export const useFocusTimerStore = create<FocusTimerState>()(
       closeModal: () => set({ isModalOpen: false }),
     }),
     {
-      name: 'np_focus_timer_state_v3',
+      name: 'np_focus_timer_state_v4',
       partialize: (state) => ({
         isActive: state.isActive,
         isRunning: state.isRunning,
@@ -510,6 +669,10 @@ export const useFocusTimerStore = create<FocusTimerState>()(
         mode: state.mode,
         pomodoroPhase: state.pomodoroPhase,
         pomodoroRound: state.pomodoroRound,
+        totalPomodoroRounds: state.totalPomodoroRounds,
+        targetTotalMinutes: state.targetTotalMinutes,
+        splitStrategy: state.splitStrategy,
+        roundDurationsSec: state.roundDurationsSec,
         workDurationSec: state.workDurationSec,
         shortBreakDurationSec: state.shortBreakDurationSec,
         longBreakDurationSec: state.longBreakDurationSec,
