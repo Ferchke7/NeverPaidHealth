@@ -45,9 +45,13 @@ func StartFromRoutine(userID uuid.UUID, r *routine.Routine, now time.Time) *Work
 	w := StartWorkout(userID, r.Name(), &[]uuid.UUID{r.ID()}[0], now)
 	for idx, re := range r.Exercises() {
 		we := NewWorkoutExercise(re.ExerciseID(), re.ExerciseName(), "weight_reps", idx)
+		targetReps := 10
+		if re.TargetRepsMin() != nil && *re.TargetRepsMin() > 0 {
+			targetReps = *re.TargetRepsMin()
+		}
 		for s := 1; s <= re.TargetSets(); s++ {
-			// Prepopulate with default empty sets
-			reps, _ := measure.NewReps(10)
+			// Prepopulate with default sets based on routine targets
+			reps, _ := measure.NewReps(targetReps)
 			we.AddSet(measure.SetTypeNormal, measure.ZeroWeight(), reps, nil, nil)
 		}
 		w.exercises = append(w.exercises, we)
