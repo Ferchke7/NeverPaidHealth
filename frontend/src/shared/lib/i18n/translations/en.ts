@@ -187,4 +187,20 @@ export const en = {
   'auth.featureFree': '100% Free',
   'auth.featureFast': 'Fast Gym UI',
   'auth.featureExact': 'Exact 1RM Math',
+
+  // PWA Install
+  'pwa.installApp': 'Install App',
+  'pwa.installTitle': 'Install duda.uz on your Phone',
+  'pwa.installDesc': 'Install as a standalone app: no browser address bar, full-screen view, and lightning fast access.',
+  'pwa.installBtn': 'Install',
+  'pwa.installed': 'App Installed',
+  'pwa.iosStep1': '1. Tap the Share button',
+  'pwa.iosStep1Desc': 'In Safari toolbar tap the share icon [ ⎋ ].',
+  'pwa.iosStep2': '2. Select "Add to Home Screen"',
+  'pwa.iosStep2Desc': 'Scroll down in the action sheet and tap "Add to Home Screen" [ ⊞ ].',
+  'pwa.iosStep3': '3. Tap "Add"',
+  'pwa.iosStep3Desc': 'duda.uz icon will appear on your home screen and run standalone.',
+  'pwa.androidPrompt': 'Tap the button below to add duda.uz directly to your home screen.',
+  'pwa.dismiss': 'Later',
 };
+

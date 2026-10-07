@@ -256,7 +256,7 @@ export const ActiveWorkoutSheet: React.FC = () => {
     <>
       {/* 1. Minimized Floating Bottom Bar */}
       {workout && !isOpen && (
-        <div className="fixed bottom-16 md:bottom-4 left-4 right-4 max-w-xl mx-auto z-40 bg-dark-900/95 backdrop-blur-md border border-brand-500/40 rounded-2xl p-3 shadow-2xl flex items-center justify-between animate-in slide-in-from-bottom duration-300">
+        <div className="fixed bottom-[calc(4.25rem+env(safe-area-inset-bottom,0px))] md:bottom-4 left-4 right-4 max-w-xl mx-auto z-40 bg-dark-900/95 backdrop-blur-md border border-brand-500/40 rounded-2xl p-3 shadow-2xl flex items-center justify-between animate-in slide-in-from-bottom duration-300">
           <div className="flex items-center gap-3 cursor-pointer flex-1" onClick={openSheet}>
             <div className="w-10 h-10 rounded-xl bg-brand-500/20 text-brand-400 flex items-center justify-center font-bold">
               <Dumbbell className="w-5 h-5 animate-pulse" />
@@ -295,7 +295,7 @@ export const ActiveWorkoutSheet: React.FC = () => {
       {workout && isOpen && (
         <div className="fixed inset-0 z-50 bg-[#09090b] flex flex-col animate-in slide-in-from-bottom duration-300 overflow-hidden">
           {/* Top Sticky Header */}
-          <header className="sticky top-0 z-20 bg-dark-900/95 backdrop-blur-md border-b border-dark-800 px-3 py-2.5 sm:px-4 sm:py-3 shadow-lg">
+          <header className="sticky top-0 z-20 bg-dark-900/95 backdrop-blur-md border-b border-dark-800 px-3 py-2.5 sm:px-4 sm:py-3 pt-[calc(0.625rem+env(safe-area-inset-top,0px))] shadow-lg">
             <div className="flex items-center justify-between gap-2 max-w-3xl mx-auto">
               {/* Left: Minimize & Title */}
               <div className="flex items-center gap-2 min-w-0 flex-1">

@@ -187,4 +187,20 @@ export const uz = {
   'auth.featureFree': '100% Bepul',
   'auth.featureFast': 'Tezkor interfeys',
   'auth.featureExact': 'Aniq 1RM hisob',
+
+  // PWA O'rnatish
+  'pwa.installApp': 'Ilovani o‘rnatish',
+  'pwa.installTitle': 'duda.uz ni telefonga o‘rnatish',
+  'pwa.installDesc': 'Brauzer qatorisiz, to‘liq ekranda va tezkor ilova sifatida telefonga o‘rnating.',
+  'pwa.installBtn': 'O‘rnatish',
+  'pwa.installed': 'Ilova o‘rnatildi',
+  'pwa.iosStep1': '1. «Ulashish» tugmasini bosing',
+  'pwa.iosStep1Desc': 'Safari pastki panelida [ ⎋ ] ulashish belgisini bosing.',
+  'pwa.iosStep2': '2. «Asosiy ekranga» ni tanlang',
+  'pwa.iosStep2Desc': 'Menyuni pastga suring va «Asosiy ekranga» [ ⊞ ] ni bosing.',
+  'pwa.iosStep3': '3. «Qo‘shish» tugmasini bosing',
+  'pwa.iosStep3Desc': 'duda.uz belgisi telefoningiz bosh ekranida paydo bo‘ladi.',
+  'pwa.androidPrompt': 'Telefoningiz bosh ekraniga o‘rnatish uchun quyidagi tugmani bosing.',
+  'pwa.dismiss': 'Keyinroq',
 };
+

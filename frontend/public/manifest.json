@@ -1,0 +1,71 @@
+{
+  "name": "duda.uz — Free Workout & Nutrition Tracker",
+  "short_name": "duda.uz",
+  "description": "Evidence-based training, smart nutrition macro tracking with AI Gemini Vision, and personal AI coach.",
+  "start_url": "/",
+  "id": "/",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["standalone", "fullscreen", "minimal-ui", "browser"],
+  "orientation": "portrait-primary",
+  "theme_color": "#09090b",
+  "background_color": "#09090b",
+  "lang": "ru",
+  "dir": "ltr",
+  "categories": ["health", "fitness", "lifestyle", "sports"],
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-maskable-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "AI Тренер",
+      "short_name": "AI Coach",
+      "description": "Спросить AI тренера или оценить форму",
+      "url": "/?tab=coach",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Питание и БЖУ",
+      "short_name": "Питание",
+      "description": "Сфотографировать еду и проверить калории",
+      "url": "/?tab=nutrition",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Мои тренировки",
+      "short_name": "Тренировки",
+      "description": "Открыть программы и начать тренировку",
+      "url": "/?tab=workouts",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}

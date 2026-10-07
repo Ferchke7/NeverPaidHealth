@@ -4,6 +4,8 @@ import { useAuthStore } from '../../../entities/user/model/authStore.ts';
 import { UserAvatar } from '../../../entities/user/ui/UserAvatar.tsx';
 import { UnitSwitchToggle } from '../../../features/switch-units/ui/UnitSwitchToggle.tsx';
 import { LanguageSwitchToggle } from '../../../features/switch-language/ui/LanguageSwitchToggle.tsx';
+import { PWAInstallBanner } from '../../../features/pwa-install/ui/PWAInstallBanner.tsx';
+import { PWAInstallButton } from '../../../features/pwa-install/ui/PWAInstallButton.tsx';
 import { useTranslation } from '../../../shared/lib/i18n/i18n.ts';
 
 export type NavTab = 'workouts' | 'programs' | 'exercises' | 'history' | 'coach' | 'nutrition' | 'progress' | 'body' | 'profile';
@@ -34,15 +36,15 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   ];
 
   return (
-    <div className="min-h-screen flex flex-col bg-dark-900 text-zinc-100">
+    <div className="min-h-screen flex flex-col bg-dark-900 text-zinc-100 selection:bg-brand-500 selection:text-black">
       {/* Top App Header */}
-      <header className="sticky top-0 z-40 bg-dark-900/90 backdrop-blur border-b border-dark-800 px-4 py-2.5 flex items-center justify-between">
+      <header className="sticky top-0 z-40 bg-dark-900/95 backdrop-blur border-b border-dark-800 px-4 py-2.5 pt-[calc(0.625rem+env(safe-area-inset-top,0px))] flex items-center justify-between">
         <div className="flex items-center gap-6">
           <button
             onClick={() => onSelectTab('workouts')}
             className="flex items-center gap-2.5 hover:opacity-90 transition-opacity"
           >
-            <div className="w-8 h-8 rounded-lg bg-brand-500/10 border border-brand-500/30 flex items-center justify-center text-brand-500 font-bold">
+            <div className="w-8 h-8 rounded-lg bg-brand-500/10 border border-brand-500/30 flex items-center justify-center text-brand-500 font-bold shadow-sm">
               <Dumbbell className="w-4 h-4" />
             </div>
             <span className="font-bold text-base tracking-tight hidden sm:inline">
@@ -76,6 +78,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3">
+          <PWAInstallButton className="hidden lg:flex" />
           <LanguageSwitchToggle variant="header" />
           <UnitSwitchToggle />
           <div className="flex items-center gap-2 pl-2 border-l border-dark-700">
@@ -106,15 +109,16 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
       <main
         className={
           activeTab === 'coach'
-            ? 'flex-1 w-full max-w-5xl mx-auto flex flex-col p-0 pb-[54px] md:pb-3 md:pt-2 md:px-4 h-[calc(100dvh-53px)] md:h-[calc(100dvh-57px)] overflow-hidden'
-            : 'flex-1 max-w-4xl w-full mx-auto p-4 pb-24 md:pb-8'
+            ? 'flex-1 w-full max-w-5xl mx-auto flex flex-col p-0 pb-[calc(54px+env(safe-area-inset-bottom,0px))] md:pb-3 md:pt-2 md:px-4 h-[calc(100dvh-53px)] md:h-[calc(100dvh-57px)] overflow-hidden'
+            : 'flex-1 max-w-4xl w-full mx-auto p-4 pb-[calc(6rem+env(safe-area-inset-bottom,0px))] md:pb-8'
         }
       >
+        {activeTab !== 'coach' && <PWAInstallBanner />}
         {children}
       </main>
 
       {/* Bottom Mobile Navigation Bar */}
-      <nav className="fixed bottom-0 left-0 right-0 z-40 bg-dark-900/95 backdrop-blur border-t border-dark-800 md:hidden flex items-center justify-around py-1.5 px-1">
+      <nav className="fixed bottom-0 left-0 right-0 z-40 bg-dark-900/95 backdrop-blur border-t border-dark-800 md:hidden flex items-center justify-around py-1.5 px-1 pb-[calc(0.375rem+env(safe-area-inset-bottom,0px))]">
         {navItems.map((item) => {
           const isActive = activeTab === item.id;
           return (

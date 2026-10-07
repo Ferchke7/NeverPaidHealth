@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#18181b"/>
+      <stop offset="100%" stop-color="#09090b"/>
+    </linearGradient>
+    <linearGradient id="orangeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fb923c"/>
+      <stop offset="100%" stop-color="#f97316"/>
+    </linearGradient>
+    <linearGradient id="emeraldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#34d399"/>
+      <stop offset="100%" stop-color="#10b981"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="512" height="512" fill="url(#bgGrad)"/>
+
+  <!-- Dumbbell Icon -->
+  <g transform="translate(0, 0)">
+    <rect x="130" y="244" width="252" height="24" rx="12" fill="url(#orangeGrad)"/>
+    <rect x="226" y="240" width="60" height="32" rx="6" fill="#fdba74"/>
+    
+    <rect x="110" y="170" width="28" height="172" rx="12" fill="url(#orangeGrad)"/>
+    <rect x="146" y="196" width="20" height="120" rx="8" fill="url(#orangeGrad)"/>
+    <rect x="94" y="246" width="16" height="20" rx="4" fill="#ea580c"/>
+
+    <rect x="374" y="170" width="28" height="172" rx="12" fill="url(#orangeGrad)"/>
+    <rect x="346" y="196" width="20" height="120" rx="8" fill="url(#orangeGrad)"/>
+    <rect x="402" y="246" width="16" height="20" rx="4" fill="#ea580c"/>
+  </g>
+
+  <!-- Pulse Bolt -->
+  <path d="M256 140 L272 232 L310 232 L246 372 L258 272 L220 272 Z" 
+        fill="url(#emeraldGrad)" 
+        stroke="#09090b" 
+        stroke-width="5" 
+        stroke-linejoin="round"/>
+</svg>

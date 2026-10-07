@@ -23,6 +23,7 @@ import { Input } from '../../../shared/ui/input.tsx';
 import { UserAvatar } from '../../../entities/user/ui/UserAvatar.tsx';
 import { BMICalculatorCard } from '../../../features/bmi-calculator/ui/BMICalculatorCard.tsx';
 import { LanguageSwitchToggle } from '../../../features/switch-language/ui/LanguageSwitchToggle.tsx';
+import { PWAInstallButton } from '../../../features/pwa-install/ui/PWAInstallButton.tsx';
 import { useTranslation } from '../../../shared/lib/i18n/i18n.ts';
 
 export const ProfilePage: React.FC = () => {
@@ -404,6 +405,9 @@ export const ProfilePage: React.FC = () => {
         </form>
       </Card>
 
+      {/* PWA App Installation Option */}
+      <PWAInstallButton variant="card" />
+
       {/* Data Backup & Privacy */}
       <Card className="p-6 bg-dark-800/80 border-dark-700/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
@@ -428,3 +432,4 @@ export const ProfilePage: React.FC = () => {
     </div>
   );
 };
+
