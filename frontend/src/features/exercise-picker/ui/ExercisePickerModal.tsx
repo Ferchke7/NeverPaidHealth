@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
-import { Search, X, Plus, HelpCircle } from 'lucide-react';
+import { Search, Plus, HelpCircle, Dumbbell } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '../../../shared/api/client.ts';
 import { Exercise } from '../../../entities/exercise/model/types.ts';
 import { Button } from '../../../shared/ui/button.tsx';
 import { Badge } from '../../../shared/ui/card.tsx';
+import { Input } from '../../../shared/ui/input.tsx';
+import { Modal } from '../../../shared/ui/modal.tsx';
+import { Skeleton } from '../../../shared/ui/skeleton.tsx';
 import { ExerciseThumbnail } from '../../../entities/exercise/ui/ExerciseThumbnail.tsx';
 import { ExerciseInfoModal } from '../../exercise-detail/ui/ExerciseInfoModal.tsx';
 
@@ -47,56 +50,59 @@ export const ExercisePickerModal: React.FC<ExercisePickerModalProps> = ({
     enabled: isOpen,
   });
 
-  if (!isOpen) return null;
-
   return (
     <>
-      <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-3 backdrop-blur-sm">
-        <div className="bg-dark-900 border border-dark-700 rounded-2xl max-w-lg w-full max-h-[85vh] flex flex-col shadow-2xl overflow-hidden animate-in zoom-in-95">
-          {/* Header */}
-          <div className="p-4 border-b border-dark-800 flex items-center justify-between">
-            <h3 className="font-bold text-base text-zinc-100">Select Exercise</h3>
-            <button onClick={onClose} className="p-1 text-zinc-400 hover:text-zinc-100 rounded-lg">
-              <X className="w-5 h-5" />
-            </button>
+      <Modal
+        isOpen={isOpen}
+        onClose={onClose}
+        size="lg"
+        icon={
+          <div className="w-8 h-8 rounded-xl bg-brand-500/20 text-brand-400 border border-brand-500/30 flex items-center justify-center shrink-0">
+            <Dumbbell className="w-4 h-4" />
+          </div>
+        }
+        title="Выбор упражнения"
+        subtitle="Каталог спортивных упражнений"
+      >
+        <div className="space-y-3">
+          {/* Search Bar */}
+          <Input
+            placeholder="Поиск по названию..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            startContent={<Search className="w-4 h-4 text-zinc-400" />}
+            size="sm"
+          />
+
+          {/* Muscle Groups Filter Chips */}
+          <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+            {MUSCLE_GROUPS.map((mg) => (
+              <button
+                key={mg}
+                onClick={() => setSelectedMuscle(mg)}
+                className={`px-3 py-1 rounded-xl text-xs font-semibold capitalize shrink-0 transition-all cursor-pointer select-none ${
+                  selectedMuscle === mg
+                    ? 'bg-brand-500 text-dark-950 font-bold shadow-md shadow-brand-500/20'
+                    : 'bg-dark-800 text-zinc-400 hover:text-zinc-200 border border-dark-700'
+                }`}
+              >
+                {mg.replace('_', ' ')}
+              </button>
+            ))}
           </div>
 
-          {/* Search & Filter */}
-          <div className="p-3 border-b border-dark-800 space-y-2.5">
-            <div className="relative">
-              <Search className="w-4 h-4 text-zinc-500 absolute left-3 top-2.5" />
-              <input
-                type="text"
-                placeholder="Search exercise..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="w-full bg-dark-800 border border-dark-700 rounded-lg pl-9 pr-3 py-1.5 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-brand-500"
-              />
-            </div>
-
-            <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none">
-              {MUSCLE_GROUPS.map((mg) => (
-                <button
-                  key={mg}
-                  onClick={() => setSelectedMuscle(mg)}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-medium capitalize shrink-0 transition-colors ${
-                    selectedMuscle === mg
-                      ? 'bg-brand-500 text-dark-950 font-semibold shadow-sm'
-                      : 'bg-dark-800 text-zinc-400 hover:text-zinc-200'
-                  }`}
-                >
-                  {mg.replace('_', ' ')}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* List of Exercises */}
-          <div className="flex-1 overflow-y-auto p-3 space-y-2">
+          {/* Exercises List */}
+          <div className="space-y-2 pt-1">
             {isLoading ? (
-              <div className="text-center py-8 text-xs text-zinc-500">Loading catalog...</div>
+              <div className="space-y-2">
+                {[1, 2, 3, 4].map((i) => (
+                  <Skeleton key={i} className="h-16 w-full" />
+                ))}
+              </div>
             ) : exercises.length === 0 ? (
-              <div className="text-center py-8 text-xs text-zinc-500">No exercises found</div>
+              <div className="text-center py-8 text-xs text-zinc-500">
+                Упражнения не найдены
+              </div>
             ) : (
               exercises.map((ex) => (
                 <div
@@ -105,7 +111,7 @@ export const ExercisePickerModal: React.FC<ExercisePickerModalProps> = ({
                     onSelectExercise(ex);
                     onClose();
                   }}
-                  className="p-2.5 rounded-xl bg-dark-800/70 border border-dark-700/60 flex items-center justify-between gap-2.5 hover:border-brand-500/40 hover:bg-dark-800 cursor-pointer transition-all group"
+                  className="p-3 rounded-2xl bg-dark-800/80 border border-dark-700/80 flex items-center justify-between gap-3 hover:border-brand-500/50 hover:bg-dark-800 cursor-pointer transition-all group shadow-sm"
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <ExerciseThumbnail
@@ -114,11 +120,11 @@ export const ExercisePickerModal: React.FC<ExercisePickerModalProps> = ({
                       size="sm"
                     />
                     <div className="min-w-0">
-                      <div className="font-semibold text-sm text-zinc-100 truncate group-hover:text-white">
+                      <div className="font-bold text-sm text-zinc-100 truncate group-hover:text-brand-400 transition-colors">
                         {ex.name}
                       </div>
                       <div className="flex items-center gap-2 mt-0.5 text-xs text-zinc-400">
-                        <Badge variant="brand">{ex.primary_muscle_group}</Badge>
+                        <Badge variant="brand" size="sm">{ex.primary_muscle_group}</Badge>
                         <span className="capitalize text-[11px] text-zinc-500">
                           {ex.equipment.replace('_', ' ')}
                         </span>
@@ -126,22 +132,23 @@ export const ExercisePickerModal: React.FC<ExercisePickerModalProps> = ({
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-1 shrink-0">
+                  <div className="flex items-center gap-1.5 shrink-0">
                     <button
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
                         setInspectingExercise(ex);
                       }}
-                      className="p-1.5 text-zinc-500 hover:text-zinc-200 rounded-lg hover:bg-dark-700 transition-colors"
-                      title="View form guide"
+                      className="p-2 text-zinc-400 hover:text-white rounded-xl hover:bg-dark-700 transition-colors"
+                      title="Инструкция и техника"
                     >
                       <HelpCircle className="w-4 h-4" />
                     </button>
                     <Button
                       size="sm"
-                      variant="ghost"
-                      className="text-brand-500 hover:text-brand-400 p-1.5"
+                      variant="primary"
+                      isIconOnly
+                      className="w-8 h-8 rounded-xl"
                     >
                       <Plus className="w-4 h-4" />
                     </Button>
@@ -151,15 +158,15 @@ export const ExercisePickerModal: React.FC<ExercisePickerModalProps> = ({
             )}
           </div>
         </div>
-      </div>
+      </Modal>
 
       {inspectingExercise && (
         <ExerciseInfoModal
-          isOpen={true}
+          isOpen={!!inspectingExercise}
           onClose={() => setInspectingExercise(null)}
           exerciseName={inspectingExercise.name}
           fallbackMuscle={inspectingExercise.primary_muscle_group as string}
-          canAddToWorkout={true}
+          canAddToWorkout
           onAddToWorkout={() => {
             onSelectExercise(inspectingExercise);
             setInspectingExercise(null);

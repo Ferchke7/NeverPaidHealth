@@ -1,15 +1,8 @@
 import React, { useState } from 'react';
-import {
-  X,
-  Play,
-  HelpCircle,
-  Edit3,
-  Clock,
-  Layers,
-  Plus,
-  Copy,
-} from 'lucide-react';
+import { Play, HelpCircle, Edit3, Clock, Layers, Copy } from 'lucide-react';
 import { Button } from '../../../shared/ui/button.tsx';
+import { Modal } from '../../../shared/ui/modal.tsx';
+import { Badge } from '../../../shared/ui/card.tsx';
 import { ExerciseThumbnail } from '../../../entities/exercise/ui/ExerciseThumbnail.tsx';
 import { ExerciseInfoModal } from '../../exercise-detail/ui/ExerciseInfoModal.tsx';
 import { getExerciseVisual } from '../../../shared/lib/exerciseImages.ts';
@@ -77,92 +70,92 @@ export const RoutineDetailModal: React.FC<RoutineDetailModalProps> = ({
 
   return (
     <>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-sm animate-in fade-in">
-        <div className="bg-dark-900 border border-dark-700 w-full max-w-lg rounded-2xl flex flex-col max-h-[90vh] shadow-2xl overflow-hidden animate-in zoom-in-95">
-          {/* Top Header */}
-          <div className="p-4 border-b border-dark-800 flex items-center justify-between">
-            <button
-              onClick={onClose}
-              className="w-8 h-8 rounded-xl bg-dark-800 hover:bg-dark-700 text-zinc-400 hover:text-white flex items-center justify-center transition-colors"
-            >
-              <X className="w-5 h-5" />
-            </button>
-
-            <div className="text-center px-2 flex-1 min-w-0">
-              <div className="flex items-center justify-center gap-1.5 flex-wrap">
-                <h2 className="text-base font-extrabold text-white truncate">{routine.name}</h2>
-                {isSystemRoutine ? (
-                  <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-brand-500/15 text-brand-400 border border-brand-500/30 shrink-0">
-                    Library Template
-                  </span>
-                ) : (
-                  <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 shrink-0">
-                    My Routine
-                  </span>
-                )}
-              </div>
-              <div className="text-xs text-zinc-400 mt-0.5 flex items-center justify-center gap-1.5 font-medium">
-                <span>
-                  {routine.last_performed
-                    ? `Last Performed: ${routine.last_performed}`
-                    : 'Last Performed: Never'}
-                </span>
-              </div>
-            </div>
-
-            {/* Top Right Action: Edit or Customize */}
+      <Modal
+        isOpen={isOpen}
+        onClose={onClose}
+        size="lg"
+        title={
+          <div className="flex items-center gap-2 flex-wrap">
+            <span>{routine.name}</span>
+            <Badge variant={isSystemRoutine ? 'brand' : 'success'} size="sm">
+              {isSystemRoutine ? 'Библиотека' : 'Моя программа'}
+            </Badge>
+          </div>
+        }
+        subtitle={
+          routine.last_performed
+            ? `Выполнялась: ${routine.last_performed}`
+            : 'Еще не выполнялась'
+        }
+        footer={
+          <div className="w-full grid grid-cols-1 sm:grid-cols-2 gap-2">
             {onEditRoutine ? (
-              <button
+              <Button
+                variant="outline"
+                size="md"
+                className="font-bold text-xs flex items-center justify-center gap-1.5"
                 onClick={() => {
                   onClose();
                   onEditRoutine(routine);
                 }}
-                className="px-3 py-1.5 rounded-xl bg-brand-500/15 hover:bg-brand-500/25 text-brand-400 font-bold text-xs flex items-center gap-1 border border-brand-500/30 transition-colors"
-                title={isSystemRoutine ? "Customize this workout routine" : "Edit workout routine"}
               >
-                <Edit3 className="w-3.5 h-3.5" />
-                <span>{isSystemRoutine ? 'Customize' : 'Edit'}</span>
-              </button>
-            ) : isSystemRoutine && onCloneToMyRoutines ? (
-              <button
+                <Edit3 className="w-3.5 h-3.5 text-brand-400" />
+                <span>{isSystemRoutine ? 'Настроить под себя' : 'Редактировать'}</span>
+              </Button>
+            ) : onCloneToMyRoutines ? (
+              <Button
+                variant="outline"
+                size="md"
+                className="font-bold text-xs flex items-center justify-center gap-1.5"
                 onClick={() => {
                   onClose();
                   onCloneToMyRoutines(routine);
                 }}
-                className="px-2.5 py-1.5 rounded-xl bg-brand-500/15 hover:bg-brand-500/25 text-brand-400 font-bold text-xs flex items-center gap-1 border border-brand-500/30 transition-colors"
-                title="Save a customizable copy to My Routines"
               >
-                <Plus className="w-3.5 h-3.5" />
-                <span>Add to My</span>
-              </button>
-            ) : (
-              <div className="w-8" />
-            )}
-          </div>
+                <Copy className="w-3.5 h-3.5 text-brand-400" />
+                <span>Сохранить в мои</span>
+              </Button>
+            ) : null}
 
-          {/* Routine Notes Banner (if any) */}
+            <Button
+              variant="primary"
+              size="md"
+              className="font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-brand-500/20"
+              onClick={() => {
+                onClose();
+                onStartWorkout(routine);
+              }}
+            >
+              <Play className="w-4 h-4 fill-current ml-0.5" />
+              <span>Начать тренировку</span>
+            </Button>
+          </div>
+        }
+      >
+        <div className="space-y-3">
+          {/* Notes */}
           {routine.notes && (
-            <div className="bg-dark-800/60 px-4 py-2.5 border-b border-dark-800 text-xs text-zinc-300 italic flex items-center gap-2">
-              <span className="text-zinc-500 font-sans not-italic font-semibold">Notes:</span>
+            <div className="bg-dark-800/80 p-3 rounded-xl border border-dark-700/80 text-xs text-zinc-300 italic flex items-center gap-2">
+              <span className="text-zinc-500 font-sans not-italic font-semibold">Заметка:</span>
               <span>"{routine.notes}"</span>
             </div>
           )}
 
           {/* Subheader Stats bar */}
-          <div className="px-4 py-2 bg-dark-950/40 border-b border-dark-800/80 flex items-center justify-between text-xs text-zinc-400">
+          <div className="p-3 bg-dark-900/80 rounded-xl border border-dark-750 flex items-center justify-between text-xs text-zinc-400">
             <span className="flex items-center gap-1.5">
               <Layers className="w-3.5 h-3.5 text-brand-400" />
-              <strong className="text-zinc-200">{totalExercises}</strong> exercises
+              <strong className="text-zinc-200">{totalExercises}</strong> упражнений
             </span>
 
             <span className="flex items-center gap-1.5">
-              <Clock className="w-3.5 h-3.5 text-zinc-500" />
-              ~{estimatedDuration} min
+              <Clock className="w-3.5 h-3.5 text-zinc-400" />
+              ~{estimatedDuration} минут
             </span>
           </div>
 
           {/* Exercise Items List */}
-          <div className="flex-1 overflow-y-auto p-3 space-y-2.5 divide-y divide-dark-800/50">
+          <div className="space-y-2 divide-y divide-dark-750">
             {routine.exercises && routine.exercises.length > 0 ? (
               routine.exercises.map((ex, idx) => {
                 const exName = getExerciseName(ex);
@@ -178,7 +171,6 @@ export const RoutineDetailModal: React.FC<RoutineDetailModalProps> = ({
                     key={ex.exercise_id || ex.id || idx}
                     className="pt-2.5 first:pt-0 flex items-center justify-between gap-3 group"
                   >
-                    {/* Left: Thumbnail */}
                     <div
                       className="cursor-pointer shrink-0"
                       onClick={() =>
@@ -187,7 +179,7 @@ export const RoutineDetailModal: React.FC<RoutineDetailModalProps> = ({
                           muscle: primaryMuscle,
                         })
                       }
-                      title="View exercise form & cues"
+                      title="Посмотреть технику"
                     >
                       <ExerciseThumbnail
                         exerciseName={exName}
@@ -197,7 +189,6 @@ export const RoutineDetailModal: React.FC<RoutineDetailModalProps> = ({
                       />
                     </div>
 
-                    {/* Middle: Sets count × Exercise Name + Muscle */}
                     <div
                       className="flex-1 min-w-0 cursor-pointer"
                       onClick={() =>
@@ -207,7 +198,7 @@ export const RoutineDetailModal: React.FC<RoutineDetailModalProps> = ({
                         })
                       }
                     >
-                      <div className="text-sm font-bold text-zinc-100 group-hover:text-white transition-colors truncate">
+                      <div className="text-sm font-bold text-zinc-100 group-hover:text-brand-400 transition-colors truncate">
                         <span className="text-brand-400 font-extrabold mr-1.5">
                           {targetSets} ×
                         </span>
@@ -223,14 +214,13 @@ export const RoutineDetailModal: React.FC<RoutineDetailModalProps> = ({
                               {ex.target_reps_max && ex.target_reps_max !== ex.target_reps_min
                                 ? `-${ex.target_reps_max}`
                                 : ''}{' '}
-                              reps
+                              повт.
                             </span>
                           </>
                         )}
                       </div>
                     </div>
 
-                    {/* Right: Help/Info '?' Button */}
                     <button
                       type="button"
                       onClick={() =>
@@ -239,8 +229,8 @@ export const RoutineDetailModal: React.FC<RoutineDetailModalProps> = ({
                           muscle: primaryMuscle,
                         })
                       }
-                      className="w-7 h-7 rounded-full border border-zinc-600/80 text-zinc-400 hover:text-white hover:border-zinc-300 hover:bg-dark-800 flex items-center justify-center transition-all shrink-0"
-                      title="Exercise Form & Instructions"
+                      className="w-8 h-8 rounded-xl border border-dark-700 text-zinc-400 hover:text-white hover:border-dark-600 hover:bg-dark-800 flex items-center justify-center transition-all shrink-0 cursor-pointer"
+                      title="Техника упражнения"
                     >
                       <HelpCircle className="w-4 h-4" />
                     </button>
@@ -248,61 +238,14 @@ export const RoutineDetailModal: React.FC<RoutineDetailModalProps> = ({
                 );
               })
             ) : (
-              <div className="text-center py-10 text-xs text-zinc-500">
-                No exercises found in this routine.
+              <div className="text-center py-8 text-xs text-zinc-500">
+                В этой программе пока нет упражнений.
               </div>
             )}
           </div>
-
-          {/* Footer Actions */}
-          <div className="p-4 border-t border-dark-800 bg-dark-900/90 shadow-2xl">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-              {onEditRoutine ? (
-                <Button
-                  variant="outline"
-                  size="md"
-                  className="font-bold text-xs flex items-center justify-center gap-1.5 border-dark-700 hover:border-brand-500/50 hover:bg-brand-500/10 text-zinc-200 hover:text-white"
-                  onClick={() => {
-                    onClose();
-                    onEditRoutine(routine);
-                  }}
-                >
-                  <Edit3 className="w-3.5 h-3.5 text-brand-400" />
-                  <span>{isSystemRoutine ? 'Customize Routine' : 'Edit Routine'}</span>
-                </Button>
-              ) : onCloneToMyRoutines ? (
-                <Button
-                  variant="outline"
-                  size="md"
-                  className="font-bold text-xs flex items-center justify-center gap-1.5"
-                  onClick={() => {
-                    onClose();
-                    onCloneToMyRoutines(routine);
-                  }}
-                >
-                  <Copy className="w-3.5 h-3.5 text-brand-400" />
-                  <span>Save as My Routine</span>
-                </Button>
-              ) : null}
-
-              <Button
-                variant="primary"
-                size="md"
-                className="font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-brand-500/20"
-                onClick={() => {
-                  onClose();
-                  onStartWorkout(routine);
-                }}
-              >
-                <Play className="w-4 h-4 fill-current ml-0.5" />
-                <span>Start Workout</span>
-              </Button>
-            </div>
-          </div>
         </div>
-      </div>
+      </Modal>
 
-      {/* Inspecting Exercise Modal */}
       {inspectingExercise && (
         <ExerciseInfoModal
           isOpen={true}

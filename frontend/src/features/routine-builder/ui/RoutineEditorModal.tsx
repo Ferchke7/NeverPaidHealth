@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { X, Plus, Trash2, ChevronUp, ChevronDown, Dumbbell, ArrowLeftRight, Edit3 } from 'lucide-react';
+import { Plus, Trash2, ChevronUp, ChevronDown, Dumbbell, ArrowLeftRight, Edit3 } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../../shared/api/client.ts';
 import { Button } from '../../../shared/ui/button.tsx';
-import { Input } from '../../../shared/ui/input.tsx';
+import { Input, Textarea } from '../../../shared/ui/input.tsx';
+import { Modal } from '../../../shared/ui/modal.tsx';
 import { ExercisePickerModal } from '../../exercise-picker/ui/ExercisePickerModal.tsx';
 import { Exercise } from '../../../entities/exercise/model/types.ts';
 import { ExerciseThumbnail } from '../../../entities/exercise/ui/ExerciseThumbnail.tsx';
@@ -61,16 +62,16 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
   useEffect(() => {
     if (isOpen && initialRoutine) {
       const defaultName = isSystemRoutine
-        ? initialRoutine.name?.includes('(Custom)')
+        ? initialRoutine.name?.includes('(Своя)')
           ? initialRoutine.name
-          : `${initialRoutine.name || 'PPL Workout'} (Custom)`
+          : `${initialRoutine.name || 'Программа'} (Своя)`
         : initialRoutine.name || '';
 
       setName(defaultName);
       setNotes(initialRoutine.notes || '');
       const initialExs = (initialRoutine.exercises || []).map((e) => ({
         exercise_id: e.exercise_id || e.exerciseId || e.id || '',
-        exercise_name: e.exercise_name || e.exerciseName || e.name || 'Exercise',
+        exercise_name: e.exercise_name || e.exerciseName || e.name || 'Упражнение',
         target_sets: e.target_sets || e.targetSets || 3,
         target_reps_min: e.target_reps_min || 8,
         target_reps_max: e.target_reps_max || 12,
@@ -86,10 +87,10 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
   const saveMutation = useMutation({
     mutationFn: async () => {
       if (!name.trim()) {
-        throw new Error('Routine name is required');
+        throw new Error('Название программы обязательно');
       }
       if (exercises.length === 0) {
-        throw new Error('Add at least one exercise to the routine');
+        throw new Error('Добавьте хотя бы одно упражнение');
       }
 
       const payload = {
@@ -105,7 +106,6 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
         })),
       };
 
-      // If user is editing their existing routine (not a system library routine), update it via PUT
       if (initialRoutine?.id && !isSystemRoutine) {
         return apiClient(`/routines/${initialRoutine.id}`, {
           method: 'PUT',
@@ -113,7 +113,6 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
         });
       }
 
-      // Otherwise create a new routine (cloning / customizing)
       return apiClient('/routines', {
         method: 'POST',
         body: JSON.stringify(payload),
@@ -131,11 +130,9 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
       }
     },
     onError: (err: any) => {
-      setError(err.message || 'Failed to save routine');
+      setError(err.message || 'Ошибка сохранения программы');
     },
   });
-
-  if (!isOpen) return null;
 
   const handleSelectExercise = (exercise: Exercise) => {
     if (replacingIndex !== null) {
@@ -193,39 +190,47 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-sm animate-in fade-in">
-      <div className="bg-dark-900 border border-dark-700 w-full max-w-lg rounded-2xl flex flex-col max-h-[90vh] shadow-2xl overflow-hidden animate-in zoom-in-95">
-        {/* Header */}
-        <div className="p-4 border-b border-dark-800 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-brand-500/10 text-brand-400 flex items-center justify-center">
-              {initialRoutine ? <Edit3 className="w-4 h-4" /> : <Dumbbell className="w-4 h-4" />}
-            </div>
-            <div>
-              <h2 className="text-base font-extrabold text-white">
-                {initialRoutine
-                  ? isSystemRoutine
-                    ? 'Customize Workout Routine'
-                    : 'Edit Routine'
-                  : 'Create Routine Template'}
-              </h2>
-              {isSystemRoutine && initialRoutine && (
-                <p className="text-[11px] text-brand-400 font-medium">
-                  Customizing from {initialRoutine.name}
-                </p>
-              )}
-            </div>
+    <>
+      <Modal
+        isOpen={isOpen}
+        onClose={onClose}
+        size="lg"
+        icon={
+          <div className="w-8 h-8 rounded-xl bg-brand-500/20 text-brand-400 border border-brand-500/30 flex items-center justify-center shrink-0">
+            {initialRoutine ? <Edit3 className="w-4 h-4" /> : <Dumbbell className="w-4 h-4" />}
           </div>
-          <button
-            onClick={onClose}
-            className="text-zinc-400 hover:text-white p-1.5 rounded-lg hover:bg-dark-800 transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Form Body */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        }
+        title={
+          initialRoutine
+            ? isSystemRoutine
+              ? 'Настройка программы'
+              : 'Редактирование программы'
+            : 'Создание шаблона программы'
+        }
+        subtitle={
+          isSystemRoutine && initialRoutine
+            ? `Базируется на: ${initialRoutine.name}`
+            : 'Составьте список упражнений и подходов'
+        }
+        footer={
+          <>
+            <Button variant="ghost" onClick={onClose} size="sm">
+              Отмена
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              isLoading={saveMutation.isPending}
+              onClick={() => saveMutation.mutate()}
+              disabled={!name.trim() || exercises.length === 0}
+              className="font-bold px-4 shadow-lg shadow-brand-500/20"
+            >
+              {initialRoutine && !isSystemRoutine ? 'Сохранить изменения' : 'Сохранить программу'}
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
           {error && (
             <div className="p-3 bg-red-950/50 border border-red-800/60 rounded-xl text-red-300 text-xs">
               {error}
@@ -233,35 +238,28 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
           )}
 
           <div className="space-y-3">
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-1">
-                Routine Name *
-              </label>
-              <Input
-                placeholder="e.g. Push Hypertrophy Day"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                autoFocus
-              />
-            </div>
+            <Input
+              label="Название программы *"
+              placeholder="Например: Жимовой день (Грудь / Плечи / Трицепс)"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              autoFocus
+            />
 
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-1">
-                Notes (optional)
-              </label>
-              <Input
-                placeholder="e.g. Focus on chest stretch, RIR 1-2 on last sets"
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-              />
-            </div>
+            <Textarea
+              label="Заметки / Инструкции (опционально)"
+              placeholder="Например: Разминка 5 мин, акцент на негативную фазу"
+              value={notes}
+              rows={2}
+              onChange={(e) => setNotes(e.target.value)}
+            />
           </div>
 
           {/* Exercises Section */}
           <div className="space-y-3 pt-2">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold uppercase tracking-wider text-zinc-400">
-                Exercises ({exercises.length})
+                Упражнения ({exercises.length})
               </span>
               <Button
                 type="button"
@@ -274,16 +272,16 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
                 className="text-xs flex items-center gap-1.5 border-dashed hover:border-brand-500/50"
               >
                 <Plus className="w-3.5 h-3.5 text-brand-400" />
-                Add Exercise
+                Добавить упражнение
               </Button>
             </div>
 
             {exercises.length === 0 ? (
-              <div className="text-center py-8 border-2 border-dashed border-dark-800 rounded-2xl p-6 bg-dark-900/30">
+              <div className="text-center py-8 border-2 border-dashed border-dark-750 rounded-2xl p-6 bg-dark-900/40">
                 <Dumbbell className="w-8 h-8 text-zinc-600 mx-auto mb-2" />
-                <p className="text-sm font-semibold text-zinc-400">No exercises added yet.</p>
+                <p className="text-sm font-semibold text-zinc-400">Упражнения еще не добавлены</p>
                 <p className="text-xs text-zinc-500 mt-1 mb-4">
-                  Add movements from the 870+ catalog to build your workout routine.
+                  Выберите движения из каталога для составления плана тренировки.
                 </p>
                 <Button
                   type="button"
@@ -296,7 +294,7 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
                   className="gap-1.5 text-xs font-bold"
                 >
                   <Plus className="w-3.5 h-3.5" />
-                  Add First Exercise
+                  Выбрать упражнение
                 </Button>
               </div>
             ) : (
@@ -304,7 +302,7 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
                 {exercises.map((item, idx) => (
                   <div
                     key={`${item.exercise_id}-${idx}`}
-                    className="bg-dark-800/80 border border-dark-700/80 p-3 rounded-2xl space-y-2.5 shadow-sm"
+                    className="bg-dark-800/90 border border-dark-700/80 p-3 rounded-2xl space-y-2.5 shadow-sm"
                   >
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2.5 min-w-0 flex-1">
@@ -315,7 +313,7 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
                         />
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-1.5">
-                            <span className="text-xs font-bold text-zinc-500 shrink-0">
+                            <span className="text-xs font-bold text-brand-400 shrink-0">
                               #{idx + 1}
                             </span>
                             <span className="text-sm font-bold text-white truncate">
@@ -325,7 +323,7 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
                         </div>
                       </div>
 
-                      {/* Action Controls: Replace, Move Up, Move Down, Delete */}
+                      {/* Action Controls */}
                       <div className="flex items-center gap-1 shrink-0">
                         <button
                           type="button"
@@ -334,7 +332,7 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
                             setIsPickerOpen(true);
                           }}
                           className="text-zinc-500 hover:text-brand-400 p-1.5 rounded-lg hover:bg-dark-700 transition-colors"
-                          title="Replace this exercise with another movement"
+                          title="Заменить упражнение"
                         >
                           <ArrowLeftRight className="w-3.5 h-3.5" />
                         </button>
@@ -343,7 +341,7 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
                           disabled={idx === 0}
                           onClick={() => moveExercise(idx, 'up')}
                           className="text-zinc-500 hover:text-zinc-300 disabled:opacity-30 p-1.5 rounded-lg hover:bg-dark-700 transition-colors"
-                          title="Move up"
+                          title="Выше"
                         >
                           <ChevronUp className="w-3.5 h-3.5" />
                         </button>
@@ -352,7 +350,7 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
                           disabled={idx === exercises.length - 1}
                           onClick={() => moveExercise(idx, 'down')}
                           className="text-zinc-500 hover:text-zinc-300 disabled:opacity-30 p-1.5 rounded-lg hover:bg-dark-700 transition-colors"
-                          title="Move down"
+                          title="Ниже"
                         >
                           <ChevronDown className="w-3.5 h-3.5" />
                         </button>
@@ -360,7 +358,7 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
                           type="button"
                           onClick={() => removeExercise(idx)}
                           className="text-zinc-500 hover:text-red-400 p-1.5 rounded-lg hover:bg-dark-700 transition-colors"
-                          title="Remove exercise"
+                          title="Удалить"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -368,10 +366,10 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
                     </div>
 
                     {/* Set and Rep targets */}
-                    <div className="grid grid-cols-3 gap-2 pt-1 text-xs bg-dark-900/60 p-2 rounded-xl border border-dark-700/50">
+                    <div className="grid grid-cols-3 gap-2 pt-1 text-xs bg-dark-900/80 p-2.5 rounded-xl border border-dark-750">
                       <div>
                         <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 block mb-1">
-                          Sets
+                          Подходы
                         </label>
                         <input
                           type="number"
@@ -388,7 +386,7 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
                       </div>
                       <div>
                         <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 block mb-1">
-                          Min Reps
+                          Мин. повт.
                         </label>
                         <input
                           type="number"
@@ -405,7 +403,7 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
                       </div>
                       <div>
                         <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 block mb-1">
-                          Max Reps
+                          Макс. повт.
                         </label>
                         <input
                           type="number"
@@ -427,24 +425,7 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
             )}
           </div>
         </div>
-
-        {/* Footer */}
-        <div className="p-4 border-t border-dark-800 flex items-center justify-end gap-2 bg-dark-900/80 shadow-lg">
-          <Button variant="ghost" onClick={onClose} size="sm">
-            Cancel
-          </Button>
-          <Button
-            variant="primary"
-            size="sm"
-            isLoading={saveMutation.isPending}
-            onClick={() => saveMutation.mutate()}
-            disabled={!name.trim() || exercises.length === 0}
-            className="font-bold px-4 shadow-lg shadow-brand-500/20"
-          >
-            {initialRoutine && !isSystemRoutine ? 'Save Changes' : 'Save as My Routine'}
-          </Button>
-        </div>
-      </div>
+      </Modal>
 
       <ExercisePickerModal
         isOpen={isPickerOpen}
@@ -454,6 +435,6 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
         }}
         onSelectExercise={handleSelectExercise}
       />
-    </div>
+    </>
   );
 };

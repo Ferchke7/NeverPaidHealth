@@ -96,3 +96,70 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
 );
 
 Input.displayName = 'Input';
+
+export interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
+  label?: string;
+  description?: string;
+  error?: string;
+  errorMessage?: string;
+  isInvalid?: boolean;
+  variant?: 'flat' | 'bordered';
+}
+
+export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
+  (
+    {
+      className = '',
+      label,
+      description,
+      error,
+      errorMessage,
+      isInvalid = false,
+      variant = 'bordered',
+      disabled,
+      ...props
+    },
+    ref
+  ) => {
+    const isError = isInvalid || !!error || !!errorMessage;
+    const activeError = errorMessage || error;
+
+    const variantStyles = {
+      flat: 'bg-dark-900/80 border border-transparent focus:border-brand-500',
+      bordered:
+        'bg-dark-900/90 border border-dark-700 focus:border-brand-500 focus:ring-1 focus:ring-brand-500/30',
+    }[variant];
+
+    return (
+      <div className="w-full space-y-1">
+        {label && (
+          <label className="block text-xs font-bold uppercase tracking-wider text-zinc-300">
+            {label}
+          </label>
+        )}
+
+        <textarea
+          ref={ref}
+          disabled={disabled}
+          className={`w-full rounded-xl p-3 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none font-medium transition-all duration-150 resize-none ${variantStyles} ${
+            isError ? 'border-red-500/80 focus:border-red-500 focus:ring-red-500/20' : ''
+          } ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${className}`}
+          {...props}
+        />
+
+        {description && !activeError && (
+          <p className="text-[11px] text-zinc-400 leading-tight">{description}</p>
+        )}
+
+        {activeError && (
+          <p className="text-xs text-red-400 font-medium flex items-center gap-1 animate-fade-in">
+            <span>{activeError}</span>
+          </p>
+        )}
+      </div>
+    );
+  }
+);
+
+Textarea.displayName = 'Textarea';
+

@@ -4,3 +4,5 @@ export * from './input.tsx';
 export * from './progress.tsx';
 export * from './switch.tsx';
 export * from './tabs.tsx';
+export * from './modal.tsx';
+export * from './skeleton.tsx';

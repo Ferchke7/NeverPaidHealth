@@ -6,7 +6,8 @@ export interface ProgressBarProps extends React.HTMLAttributes<HTMLDivElement> {
   maxValue?: number;
   label?: string;
   showValueLabel?: boolean;
-  color?: 'primary' | 'success' | 'warning' | 'danger' | 'gradient';
+  color?: 'primary' | 'brand' | 'success' | 'warning' | 'danger' | 'gradient';
+  variant?: 'primary' | 'brand' | 'success' | 'warning' | 'danger' | 'gradient';
   size?: 'sm' | 'md' | 'lg';
 }
 
@@ -16,7 +17,8 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
   maxValue = 100,
   label,
   showValueLabel = false,
-  color = 'primary',
+  color,
+  variant,
   size = 'md',
   className = '',
   ...props
@@ -29,13 +31,16 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
     lg: 'h-4',
   }[size];
 
+  const activeColor = variant || color || 'primary';
+
   const colorStyles = {
     primary: 'bg-brand-500',
+    brand: 'bg-brand-500',
     success: 'bg-emerald-400',
     warning: 'bg-amber-400',
     danger: 'bg-red-500',
     gradient: 'bg-gradient-to-r from-brand-500 via-emerald-400 to-teal-300',
-  }[color];
+  }[activeColor];
 
   return (
     <div className={`w-full space-y-1.5 ${className}`} {...props}>

@@ -8,16 +8,12 @@ import {
   CheckCircle2,
   Upload,
   Utensils,
-  X,
   Target,
-  Edit3,
   AlertTriangle,
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../../shared/api/client.ts';
-import { Card } from '../../../shared/ui/card.tsx';
-import { Button } from '../../../shared/ui/button.tsx';
-import { Input } from '../../../shared/ui/input.tsx';
+import { Card, Button, Input, Modal, ProgressBar } from '../../../shared/ui/index.ts';
 import { useTranslation } from '../../../shared/lib/i18n/i18n.ts';
 import { useAuthStore } from '../../../entities/user/model/authStore.ts';
 import {
@@ -314,7 +310,7 @@ export const NutritionPage: React.FC = () => {
         {/* 4 Macro Cards Grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {/* Calories */}
-          <div className="p-3 rounded-2xl bg-dark-900/90 border border-brand-500/20 flex flex-col justify-between space-y-2">
+          <div className="p-3.5 rounded-2xl bg-dark-900/90 border border-brand-500/20 flex flex-col justify-between space-y-2">
             <div className="flex items-center justify-between text-xs">
               <span className="font-bold text-zinc-300 flex items-center gap-1">
                 <Flame className="w-3.5 h-3.5 text-brand-400" />
@@ -322,87 +318,67 @@ export const NutritionPage: React.FC = () => {
               </span>
               <span className="font-mono font-bold text-brand-400">{calsPct}%</span>
             </div>
-            <div>
+            <div className="space-y-1.5">
               <div className="flex items-baseline justify-between text-xs font-mono">
                 <span className="font-extrabold text-white">{totalCals}</span>
                 <span className="text-zinc-500">/ {targetCals}</span>
               </div>
-              <div className="w-full bg-dark-950 h-2 rounded-full overflow-hidden mt-1.5 border border-dark-800">
-                <div
-                  className="bg-brand-500 h-full rounded-full transition-all duration-500"
-                  style={{ width: `${calsPct}%` }}
-                />
-              </div>
-              <div className="text-[10px] font-mono mt-1 text-zinc-400">
+              <ProgressBar value={calsPct} color="primary" size="sm" />
+              <div className="text-[10px] font-mono text-zinc-400">
                 {remCals >= 0 ? `+${remCals} осталось` : `${remCals} перебор`}
               </div>
             </div>
           </div>
 
           {/* Protein */}
-          <div className="p-3 rounded-2xl bg-dark-900/90 border border-emerald-500/20 flex flex-col justify-between space-y-2">
+          <div className="p-3.5 rounded-2xl bg-dark-900/90 border border-emerald-500/20 flex flex-col justify-between space-y-2">
             <div className="flex items-center justify-between text-xs">
               <span className="font-bold text-emerald-400">{t('nutrition.protein')}</span>
               <span className="font-mono font-bold text-emerald-400">{proteinPct}%</span>
             </div>
-            <div>
+            <div className="space-y-1.5">
               <div className="flex items-baseline justify-between text-xs font-mono">
                 <span className="font-extrabold text-white">{totalProtein}g</span>
                 <span className="text-zinc-500">/ {targetProtein}g</span>
               </div>
-              <div className="w-full bg-dark-950 h-2 rounded-full overflow-hidden mt-1.5 border border-dark-800">
-                <div
-                  className="bg-emerald-400 h-full rounded-full transition-all duration-500"
-                  style={{ width: `${proteinPct}%` }}
-                />
-              </div>
-              <div className="text-[10px] font-mono mt-1 text-emerald-400/90">
+              <ProgressBar value={proteinPct} color="success" size="sm" />
+              <div className="text-[10px] font-mono text-emerald-400/90">
                 {remProtein >= 0 ? `+${remProtein}g осталось` : `Норма выполнена!`}
               </div>
             </div>
           </div>
 
           {/* Carbs */}
-          <div className="p-3 rounded-2xl bg-dark-900/90 border border-blue-500/20 flex flex-col justify-between space-y-2">
+          <div className="p-3.5 rounded-2xl bg-dark-900/90 border border-blue-500/20 flex flex-col justify-between space-y-2">
             <div className="flex items-center justify-between text-xs">
               <span className="font-bold text-blue-400">{t('nutrition.carbs')}</span>
               <span className="font-mono font-bold text-blue-400">{carbsPct}%</span>
             </div>
-            <div>
+            <div className="space-y-1.5">
               <div className="flex items-baseline justify-between text-xs font-mono">
                 <span className="font-extrabold text-white">{totalCarbs}g</span>
                 <span className="text-zinc-500">/ {targetCarbs}g</span>
               </div>
-              <div className="w-full bg-dark-950 h-2 rounded-full overflow-hidden mt-1.5 border border-dark-800">
-                <div
-                  className="bg-blue-400 h-full rounded-full transition-all duration-500"
-                  style={{ width: `${carbsPct}%` }}
-                />
-              </div>
-              <div className="text-[10px] font-mono mt-1 text-blue-400/90">
+              <ProgressBar value={carbsPct} color="primary" size="sm" />
+              <div className="text-[10px] font-mono text-blue-400/90">
                 {remCarbs >= 0 ? `+${remCarbs}g осталось` : `${remCarbs}g перебор`}
               </div>
             </div>
           </div>
 
           {/* Fat */}
-          <div className="p-3 rounded-2xl bg-dark-900/90 border border-amber-500/20 flex flex-col justify-between space-y-2">
+          <div className="p-3.5 rounded-2xl bg-dark-900/90 border border-amber-500/20 flex flex-col justify-between space-y-2">
             <div className="flex items-center justify-between text-xs">
               <span className="font-bold text-amber-400">{t('nutrition.fat')}</span>
               <span className="font-mono font-bold text-amber-400">{fatPct}%</span>
             </div>
-            <div>
+            <div className="space-y-1.5">
               <div className="flex items-baseline justify-between text-xs font-mono">
                 <span className="font-extrabold text-white">{totalFat}g</span>
                 <span className="text-zinc-500">/ {targetFat}g</span>
               </div>
-              <div className="w-full bg-dark-950 h-2 rounded-full overflow-hidden mt-1.5 border border-dark-800">
-                <div
-                  className="bg-amber-400 h-full rounded-full transition-all duration-500"
-                  style={{ width: `${fatPct}%` }}
-                />
-              </div>
-              <div className="text-[10px] font-mono mt-1 text-amber-400/90">
+              <ProgressBar value={fatPct} color="warning" size="sm" />
+              <div className="text-[10px] font-mono text-amber-400/90">
                 {remFat >= 0 ? `+${remFat}g осталось` : `${remFat}g перебор`}
               </div>
             </div>
@@ -505,233 +481,169 @@ export const NutritionPage: React.FC = () => {
       </div>
 
       {/* 4. AI Photo Scan Modal */}
-      {isScanModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in overflow-y-auto">
-          <div className="bg-dark-900 border border-dark-700 rounded-3xl max-w-lg w-full p-5 sm:p-6 space-y-4 shadow-2xl my-8">
-            <div className="flex items-center justify-between border-b border-dark-800 pb-3">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-brand-500/20 text-brand-400 flex items-center justify-center font-bold">
-                  <Camera className="w-4 h-4" />
-                </div>
-                <h3 className="text-base font-bold text-white">AI Meal Photo Recognition</h3>
-              </div>
-              <button
-                onClick={() => setIsScanModalOpen(false)}
-                className="text-zinc-400 hover:text-white p-1 rounded-lg"
+      <Modal
+        isOpen={isScanModalOpen}
+        onClose={() => setIsScanModalOpen(false)}
+        size="lg"
+        icon={
+          <div className="w-8 h-8 rounded-xl bg-brand-500/20 text-brand-400 border border-brand-500/30 flex items-center justify-center font-bold">
+            <Camera className="w-4 h-4" />
+          </div>
+        }
+        title="AI Распознавание блюда"
+        subtitle="Анализ фото, ингредиентов и расчет КБЖУ"
+        footer={
+          <>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsScanModalOpen(false)}
+            >
+              {t('common.cancel')}
+            </Button>
+
+            {(scanResult || analyzeMutation.isError) && (
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={handleSaveScanResult}
+                disabled={saveMealMutation.isPending || (!scanResult && !editMealName.trim())}
+                className="font-bold text-xs shadow-md shadow-brand-500/20"
               >
-                <X className="w-5 h-5" />
+                <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
+                {t('nutrition.logMeal')}
+              </Button>
+            )}
+          </>
+        }
+      >
+        <div className="space-y-4">
+          {/* Photo Preview or Upload placeholder */}
+          {selectedImage ? (
+            <div className="relative rounded-2xl overflow-hidden border border-dark-700 max-h-64 flex items-center justify-center bg-dark-950">
+              <img src={selectedImage} alt="Meal" className="w-full h-auto object-cover" />
+              <button
+                type="button"
+                onClick={() => setIsPhotoPickerOpen(true)}
+                className="absolute bottom-3 right-3 bg-dark-900/90 hover:bg-dark-800 text-white text-xs font-bold px-3 py-1.5 rounded-xl border border-dark-700 flex items-center gap-1.5 shadow-lg backdrop-blur cursor-pointer"
+              >
+                <Camera className="w-3.5 h-3.5" />
+                Сделать другое фото
               </button>
             </div>
+          ) : (
+            <div
+              onClick={() => setIsPhotoPickerOpen(true)}
+              className="border-2 border-dashed border-dark-700 hover:border-brand-500/50 rounded-2xl p-8 text-center cursor-pointer bg-dark-850/50 transition-all"
+            >
+              <Upload className="w-10 h-10 text-brand-400 mx-auto mb-2" />
+              <p className="text-xs font-bold text-zinc-200">{t('nutrition.photoUploadHint')}</p>
+              <p className="text-[11px] text-zinc-500 mt-1">Камера или Галерея (без перезагрузки)</p>
+            </div>
+          )}
 
-            {/* Photo Preview or Upload placeholder */}
-            {selectedImage ? (
-              <div className="relative rounded-2xl overflow-hidden border border-dark-700 max-h-64 flex items-center justify-center bg-dark-950">
-                <img src={selectedImage} alt="Meal" className="w-full h-auto object-cover" />
+          {/* Meal Type Selector */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider">
+              {t('nutrition.mealType')}
+            </label>
+            <div className="grid grid-cols-4 gap-2">
+              {['breakfast', 'lunch', 'dinner', 'snack'].map((type) => (
                 <button
+                  key={type}
                   type="button"
-                  onClick={() => setIsPhotoPickerOpen(true)}
-                  className="absolute bottom-3 right-3 bg-dark-900/90 hover:bg-dark-800 text-white text-xs font-bold px-3 py-1.5 rounded-xl border border-dark-700 flex items-center gap-1.5 shadow-lg backdrop-blur"
+                  onClick={() => setSelectedMealType(type)}
+                  className={`text-xs py-2 rounded-xl font-bold transition-all border cursor-pointer ${
+                    selectedMealType === type
+                      ? 'bg-brand-500 text-dark-950 border-brand-500 shadow-sm'
+                      : 'bg-dark-800 text-zinc-400 border-dark-700 hover:text-white'
+                  }`}
                 >
-                  <Camera className="w-3.5 h-3.5" />
-                  Сделать другое фото
+                  {t(`nutrition.${type}` as any)}
                 </button>
-              </div>
-            ) : (
-              <div
-                onClick={() => setIsPhotoPickerOpen(true)}
-                className="border-2 border-dashed border-dark-700 hover:border-brand-500/50 rounded-2xl p-8 text-center cursor-pointer bg-dark-850/50 transition-all"
-              >
-                <Upload className="w-10 h-10 text-brand-400 mx-auto mb-2" />
-                <p className="text-xs font-bold text-zinc-200">{t('nutrition.photoUploadHint')}</p>
-                <p className="text-[11px] text-zinc-500 mt-1">Камера или Галерея (без перезагрузки)</p>
-              </div>
-            )}
+              ))}
+            </div>
+          </div>
 
-            {/* Meal Type Selector */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider">
-                {t('nutrition.mealType')}
-              </label>
-              <div className="grid grid-cols-4 gap-2">
-                {['breakfast', 'lunch', 'dinner', 'snack'].map((type) => (
-                  <button
-                    key={type}
-                    type="button"
-                    onClick={() => setSelectedMealType(type)}
-                    className={`text-xs py-2 rounded-xl font-bold transition-all border ${
-                      selectedMealType === type
-                        ? 'bg-brand-500 text-dark-950 border-brand-500 shadow-sm'
-                        : 'bg-dark-800 text-zinc-400 border-dark-700 hover:text-white'
-                    }`}
-                  >
-                    {t(`nutrition.${type}` as any)}
-                  </button>
-                ))}
+          {/* Quick Dish Selection Chips */}
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider flex items-center justify-between">
+              <span>Быстрый выбор блюда / Уточнить:</span>
+              <span className="text-[10px] text-brand-400 lowercase font-normal">авторасчет КБЖУ</span>
+            </label>
+            <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none pb-1">
+              {[
+                { label: '🍚 Плов', value: 'Узбекский плов с говядиной' },
+                { label: '🥟 Манты', value: 'Манты на пару с мясом' },
+                { label: '🍗 Курица с рисом', value: 'Куриное филе с рисом и овощами' },
+                { label: '🥟 Самса', value: 'Самса тандырная с мясом' },
+                { label: '🌯 Шаурма', value: 'Шаурма с курицей' },
+                { label: '🥣 Овсянка', value: 'Овсяная каша с ягодами' },
+                { label: '🥩 Стейк', value: 'Стейк из говядины' },
+                { label: '🍳 Яичница', value: 'Яичница из 3 яиц' },
+                { label: '🥛 Творог', value: 'Творог 5%' },
+                { label: '🍌 Банан', value: 'Свежий банан' },
+              ].map((chip, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => {
+                    setEditMealName(chip.value);
+                    if (selectedImage) {
+                      analyzeMutation.mutate({
+                        image_base64: selectedImage,
+                        notes: chip.value,
+                      });
+                    }
+                  }}
+                  className="px-2.5 py-1 rounded-xl text-xs bg-dark-800 hover:bg-dark-750 text-zinc-300 hover:text-white border border-dark-700 whitespace-nowrap shrink-0 transition-colors cursor-pointer"
+                >
+                  {chip.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Loading / Vision Analyzing State */}
+          {analyzeMutation.isPending && (
+            <div className="p-4 rounded-2xl bg-dark-800 border border-brand-500/30 flex items-center gap-3 animate-pulse">
+              <Sparkles className="w-5 h-5 text-brand-400 animate-spin shrink-0" />
+              <div>
+                <h4 className="text-xs font-bold text-brand-300">{t('nutrition.analyzing')}</h4>
+                <p className="text-[11px] text-zinc-400 mt-0.5">
+                  Gemini Vision анализирует изображение, определяет блюдо, граммовки и БЖУ...
+                </p>
               </div>
             </div>
+          )}
 
-            {/* Quick Dish Selection Chips */}
-            <div className="space-y-1.5">
-              <label className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider flex items-center justify-between">
-                <span>Быстрый выбор блюда / Уточнить:</span>
-                <span className="text-[10px] text-brand-400 lowercase font-normal">авторасчет КБЖУ</span>
-              </label>
-              <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none pb-1">
-                {[
-                  { label: '🍚 Плов', value: 'Узбекский плов с говядиной' },
-                  { label: '🥟 Манты', value: 'Манты на пару с мясом' },
-                  { label: '🍗 Курица с рисом', value: 'Куриное филе с рисом и овощами' },
-                  { label: '🥟 Самса', value: 'Самса тандырная с мясом' },
-                  { label: '🌯 Шаурма', value: 'Шаурма с курицей' },
-                  { label: '🥣 Овсянка', value: 'Овсяная каша с ягодами' },
-                  { label: '🥩 Стейк', value: 'Стейк из говядины' },
-                  { label: '🍳 Яичница', value: 'Яичница из 3 яиц' },
-                  { label: '🥛 Творог', value: 'Творог 5%' },
-                  { label: '🍌 Банан', value: 'Свежий банан' },
-                ].map((chip, idx) => (
-                  <button
-                    key={idx}
-                    type="button"
-                    onClick={() => {
-                      setEditMealName(chip.value);
-                      if (selectedImage) {
-                        analyzeMutation.mutate({
-                          image_base64: selectedImage,
-                          notes: chip.value,
-                        });
-                      }
-                    }}
-                    className="px-2.5 py-1 rounded-xl text-xs bg-dark-800 hover:bg-dark-750 text-zinc-300 hover:text-white border border-dark-700 whitespace-nowrap shrink-0 transition-colors"
-                  >
-                    {chip.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Loading / Vision Analyzing State */}
-            {analyzeMutation.isPending && (
-              <div className="p-4 rounded-2xl bg-dark-800 border border-brand-500/30 flex items-center gap-3 animate-pulse">
-                <Sparkles className="w-5 h-5 text-brand-400 animate-spin shrink-0" />
+          {/* AI Unavailable / Error State */}
+          {analyzeMutation.isError && (
+            <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 space-y-3 animate-in fade-in">
+              <div className="flex items-start gap-2.5">
+                <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
                 <div>
-                  <h4 className="text-xs font-bold text-brand-300">{t('nutrition.analyzing')}</h4>
-                  <p className="text-[11px] text-zinc-400 mt-0.5">
-                    Gemini Vision анализирует изображение, определяет блюдо, граммовки и БЖУ...
+                  <h4 className="text-xs font-bold text-amber-300">ИИ-распознавание фото сейчас недоступно</h4>
+                  <p className="text-[11px] text-zinc-300 mt-1 leading-relaxed">
+                    Сервис компьютерного зрения временно перегружен. Вы можете ввести название блюда и калории вручную:
                   </p>
                 </div>
               </div>
-            )}
 
-            {/* AI Unavailable / Error State */}
-            {analyzeMutation.isError && (
-              <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 space-y-3 animate-in fade-in">
-                <div className="flex items-start gap-2.5">
-                  <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
-                  <div>
-                    <h4 className="text-xs font-bold text-amber-300">ИИ-распознавание фото сейчас недоступно</h4>
-                    <p className="text-[11px] text-zinc-300 mt-1 leading-relaxed">
-                      Сервис компьютерного зрения не подключен на сервере или временно перегружен. Вы можете ввести название блюда и калории вручную:
-                    </p>
-                  </div>
-                </div>
+              <div className="space-y-3 pt-2 border-t border-amber-500/20">
+                <Input
+                  label={t('nutrition.mealName')}
+                  placeholder="например: Плов, Выпечка, Салат, Стейк"
+                  value={editMealName}
+                  onChange={(e) => setEditMealName(e.target.value)}
+                />
 
-                <div className="space-y-3 pt-2 border-t border-amber-500/20">
-                  <div className="space-y-1">
-                    <label className="text-[11px] font-bold text-zinc-300 flex items-center gap-1">
-                      <Edit3 className="w-3 h-3 text-brand-400" />
-                      {t('nutrition.mealName')}
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="например: Плов, Выпечка, Салат, Стейк"
-                      value={editMealName}
-                      onChange={(e) => setEditMealName(e.target.value)}
-                      className="w-full bg-dark-900 border border-dark-700 rounded-xl px-3 py-2 text-xs font-bold text-white focus:outline-none focus:border-brand-500"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-4 gap-2 text-center font-mono">
-                    <div className="p-2 bg-dark-900 rounded-xl border border-dark-700">
-                      <div className="text-[10px] text-zinc-500 font-sans">Калории</div>
-                      <input
-                        type="number"
-                        placeholder="450"
-                        value={editCalories}
-                        onChange={(e) => setEditCalories(e.target.value)}
-                        className="w-full bg-transparent text-center font-bold text-brand-400 text-xs focus:outline-none"
-                      />
-                    </div>
-                    <div className="p-2 bg-dark-900 rounded-xl border border-dark-700">
-                      <div className="text-[10px] text-zinc-500 font-sans">Белки (г)</div>
-                      <input
-                        type="number"
-                        placeholder="25"
-                        value={editProtein}
-                        onChange={(e) => setEditProtein(e.target.value)}
-                        className="w-full bg-transparent text-center font-bold text-emerald-400 text-xs focus:outline-none"
-                      />
-                    </div>
-                    <div className="p-2 bg-dark-900 rounded-xl border border-dark-700">
-                      <div className="text-[10px] text-zinc-500 font-sans">Углеводы (г)</div>
-                      <input
-                        type="number"
-                        placeholder="50"
-                        value={editCarbs}
-                        onChange={(e) => setEditCarbs(e.target.value)}
-                        className="w-full bg-transparent text-center font-bold text-blue-400 text-xs focus:outline-none"
-                      />
-                    </div>
-                    <div className="p-2 bg-dark-900 rounded-xl border border-dark-700">
-                      <div className="text-[10px] text-zinc-500 font-sans">Жиры (г)</div>
-                      <input
-                        type="number"
-                        placeholder="15"
-                        value={editFat}
-                        onChange={(e) => setEditFat(e.target.value)}
-                        className="w-full bg-transparent text-center font-bold text-amber-400 text-xs focus:outline-none"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* AI Vision Result with Visual Description & Editable Values */}
-            {scanResult && (
-              <div className="p-4 rounded-2xl bg-dark-850 border border-brand-500/30 space-y-3.5 animate-in fade-in">
-                {/* Visual Recognition Description */}
-                {scanResult.visual_description && (
-                  <div className="p-3 bg-brand-500/10 border border-brand-500/30 rounded-xl text-xs space-y-1">
-                    <span className="font-bold text-brand-400 uppercase tracking-wider text-[10px] flex items-center gap-1.5">
-                      <Sparkles className="w-3.5 h-3.5 text-brand-400" />
-                      {t('nutrition.whatAIsaw')}:
-                    </span>
-                    <p className="text-zinc-200 leading-relaxed font-medium">
-                      {scanResult.visual_description}
-                    </p>
-                  </div>
-                )}
-
-                {/* Editable Meal Name */}
-                <div className="space-y-1">
-                  <label className="text-[11px] font-bold text-zinc-400 flex items-center gap-1">
-                    <Edit3 className="w-3 h-3 text-brand-400" />
-                    {t('nutrition.mealName')}
-                  </label>
-                  <input
-                    type="text"
-                    value={editMealName}
-                    onChange={(e) => setEditMealName(e.target.value)}
-                    className="w-full bg-dark-900 border border-dark-700 rounded-xl px-3 py-2 text-xs font-bold text-white focus:outline-none focus:border-brand-500"
-                  />
-                </div>
-
-                {/* Editable Calories & Macros Grid */}
                 <div className="grid grid-cols-4 gap-2 text-center font-mono">
                   <div className="p-2 bg-dark-900 rounded-xl border border-dark-700">
                     <div className="text-[10px] text-zinc-500 font-sans">Калории</div>
                     <input
                       type="number"
+                      placeholder="450"
                       value={editCalories}
                       onChange={(e) => setEditCalories(e.target.value)}
                       className="w-full bg-transparent text-center font-bold text-brand-400 text-xs focus:outline-none"
@@ -741,6 +653,7 @@ export const NutritionPage: React.FC = () => {
                     <div className="text-[10px] text-zinc-500 font-sans">Белки (г)</div>
                     <input
                       type="number"
+                      placeholder="25"
                       value={editProtein}
                       onChange={(e) => setEditProtein(e.target.value)}
                       className="w-full bg-transparent text-center font-bold text-emerald-400 text-xs focus:outline-none"
@@ -750,6 +663,7 @@ export const NutritionPage: React.FC = () => {
                     <div className="text-[10px] text-zinc-500 font-sans">Углеводы (г)</div>
                     <input
                       type="number"
+                      placeholder="50"
                       value={editCarbs}
                       onChange={(e) => setEditCarbs(e.target.value)}
                       className="w-full bg-transparent text-center font-bold text-blue-400 text-xs focus:outline-none"
@@ -759,170 +673,208 @@ export const NutritionPage: React.FC = () => {
                     <div className="text-[10px] text-zinc-500 font-sans">Жиры (г)</div>
                     <input
                       type="number"
+                      placeholder="15"
                       value={editFat}
                       onChange={(e) => setEditFat(e.target.value)}
                       className="w-full bg-transparent text-center font-bold text-amber-400 text-xs focus:outline-none"
                     />
                   </div>
                 </div>
-
-                {/* Detected food ingredients */}
-                {scanResult.items && scanResult.items.length > 0 && (
-                  <div className="space-y-1.5 pt-1">
-                    <div className="text-[11px] font-bold text-zinc-400">{t('nutrition.detectedItems')}:</div>
-                    <div className="space-y-1">
-                      {scanResult.items.map((item, idx) => (
-                        <div
-                          key={idx}
-                          className="flex items-center justify-between text-[11px] p-2 rounded-lg bg-dark-900/60 border border-dark-800"
-                        >
-                          <span className="text-zinc-200 font-medium">
-                            {item.name} ({item.portion})
-                          </span>
-                          <span className="text-zinc-400 font-mono">
-                            {item.calories} kcal • {item.protein_g}g P • {item.carbs_g}g C
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {scanResult.advice && (
-                  <p className="text-[11px] text-brand-300/90 italic bg-brand-500/5 p-2.5 rounded-xl border border-brand-500/20">
-                    💡 {scanResult.advice}
-                  </p>
-                )}
               </div>
-            )}
+            </div>
+          )}
 
-            {/* Modal Actions */}
-            <div className="flex items-center justify-end gap-2 pt-2 border-t border-dark-800">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setIsScanModalOpen(false)}
-              >
-                {t('common.cancel')}
-              </Button>
-
-              {(scanResult || analyzeMutation.isError) && (
-                <Button
-                  variant="primary"
-                  size="sm"
-                  onClick={handleSaveScanResult}
-                  disabled={saveMealMutation.isPending || (!scanResult && !editMealName.trim())}
-                  className="font-bold text-xs"
-                >
-                  <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
-                  {t('nutrition.logMeal')}
-                </Button>
+          {/* AI Vision Result with Visual Description & Editable Values */}
+          {scanResult && (
+            <div className="p-4 rounded-2xl bg-dark-850 border border-brand-500/30 space-y-3.5 animate-in fade-in">
+              {scanResult.visual_description && (
+                <div className="p-3 bg-brand-500/10 border border-brand-500/30 rounded-xl text-xs space-y-1">
+                  <span className="font-bold text-brand-400 uppercase tracking-wider text-[10px] flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-brand-400" />
+                    {t('nutrition.whatAIsaw')}:
+                  </span>
+                  <p className="text-zinc-200 leading-relaxed font-medium">
+                    {scanResult.visual_description}
+                  </p>
+                </div>
               )}
-            </div>
-          </div>
-        </div>
-      )}
 
-      {/* 5. Manual Meal Entry Modal */}
-      {isManualModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in">
-          <div className="bg-dark-900 border border-dark-700 rounded-3xl max-w-md w-full p-5 sm:p-6 space-y-4 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-dark-800 pb-3">
-              <h3 className="text-base font-bold text-white">{t('nutrition.addManual')}</h3>
-              <button
-                onClick={() => setIsManualModalOpen(false)}
-                className="text-zinc-400 hover:text-white p-1 rounded-lg"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleSaveManual} className="space-y-3.5">
               <Input
                 label={t('nutrition.mealName')}
-                placeholder="напр. Овсянка с протеином и бананом"
-                value={manualName}
-                onChange={(e) => setManualName(e.target.value)}
-                required
+                value={editMealName}
+                onChange={(e) => setEditMealName(e.target.value)}
               />
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider">
-                  {t('nutrition.mealType')}
-                </label>
-                <div className="grid grid-cols-4 gap-2">
-                  {['breakfast', 'lunch', 'dinner', 'snack'].map((type) => (
-                    <button
-                      key={type}
-                      type="button"
-                      onClick={() => setSelectedMealType(type)}
-                      className={`text-xs py-2 rounded-xl font-bold transition-all border ${
-                        selectedMealType === type
-                          ? 'bg-brand-500 text-dark-950 border-brand-500 shadow-sm'
-                          : 'bg-dark-800 text-zinc-400 border-dark-700 hover:text-white'
-                      }`}
-                    >
-                      {t(`nutrition.${type}` as any)}
-                    </button>
-                  ))}
+              <div className="grid grid-cols-4 gap-2 text-center font-mono">
+                <div className="p-2 bg-dark-900 rounded-xl border border-dark-700">
+                  <div className="text-[10px] text-zinc-500 font-sans">Калории</div>
+                  <input
+                    type="number"
+                    value={editCalories}
+                    onChange={(e) => setEditCalories(e.target.value)}
+                    className="w-full bg-transparent text-center font-bold text-brand-400 text-xs focus:outline-none"
+                  />
+                </div>
+                <div className="p-2 bg-dark-900 rounded-xl border border-dark-700">
+                  <div className="text-[10px] text-zinc-500 font-sans">Белки (г)</div>
+                  <input
+                    type="number"
+                    value={editProtein}
+                    onChange={(e) => setEditProtein(e.target.value)}
+                    className="w-full bg-transparent text-center font-bold text-emerald-400 text-xs focus:outline-none"
+                  />
+                </div>
+                <div className="p-2 bg-dark-900 rounded-xl border border-dark-700">
+                  <div className="text-[10px] text-zinc-500 font-sans">Углеводы (г)</div>
+                  <input
+                    type="number"
+                    value={editCarbs}
+                    onChange={(e) => setEditCarbs(e.target.value)}
+                    className="w-full bg-transparent text-center font-bold text-blue-400 text-xs focus:outline-none"
+                  />
+                </div>
+                <div className="p-2 bg-dark-900 rounded-xl border border-dark-700">
+                  <div className="text-[10px] text-zinc-500 font-sans">Жиры (г)</div>
+                  <input
+                    type="number"
+                    value={editFat}
+                    onChange={(e) => setEditFat(e.target.value)}
+                    className="w-full bg-transparent text-center font-bold text-amber-400 text-xs focus:outline-none"
+                  />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <Input
-                  label={`${t('nutrition.calories')} (kcal)`}
-                  type="number"
-                  value={manualCalories}
-                  onChange={(e) => setManualCalories(e.target.value)}
-                  required
-                />
-                <Input
-                  label={`${t('nutrition.protein')} (g)`}
-                  type="number"
-                  value={manualProtein}
-                  onChange={(e) => setManualProtein(e.target.value)}
-                  required
-                />
-              </div>
+              {scanResult.items && scanResult.items.length > 0 && (
+                <div className="space-y-1.5 pt-1">
+                  <div className="text-[11px] font-bold text-zinc-400">{t('nutrition.detectedItems')}:</div>
+                  <div className="space-y-1">
+                    {scanResult.items.map((item, idx) => (
+                      <div
+                        key={idx}
+                        className="flex items-center justify-between text-[11px] p-2 rounded-lg bg-dark-900/60 border border-dark-800"
+                      >
+                        <span className="text-zinc-200 font-medium">
+                          {item.name} ({item.portion})
+                        </span>
+                        <span className="text-zinc-400 font-mono">
+                          {item.calories} kcal • {item.protein_g}g P • {item.carbs_g}g C
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
-              <div className="grid grid-cols-2 gap-3">
-                <Input
-                  label={`${t('nutrition.carbs')} (g)`}
-                  type="number"
-                  value={manualCarbs}
-                  onChange={(e) => setManualCarbs(e.target.value)}
-                />
-                <Input
-                  label={`${t('nutrition.fat')} (g)`}
-                  type="number"
-                  value={manualFat}
-                  onChange={(e) => setManualFat(e.target.value)}
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-dark-800">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setIsManualModalOpen(false)}
-                >
-                  {t('common.cancel')}
-                </Button>
-                <Button
-                  type="submit"
-                  variant="primary"
-                  size="sm"
-                  disabled={!manualName.trim() || saveMealMutation.isPending}
-                  className="font-bold text-xs"
-                >
-                  {t('nutrition.logMeal')}
-                </Button>
-              </div>
-            </form>
-          </div>
+              {scanResult.advice && (
+                <p className="text-[11px] text-brand-300/90 italic bg-brand-500/5 p-2.5 rounded-xl border border-brand-500/20">
+                  💡 {scanResult.advice}
+                </p>
+              )}
+            </div>
+          )}
         </div>
-      )}
+      </Modal>
+
+      {/* 5. Manual Meal Entry Modal */}
+      <Modal
+        isOpen={isManualModalOpen}
+        onClose={() => setIsManualModalOpen(false)}
+        size="md"
+        icon={
+          <div className="w-8 h-8 rounded-xl bg-brand-500/20 text-brand-400 border border-brand-500/30 flex items-center justify-center font-bold">
+            <Plus className="w-4 h-4" />
+          </div>
+        }
+        title={t('nutrition.addManual')}
+        subtitle="Ручной ввод блюда и КБЖУ"
+        footer={
+          <>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsManualModalOpen(false)}
+            >
+              {t('common.cancel')}
+            </Button>
+            <Button
+              type="submit"
+              form="manual-meal-form"
+              variant="primary"
+              size="sm"
+              disabled={!manualName.trim() || saveMealMutation.isPending}
+              className="font-bold text-xs shadow-md shadow-brand-500/20"
+            >
+              {t('nutrition.logMeal')}
+            </Button>
+          </>
+        }
+      >
+        <form id="manual-meal-form" onSubmit={handleSaveManual} className="space-y-3.5">
+          <Input
+            label={t('nutrition.mealName')}
+            placeholder="напр. Овсянка с протеином и бананом"
+            value={manualName}
+            onChange={(e) => setManualName(e.target.value)}
+            required
+            autoFocus
+          />
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider">
+              {t('nutrition.mealType')}
+            </label>
+            <div className="grid grid-cols-4 gap-2">
+              {['breakfast', 'lunch', 'dinner', 'snack'].map((type) => (
+                <button
+                  key={type}
+                  type="button"
+                  onClick={() => setSelectedMealType(type)}
+                  className={`text-xs py-2 rounded-xl font-bold transition-all border cursor-pointer ${
+                    selectedMealType === type
+                      ? 'bg-brand-500 text-dark-950 border-brand-500 shadow-sm'
+                      : 'bg-dark-800 text-zinc-400 border-dark-700 hover:text-white'
+                  }`}
+                >
+                  {t(`nutrition.${type}` as any)}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <Input
+              label={`${t('nutrition.calories')} (kcal)`}
+              type="number"
+              value={manualCalories}
+              onChange={(e) => setManualCalories(e.target.value)}
+              required
+            />
+            <Input
+              label={`${t('nutrition.protein')} (g)`}
+              type="number"
+              value={manualProtein}
+              onChange={(e) => setManualProtein(e.target.value)}
+              required
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <Input
+              label={`${t('nutrition.carbs')} (g)`}
+              type="number"
+              value={manualCarbs}
+              onChange={(e) => setManualCarbs(e.target.value)}
+            />
+            <Input
+              label={`${t('nutrition.fat')} (g)`}
+              type="number"
+              value={manualFat}
+              onChange={(e) => setManualFat(e.target.value)}
+            />
+          </div>
+        </form>
+      </Modal>
 
       {/* 5. Smart In-App Photo Picker Modal */}
       <SmartPhotoPickerModal

@@ -22,6 +22,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../../shared/api/client.ts';
 import { Button } from '../../../shared/ui/button.tsx';
 import { Card } from '../../../shared/ui/card.tsx';
+import { ProgressBar } from '../../../shared/ui/progress-bar.tsx';
 import {
   TodoItem,
   DailyScheduleResponse,
@@ -651,12 +652,7 @@ export const TodoCalendarPage: React.FC = () => {
                         {cb.total_minutes} мин ({percent}%)
                       </span>
                     </div>
-                    <div className="w-full bg-dark-800 rounded-full h-2 overflow-hidden">
-                      <div
-                        className="bg-brand-500 h-full rounded-full transition-all"
-                        style={{ width: `${percent}%` }}
-                      />
-                    </div>
+                    <ProgressBar value={percent} variant="brand" size="sm" />
                   </div>
                 );
               })}

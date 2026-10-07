@@ -27,6 +27,8 @@ import {
   SmartPhotoPickerModal,
   CompressedPhoto,
 } from '../../../shared/ui/photo-picker/SmartPhotoPickerModal.tsx';
+import { Modal } from '../../../shared/ui/modal.tsx';
+import { Button } from '../../../shared/ui/button.tsx';
 import { FormattedChatMessage } from './FormattedChatMessage.tsx';
 
 interface ChatMessage {
@@ -639,129 +641,118 @@ export const AICoachPage: React.FC = () => {
       </footer>
 
       {/* 5. Telemetry & Insights Modal Drawer */}
-      {showInsightsModal && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in">
-          <div className="bg-dark-850 border border-dark-700 rounded-t-3xl sm:rounded-2xl p-4 sm:p-5 max-w-md w-full shadow-2xl space-y-3 max-h-[85vh] overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-dark-700/80 pb-3">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-brand-500/20 border border-brand-500/40 flex items-center justify-center text-brand-400">
-                  <Activity className="w-4 h-4" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-white text-sm">Телеметрия тренировок</h3>
-                  <p className="text-[11px] text-zinc-400">Показатели готовности ЦНС и нагрузки</p>
-                </div>
-              </div>
-              <button
-                onClick={() => setShowInsightsModal(false)}
-                className="p-1 rounded-lg text-zinc-400 hover:text-white hover:bg-dark-800 transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
+      <Modal
+        isOpen={showInsightsModal}
+        onClose={() => setShowInsightsModal(false)}
+        title="Телеметрия тренировок"
+        description="Показатели готовности ЦНС и нагрузки"
+        headerIcon={<Activity className="w-4 h-4 text-brand-400" />}
+        size="md"
+        footer={
+          <Button
+            variant="outline"
+            className="w-full text-xs font-semibold"
+            onClick={() => setShowInsightsModal(false)}
+          >
+            Закрыть
+          </Button>
+        }
+      >
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-2 text-xs">
+            <div className="p-3 rounded-xl bg-dark-900 border border-dark-750 space-y-1">
+              <span className="text-[11px] text-zinc-400 flex items-center gap-1">
+                <Activity className="w-3.5 h-3.5 text-emerald-400" /> Готовность ЦНС
+              </span>
+              <p className="text-base font-bold text-emerald-400">{readinessScore} / 100</p>
+              <p className="text-[10px] text-zinc-400">{readinessStatus}</p>
             </div>
 
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              <div className="p-3 rounded-xl bg-dark-900 border border-dark-750 space-y-1">
-                <span className="text-[11px] text-zinc-400 flex items-center gap-1">
-                  <Activity className="w-3.5 h-3.5 text-emerald-400" /> Готовность ЦНС
-                </span>
-                <p className="text-base font-bold text-emerald-400">{readinessScore} / 100</p>
-                <p className="text-[10px] text-zinc-400">{readinessStatus}</p>
-              </div>
-
-              <div className="p-3 rounded-xl bg-dark-900 border border-dark-750 space-y-1">
-                <span className="text-[11px] text-zinc-400 flex items-center gap-1">
-                  <Dumbbell className="w-3.5 h-3.5 text-brand-400" /> Нагрузка 7 дней
-                </span>
-                <p className="text-base font-bold text-white">{weeklyWorkouts} тр.</p>
-                <p className="text-[10px] text-zinc-400">{weeklyVolumeTons} т общий тоннаж</p>
-              </div>
-
-              <div className="col-span-2 p-3 rounded-xl bg-dark-900 border border-dark-750 space-y-1">
-                <span className="text-[11px] text-zinc-400 flex items-center gap-1">
-                  <Calendar className="w-3.5 h-3.5 text-brand-400" /> Рекомендуемый сплит
-                </span>
-                <p className="font-bold text-brand-300">{targetSplit}</p>
-              </div>
-
-              {insights?.today_calories !== undefined && insights.today_calories > 0 && (
-                <div className="col-span-2 p-3 rounded-xl bg-emerald-950/20 border border-emerald-900/40 space-y-1">
-                  <span className="text-[11px] text-emerald-400 flex items-center gap-1 font-semibold">
-                    <Utensils className="w-3.5 h-3.5" /> Питание за сегодня
-                  </span>
-                  <p className="text-sm font-bold text-white">
-                    {insights.today_calories} kcal • {Math.round(insights.today_protein_g || 0)}g белка
-                  </p>
-                </div>
-              )}
+            <div className="p-3 rounded-xl bg-dark-900 border border-dark-750 space-y-1">
+              <span className="text-[11px] text-zinc-400 flex items-center gap-1">
+                <Dumbbell className="w-3.5 h-3.5 text-brand-400" /> Нагрузка 7 дней
+              </span>
+              <p className="text-base font-bold text-white">{weeklyWorkouts} тр.</p>
+              <p className="text-[10px] text-zinc-400">{weeklyVolumeTons} т общий тоннаж</p>
             </div>
 
-            {/* Overload Target Badges */}
-            {insights?.overload_targets && insights.overload_targets.length > 0 && (
-              <div className="space-y-1.5 pt-2 border-t border-dark-750">
-                <p className="text-[11px] font-semibold text-zinc-300 flex items-center gap-1">
-                  <TrendingUp className="w-3.5 h-3.5 text-brand-400" /> Ближайшие цели (Overload):
+            <div className="col-span-2 p-3 rounded-xl bg-dark-900 border border-dark-750 space-y-1">
+              <span className="text-[11px] text-zinc-400 flex items-center gap-1">
+                <Calendar className="w-3.5 h-3.5 text-brand-400" /> Рекомендуемый сплит
+              </span>
+              <p className="font-bold text-brand-300">{targetSplit}</p>
+            </div>
+
+            {insights?.today_calories !== undefined && insights.today_calories > 0 && (
+              <div className="col-span-2 p-3 rounded-xl bg-emerald-950/20 border border-emerald-900/40 space-y-1">
+                <span className="text-[11px] text-emerald-400 flex items-center gap-1 font-semibold">
+                  <Utensils className="w-3.5 h-3.5" /> Питание за сегодня
+                </span>
+                <p className="text-sm font-bold text-white">
+                  {insights.today_calories} kcal • {Math.round(insights.today_protein_g || 0)}g белка
                 </p>
-                <div className="space-y-1">
-                  {insights.overload_targets.slice(0, 3).map((target, idx) => (
-                    <div
-                      key={idx}
-                      className="p-2 rounded-lg bg-dark-900 border border-dark-750 flex items-center justify-between text-xs"
-                    >
-                      <span className="font-medium text-zinc-200 truncate mr-2">
-                        {target.exercise_name}
-                      </span>
-                      <span className="text-brand-400 font-mono font-bold shrink-0">
-                        {target.target_weight_kg}kg × {target.target_reps}
-                      </span>
-                    </div>
-                  ))}
-                </div>
               </div>
             )}
-
-            <button
-              onClick={() => setShowInsightsModal(false)}
-              className="w-full py-2.5 rounded-xl bg-dark-800 hover:bg-dark-750 text-zinc-200 font-semibold text-xs border border-dark-700 transition-colors"
-            >
-              Закрыть
-            </button>
           </div>
+
+          {/* Overload Target Badges */}
+          {insights?.overload_targets && insights.overload_targets.length > 0 && (
+            <div className="space-y-1.5 pt-2 border-t border-dark-750">
+              <p className="text-[11px] font-semibold text-zinc-300 flex items-center gap-1">
+                <TrendingUp className="w-3.5 h-3.5 text-brand-400" /> Ближайшие цели (Overload):
+              </p>
+              <div className="space-y-1">
+                {insights.overload_targets.slice(0, 3).map((target, idx) => (
+                  <div
+                    key={idx}
+                    className="p-2 rounded-lg bg-dark-900 border border-dark-750 flex items-center justify-between text-xs"
+                  >
+                    <span className="font-medium text-zinc-200 truncate mr-2">
+                      {target.exercise_name}
+                    </span>
+                    <span className="text-brand-400 font-mono font-bold shrink-0">
+                      {target.target_weight_kg}kg × {target.target_reps}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
-      )}
+      </Modal>
 
       {/* 6. Clear Chat Confirmation Modal */}
-      {isClearModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in">
-          <div className="bg-dark-850 border border-dark-700 rounded-2xl p-5 max-w-sm w-full shadow-2xl space-y-4">
-            <div className="flex items-center gap-3 text-red-400">
-              <div className="w-10 h-10 rounded-xl bg-red-950/40 border border-red-900/50 flex items-center justify-center shrink-0">
-                <AlertTriangle className="w-5 h-5 text-red-400" />
-              </div>
-              <div>
-                <h3 className="font-bold text-white text-base">Очистить историю?</h3>
-                <p className="text-xs text-zinc-400">Все сообщения диалога будут сброшены.</p>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-end gap-2 pt-2">
-              <button
-                onClick={() => setIsClearModalOpen(false)}
-                className="px-4 py-2 rounded-xl text-xs font-semibold bg-dark-800 hover:bg-dark-750 text-zinc-300 border border-dark-700 transition-colors"
-              >
-                Отмена
-              </button>
-              <button
-                onClick={handleClearChatConfirm}
-                className="px-4 py-2 rounded-xl text-xs font-semibold bg-red-600 hover:bg-red-500 text-white transition-colors flex items-center gap-1.5 shadow-md shadow-red-900/30"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-                Очистить
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <Modal
+        isOpen={isClearModalOpen}
+        onClose={() => setIsClearModalOpen(false)}
+        title="Очистить историю?"
+        description="Все сообщения диалога будут сброшены."
+        headerIcon={<AlertTriangle className="w-5 h-5 text-red-400" />}
+        size="sm"
+        footer={
+          <>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsClearModalOpen(false)}
+            >
+              Отмена
+            </Button>
+            <Button
+              variant="danger"
+              size="sm"
+              onClick={handleClearChatConfirm}
+            >
+              <Trash2 className="w-3.5 h-3.5 mr-1" />
+              Очистить
+            </Button>
+          </>
+        }
+      >
+        <p className="text-xs text-zinc-400">
+          Вы уверены, что хотите удалить историю сообщений с ИИ-тренером?
+        </p>
+      </Modal>
 
       {/* 7. Smart Photo Picker Modal (In-App Camera / Gallery) */}
       <SmartPhotoPickerModal

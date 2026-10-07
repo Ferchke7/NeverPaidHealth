@@ -15,7 +15,8 @@ import {
   Layers,
 } from 'lucide-react';
 import { useFocusTimerStore, SplitStrategy } from '../model/focusTimerStore.ts';
-import { Badge } from '../../../shared/ui/card.tsx';
+import { Badge } from '../../../shared/ui/badge.tsx';
+import { ProgressBar } from '../../../shared/ui/progress-bar.tsx';
 
 const BREAK_PRESETS = [
   { label: '3м', value: 3 },
@@ -414,17 +415,12 @@ export const FloatingFocusTimer: React.FC = () => {
         </div>
 
         {/* Total Progress Bar */}
-        <div className="w-full bg-dark-950/80 border border-dark-800 rounded-2xl p-2.5 my-2">
-          <div className="flex items-center justify-between text-[11px] text-zinc-400 mb-1.5">
+        <div className="w-full bg-dark-950/80 border border-dark-800 rounded-2xl p-2.5 my-2 space-y-1.5">
+          <div className="flex items-center justify-between text-[11px] text-zinc-400">
             <span>Общий прогресс задачи:</span>
             <span className="font-bold text-brand-400 font-mono">{overallPercent}% ({Math.floor(secondsElapsedTotal / 60)}/{targetTotalMinutes}м)</span>
           </div>
-          <div className="w-full bg-dark-800 h-2 rounded-full overflow-hidden">
-            <div
-              className="bg-gradient-to-r from-brand-500 to-emerald-400 h-full transition-all duration-500 rounded-full"
-              style={{ width: `${Math.min(100, overallPercent)}%` }}
-            />
-          </div>
+          <ProgressBar value={overallPercent} variant="brand" size="sm" />
         </div>
 
         {/* Break Duration Preset Selector (When on break) */}

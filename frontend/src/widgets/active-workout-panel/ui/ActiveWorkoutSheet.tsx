@@ -20,6 +20,7 @@ import { ExercisePickerModal } from '../../../features/exercise-picker/ui/Exerci
 import { Exercise } from '../../../entities/exercise/model/types.ts';
 import { WorkoutHistoryItem } from '../../../entities/workout/model/types.ts';
 import { Button } from '../../../shared/ui/button.tsx';
+import { Modal } from '../../../shared/ui/modal.tsx';
 import { formatDuration } from '../../../shared/lib/dates.ts';
 import { formatWeight } from '../../../shared/lib/units.ts';
 import { useAuthStore } from '../../../entities/user/model/authStore.ts';
@@ -579,37 +580,35 @@ export const ActiveWorkoutSheet: React.FC = () => {
       )}
 
       {/* Discard Confirmation Modal */}
-      {isDiscardConfirmOpen && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-dark-900 border border-dark-700 rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-2xl">
-            <div className="flex items-center gap-3 text-red-400">
-              <div className="p-2 rounded-xl bg-red-950/50 border border-red-800/40">
-                <AlertTriangle className="w-5 h-5" />
-              </div>
-              <h3 className="text-base font-bold text-white">{t('activeWorkout.discardWorkout')}</h3>
-            </div>
-            <p className="text-xs text-zinc-400 leading-relaxed">
-              {t('activeWorkout.discardConfirm')}
-            </p>
-            <div className="flex items-center justify-end gap-2 pt-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setIsDiscardConfirmOpen(false)}
-              >
-                {t('common.cancel')}
-              </Button>
-              <Button
-                variant="danger"
-                size="sm"
-                onClick={handleDiscard}
-              >
-                {t('common.discard')}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      <Modal
+        isOpen={isDiscardConfirmOpen}
+        onClose={() => setIsDiscardConfirmOpen(false)}
+        title={t('activeWorkout.discardWorkout')}
+        size="sm"
+        headerIcon={<AlertTriangle className="w-5 h-5 text-red-400" />}
+        footer={
+          <>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsDiscardConfirmOpen(false)}
+            >
+              {t('common.cancel')}
+            </Button>
+            <Button
+              variant="danger"
+              size="sm"
+              onClick={handleDiscard}
+            >
+              {t('common.discard')}
+            </Button>
+          </>
+        }
+      >
+        <p className="text-xs text-zinc-400 leading-relaxed">
+          {t('activeWorkout.discardConfirm')}
+        </p>
+      </Modal>
 
       {/* Exercise Picker Modal */}
       <ExercisePickerModal
