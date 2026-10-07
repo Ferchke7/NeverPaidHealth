@@ -11,6 +11,7 @@ import {
   X,
   Target,
   Edit3,
+  AlertTriangle,
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../../shared/api/client.ts';
@@ -582,6 +583,80 @@ export const NutritionPage: React.FC = () => {
               </div>
             )}
 
+            {/* AI Unavailable / Error State */}
+            {analyzeMutation.isError && (
+              <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 space-y-3 animate-in fade-in">
+                <div className="flex items-start gap-2.5">
+                  <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+                  <div>
+                    <h4 className="text-xs font-bold text-amber-300">ИИ-распознавание фото сейчас недоступно</h4>
+                    <p className="text-[11px] text-zinc-300 mt-1 leading-relaxed">
+                      Сервис компьютерного зрения не подключен на сервере или временно перегружен. Вы можете ввести название блюда и калории вручную:
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-3 pt-2 border-t border-amber-500/20">
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-zinc-300 flex items-center gap-1">
+                      <Edit3 className="w-3 h-3 text-brand-400" />
+                      {t('nutrition.mealName')}
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="например: Плов, Выпечка, Салат, Стейк"
+                      value={editMealName}
+                      onChange={(e) => setEditMealName(e.target.value)}
+                      className="w-full bg-dark-900 border border-dark-700 rounded-xl px-3 py-2 text-xs font-bold text-white focus:outline-none focus:border-brand-500"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-4 gap-2 text-center font-mono">
+                    <div className="p-2 bg-dark-900 rounded-xl border border-dark-700">
+                      <div className="text-[10px] text-zinc-500 font-sans">Калории</div>
+                      <input
+                        type="number"
+                        placeholder="450"
+                        value={editCalories}
+                        onChange={(e) => setEditCalories(e.target.value)}
+                        className="w-full bg-transparent text-center font-bold text-brand-400 text-xs focus:outline-none"
+                      />
+                    </div>
+                    <div className="p-2 bg-dark-900 rounded-xl border border-dark-700">
+                      <div className="text-[10px] text-zinc-500 font-sans">Белки (г)</div>
+                      <input
+                        type="number"
+                        placeholder="25"
+                        value={editProtein}
+                        onChange={(e) => setEditProtein(e.target.value)}
+                        className="w-full bg-transparent text-center font-bold text-emerald-400 text-xs focus:outline-none"
+                      />
+                    </div>
+                    <div className="p-2 bg-dark-900 rounded-xl border border-dark-700">
+                      <div className="text-[10px] text-zinc-500 font-sans">Углеводы (г)</div>
+                      <input
+                        type="number"
+                        placeholder="50"
+                        value={editCarbs}
+                        onChange={(e) => setEditCarbs(e.target.value)}
+                        className="w-full bg-transparent text-center font-bold text-blue-400 text-xs focus:outline-none"
+                      />
+                    </div>
+                    <div className="p-2 bg-dark-900 rounded-xl border border-dark-700">
+                      <div className="text-[10px] text-zinc-500 font-sans">Жиры (г)</div>
+                      <input
+                        type="number"
+                        placeholder="15"
+                        value={editFat}
+                        onChange={(e) => setEditFat(e.target.value)}
+                        className="w-full bg-transparent text-center font-bold text-amber-400 text-xs focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* AI Vision Result with Visual Description & Editable Values */}
             {scanResult && (
               <div className="p-4 rounded-2xl bg-dark-850 border border-brand-500/30 space-y-3.5 animate-in fade-in">
@@ -692,12 +767,12 @@ export const NutritionPage: React.FC = () => {
                 {t('common.cancel')}
               </Button>
 
-              {scanResult && (
+              {(scanResult || analyzeMutation.isError) && (
                 <Button
                   variant="primary"
                   size="sm"
                   onClick={handleSaveScanResult}
-                  disabled={saveMealMutation.isPending}
+                  disabled={saveMealMutation.isPending || (!scanResult && !editMealName.trim())}
                   className="font-bold text-xs"
                 >
                   <CheckCircle2 className="w-3.5 h-3.5 mr-1" />

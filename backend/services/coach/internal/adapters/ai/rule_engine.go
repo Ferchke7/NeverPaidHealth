@@ -26,32 +26,9 @@ func (r *RuleEngineProvider) GenerateChatResponse(
 	var reply strings.Builder
 	var suggestions []string
 
-	if req.ImageBase64 != "" {
-		if isRussian {
-			reply.WriteString(fmt.Sprintf("📸 **Оценка телосложения и формы для %s:**\n\n", userName))
-			if telemetry.CurrentWeightKg > 0 {
-				reply.WriteString(fmt.Sprintf("📊 **Текущие метрики:** Вес: **%.1f кг**", telemetry.CurrentWeightKg))
-				if telemetry.BodyFatPercentage > 0 {
-					reply.WriteString(fmt.Sprintf(" (жир: ~%.1f%%)", telemetry.BodyFatPercentage))
-				}
-				reply.WriteString("\n\n")
-			}
-			reply.WriteString("💪 **Анализ мышечного развития и пропорций:**\n")
-			reply.WriteString("1. **Плечевой пояс и грудь:** Отличная база. Для создания V-образного силуэта рекомендую сделать упор на среднюю дельту (махи гантелей) и верхнюю часть груди (наклонный жим 30°).\n")
-			reply.WriteString("2. **Мышцы спины и осанка:** Держи фокус на вертикальных тягах широким хватом и тяге штанги в наклоне для глубины широчайших.\n")
-			reply.WriteString("3. **Питание и сушка/набор:** Для сохранения мышечной массы держи потребление белка на уровне **2.0–2.2 г/кг веса**.\n")
-			return coach.ChatResponse{
-				Reply: reply.String(),
-				Suggestions: []string{
-					"Как пробить плато в жиме?",
-					"Оптимальное восстановление",
-					"Что тренировать сегодня?",
-				},
-			}, nil
-		}
-	}
-
 	if isRussian {
+		reply.WriteString("ℹ️ *[Офлайн база знаний: спортивная наука]*\n\n")
+
 		switch {
 		case strings.Contains(msg, "восстановлен") || strings.Contains(msg, "объем") || strings.Contains(msg, "отдых") || strings.Contains(msg, "перетрен"):
 			reply.WriteString(fmt.Sprintf("🔋 **Оптимизация восстановления и объема для %s:**\n\n", userName))
@@ -177,7 +154,7 @@ func (r *RuleEngineProvider) GenerateChatResponse(
 			}
 
 		default:
-			reply.WriteString(fmt.Sprintf("Привет, %s! Я твой персональный ИИ-тренер duda.uz. 🦾\n\n", userName))
+			reply.WriteString(fmt.Sprintf("Привет, %s! 🦾\n\n", userName))
 			reply.WriteString(fmt.Sprintf("Твой текущий статус восстановления: **%s** (готовность ЦНС: **%d%%**). За последние 7 дней выполнено **%d тренировок** с тоннажем **%.0f кг**.\n\n", telemetry.RecoveryStatus, telemetry.ReadinessScore, telemetry.WeeklyWorkoutsCount, telemetry.WeeklyVolumeKg))
 			reply.WriteString("Ты можешь спросить меня о:\n")
 			reply.WriteString("- 🏋️ Оптимальной программе на сегодня и периодизации\n")
@@ -192,6 +169,7 @@ func (r *RuleEngineProvider) GenerateChatResponse(
 		}
 	} else {
 		// English Response
+		reply.WriteString("ℹ️ *[Offline Sports Science Knowledge Base]*\n\n")
 		switch {
 		case strings.Contains(msg, "today") || strings.Contains(msg, "plan") || strings.Contains(msg, "workout") || strings.Contains(msg, "train"):
 			reply.WriteString(fmt.Sprintf("Hey %s! 🏋️‍♂️\n\n", userName))
@@ -233,7 +211,7 @@ func (r *RuleEngineProvider) GenerateChatResponse(
 			}
 
 		default:
-			reply.WriteString(fmt.Sprintf("Hello %s! I am your NeverPaidHealth AI Coach. 🦾\n\n", userName))
+			reply.WriteString(fmt.Sprintf("Hello %s! I am your NeverPaidHealth Coach. 🦾\n\n", userName))
 			reply.WriteString(fmt.Sprintf("Your current readiness is **%d/100** (%s). Ask me anything regarding progressive overload, workout programming, or plateau busting!", telemetry.ReadinessScore, telemetry.RecoveryStatus))
 			suggestions = []string{
 				"What should I train today?",
@@ -246,32 +224,6 @@ func (r *RuleEngineProvider) GenerateChatResponse(
 	return coach.ChatResponse{
 		Reply:       reply.String(),
 		Suggestions: suggestions,
-	}, nil
-}
-
-func (r *RuleEngineProvider) AnalyzeMealPhoto(ctx context.Context, notes string) (coach.MealAnalysisResult, error) {
-	name := "Сбалансированное блюдо"
-	visDesc := "Базовый анализ нутриентов. Для полноценного распознавания блюд по фото активируйте GEMINI_API_KEY."
-	if notes != "" {
-		name = notes
-		visDesc = fmt.Sprintf("Оценка блюда на основе пользовательской заметки: %s", notes)
-	}
-
-	return coach.MealAnalysisResult{
-		MealName:          name,
-		VisualDescription: visDesc,
-		Items: []coach.MealItem{
-			{Name: "Источник белка", Portion: "180g", Calories: 280, ProteinG: 45.0, CarbsG: 0.0, FatG: 6.0},
-			{Name: "Сложные углеводы", Portion: "150g", Calories: 210, ProteinG: 4.0, CarbsG: 45.0, FatG: 1.0},
-			{Name: "Овощи и клетчатка", Portion: "100g", Calories: 40, ProteinG: 2.0, CarbsG: 8.0, FatG: 0.5},
-		},
-		TotalCalories: 530,
-		TotalProteinG: 51.0,
-		TotalCarbsG:   53.0,
-		TotalFatG:     7.5,
-		Confidence:    "moderate",
-		HealthScore:   9,
-		Advice:        "Сбалансированное распределение БЖУ для поддержки мышечной гипертрофии и стабильной энергии.",
 	}, nil
 }
 

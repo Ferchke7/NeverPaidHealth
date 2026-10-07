@@ -42,11 +42,24 @@ func (p *CompositeAIProvider) GenerateChatResponse(ctx context.Context, req coac
 		if err == nil && res.Reply != "" {
 			return res, nil
 		}
-		slog.Warn("Gemini API call failed, falling back to sports science rule engine", "error", err)
+		slog.Warn("Gemini API call failed", "error", err)
 	} else {
-		slog.Info("GEMINI_API_KEY not provided, using built-in sports science engine")
+		slog.Info("GEMINI_API_KEY not configured")
 	}
 
+	// When user attached a photo, DO NOT fake or return canned templates
+	if req.ImageBase64 != "" {
+		return coach.ChatResponse{
+			Reply: "⚠️ **ИИ-анализ изображений сейчас недоступен** (Gemini Vision API не подключен на сервере).\n\nЧтобы не давать неточных оценок вслепую, я не могу проанализировать фото без активного сервиса компьютерного зрения. Вы можете задать любой текстовый вопрос по тренировкам, упражнениям или питанию!",
+			Suggestions: []string{
+				"Что тренировать сегодня?",
+				"Как прогрессировать в жиме?",
+				"Сколько белка принимать в день?",
+			},
+		}, nil
+	}
+
+	// Text messages: return evidence-based sports science response with transparent indicator
 	return p.ruleEngine.GenerateChatResponse(ctx, req, telemetry, userName)
 }
 
@@ -57,10 +70,12 @@ func (p *CompositeAIProvider) AnalyzeMealPhoto(ctx context.Context, imageBase64,
 		if err == nil && res.MealName != "" {
 			return res, nil
 		}
-		slog.Warn("Gemini Vision meal analysis failed, falling back to rule engine", "error", err)
+		slog.Warn("Gemini Vision meal analysis failed", "error", err)
+		return coach.MealAnalysisResult{}, fmt.Errorf("AI_UNAVAILABLE: Сервис распознавания фото временно недоступен (%v). Введите данные блюда вручную.", err)
 	}
 
-	return p.ruleEngine.AnalyzeMealPhoto(ctx, notes)
+	slog.Info("GEMINI_API_KEY not configured for meal photo analysis")
+	return coach.MealAnalysisResult{}, fmt.Errorf("AI_UNAVAILABLE: ИИ-распознавание фото недоступно (на сервере не настроен GEMINI_API_KEY). Заполните данные блюда вручную.")
 }
 
 type geminiRequest struct {
@@ -241,6 +256,7 @@ Guidelines:
 
 	if resp.StatusCode != http.StatusOK {
 		raw, _ := io.ReadAll(resp.Body)
+		// Try fallback to gemini-1.5-flash if 2.0-flash failed
 		if modelName != "gemini-1.5-flash" {
 			fallbackURL := fmt.Sprintf("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=%s", key)
 			fallbackReq, _ := http.NewRequestWithContext(ctx, "POST", fallbackURL, bytes.NewReader(bodyBytes))
