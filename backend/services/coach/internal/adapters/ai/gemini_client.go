@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/neverpaidhealth/backend/services/coach/internal/domain/coach"
@@ -21,18 +22,124 @@ type AIProvider interface {
 }
 
 type CompositeAIProvider struct {
-	geminiKey  string
-	ruleEngine *RuleEngineProvider
-	httpClient *http.Client
+	geminiKey       string
+	ruleEngine      *RuleEngineProvider
+	httpClient      *http.Client
+	discoveredOnce  sync.Once
+	cachedModels    []string
+	modelsMutex     sync.RWMutex
 }
 
 func NewCompositeAIProvider() *CompositeAIProvider {
 	key := os.Getenv("GEMINI_API_KEY")
-	return &CompositeAIProvider{
+	p := &CompositeAIProvider{
 		geminiKey:  key,
 		ruleEngine: NewRuleEngineProvider(),
-		httpClient: &http.Client{Timeout: 30 * time.Second},
+		httpClient: &http.Client{Timeout: 35 * time.Second},
 	}
+	return p
+}
+
+type listModelsResponse struct {
+	Models []struct {
+		Name                       string   `json:"name"`
+		SupportedGenerationMethods []string `json:"supportedGenerationMethods"`
+	} `json:"models"`
+	Error *struct {
+		Code    int    `json:"code"`
+		Message string `json:"message"`
+		Status  string `json:"status"`
+	} `json:"error,omitempty"`
+}
+
+func (p *CompositeAIProvider) getCandidateModels(ctx context.Context, key string) []string {
+	p.modelsMutex.RLock()
+	if len(p.cachedModels) > 0 {
+		models := make([]string, len(p.cachedModels))
+		copy(models, p.cachedModels)
+		p.modelsMutex.RUnlock()
+		return models
+	}
+	p.modelsMutex.RUnlock()
+
+	// Perform discovery once
+	var discovered []string
+	p.discoveredOnce.Do(func() {
+		if key == "" {
+			return
+		}
+		url := fmt.Sprintf("https://generativelanguage.googleapis.com/v1beta/models?key=%s", key)
+		req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+		if err != nil {
+			slog.Warn("Failed to create ListModels request", "error", err)
+			return
+		}
+
+		resp, err := p.httpClient.Do(req)
+		if err != nil {
+			slog.Warn("ListModels HTTP call failed", "error", err)
+			return
+		}
+		defer resp.Body.Close()
+
+		rawBody, _ := io.ReadAll(resp.Body)
+		if resp.StatusCode != http.StatusOK {
+			slog.Error("Google Gemini ListModels API error", "status", resp.StatusCode, "response", string(rawBody))
+			return
+		}
+
+		var res listModelsResponse
+		if err := json.Unmarshal(rawBody, &res); err != nil {
+			slog.Warn("Failed to parse ListModels JSON", "error", err, "raw", string(rawBody))
+			return
+		}
+
+		if res.Error != nil {
+			slog.Error("Google Gemini reported API error in ListModels", "code", res.Error.Code, "message", res.Error.Message)
+			return
+		}
+
+		for _, m := range res.Models {
+			for _, method := range m.SupportedGenerationMethods {
+				if method == "generateContent" {
+					name := strings.TrimPrefix(m.Name, "models/")
+					discovered = append(discovered, name)
+					break
+				}
+			}
+		}
+
+		slog.Info("Successfully queried active Gemini models from Google", "count", len(discovered), "models", discovered)
+	})
+
+	if len(discovered) > 0 {
+		p.modelsMutex.Lock()
+		p.cachedModels = discovered
+		p.modelsMutex.Unlock()
+		return discovered
+	}
+
+	// Fallback list if discovery returned nothing
+	configured := os.Getenv("GEMINI_MODEL")
+	fallback := []string{}
+	if configured != "" {
+		fallback = append(fallback, configured)
+	}
+	standardModels := []string{
+		"gemini-1.5-flash-latest",
+		"gemini-1.5-flash",
+		"gemini-1.5-flash-8b",
+		"gemini-1.5-pro-latest",
+		"gemini-1.5-pro",
+		"gemini-2.0-flash-exp",
+		"gemini-exp-1206",
+	}
+	for _, m := range standardModels {
+		if m != configured {
+			fallback = append(fallback, m)
+		}
+	}
+	return fallback
 }
 
 func (p *CompositeAIProvider) GenerateChatResponse(ctx context.Context, req coach.ChatRequest, telemetry coach.CoachInsights, userName string) (coach.ChatResponse, error) {
@@ -106,27 +213,11 @@ type geminiResponse struct {
 			} `json:"parts"`
 		} `json:"content"`
 	} `json:"candidates"`
-}
-
-func getCandidateModels() []string {
-	configured := os.Getenv("GEMINI_MODEL")
-	models := []string{}
-	if configured != "" {
-		models = append(models, configured)
-	}
-	defaults := []string{
-		"gemini-3.8-flash",
-		"gemini-2.5-flash",
-		"gemini-1.5-flash",
-		"gemini-1.5-pro",
-		"gemini-pro",
-	}
-	for _, m := range defaults {
-		if m != configured {
-			models = append(models, m)
-		}
-	}
-	return models
+	Error *struct {
+		Code    int    `json:"code"`
+		Message string `json:"message"`
+		Status  string `json:"status"`
+	} `json:"error,omitempty"`
 }
 
 func (p *CompositeAIProvider) callGemini(ctx context.Context, req coach.ChatRequest, telemetry coach.CoachInsights, userName string) (coach.ChatResponse, error) {
@@ -259,7 +350,7 @@ Guidelines:
 	}
 
 	var lastErr error
-	models := getCandidateModels()
+	models := p.getCandidateModels(ctx, key)
 
 	for _, model := range models {
 		apiURL := fmt.Sprintf("https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s", model, key)
@@ -276,19 +367,18 @@ Guidelines:
 			continue
 		}
 
+		raw, _ := io.ReadAll(resp.Body)
+		resp.Body.Close()
+
 		if resp.StatusCode != http.StatusOK {
-			raw, _ := io.ReadAll(resp.Body)
-			resp.Body.Close()
 			lastErr = fmt.Errorf("model %s returned %d: %s", model, resp.StatusCode, string(raw))
-			slog.Warn("Gemini model candidate failed, trying next", "model", model, "status", resp.StatusCode)
+			slog.Warn("Gemini model candidate failed, trying next", "model", model, "status", resp.StatusCode, "error", string(raw))
 			continue
 		}
 
 		var geminiResp geminiResponse
-		decodeErr := json.NewDecoder(resp.Body).Decode(&geminiResp)
-		resp.Body.Close()
-		if decodeErr != nil {
-			lastErr = decodeErr
+		if err := json.Unmarshal(raw, &geminiResp); err != nil {
+			lastErr = err
 			continue
 		}
 
@@ -387,7 +477,7 @@ Format:
 	}
 
 	var lastErr error
-	models := getCandidateModels()
+	models := p.getCandidateModels(ctx, key)
 
 	for _, model := range models {
 		apiURL := fmt.Sprintf("https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s", model, key)
@@ -404,19 +494,18 @@ Format:
 			continue
 		}
 
+		raw, _ := io.ReadAll(resp.Body)
+		resp.Body.Close()
+
 		if resp.StatusCode != http.StatusOK {
-			raw, _ := io.ReadAll(resp.Body)
-			resp.Body.Close()
 			lastErr = fmt.Errorf("model %s returned %d: %s", model, resp.StatusCode, string(raw))
-			slog.Warn("Gemini Vision model candidate failed, trying next", "model", model, "status", resp.StatusCode)
+			slog.Warn("Gemini Vision model candidate failed, trying next", "model", model, "status", resp.StatusCode, "error", string(raw))
 			continue
 		}
 
 		var geminiResp geminiResponse
-		decodeErr := json.NewDecoder(resp.Body).Decode(&geminiResp)
-		resp.Body.Close()
-		if decodeErr != nil {
-			lastErr = decodeErr
+		if err := json.Unmarshal(raw, &geminiResp); err != nil {
+			lastErr = err
 			continue
 		}
 

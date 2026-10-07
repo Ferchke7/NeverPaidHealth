@@ -120,14 +120,38 @@ export const AICoachPage: React.FC = () => {
     ];
   };
 
-  const [messages, setMessages] = useState<ChatMessage[]>(() => [
-    {
-      id: 'welcome',
-      role: 'coach',
-      content: getInitialGreeting(),
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    },
-  ]);
+  const [messages, setMessages] = useState<ChatMessage[]>(() => {
+    try {
+      const saved = localStorage.getItem('np_ai_coach_messages_v3');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed.slice(-20); // Keep last 20 messages (last 10 questions + answers)
+        }
+      }
+    } catch {
+      // Ignore parse errors
+    }
+    return [
+      {
+        id: 'welcome',
+        role: 'coach',
+        content: getInitialGreeting(),
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      },
+    ];
+  });
+
+  // Persist messages to localStorage whenever updated
+  useEffect(() => {
+    try {
+      if (messages.length > 0) {
+        localStorage.setItem('np_ai_coach_messages_v3', JSON.stringify(messages.slice(-20)));
+      }
+    } catch {
+      // Ignore storage errors
+    }
+  }, [messages]);
 
   // 2. Chat Mutation with Gemini / Rule Engine
   const chatMutation = useMutation({
@@ -232,9 +256,10 @@ export const AICoachPage: React.FC = () => {
   };
 
   const handleClearChat = () => {
+    localStorage.removeItem('np_ai_coach_messages_v3');
     setMessages([
       {
-        id: 'welcome-reset',
+        id: 'welcome-reset-' + Date.now(),
         role: 'coach',
         content: getInitialGreeting(),
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
