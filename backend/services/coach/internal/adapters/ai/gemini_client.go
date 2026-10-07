@@ -31,7 +31,7 @@ func NewCompositeAIProvider() *CompositeAIProvider {
 	return &CompositeAIProvider{
 		geminiKey:  key,
 		ruleEngine: NewRuleEngineProvider(),
-		httpClient: &http.Client{Timeout: 25 * time.Second},
+		httpClient: &http.Client{Timeout: 30 * time.Second},
 	}
 }
 
@@ -50,7 +50,7 @@ func (p *CompositeAIProvider) GenerateChatResponse(ctx context.Context, req coac
 	// When user attached a photo, DO NOT fake or return canned templates
 	if req.ImageBase64 != "" {
 		return coach.ChatResponse{
-			Reply: "⚠️ **ИИ-анализ изображений сейчас недоступен** (Gemini Vision API не подключен на сервере).\n\nЧтобы не давать неточных оценок вслепую, я не могу проанализировать фото без активного сервиса компьютерного зрения. Вы можете задать любой текстовый вопрос по тренировкам, упражнениям или питанию!",
+			Reply: "⚠️ **ИИ-анализ изображений сейчас недоступен** (Gemini Vision API не подключен или временно не отвечает).\n\nЧтобы не давать неточных оценок вслепую, я не могу проанализировать фото без активного сервиса компьютерного зрения. Вы можете задать любой текстовый вопрос по тренировкам, упражнениям или питанию!",
 			Suggestions: []string{
 				"Что тренировать сегодня?",
 				"Как прогрессировать в жиме?",
@@ -108,16 +108,32 @@ type geminiResponse struct {
 	} `json:"candidates"`
 }
 
+func getCandidateModels() []string {
+	configured := os.Getenv("GEMINI_MODEL")
+	models := []string{}
+	if configured != "" {
+		models = append(models, configured)
+	}
+	defaults := []string{
+		"gemini-3.8-flash",
+		"gemini-2.5-flash",
+		"gemini-1.5-flash",
+		"gemini-1.5-pro",
+		"gemini-pro",
+	}
+	for _, m := range defaults {
+		if m != configured {
+			models = append(models, m)
+		}
+	}
+	return models
+}
+
 func (p *CompositeAIProvider) callGemini(ctx context.Context, req coach.ChatRequest, telemetry coach.CoachInsights, userName string) (coach.ChatResponse, error) {
 	key := p.getAPIKey()
 	if key == "" {
 		return coach.ChatResponse{}, fmt.Errorf("gemini api key is empty")
 	}
-	modelName := os.Getenv("GEMINI_MODEL")
-	if modelName == "" {
-		modelName = "gemini-2.0-flash"
-	}
-	apiURL := fmt.Sprintf("https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s", modelName, key)
 
 	bodyStats := "Body Weight: Not logged yet"
 	if telemetry.CurrentWeightKg > 0 {
@@ -242,61 +258,57 @@ Guidelines:
 		return coach.ChatResponse{}, err
 	}
 
-	httpReq, err := http.NewRequestWithContext(ctx, "POST", apiURL, bytes.NewReader(bodyBytes))
-	if err != nil {
-		return coach.ChatResponse{}, err
-	}
-	httpReq.Header.Set("Content-Type", "application/json")
+	var lastErr error
+	models := getCandidateModels()
 
-	resp, err := p.httpClient.Do(httpReq)
-	if err != nil {
-		return coach.ChatResponse{}, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		raw, _ := io.ReadAll(resp.Body)
-		// Try fallback to gemini-1.5-flash if 2.0-flash failed
-		if modelName != "gemini-1.5-flash" {
-			fallbackURL := fmt.Sprintf("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=%s", key)
-			fallbackReq, _ := http.NewRequestWithContext(ctx, "POST", fallbackURL, bytes.NewReader(bodyBytes))
-			fallbackReq.Header.Set("Content-Type", "application/json")
-			if fbResp, fbErr := p.httpClient.Do(fallbackReq); fbErr == nil && fbResp.StatusCode == http.StatusOK {
-				defer fbResp.Body.Close()
-				var fbGeminiResp geminiResponse
-				if json.NewDecoder(fbResp.Body).Decode(&fbGeminiResp) == nil && len(fbGeminiResp.Candidates) > 0 && len(fbGeminiResp.Candidates[0].Content.Parts) > 0 {
-					return coach.ChatResponse{
-						Reply: strings.TrimSpace(fbGeminiResp.Candidates[0].Content.Parts[0].Text),
-						Suggestions: []string{
-							"Прогрессивная перегрузка для жима лежа",
-							"Что тренировать сегодня?",
-							"Оптимальное восстановление",
-						},
-					}, nil
-				}
-			}
+	for _, model := range models {
+		apiURL := fmt.Sprintf("https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s", model, key)
+		httpReq, err := http.NewRequestWithContext(ctx, "POST", apiURL, bytes.NewReader(bodyBytes))
+		if err != nil {
+			lastErr = err
+			continue
 		}
-		return coach.ChatResponse{}, fmt.Errorf("gemini api error %d: %s", resp.StatusCode, string(raw))
+		httpReq.Header.Set("Content-Type", "application/json")
+
+		resp, err := p.httpClient.Do(httpReq)
+		if err != nil {
+			lastErr = err
+			continue
+		}
+
+		if resp.StatusCode != http.StatusOK {
+			raw, _ := io.ReadAll(resp.Body)
+			resp.Body.Close()
+			lastErr = fmt.Errorf("model %s returned %d: %s", model, resp.StatusCode, string(raw))
+			slog.Warn("Gemini model candidate failed, trying next", "model", model, "status", resp.StatusCode)
+			continue
+		}
+
+		var geminiResp geminiResponse
+		decodeErr := json.NewDecoder(resp.Body).Decode(&geminiResp)
+		resp.Body.Close()
+		if decodeErr != nil {
+			lastErr = decodeErr
+			continue
+		}
+
+		if len(geminiResp.Candidates) > 0 && len(geminiResp.Candidates[0].Content.Parts) > 0 {
+			reply := geminiResp.Candidates[0].Content.Parts[0].Text
+			return coach.ChatResponse{
+				Reply: strings.TrimSpace(reply),
+				Suggestions: []string{
+					"Прогрессивная перегрузка для жима лежа",
+					"Что тренировать сегодня?",
+					"Оптимальное восстановление",
+				},
+			}, nil
+		}
 	}
 
-	var geminiResp geminiResponse
-	if err := json.NewDecoder(resp.Body).Decode(&geminiResp); err != nil {
-		return coach.ChatResponse{}, err
+	if lastErr != nil {
+		return coach.ChatResponse{}, lastErr
 	}
-
-	if len(geminiResp.Candidates) > 0 && len(geminiResp.Candidates[0].Content.Parts) > 0 {
-		reply := geminiResp.Candidates[0].Content.Parts[0].Text
-		return coach.ChatResponse{
-			Reply: strings.TrimSpace(reply),
-			Suggestions: []string{
-				"Прогрессивная перегрузка для жима лежа",
-				"Что тренировать сегодня?",
-				"Оптимальное восстановление",
-			},
-		}, nil
-	}
-
-	return coach.ChatResponse{}, fmt.Errorf("empty gemini response")
+	return coach.ChatResponse{}, fmt.Errorf("no gemini model candidate succeeded")
 }
 
 func (p *CompositeAIProvider) getAPIKey() string {
@@ -311,12 +323,6 @@ func (p *CompositeAIProvider) callGeminiVision(ctx context.Context, imageBase64,
 	if key == "" {
 		return coach.MealAnalysisResult{}, fmt.Errorf("gemini api key is not configured")
 	}
-
-	modelName := os.Getenv("GEMINI_MODEL")
-	if modelName == "" {
-		modelName = "gemini-2.0-flash"
-	}
-	apiURL := fmt.Sprintf("https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s", modelName, key)
 
 	// Clean base64 data prefix if present (e.g. data:image/jpeg;base64,...)
 	cleanBase64 := imageBase64
@@ -380,64 +386,62 @@ Format:
 		return coach.MealAnalysisResult{}, err
 	}
 
-	httpReq, err := http.NewRequestWithContext(ctx, "POST", apiURL, bytes.NewReader(bodyBytes))
-	if err != nil {
-		return coach.MealAnalysisResult{}, err
-	}
-	httpReq.Header.Set("Content-Type", "application/json")
+	var lastErr error
+	models := getCandidateModels()
 
-	resp, err := p.httpClient.Do(httpReq)
-	if err != nil {
-		return coach.MealAnalysisResult{}, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		raw, _ := io.ReadAll(resp.Body)
-		// Try fallback to gemini-1.5-flash if 2.0-flash failed
-		if modelName != "gemini-1.5-flash" {
-			fallbackURL := fmt.Sprintf("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=%s", key)
-			fallbackReq, _ := http.NewRequestWithContext(ctx, "POST", fallbackURL, bytes.NewReader(bodyBytes))
-			fallbackReq.Header.Set("Content-Type", "application/json")
-			if fbResp, fbErr := p.httpClient.Do(fallbackReq); fbErr == nil && fbResp.StatusCode == http.StatusOK {
-				defer fbResp.Body.Close()
-				var fbGeminiResp geminiResponse
-				if json.NewDecoder(fbResp.Body).Decode(&fbGeminiResp) == nil && len(fbGeminiResp.Candidates) > 0 && len(fbGeminiResp.Candidates[0].Content.Parts) > 0 {
-					fbText := strings.TrimSpace(fbGeminiResp.Candidates[0].Content.Parts[0].Text)
-					fbText = strings.TrimPrefix(fbText, "```json")
-					fbText = strings.TrimPrefix(fbText, "```")
-					fbText = strings.TrimSuffix(fbText, "```")
-					fbText = strings.TrimSpace(fbText)
-					var analysis coach.MealAnalysisResult
-					if json.Unmarshal([]byte(fbText), &analysis) == nil {
-						return analysis, nil
-					}
-				}
-			}
+	for _, model := range models {
+		apiURL := fmt.Sprintf("https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s", model, key)
+		httpReq, err := http.NewRequestWithContext(ctx, "POST", apiURL, bytes.NewReader(bodyBytes))
+		if err != nil {
+			lastErr = err
+			continue
 		}
-		return coach.MealAnalysisResult{}, fmt.Errorf("gemini vision error %d: %s", resp.StatusCode, string(raw))
+		httpReq.Header.Set("Content-Type", "application/json")
+
+		resp, err := p.httpClient.Do(httpReq)
+		if err != nil {
+			lastErr = err
+			continue
+		}
+
+		if resp.StatusCode != http.StatusOK {
+			raw, _ := io.ReadAll(resp.Body)
+			resp.Body.Close()
+			lastErr = fmt.Errorf("model %s returned %d: %s", model, resp.StatusCode, string(raw))
+			slog.Warn("Gemini Vision model candidate failed, trying next", "model", model, "status", resp.StatusCode)
+			continue
+		}
+
+		var geminiResp geminiResponse
+		decodeErr := json.NewDecoder(resp.Body).Decode(&geminiResp)
+		resp.Body.Close()
+		if decodeErr != nil {
+			lastErr = decodeErr
+			continue
+		}
+
+		if len(geminiResp.Candidates) == 0 || len(geminiResp.Candidates[0].Content.Parts) == 0 {
+			lastErr = fmt.Errorf("empty vision response from model %s", model)
+			continue
+		}
+
+		rawText := strings.TrimSpace(geminiResp.Candidates[0].Content.Parts[0].Text)
+		rawText = strings.TrimPrefix(rawText, "```json")
+		rawText = strings.TrimPrefix(rawText, "```")
+		rawText = strings.TrimSuffix(rawText, "```")
+		rawText = strings.TrimSpace(rawText)
+
+		var analysis coach.MealAnalysisResult
+		if err := json.Unmarshal([]byte(rawText), &analysis); err != nil {
+			lastErr = fmt.Errorf("failed to parse vision json: %w (raw: %s)", err, rawText)
+			continue
+		}
+
+		return analysis, nil
 	}
 
-	var geminiResp geminiResponse
-	if err := json.NewDecoder(resp.Body).Decode(&geminiResp); err != nil {
-		return coach.MealAnalysisResult{}, err
+	if lastErr != nil {
+		return coach.MealAnalysisResult{}, lastErr
 	}
-
-	if len(geminiResp.Candidates) == 0 || len(geminiResp.Candidates[0].Content.Parts) == 0 {
-		return coach.MealAnalysisResult{}, fmt.Errorf("empty vision response")
-	}
-
-	rawText := strings.TrimSpace(geminiResp.Candidates[0].Content.Parts[0].Text)
-	// Strip ```json and ``` if returned by model
-	rawText = strings.TrimPrefix(rawText, "```json")
-	rawText = strings.TrimPrefix(rawText, "```")
-	rawText = strings.TrimSuffix(rawText, "```")
-	rawText = strings.TrimSpace(rawText)
-
-	var analysis coach.MealAnalysisResult
-	if err := json.Unmarshal([]byte(rawText), &analysis); err != nil {
-		return coach.MealAnalysisResult{}, fmt.Errorf("failed to parse vision json: %w (raw: %s)", err, rawText)
-	}
-
-	return analysis, nil
+	return coach.MealAnalysisResult{}, fmt.Errorf("no gemini vision model candidate succeeded")
 }
