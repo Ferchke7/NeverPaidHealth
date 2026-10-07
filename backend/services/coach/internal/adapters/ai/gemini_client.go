@@ -467,8 +467,10 @@ Guidelines:
 
 	for _, model := range models {
 		apiURL := fmt.Sprintf("https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s", model, key)
-		httpReq, err := http.NewRequestWithContext(ctx, "POST", apiURL, bytes.NewReader(bodyBytes))
+		reqCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+		httpReq, err := http.NewRequestWithContext(reqCtx, "POST", apiURL, bytes.NewReader(bodyBytes))
 		if err != nil {
+			cancel()
 			lastErr = err
 			continue
 		}
@@ -476,12 +478,14 @@ Guidelines:
 
 		resp, err := p.httpClient.Do(httpReq)
 		if err != nil {
+			cancel()
 			lastErr = err
 			continue
 		}
 
 		raw, _ := io.ReadAll(resp.Body)
 		resp.Body.Close()
+		cancel()
 
 		if resp.StatusCode != http.StatusOK {
 			lastErr = fmt.Errorf("model %s returned %d: %s", model, resp.StatusCode, string(raw))
@@ -595,8 +599,10 @@ Format:
 
 	for _, model := range models {
 		apiURL := fmt.Sprintf("https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s", model, key)
-		httpReq, err := http.NewRequestWithContext(ctx, "POST", apiURL, bytes.NewReader(bodyBytes))
+		reqCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+		httpReq, err := http.NewRequestWithContext(reqCtx, "POST", apiURL, bytes.NewReader(bodyBytes))
 		if err != nil {
+			cancel()
 			lastErr = err
 			continue
 		}
@@ -604,12 +610,14 @@ Format:
 
 		resp, err := p.httpClient.Do(httpReq)
 		if err != nil {
+			cancel()
 			lastErr = err
 			continue
 		}
 
 		raw, _ := io.ReadAll(resp.Body)
 		resp.Body.Close()
+		cancel()
 
 		if resp.StatusCode != http.StatusOK {
 			lastErr = fmt.Errorf("model %s returned %d: %s", model, resp.StatusCode, string(raw))
