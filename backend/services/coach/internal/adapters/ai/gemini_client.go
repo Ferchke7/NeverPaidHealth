@@ -22,12 +22,12 @@ type AIProvider interface {
 }
 
 type CompositeAIProvider struct {
-	geminiKey       string
-	ruleEngine      *RuleEngineProvider
-	httpClient      *http.Client
-	discoveredOnce  sync.Once
-	cachedModels    []string
-	modelsMutex     sync.RWMutex
+	geminiKey      string
+	ruleEngine     *RuleEngineProvider
+	httpClient     *http.Client
+	discoveredOnce sync.Once
+	cachedModels   []string
+	modelsMutex    sync.RWMutex
 }
 
 func NewCompositeAIProvider() *CompositeAIProvider {
@@ -62,7 +62,6 @@ func (p *CompositeAIProvider) getCandidateModels(ctx context.Context, key string
 	}
 	p.modelsMutex.RUnlock()
 
-	// Perform discovery once
 	var discovered []string
 	p.discoveredOnce.Do(func() {
 		if key == "" {
@@ -99,17 +98,57 @@ func (p *CompositeAIProvider) getCandidateModels(ctx context.Context, key string
 			return
 		}
 
+		// Preferred order for real multimodal & chat models
+		priorityKeywords := []string{
+			"gemini-3.8-flash",
+			"gemini-3.7-flash",
+			"gemini-3.6-flash",
+			"gemini-3.5-flash",
+			"gemini-flash-latest",
+			"gemini-3.1-flash-lite",
+			"gemini-pro-latest",
+			"gemini-3-flash-preview",
+		}
+
+		rawValid := []string{}
 		for _, m := range res.Models {
+			name := strings.TrimPrefix(m.Name, "models/")
+			// Filter out specialized non-chat / non-vision models (TTS, Lyria music, Audio transcribe, Robotics)
+			if strings.Contains(name, "tts") || strings.Contains(name, "lyria") || strings.Contains(name, "transcribe") || strings.Contains(name, "robotics") || strings.Contains(name, "clip") {
+				continue
+			}
+			// Must support generateContent
 			for _, method := range m.SupportedGenerationMethods {
 				if method == "generateContent" {
-					name := strings.TrimPrefix(m.Name, "models/")
-					discovered = append(discovered, name)
+					rawValid = append(rawValid, name)
 					break
 				}
 			}
 		}
 
-		slog.Info("Successfully queried active Gemini models from Google", "count", len(discovered), "models", discovered)
+		// Sort with priority models first
+		for _, pref := range priorityKeywords {
+			for _, m := range rawValid {
+				if m == pref {
+					discovered = append(discovered, m)
+				}
+			}
+		}
+		// Append remainder
+		for _, m := range rawValid {
+			alreadyIn := false
+			for _, d := range discovered {
+				if d == m {
+					alreadyIn = true
+					break
+				}
+			}
+			if !alreadyIn {
+				discovered = append(discovered, m)
+			}
+		}
+
+		slog.Info("Filtered active multimodal Gemini models", "count", len(discovered), "models", discovered)
 	})
 
 	if len(discovered) > 0 {
@@ -120,26 +159,14 @@ func (p *CompositeAIProvider) getCandidateModels(ctx context.Context, key string
 	}
 
 	// Fallback list if discovery returned nothing
-	configured := os.Getenv("GEMINI_MODEL")
-	fallback := []string{}
-	if configured != "" {
-		fallback = append(fallback, configured)
+	return []string{
+		"gemini-3.8-flash",
+		"gemini-3.7-flash",
+		"gemini-3.5-flash",
+		"gemini-flash-latest",
+		"gemini-3.1-flash-lite",
+		"gemini-pro-latest",
 	}
-	standardModels := []string{
-		"gemini-1.5-flash-latest",
-		"gemini-1.5-flash",
-		"gemini-1.5-flash-8b",
-		"gemini-1.5-pro-latest",
-		"gemini-1.5-pro",
-		"gemini-2.0-flash-exp",
-		"gemini-exp-1206",
-	}
-	for _, m := range standardModels {
-		if m != configured {
-			fallback = append(fallback, m)
-		}
-	}
-	return fallback
 }
 
 func (p *CompositeAIProvider) GenerateChatResponse(ctx context.Context, req coach.ChatRequest, telemetry coach.CoachInsights, userName string) (coach.ChatResponse, error) {
@@ -372,7 +399,7 @@ Guidelines:
 
 		if resp.StatusCode != http.StatusOK {
 			lastErr = fmt.Errorf("model %s returned %d: %s", model, resp.StatusCode, string(raw))
-			slog.Warn("Gemini model candidate failed, trying next", "model", model, "status", resp.StatusCode, "error", string(raw))
+			slog.Warn("Gemini model candidate failed, trying next", "model", model, "status", resp.StatusCode)
 			continue
 		}
 
@@ -384,6 +411,7 @@ Guidelines:
 
 		if len(geminiResp.Candidates) > 0 && len(geminiResp.Candidates[0].Content.Parts) > 0 {
 			reply := geminiResp.Candidates[0].Content.Parts[0].Text
+			slog.Info("Gemini response successfully generated", "model", model)
 			return coach.ChatResponse{
 				Reply: strings.TrimSpace(reply),
 				Suggestions: []string{
@@ -414,7 +442,6 @@ func (p *CompositeAIProvider) callGeminiVision(ctx context.Context, imageBase64,
 		return coach.MealAnalysisResult{}, fmt.Errorf("gemini api key is not configured")
 	}
 
-	// Clean base64 data prefix if present (e.g. data:image/jpeg;base64,...)
 	cleanBase64 := imageBase64
 	if idx := strings.Index(imageBase64, ","); idx != -1 {
 		cleanBase64 = imageBase64[idx+1:]
@@ -499,7 +526,7 @@ Format:
 
 		if resp.StatusCode != http.StatusOK {
 			lastErr = fmt.Errorf("model %s returned %d: %s", model, resp.StatusCode, string(raw))
-			slog.Warn("Gemini Vision model candidate failed, trying next", "model", model, "status", resp.StatusCode, "error", string(raw))
+			slog.Warn("Gemini Vision model candidate failed, trying next", "model", model, "status", resp.StatusCode)
 			continue
 		}
 
@@ -526,6 +553,7 @@ Format:
 			continue
 		}
 
+		slog.Info("Gemini Vision analysis successful", "model", model, "meal", analysis.MealName)
 		return analysis, nil
 	}
 
