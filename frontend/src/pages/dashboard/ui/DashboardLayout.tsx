@@ -50,6 +50,105 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
     { id: 'profile', label: t('nav.profile'), icon: <User className="w-4 h-4 md:w-5 md:h-5" /> },
   ];
 
+  if (currentTab === 'coach') {
+    return (
+      <div className="fixed inset-0 h-[100dvh] max-h-[100dvh] w-screen flex flex-col bg-dark-900 text-zinc-100 selection:bg-brand-500 selection:text-black overflow-hidden">
+        {/* Top App Header */}
+        <header className="shrink-0 z-40 bg-dark-900/95 backdrop-blur border-b border-dark-800 px-3 sm:px-4 py-2 pt-[calc(0.5rem+env(safe-area-inset-top,0px))] flex items-center justify-between">
+          <div className="flex items-center gap-4 sm:gap-6">
+            <button
+              onClick={() => handleNavClick('workouts')}
+              className="flex items-center gap-2 hover:opacity-90 transition-opacity"
+            >
+              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-brand-500/10 border border-brand-500/30 flex items-center justify-center text-brand-500 font-bold shadow-sm">
+                <Dumbbell className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              </div>
+              <span className="font-bold text-sm sm:text-base tracking-tight hidden sm:inline">
+                duda<span className="text-brand-500">.uz</span>
+              </span>
+            </button>
+
+            {/* Desktop Navigation Links */}
+            <nav className="hidden md:flex items-center gap-1">
+              {navItems.map((item) => {
+                const isActive = currentTab === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => handleNavClick(item.id)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
+                      isActive
+                        ? 'bg-brand-500/15 text-brand-400 border border-brand-500/30 shadow-sm'
+                        : 'text-zinc-400 hover:text-zinc-200 hover:bg-dark-800'
+                    }`}
+                  >
+                    {item.icon}
+                    {item.label}
+                    {item.isAI && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-brand-400 animate-pulse" />
+                    )}
+                  </button>
+                );
+              })}
+            </nav>
+          </div>
+
+          <div className="flex items-center gap-1.5 sm:gap-3">
+            <PWAInstallButton className="hidden lg:flex" />
+            <LanguageSwitchToggle variant="header" />
+            <UnitSwitchToggle />
+            <div className="flex items-center gap-1.5 pl-1.5 sm:pl-2 border-l border-dark-700">
+              <button
+                onClick={() => handleNavClick('profile')}
+                className="flex items-center gap-1.5 p-1 rounded-lg hover:bg-dark-800 transition-colors"
+                title={t('nav.profile')}
+              >
+                <UserAvatar user={user} size="sm" />
+                <span className="text-xs font-medium text-zinc-300 hidden sm:inline max-w-[100px] truncate">
+                  {user?.display_name}
+                </span>
+              </button>
+              <button
+                onClick={logout}
+                className="text-zinc-500 hover:text-red-400 p-1 sm:p-1.5 rounded-md transition-colors"
+                title={t('nav.logout')}
+              >
+                <LogOut className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              </button>
+            </div>
+          </div>
+        </header>
+
+        {/* Main Content Area - 100% Flex child */}
+        <main className="flex-1 min-h-0 w-full max-w-5xl mx-auto flex flex-col p-0 md:py-2 md:px-4 overflow-hidden relative">
+          {children}
+        </main>
+
+        {/* Bottom Mobile Navigation Bar */}
+        <nav className="shrink-0 z-40 bg-dark-900/95 backdrop-blur border-t border-dark-800 md:hidden flex items-center justify-around py-1 px-1 pb-[calc(0.25rem+env(safe-area-inset-bottom,0px))]">
+          {navItems.map((item) => {
+            const isActive = currentTab === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => handleNavClick(item.id)}
+                className={`flex flex-col items-center gap-0.5 py-1 px-1 rounded-xl transition-all relative min-w-0 flex-1 ${
+                  isActive ? 'text-brand-500 font-bold' : 'text-zinc-400 hover:text-zinc-200'
+                }`}
+              >
+                {item.icon}
+                <span className="text-[9px] tracking-tight truncate">{item.label}</span>
+                {item.isAI && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-brand-400 absolute top-1 right-2 animate-pulse" />
+                )}
+              </button>
+            );
+          })}
+        </nav>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex flex-col bg-dark-900 text-zinc-100 selection:bg-brand-500 selection:text-black">
       {/* Top App Header */}
@@ -121,14 +220,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
       </header>
 
       {/* Main Content Area */}
-      <main
-        className={
-          currentTab === 'coach'
-            ? 'flex-1 w-full max-w-5xl mx-auto flex flex-col min-h-0 p-0 pb-[calc(54px+env(safe-area-inset-bottom,0px))] md:pb-3 md:pt-2 md:px-4 h-[calc(100dvh-53px)] md:h-[calc(100dvh-57px)] overflow-hidden'
-            : 'flex-1 max-w-4xl w-full mx-auto p-4 pb-[calc(6rem+env(safe-area-inset-bottom,0px))] md:pb-8'
-        }
-      >
-        {currentTab !== 'coach' && <PWAInstallBanner />}
+      <main className="flex-1 max-w-4xl w-full mx-auto p-4 pb-[calc(6rem+env(safe-area-inset-bottom,0px))] md:pb-8">
+        <PWAInstallBanner />
         {children}
       </main>
 
@@ -156,3 +249,4 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
     </div>
   );
 };
+
