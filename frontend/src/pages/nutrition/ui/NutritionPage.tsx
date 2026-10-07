@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import {
   Camera,
   Plus,
@@ -19,6 +19,10 @@ import { Button } from '../../../shared/ui/button.tsx';
 import { Input } from '../../../shared/ui/input.tsx';
 import { useTranslation } from '../../../shared/lib/i18n/i18n.ts';
 import { useAuthStore } from '../../../entities/user/model/authStore.ts';
+import {
+  SmartPhotoPickerModal,
+  CompressedPhoto,
+} from '../../../shared/ui/photo-picker/SmartPhotoPickerModal.tsx';
 
 interface MealItem {
   name: string;
@@ -96,7 +100,7 @@ export const NutritionPage: React.FC = () => {
   const [manualCarbs, setManualCarbs] = useState('45');
   const [manualFat, setManualFat] = useState('15');
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isPhotoPickerOpen, setIsPhotoPickerOpen] = useState(false);
 
   // Fetch today's nutrition
   const { data: summary, isLoading } = useQuery<DailyNutritionSummary>({
@@ -143,51 +147,17 @@ export const NutritionPage: React.FC = () => {
     },
   });
 
-  // Image upload handler with client-side compression to prevent large payloads
-  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  // Photo captured callback from low-memory safe SmartPhotoPickerModal
+  const handlePhotoCaptured = (photo: CompressedPhoto) => {
+    setSelectedImage(photo.dataUrl);
+    setScanResult(null);
+    setIsScanModalOpen(true);
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        const MAX_WIDTH = 1024;
-        const MAX_HEIGHT = 1024;
-        let width = img.width;
-        let height = img.height;
-
-        if (width > height) {
-          if (width > MAX_WIDTH) {
-            height = Math.round((height * MAX_WIDTH) / width);
-            width = MAX_WIDTH;
-          }
-        } else {
-          if (height > MAX_HEIGHT) {
-            width = Math.round((width * MAX_HEIGHT) / height);
-            height = MAX_HEIGHT;
-          }
-        }
-
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        ctx?.drawImage(img, 0, 0, width, height);
-
-        const compressedBase64 = canvas.toDataURL('image/jpeg', 0.85);
-        setSelectedImage(compressedBase64);
-        setScanResult(null);
-
-        // Auto trigger AI analysis
-        analyzeMutation.mutate({
-          image_base64: compressedBase64,
-          notes: scanNotes,
-        });
-      };
-      img.src = event.target?.result as string;
-    };
-    reader.readAsDataURL(file);
+    // Auto trigger AI analysis
+    analyzeMutation.mutate({
+      image_base64: photo.dataUrl,
+      notes: scanNotes,
+    });
   };
 
   const handleSaveScanResult = () => {
@@ -295,26 +265,13 @@ export const NutritionPage: React.FC = () => {
             variant="primary"
             size="sm"
             className="text-xs font-bold flex items-center gap-1.5 shadow-md shadow-brand-500/20"
-            onClick={() => {
-              setIsScanModalOpen(true);
-              setTimeout(() => fileInputRef.current?.click(), 100);
-            }}
+            onClick={() => setIsPhotoPickerOpen(true)}
           >
             <Camera className="w-4 h-4" />
             <span>{t('nutrition.snapPhoto')}</span>
           </Button>
         </div>
       </div>
-
-      {/* Hidden File / Camera Input */}
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*"
-        capture="environment"
-        onChange={handleImageSelect}
-        className="hidden"
-      />
 
       {/* 2. Top Hero: Remaining for Today & Macro Dashboard */}
       <Card className="p-4 sm:p-5 bg-gradient-to-br from-dark-850 via-dark-850 to-brand-950/30 border-dark-700/90 shadow-xl space-y-4">
@@ -481,10 +438,7 @@ export const NutritionPage: React.FC = () => {
               <Button
                 variant="primary"
                 size="sm"
-                onClick={() => {
-                  setIsScanModalOpen(true);
-                  setTimeout(() => fileInputRef.current?.click(), 100);
-                }}
+                onClick={() => setIsPhotoPickerOpen(true)}
                 className="text-xs font-bold"
               >
                 <Camera className="w-3.5 h-3.5 mr-1" />
@@ -573,7 +527,8 @@ export const NutritionPage: React.FC = () => {
               <div className="relative rounded-2xl overflow-hidden border border-dark-700 max-h-64 flex items-center justify-center bg-dark-950">
                 <img src={selectedImage} alt="Meal" className="w-full h-auto object-cover" />
                 <button
-                  onClick={() => fileInputRef.current?.click()}
+                  type="button"
+                  onClick={() => setIsPhotoPickerOpen(true)}
                   className="absolute bottom-3 right-3 bg-dark-900/90 hover:bg-dark-800 text-white text-xs font-bold px-3 py-1.5 rounded-xl border border-dark-700 flex items-center gap-1.5 shadow-lg backdrop-blur"
                 >
                   <Camera className="w-3.5 h-3.5" />
@@ -582,12 +537,12 @@ export const NutritionPage: React.FC = () => {
               </div>
             ) : (
               <div
-                onClick={() => fileInputRef.current?.click()}
+                onClick={() => setIsPhotoPickerOpen(true)}
                 className="border-2 border-dashed border-dark-700 hover:border-brand-500/50 rounded-2xl p-8 text-center cursor-pointer bg-dark-850/50 transition-all"
               >
                 <Upload className="w-10 h-10 text-brand-400 mx-auto mb-2" />
                 <p className="text-xs font-bold text-zinc-200">{t('nutrition.photoUploadHint')}</p>
-                <p className="text-[11px] text-zinc-500 mt-1">Камера или Галерея (JPEG, PNG)</p>
+                <p className="text-[11px] text-zinc-500 mt-1">Камера или Галерея (без перезагрузки)</p>
               </div>
             )}
 
@@ -854,6 +809,15 @@ export const NutritionPage: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* 5. Smart In-App Photo Picker Modal */}
+      <SmartPhotoPickerModal
+        isOpen={isPhotoPickerOpen}
+        onClose={() => setIsPhotoPickerOpen(false)}
+        onPhotoSelected={handlePhotoCaptured}
+        title="AI Сканирование блюда"
+        subtitle="Сделайте снимок тарелки или выберите фото из галереи"
+      />
     </div>
   );
 };

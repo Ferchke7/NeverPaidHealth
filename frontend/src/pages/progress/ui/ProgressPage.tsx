@@ -10,6 +10,7 @@ import {
   Layers,
   BarChart3,
   Shield,
+  Scale,
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '../../../shared/api/client.ts';
@@ -21,6 +22,8 @@ import { useAuthStore } from '../../../entities/user/model/authStore.ts';
 import { Exercise } from '../../../entities/exercise/model/types.ts';
 import { WorkoutHistoryItem } from '../../../entities/workout/model/types.ts';
 import { WorkoutCalendar } from '../../../features/workout-calendar/ui/WorkoutCalendar.tsx';
+import { BodyTargetProgressCard } from '../../../features/body-target-progress/ui/BodyTargetProgressCard.tsx';
+import { BMICalculatorCard } from '../../../features/bmi-calculator/ui/BMICalculatorCard.tsx';
 
 interface PersonalRecord {
   pr_type: 'heaviest_weight' | 'best_e1rm' | 'max_volume_set' | 'max_reps';
@@ -53,7 +56,7 @@ interface ExerciseHistoryResponse {
   data_points: HistoryDataPoint[];
 }
 
-type AnalyticsTab = 'overview' | 'calendar' | 'muscles' | 'strength' | 'prs' | 'calculator';
+type AnalyticsTab = 'overview' | 'body' | 'calendar' | 'muscles' | 'strength' | 'prs' | 'calculator';
 
 const MUSCLE_FILTER = [
   { id: 'all', label: 'All Muscles' },
@@ -257,6 +260,7 @@ export const ProgressPage: React.FC = () => {
         <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pt-5 border-t border-dark-700/60 mt-4">
           {[
             { id: 'overview', label: 'Overview & Volume', icon: <Activity className="w-4 h-4" /> },
+            { id: 'body', label: 'Body Weight & Goals', icon: <Scale className="w-4 h-4" /> },
             { id: 'calendar', label: 'Workout Calendar', icon: <CalendarIcon className="w-4 h-4" /> },
             { id: 'muscles', label: 'Muscle Heatmap', icon: <Layers className="w-4 h-4" /> },
             { id: 'strength', label: 'Strength Standards', icon: <Shield className="w-4 h-4" /> },
@@ -281,6 +285,14 @@ export const ProgressPage: React.FC = () => {
           })}
         </div>
       </div>
+
+      {/* TAB: BODY WEIGHT & TARGET GOALS */}
+      {activeTab === 'body' && (
+        <div className="space-y-6 animate-fade-in">
+          <BodyTargetProgressCard />
+          <BMICalculatorCard />
+        </div>
+      )}
 
       {/* TAB 1: OVERVIEW & VOLUME PROGRESSION */}
       {activeTab === 'overview' && (

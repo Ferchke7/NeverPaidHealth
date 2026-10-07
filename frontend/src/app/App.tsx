@@ -35,7 +35,7 @@ export const App: React.FC = () => {
       {activeTab === 'progress' && <ProgressPage />}
       {activeTab === 'exercises' && <ExercisesPage />}
       {activeTab === 'body' && <BodyPage />}
-      {activeTab === 'profile' && <ProfilePage />}
+      {activeTab === 'profile' && <ProfilePage onNavigateToBody={() => setActiveTab('body')} />}
 
       {/* Floating / Fullsheet Active Workout Logger */}
       <ActiveWorkoutSheet />

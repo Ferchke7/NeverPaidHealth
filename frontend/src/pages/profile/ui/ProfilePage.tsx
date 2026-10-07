@@ -24,9 +24,14 @@ import { UserAvatar } from '../../../entities/user/ui/UserAvatar.tsx';
 import { BMICalculatorCard } from '../../../features/bmi-calculator/ui/BMICalculatorCard.tsx';
 import { LanguageSwitchToggle } from '../../../features/switch-language/ui/LanguageSwitchToggle.tsx';
 import { PWAInstallButton } from '../../../features/pwa-install/ui/PWAInstallButton.tsx';
+import { BodyTargetProgressCard } from '../../../features/body-target-progress/ui/BodyTargetProgressCard.tsx';
 import { useTranslation } from '../../../shared/lib/i18n/i18n.ts';
 
-export const ProfilePage: React.FC = () => {
+interface ProfilePageProps {
+  onNavigateToBody?: () => void;
+}
+
+export const ProfilePage: React.FC<ProfilePageProps> = ({ onNavigateToBody }) => {
   const queryClient = useQueryClient();
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
@@ -215,6 +220,9 @@ export const ProfilePage: React.FC = () => {
           </div>
         </Card>
       </div>
+
+      {/* Body Target & Weight Progress Tracker Card */}
+      <BodyTargetProgressCard onNavigateToBody={onNavigateToBody} />
 
       {/* Body Stats & BMI Calculator Card */}
       <BMICalculatorCard />

@@ -13,12 +13,10 @@ import { useMutation } from '@tanstack/react-query';
 import { apiClient } from '../../../shared/api/client.ts';
 import { useAuthStore } from '../../../entities/user/model/authStore.ts';
 import { useTranslation } from '../../../shared/lib/i18n/i18n.ts';
-
-interface AttachedPhoto {
-  dataUrl: string;
-  base64: string;
-  mimeType: string;
-}
+import {
+  SmartPhotoPickerModal,
+  CompressedPhoto,
+} from '../../../shared/ui/photo-picker/SmartPhotoPickerModal.tsx';
 
 interface ChatMessage {
   id: string;
@@ -28,51 +26,6 @@ interface ChatMessage {
   timestamp: string;
 }
 
-const compressImage = (file: File): Promise<AttachedPhoto> => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        const MAX_WIDTH = 1024;
-        const MAX_HEIGHT = 1024;
-        let width = img.width;
-        let height = img.height;
-
-        if (width > height) {
-          if (width > MAX_WIDTH) {
-            height = Math.round((height * MAX_WIDTH) / width);
-            width = MAX_WIDTH;
-          }
-        } else {
-          if (height > MAX_HEIGHT) {
-            width = Math.round((width * MAX_HEIGHT) / height);
-            height = MAX_HEIGHT;
-          }
-        }
-
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) {
-          reject(new Error('Canvas context not available'));
-          return;
-        }
-
-        ctx.drawImage(img, 0, 0, width, height);
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
-        const base64 = dataUrl.split(',')[1];
-        resolve({ dataUrl, base64, mimeType: 'image/jpeg' });
-      };
-      img.onerror = reject;
-      img.src = e.target?.result as string;
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-};
-
 export const AICoachPage: React.FC = () => {
   const { t, language } = useTranslation();
   const user = useAuthStore((s) => s.user);
@@ -80,12 +33,12 @@ export const AICoachPage: React.FC = () => {
   const getInitialGreeting = () => {
     const name = user?.display_name || 'Атлет';
     if (language === 'en') {
-      return `Hey ${name}! 🦾 I'm your AI Strength & Conditioning Coach on duda.uz.\n\nI analyze your exercise logs, weekly volume, body metrics, and nutrition. You can also send me a photo of your physique or exercise technique for a detailed visual assessment! How can I help you today?`;
+      return `Hey ${name}! 🦾 I'm your AI Strength & Conditioning Coach on duda.uz.\n\nI track your exercise logs, weekly volume, body weight progress, and nutrition targets. You can also send me a photo of your physique or exercise technique for a detailed visual assessment! How can I help you today?`;
     }
     if (language === 'uz') {
-      return `Salom, ${name}! 🦾 Men duda.uz platformasidagi sizning shaxsiy AI murabbiyingizman.\n\nMen mashg'ulotlaringiz, tana ko'rsatkichlaringiz va ovqatlanishingizni tahlil qilaman. Shuningdek, formangiz yoki texnikangizni baholash uchun rasm yuborishingiz mumkin! Bugun sizga qanday yordam bera olaman?`;
+      return `Salom, ${name}! 🦾 Men duda.uz platformasidagi sizning shaxsiy AI murabbiyingizman.\n\nMen mashg'ulotlaringiz, tana vazningiz dinamikasi va ovqatlanishingizni tahlil qilaman. Shuningdek, formangiz yoki texnikangizni baholash uchun rasm yuborishingiz mumkin! Bugun sizga qanday yordam bera olaman?`;
     }
-    return `Привет, ${name}! 🦾 Я твой персональный ИИ-тренер duda.uz.\n\nЯ анализирую твои поднятые килограммы, недельный тоннаж, замеры тела и рацион. Ты можешь задавать любые вопросы или **отправить фото своей формы / техники**, чтобы я дал честную визуальную оценку и рекомендации! Чем займемся?`;
+    return `Привет, ${name}! 🦾 Я твой персональный ИИ-тренер duda.uz.\n\nЯ анализирую твои поднятые килограммы, недельный тоннаж, динамику веса тела и дневные калории/БЖУ. Ты можешь задавать любые вопросы или **отправить фото своей формы / техники**, чтобы я дал честную визуальную оценку и рекомендации! Чем займемся?`;
   };
 
   const getQuickPrompts = () => {
@@ -127,13 +80,14 @@ export const AICoachPage: React.FC = () => {
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     },
   ]);
+
   const [inputMessage, setInputMessage] = useState('');
-  const [attachedPhoto, setAttachedPhoto] = useState<AttachedPhoto | null>(null);
+  const [attachedPhoto, setAttachedPhoto] = useState<CompressedPhoto | null>(null);
   const [previewModalImg, setPreviewModalImg] = useState<string | null>(null);
+  const [isPhotoPickerOpen, setIsPhotoPickerOpen] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -141,7 +95,11 @@ export const AICoachPage: React.FC = () => {
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+  }, [messages, chatMutationPending()]);
+
+  function chatMutationPending() {
+    return chatMutation.isPending;
+  }
 
   // Chat Mutation
   const chatMutation = useMutation({
@@ -171,7 +129,7 @@ export const AICoachPage: React.FC = () => {
           role: 'coach',
           content:
             language === 'en'
-              ? 'Sorry, unable to connect to AI Coach server. Please try again.'
+              ? 'Sorry, unable to connect to AI Coach server. Please check connection and try again.'
               : language === 'uz'
               ? "Kechirasiz, AI server bilan aloqa uzildi. Iltimos, qayta urinib ko'ring."
               : 'Извини, возникла ошибка связи с ИИ-сервером. Попробуй еще раз!',
@@ -181,28 +139,16 @@ export const AICoachPage: React.FC = () => {
     },
   });
 
-  const handlePhotoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    try {
-      const compressed = await compressImage(file);
-      setAttachedPhoto(compressed);
-      if (!inputMessage.trim()) {
-        setInputMessage(
-          language === 'en'
-            ? 'Please assess my physique, body composition, and give training/diet advice.'
-            : language === 'uz'
-            ? 'Mening formam va tana tuzilishimni baholab, mashg\'ulot va ovqatlanish bo\'yicha maslahat bering.'
-            : 'Оцени мою форму и телосложение по фото, дай честную оценку и рекомендации по тренировкам и питанию.'
-        );
-      }
-    } catch (err) {
-      console.error('Failed to compress image:', err);
-    } finally {
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
+  const handlePhotoCaptured = (photo: CompressedPhoto) => {
+    setAttachedPhoto(photo);
+    if (!inputMessage.trim()) {
+      setInputMessage(
+        language === 'en'
+          ? 'Please assess my physique, body composition, and give training/diet advice.'
+          : language === 'uz'
+          ? 'Mening formam va tana tuzilishimni baholab, mashg\'ulot va ovqatlanish bo\'yicha maslahat bering.'
+          : 'Оцени мою форму и телосложение по фото, дай честную оценку и рекомендации по тренировкам и питанию.'
+      );
     }
   };
 
@@ -238,7 +184,14 @@ export const AICoachPage: React.FC = () => {
     });
 
     if (window.innerWidth > 640) {
-      inputRef.current?.focus();
+      textareaRef.current?.focus();
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
     }
   };
 
@@ -257,12 +210,12 @@ export const AICoachPage: React.FC = () => {
   const quickPrompts = getQuickPrompts();
 
   return (
-    <div className="flex flex-col h-full w-full bg-dark-900 md:border md:border-dark-800/80 md:rounded-2xl shadow-2xl overflow-hidden animate-fade-in relative">
+    <div className="flex flex-col h-full w-full bg-dark-900 md:border md:border-dark-800 md:rounded-2xl shadow-2xl overflow-hidden animate-fade-in relative select-text">
       {/* 1. Header Bar */}
-      <header className="px-3 sm:px-4 py-2.5 bg-dark-900/95 backdrop-blur-md border-b border-dark-800 flex items-center justify-between shrink-0 z-10">
+      <header className="px-3 sm:px-4 py-2 sm:py-2.5 bg-dark-900/95 backdrop-blur-md border-b border-dark-800 flex items-center justify-between shrink-0 z-10">
         <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
           <div className="relative shrink-0">
-            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-brand-500/20 border border-brand-500/40 flex items-center justify-center text-brand-400 shadow-sm">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-gradient-to-tr from-brand-500/20 to-emerald-500/20 border border-brand-500/40 flex items-center justify-center text-brand-400 shadow-sm">
               <Bot className="w-5 h-5" />
             </div>
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 absolute -top-0.5 -right-0.5 ring-2 ring-dark-900 animate-pulse" />
@@ -275,12 +228,12 @@ export const AICoachPage: React.FC = () => {
               </h1>
               <span className="px-1.5 sm:px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-bold bg-brand-500/15 text-brand-400 border border-brand-500/30 flex items-center gap-1 shrink-0">
                 <Sparkles className="w-2.5 h-2.5 text-brand-400" />
-                Gemini AI
+                Gemini 2.0
               </span>
             </div>
             <p className="text-[10px] sm:text-[11px] text-zinc-400 flex items-center gap-1.5 mt-0.5 truncate">
               <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
-              <span className="truncate">Evidence-Based Strength & Hypertrophy</span>
+              <span className="truncate">Evidence-Based Strength & Nutrition Coach</span>
             </p>
           </div>
         </div>
@@ -298,19 +251,19 @@ export const AICoachPage: React.FC = () => {
       </header>
 
       {/* 2. Scrollable Messages Area */}
-      <main className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3 sm:space-y-4 bg-gradient-to-b from-dark-950/80 via-dark-900 to-dark-950 scrollbar-thin scrollbar-thumb-dark-700">
+      <main className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3.5 sm:space-y-4 bg-gradient-to-b from-dark-950/90 via-dark-900 to-dark-950/90 overscroll-contain">
         {messages.map((msg) => {
           const isUser = msg.role === 'user';
           return (
             <div
               key={msg.id}
-              className={`flex gap-2 sm:gap-3 max-w-[94%] sm:max-w-[85%] ${
+              className={`flex gap-2 sm:gap-3 max-w-[95%] sm:max-w-[85%] ${
                 isUser ? 'ml-auto flex-row-reverse' : 'mr-auto'
               }`}
             >
               {/* Avatar */}
               <div
-                className={`w-7 h-7 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center text-xs shrink-0 shadow-sm ${
+                className={`w-7 h-7 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center text-xs shrink-0 shadow-sm mt-0.5 ${
                   isUser
                     ? 'bg-brand-500 text-dark-950 font-bold'
                     : 'bg-dark-800 border border-dark-700 text-brand-400'
@@ -346,7 +299,7 @@ export const AICoachPage: React.FC = () => {
                   </div>
                 )}
 
-                <div className="whitespace-pre-wrap">{msg.content}</div>
+                <div className="whitespace-pre-wrap select-text">{msg.content}</div>
 
                 <div
                   className={`text-[9px] mt-1.5 text-right font-mono ${
@@ -385,7 +338,7 @@ export const AICoachPage: React.FC = () => {
               key={i}
               onClick={() => {
                 if (isPhotoPrompt) {
-                  fileInputRef.current?.click();
+                  setIsPhotoPickerOpen(true);
                 } else {
                   handleSendMessage(prompt.replace(/^[^\s]+\s/, ''));
                 }
@@ -441,20 +394,12 @@ export const AICoachPage: React.FC = () => {
           )}
 
           {/* Input & Action Buttons */}
-          <div className="flex items-center gap-1.5 sm:gap-2">
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={handlePhotoSelect}
-            />
-
+          <div className="flex items-end gap-1.5 sm:gap-2">
             <button
               type="button"
-              onClick={() => fileInputRef.current?.click()}
+              onClick={() => setIsPhotoPickerOpen(true)}
               disabled={chatMutation.isPending}
-              className={`p-2 sm:p-2.5 rounded-xl border transition-all flex items-center justify-center shrink-0 active:scale-95 ${
+              className={`p-2.5 rounded-xl border transition-all flex items-center justify-center shrink-0 active:scale-95 h-10 ${
                 attachedPhoto
                   ? 'bg-brand-500/20 border-brand-500/50 text-brand-400 ring-2 ring-brand-500/30'
                   : 'bg-dark-850 hover:bg-dark-800 border-dark-700/90 text-zinc-400 hover:text-brand-400'
@@ -464,19 +409,20 @@ export const AICoachPage: React.FC = () => {
               <Camera className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
 
-            <input
-              ref={inputRef}
-              type="text"
+            <textarea
+              ref={textareaRef}
+              rows={1}
               value={inputMessage}
               onChange={(e) => setInputMessage(e.target.value)}
-              placeholder={attachedPhoto ? 'Добавьте комментарий или вопрос...' : t('coach.placeholder')}
-              className="flex-1 bg-dark-850/90 border border-dark-700/90 rounded-xl px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-brand-500/70 focus:ring-1 focus:ring-brand-500/30 transition-all shadow-inner"
+              onKeyDown={handleKeyDown}
+              placeholder={attachedPhoto ? 'Добавьте комментарий или вопрос к фото...' : t('coach.placeholder')}
+              className="flex-1 bg-dark-850/90 border border-dark-700/90 rounded-xl px-3 sm:px-4 py-2.5 text-xs sm:text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-brand-500/70 focus:ring-1 focus:ring-brand-500/30 transition-all shadow-inner resize-none max-h-28 min-h-[40px]"
             />
 
             <button
               type="submit"
               disabled={(!inputMessage.trim() && !attachedPhoto) || chatMutation.isPending}
-              className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-brand-500 hover:bg-brand-400 disabled:bg-dark-800 text-dark-950 disabled:text-zinc-600 font-bold flex items-center justify-center transition-all shadow-md shadow-brand-500/20 active:scale-95 shrink-0"
+              className="w-10 h-10 rounded-xl bg-brand-500 hover:bg-brand-400 disabled:bg-dark-800 text-dark-950 disabled:text-zinc-600 font-bold flex items-center justify-center transition-all shadow-md shadow-brand-500/20 active:scale-95 shrink-0"
             >
               <Send className="w-4 h-4" />
             </button>
@@ -484,7 +430,16 @@ export const AICoachPage: React.FC = () => {
         </form>
       </footer>
 
-      {/* 5. Fullscreen Image Modal / Lightbox */}
+      {/* 5. Smart Photo Picker Modal (In-App Camera / Gallery) */}
+      <SmartPhotoPickerModal
+        isOpen={isPhotoPickerOpen}
+        onClose={() => setIsPhotoPickerOpen(false)}
+        onPhotoSelected={handlePhotoCaptured}
+        title="Фото для ИИ-тренера"
+        subtitle="Оценка формы, пропорций или техники упражнений"
+      />
+
+      {/* 6. Fullscreen Image Modal / Lightbox */}
       {previewModalImg && (
         <div
           onClick={() => setPreviewModalImg(null)}
@@ -510,4 +465,3 @@ export const AICoachPage: React.FC = () => {
 };
 
 export default AICoachPage;
-

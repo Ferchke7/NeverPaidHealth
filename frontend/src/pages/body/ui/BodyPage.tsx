@@ -16,6 +16,7 @@ import { formatWeight, lbToKg, kgToLb } from '../../../shared/lib/units.ts';
 import { calculateBMI, getBMICategory } from '../../../shared/lib/calculations.ts';
 import { useAuthStore } from '../../../entities/user/model/authStore.ts';
 import { BMICalculatorCard } from '../../../features/bmi-calculator/ui/BMICalculatorCard.tsx';
+import { BodyTargetProgressCard } from '../../../features/body-target-progress/ui/BodyTargetProgressCard.tsx';
 
 interface BodyLog {
   id: string;
@@ -172,6 +173,9 @@ export const BodyPage: React.FC = () => {
           <span>{showCalculator ? 'Hide Health Calculator' : 'Show Health Calculator'}</span>
         </Button>
       </div>
+
+      {/* Live Target Weight Progress & Quick Log Card */}
+      <BodyTargetProgressCard />
 
       {/* Interactive Health & BMI Calculator Card */}
       {showCalculator && (
