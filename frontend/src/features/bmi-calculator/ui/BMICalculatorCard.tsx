@@ -7,7 +7,9 @@ import {
   CheckCircle2,
   Info,
   Sparkles,
+  RotateCcw,
 } from 'lucide-react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '../../../entities/user/model/authStore.ts';
 import { apiClient } from '../../../shared/api/client.ts';
 import {
@@ -46,30 +48,70 @@ export const BMICalculatorCard: React.FC<BMICalculatorCardProps> = ({
   onSaveStats,
   className = '',
 }) => {
+  const queryClient = useQueryClient();
   const user = useAuthStore((s) => s.user);
   const unitPref = useAuthStore((s) => s.unitPreference);
   const updateUserStats = useAuthStore((s) => s.updateUserStats);
 
+  // Fetch actual body trends and latest weigh-in logs from backend
+  const { data: trend } = useQuery<{
+    current_weight_kg: number;
+    current_7day_sma_kg: number;
+    delta_7day_kg?: number;
+    delta_30day_kg?: number;
+  }>({
+    queryKey: ['body-trend'],
+    queryFn: () => apiClient.get('/body/trend'),
+  });
+
+  const { data: logs = [] } = useQuery<Array<{ id: string; log_date: string; weight_kg: number; height_cm?: number }>>({
+    queryKey: ['body-logs'],
+    queryFn: () => apiClient.get('/body/logs'),
+  });
+
+  // Determine latest recorded weight from DB / store
+  const latestRecordedWeightKg = useMemo(() => {
+    if (initialWeightKg) return initialWeightKg;
+    if (trend?.current_weight_kg && trend.current_weight_kg > 0) return trend.current_weight_kg;
+    if (logs.length > 0) return logs[logs.length - 1].weight_kg;
+    if (user?.weight_kg && user.weight_kg > 0) return user.weight_kg;
+    const local = Number(localStorage.getItem('np_current_weight_kg'));
+    if (local > 0) return local;
+    return 78;
+  }, [initialWeightKg, trend, logs, user]);
+
+  // Determine latest recorded height from DB / store
+  const latestRecordedHeightCm = useMemo(() => {
+    if (initialHeightCm) return initialHeightCm;
+    if (user?.height_cm && user.height_cm > 0) return user.height_cm;
+    const local = Number(localStorage.getItem('np_saved_height_cm'));
+    if (local > 0) return local;
+    return 178;
+  }, [initialHeightCm, user]);
+
   // Height Mode state (cm vs ft/in)
   const [heightMode, setHeightMode] = useState<'cm' | 'ft'>(unitPref === 'lb' ? 'ft' : 'cm');
 
-  // Height state
-  const defaultHeight = initialHeightCm || user?.height_cm || 178;
-  const [heightCmInput, setHeightCmInput] = useState<string>(defaultHeight.toString());
+  // Height inputs
+  const [heightCmInput, setHeightCmInput] = useState<string>(latestRecordedHeightCm.toString());
   const [feetInput, setFeetInput] = useState<string>(() => {
-    const { feet } = cmToFtIn(defaultHeight);
+    const { feet } = cmToFtIn(latestRecordedHeightCm);
     return feet.toString();
   });
   const [inchesInput, setInchesInput] = useState<string>(() => {
-    const { inches } = cmToFtIn(defaultHeight);
+    const { inches } = cmToFtIn(latestRecordedHeightCm);
     return inches.toString();
   });
 
-  // Weight state
-  const defaultWeight = initialWeightKg || user?.weight_kg || 78;
+  // Weight input
   const [weightInput, setWeightInput] = useState<string>(() => {
-    return unitPref === 'lb' ? kgToLb(defaultWeight).toFixed(1) : defaultWeight.toFixed(1);
+    return unitPref === 'lb'
+      ? kgToLb(latestRecordedWeightKg).toFixed(1)
+      : latestRecordedWeightKg.toFixed(1);
   });
+
+  const [hasUserEditedWeight, setHasUserEditedWeight] = useState(false);
+  const [hasUserEditedHeight, setHasUserEditedHeight] = useState(false);
 
   // Demographics state
   const [gender, setGender] = useState<'male' | 'female'>(user?.gender || 'male');
@@ -82,21 +124,26 @@ export const BMICalculatorCard: React.FC<BMICalculatorCardProps> = ({
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Sync state if external user or unit preference updates
+  // Synchronize weightInput when latestRecordedWeightKg changes (unless user manually modified it)
   useEffect(() => {
-    if (initialWeightKg) {
-      setWeightInput(unitPref === 'lb' ? kgToLb(initialWeightKg).toFixed(1) : initialWeightKg.toFixed(1));
+    if (!hasUserEditedWeight && latestRecordedWeightKg > 0) {
+      setWeightInput(
+        unitPref === 'lb'
+          ? kgToLb(latestRecordedWeightKg).toFixed(1)
+          : latestRecordedWeightKg.toFixed(1)
+      );
     }
-  }, [initialWeightKg, unitPref]);
+  }, [latestRecordedWeightKg, unitPref, hasUserEditedWeight]);
 
+  // Synchronize heightInput when latestRecordedHeightCm changes
   useEffect(() => {
-    if (initialHeightCm) {
-      setHeightCmInput(initialHeightCm.toString());
-      const { feet, inches } = cmToFtIn(initialHeightCm);
+    if (!hasUserEditedHeight && latestRecordedHeightCm > 0) {
+      setHeightCmInput(latestRecordedHeightCm.toString());
+      const { feet, inches } = cmToFtIn(latestRecordedHeightCm);
       setFeetInput(feet.toString());
       setInchesInput(inches.toString());
     }
-  }, [initialHeightCm]);
+  }, [latestRecordedHeightCm, hasUserEditedHeight]);
 
   // Compute effective numeric height in cm
   const numericHeight = useMemo(() => {
@@ -149,6 +196,16 @@ export const BMICalculatorCard: React.FC<BMICalculatorCardProps> = ({
     return Math.min(98, Math.max(2, ((bmi - 15) / (40 - 15)) * 100));
   }, [bmi]);
 
+  // Reset to live recorded weight
+  const handleResetToCurrentWeight = () => {
+    setHasUserEditedWeight(false);
+    setWeightInput(
+      unitPref === 'lb'
+        ? kgToLb(latestRecordedWeightKg).toFixed(1)
+        : latestRecordedWeightKg.toFixed(1)
+    );
+  };
+
   // Handle Save
   const handleSave = async () => {
     if (numericHeight <= 0 || numericWeightKg <= 0) return;
@@ -185,6 +242,10 @@ export const BMICalculatorCard: React.FC<BMICalculatorCardProps> = ({
         body_fat_percentage: estimatedBodyFat > 0 ? estimatedBodyFat : undefined,
       });
 
+      queryClient.invalidateQueries({ queryKey: ['body-trend'] });
+      queryClient.invalidateQueries({ queryKey: ['body-logs'] });
+      queryClient.invalidateQueries({ queryKey: ['nutrition', 'today'] });
+
       if (onSaveStats) {
         onSaveStats({ heightCm: numericHeight, weightKg: numericWeightKg });
       }
@@ -217,7 +278,7 @@ export const BMICalculatorCard: React.FC<BMICalculatorCardProps> = ({
               </Badge>
             </div>
             <CardDescription>
-              Accurate BMI, BMR, TDEE, estimated body fat %, and macro split calculator.
+              Автоматически синхронизирует ваш текущий вес ({formatWeight(latestRecordedWeightKg, unitPref)}), рассчитывает BMI, BMR, TDEE и БЖУ.
             </CardDescription>
           </div>
         </div>
@@ -282,7 +343,10 @@ export const BMICalculatorCard: React.FC<BMICalculatorCardProps> = ({
                 max={250}
                 placeholder="178"
                 value={heightCmInput}
-                onChange={(e) => setHeightCmInput(e.target.value)}
+                onChange={(e) => {
+                  setHasUserEditedHeight(true);
+                  setHeightCmInput(e.target.value);
+                }}
                 className="font-mono text-center font-bold"
                 endContent={<span className="text-xs text-zinc-500 font-bold">cm</span>}
               />
@@ -294,7 +358,10 @@ export const BMICalculatorCard: React.FC<BMICalculatorCardProps> = ({
                   max={8}
                   placeholder="5"
                   value={feetInput}
-                  onChange={(e) => setFeetInput(e.target.value)}
+                  onChange={(e) => {
+                    setHasUserEditedHeight(true);
+                    setFeetInput(e.target.value);
+                  }}
                   className="font-mono text-center font-bold"
                   endContent={<span className="text-xs text-zinc-500 font-bold">ft</span>}
                 />
@@ -305,7 +372,10 @@ export const BMICalculatorCard: React.FC<BMICalculatorCardProps> = ({
                   step="0.5"
                   placeholder="10"
                   value={inchesInput}
-                  onChange={(e) => setInchesInput(e.target.value)}
+                  onChange={(e) => {
+                    setHasUserEditedHeight(true);
+                    setInchesInput(e.target.value);
+                  }}
                   className="font-mono text-center font-bold"
                   endContent={<span className="text-xs text-zinc-500 font-bold">in</span>}
                 />
@@ -313,11 +383,25 @@ export const BMICalculatorCard: React.FC<BMICalculatorCardProps> = ({
             )}
           </div>
 
-          {/* Weight Control */}
+          {/* Weight Control with Reset Option */}
           <div className="space-y-1">
-            <label className="text-[11px] font-bold uppercase tracking-wider text-zinc-300 block">
-              Weight ({unitPref.toUpperCase()}) *
-            </label>
+            <div className="flex items-center justify-between">
+              <label className="text-[11px] font-bold uppercase tracking-wider text-zinc-300 block">
+                Weight ({unitPref.toUpperCase()}) *
+              </label>
+              {hasUserEditedWeight && (
+                <button
+                  type="button"
+                  onClick={handleResetToCurrentWeight}
+                  className="text-[10px] text-brand-400 hover:text-brand-300 font-bold flex items-center gap-0.5"
+                  title="Сбросить к текущему зафиксированному весу"
+                >
+                  <RotateCcw className="w-2.5 h-2.5" />
+                  <span>Текущий</span>
+                </button>
+              )}
+            </div>
+
             <Input
               type="number"
               step="0.1"
@@ -325,7 +409,10 @@ export const BMICalculatorCard: React.FC<BMICalculatorCardProps> = ({
               max={350}
               placeholder={unitPref === 'lb' ? '172.0' : '78.0'}
               value={weightInput}
-              onChange={(e) => setWeightInput(e.target.value)}
+              onChange={(e) => {
+                setHasUserEditedWeight(true);
+                setWeightInput(e.target.value);
+              }}
               className="font-mono text-center font-bold"
               endContent={<span className="text-xs text-zinc-500 font-bold">{unitPref.toUpperCase()}</span>}
             />
