@@ -52,11 +52,13 @@ func AnalyzeUserData(
 	workouts []WorkoutData,
 	records []PRData,
 	bodyLogs []BodyData,
+	routines []RoutineSummary,
 	now time.Time,
 ) CoachInsights {
 	insightsList := make([]Insight, 0)
 	overloads := make([]ProgressiveOverloadTarget, 0)
 	plateaus := make([]PlateauAlert, 0)
+	gapsList := make([]string, 0)
 
 	sevenDaysAgo := now.AddDate(0, 0, -7)
 	fourteenDaysAgo := now.AddDate(0, 0, -14)
@@ -85,7 +87,9 @@ func AnalyzeUserData(
 		name   string
 	})
 
-	for _, w := range workouts {
+	recentWorkoutDetails := make([]WorkoutDetail, 0)
+
+	for idx, w := range workouts {
 		if w.StartedAt.After(lastWorkoutDate) {
 			lastWorkoutDate = w.StartedAt
 		}
@@ -96,9 +100,11 @@ func AnalyzeUserData(
 			prevWeekVolume += w.TotalVolumeKg
 		}
 
+		var exSummaries []string
 		for _, ex := range w.Exercises {
 			group := detectMuscleGroup(ex.ExerciseName)
 			curr := muscleMap[group]
+			var setStrs []string
 			for _, s := range ex.Sets {
 				if s.Completed {
 					curr.sets++
@@ -109,9 +115,34 @@ func AnalyzeUserData(
 						reps   int
 						name   string
 					}{date: w.StartedAt, weight: s.WeightKg, reps: s.Reps, name: ex.ExerciseName})
+					if s.WeightKg > 0 {
+						setStrs = append(setStrs, fmt.Sprintf("%.0fkg×%d", s.WeightKg, s.Reps))
+					} else {
+						setStrs = append(setStrs, fmt.Sprintf("%d reps", s.Reps))
+					}
 				}
 			}
 			muscleMap[group] = curr
+			if len(setStrs) > 0 {
+				exSummaries = append(exSummaries, fmt.Sprintf("%s (%s)", ex.ExerciseName, strings.Join(setStrs, ", ")))
+			}
+		}
+
+		// Keep detailed summary of last 5 workouts
+		if idx < 5 {
+			durMin := 0
+			if w.FinishedAt != nil {
+				durMin = int(w.FinishedAt.Sub(w.StartedAt).Minutes())
+			}
+			recentWorkoutDetails = append(recentWorkoutDetails, WorkoutDetail{
+				ID:              w.ID,
+				Name:            w.Name,
+				StartedAt:       w.StartedAt,
+				TotalVolumeKg:   w.TotalVolumeKg,
+				CompletedSets:   w.SetsCount,
+				DurationMinutes: durMin,
+				ExerciseSummary: strings.Join(exSummaries, "; "),
+			})
 		}
 	}
 
@@ -141,12 +172,23 @@ func AnalyzeUserData(
 		recoveryStatus = "Well Rested"
 	} else if daysSinceLast >= 7 && daysSinceLast < 90 {
 		readiness = 65
-		recoveryStatus = "Detraining Risk (Get back in gym!)"
+		recoveryStatus = "Detraining Risk (Break detected)"
+		gapsList = append(gapsList, fmt.Sprintf("Пропуск тренировок: прошло %d дней с последней тренировки", daysSinceLast))
+	} else if daysSinceLast >= 90 {
+		gapsList = append(gapsList, "Нет свежих записей тренировок (атлет только начинает)")
 	}
 
 	if weeklyWorkouts >= 5 {
 		readiness -= 10
 		recoveryStatus = "High Accumulated Fatigue"
+		gapsList = append(gapsList, "Высокая накопленная утомляемость (5+ тренировок за 7 дней). Нужен день отдыха или легкая тренировка")
+	}
+
+	// Detect neglected muscle groups
+	for mName, mData := range muscleMap {
+		if mData.sets == 0 && len(workouts) > 0 {
+			gapsList = append(gapsList, fmt.Sprintf("Отсутствует нагрузка на группу '%s' (0 подходов за 14 дней)", mName))
+		}
 	}
 
 	if prevWeekVolume > 0 && weeklyVolume > prevWeekVolume*1.35 {
@@ -174,11 +216,11 @@ func AnalyzeUserData(
 			if latest.reps >= 10 {
 				nextWeight = latest.weight + 2.5
 				nextReps = int(math.Max(6, float64(latest.reps-2)))
-				rec = fmt.Sprintf("You easily conquered %v kg for %d reps. Increase load to %v kg for %d-%d reps.", latest.weight, latest.reps, nextWeight, nextReps, nextReps+2)
+				rec = fmt.Sprintf("Вес %.1f кг уверенно пройден на %d повт. Повышай до %.1f кг на %d-%d повт.", latest.weight, latest.reps, nextWeight, nextReps, nextReps+2)
 			} else {
 				nextWeight = latest.weight
 				nextReps = latest.reps + 1
-				rec = fmt.Sprintf("Maintain %v kg and push for +1 rep (%d reps target) before adding weight.", latest.weight, nextReps)
+				rec = fmt.Sprintf("Держи %.1f кг и сделай +1 повтор (цель %d повт.) перед повышением веса.", latest.weight, nextReps)
 			}
 
 			overloads = append(overloads, ProgressiveOverloadTarget{
@@ -201,8 +243,9 @@ func AnalyzeUserData(
 					ExerciseName: latest.name,
 					StagnantDays: 14,
 					Current1RM:   latest.weight * (1 + float64(latest.reps)/30.0),
-					Advice:       "Weight and reps have stabilized. Introduce a 5% deload for 1 week or switch tempo (3-sec eccentric) to break through.",
+					Advice:       "Вес и повторы зафиксировались. Сделай разгрузочную неделю (-10% веса) или смени диапазон повторов.",
 				})
+				gapsList = append(gapsList, fmt.Sprintf("Плато в упражнении '%s' (3 тренировки подряд без роста веса/повторов)", latest.name))
 			}
 		}
 	}
@@ -241,46 +284,40 @@ func AnalyzeUserData(
 		}
 	}
 
-	// General coaching insights
-	if len(records) > 0 {
-		insightsList = append(insightsList, Insight{
-			ID:         "pr-streak",
-			Category:   CategoryMotivation,
-			Severity:   SeveritySuccess,
-			Title:      fmt.Sprintf("%d Total Personal Records Logged!", len(records)),
-			Message:    "Your consistent logging is translating directly to strength adaptations. Keep tracking every set!",
-		})
-	}
-
-	if weeklyWorkouts >= 3 {
-		insightsList = append(insightsList, Insight{
-			ID:         "consistency-badge",
-			Category:   CategoryMotivation,
-			Severity:   SeveritySuccess,
-			Title:      "High Consistency Streak",
-			Message:    fmt.Sprintf("You logged %d workouts this week with %.0f kg total tonnage. You are in the top 10%% of dedicated lifters!", weeklyWorkouts, weeklyVolume),
-		})
-	}
-
+	// 5. Body stats
 	var currentWeight, bodyFat, bmi float64
 	if len(bodyLogs) > 0 {
 		currentWeight = bodyLogs[0].WeightKg
 		bodyFat = bodyLogs[0].BodyFatPercentage
 		bmi = bodyLogs[0].BMI
+	} else {
+		gapsList = append(gapsList, "Вес тела еще не зафиксирован в профиле")
 	}
 
-	topPRList := make([]PersonalRecordItem, 0)
-	for i, pr := range records {
-		if i >= 5 {
-			break
+	// 6. Comprehensive All-Time PRs with 1RM calculation
+	allPRList := make([]PersonalRecordItem, 0)
+	for _, pr := range records {
+		e1rm := pr.Value
+		if pr.PRType == "max_weight" {
+			// Estimate 1RM
+			e1rm = math.Round(pr.Value*1.12*10) / 10
 		}
-		topPRList = append(topPRList, PersonalRecordItem{
+		allPRList = append(allPRList, PersonalRecordItem{
 			ExerciseID:   pr.ExerciseID,
 			ExerciseName: pr.ExerciseName,
 			PRType:       pr.PRType,
 			Value:        pr.Value,
+			Estimated1RM: e1rm,
 			AchievedAt:   pr.AchievedAt,
 		})
+	}
+
+	topPRList := make([]PersonalRecordItem, 0)
+	for i, pr := range allPRList {
+		if i >= 6 {
+			break
+		}
+		topPRList = append(topPRList, pr)
 	}
 
 	return CoachInsights{
@@ -298,6 +335,10 @@ func AnalyzeUserData(
 		MuscleDistribution:  distList,
 		Insights:            insightsList,
 		RecentTopPRs:        topPRList,
+		AllTimePRs:          allPRList,
+		UserRoutines:        routines,
+		RecentWorkouts:      recentWorkoutDetails,
+		GapsAndWeaknesses:   gapsList,
 		GeneratedAt:         now,
 	}
 }

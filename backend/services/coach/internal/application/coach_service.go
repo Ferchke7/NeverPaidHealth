@@ -25,24 +25,36 @@ func NewCoachService(telemetry *data.TelemetryCollector, meals *data.MealReposit
 }
 
 func (s *CoachService) GetInsights(ctx context.Context, userID uuid.UUID) (coach.CoachInsights, error) {
-	workouts, records, bodyLogs, err := s.telemetry.CollectUserData(ctx, userID)
+	workouts, records, bodyLogs, routines, err := s.telemetry.CollectUserData(ctx, userID)
 	if err != nil {
 		workouts = make([]coach.WorkoutData, 0)
 	}
 
-	insights := coach.AnalyzeUserData(workouts, records, bodyLogs, time.Now())
+	insights := coach.AnalyzeUserData(workouts, records, bodyLogs, routines, time.Now())
 
 	// Attach today's logged nutrition if available
 	if s.meals != nil {
 		if todayMeals, err := s.meals.GetTodayMeals(ctx, userID); err == nil {
 			var totCals int
-			var totProtein float64
+			var totProtein, totCarbs, totFat float64
+			var mealSummaries []coach.MealSummaryItem
 			for _, m := range todayMeals {
 				totCals += m.Calories
 				totProtein += m.ProteinG
+				totCarbs += m.CarbsG
+				totFat += m.FatG
+				mealSummaries = append(mealSummaries, coach.MealSummaryItem{
+					Name:     m.Name,
+					Calories: m.Calories,
+					ProteinG: m.ProteinG,
+					CarbsG:   m.CarbsG,
+					FatG:     m.FatG,
+					Time:     m.LoggedAt.Format("15:04"),
+				})
 			}
 			insights.TodayCalories = totCals
 			insights.TodayProteinG = totProtein
+			insights.TodayMeals = mealSummaries
 		}
 	}
 
@@ -52,7 +64,7 @@ func (s *CoachService) GetInsights(ctx context.Context, userID uuid.UUID) (coach
 func (s *CoachService) Chat(ctx context.Context, userID uuid.UUID, userName string, req coach.ChatRequest) (coach.ChatResponse, error) {
 	insights, err := s.GetInsights(ctx, userID)
 	if err != nil {
-		insights = coach.AnalyzeUserData(nil, nil, nil, time.Now())
+		insights = coach.AnalyzeUserData(nil, nil, nil, nil, time.Now())
 	}
 
 	if userName == "" {

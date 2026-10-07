@@ -18,13 +18,13 @@ func NewTelemetryCollector(pool *pgxpool.Pool) *TelemetryCollector {
 	return &TelemetryCollector{pool: pool}
 }
 
-func (c *TelemetryCollector) CollectUserData(ctx context.Context, userID uuid.UUID) ([]coach.WorkoutData, []coach.PRData, []coach.BodyData, error) {
+func (c *TelemetryCollector) CollectUserData(ctx context.Context, userID uuid.UUID) ([]coach.WorkoutData, []coach.PRData, []coach.BodyData, []coach.RoutineSummary, error) {
 	workouts, err := c.fetchWorkouts(ctx, userID)
 	if err != nil {
 		workouts = make([]coach.WorkoutData, 0)
 	}
 
-	records, err := c.fetchPRs(ctx, userID)
+	records, err := c.fetchPRs(ctx, userID, workouts)
 	if err != nil {
 		records = make([]coach.PRData, 0)
 	}
@@ -34,7 +34,68 @@ func (c *TelemetryCollector) CollectUserData(ctx context.Context, userID uuid.UU
 		bodyLogs = make([]coach.BodyData, 0)
 	}
 
-	return workouts, records, bodyLogs, nil
+	routines, err := c.fetchRoutines(ctx, userID)
+	if err != nil {
+		routines = make([]coach.RoutineSummary, 0)
+	}
+
+	return workouts, records, bodyLogs, routines, nil
+}
+
+func (c *TelemetryCollector) fetchRoutines(ctx context.Context, userID uuid.UUID) ([]coach.RoutineSummary, error) {
+	if c.pool == nil {
+		return nil, nil
+	}
+	query := `
+		SELECT id, name, COALESCE(notes, ''), exercises
+		FROM routines
+		WHERE user_id = $1 OR user_id = '00000000-0000-0000-0000-000000000000'
+		ORDER BY updated_at DESC
+		LIMIT 10
+	`
+	rows, err := c.pool.Query(ctx, query, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	type RoutineExJSON struct {
+		ExerciseName  string `json:"exercise_name"`
+		TargetSets    int    `json:"target_sets"`
+		TargetRepsMin int    `json:"target_reps_min"`
+		TargetRepsMax int    `json:"target_reps_max"`
+	}
+
+	var res []coach.RoutineSummary
+	for rows.Next() {
+		var (
+			id    uuid.UUID
+			name  string
+			notes string
+			exRaw []byte
+		)
+		if err := rows.Scan(&id, &name, &notes, &exRaw); err != nil {
+			continue
+		}
+
+		var exList []RoutineExJSON
+		_ = json.Unmarshal(exRaw, &exList)
+
+		var exStrs []string
+		for _, e := range exList {
+			if e.ExerciseName != "" {
+				exStrs = append(exStrs, e.ExerciseName)
+			}
+		}
+
+		res = append(res, coach.RoutineSummary{
+			ID:        id,
+			Name:      name,
+			Notes:     notes,
+			Exercises: exStrs,
+		})
+	}
+	return res, nil
 }
 
 func (c *TelemetryCollector) fetchWorkouts(ctx context.Context, userID uuid.UUID) ([]coach.WorkoutData, error) {
@@ -118,44 +179,65 @@ func (c *TelemetryCollector) fetchWorkouts(ctx context.Context, userID uuid.UUID
 	return res, nil
 }
 
-func (c *TelemetryCollector) fetchPRs(ctx context.Context, userID uuid.UUID) ([]coach.PRData, error) {
-	if c.pool == nil {
-		return nil, nil
-	}
-
-	// Try reading personal records from progress_db if connected
-	query := `
-		SELECT exercise_id, exercise_name, pr_type, value, achieved_at
-		FROM personal_records
-		WHERE user_id = $1
-		ORDER BY achieved_at DESC
-		LIMIT 50
-	`
-	rows, err := c.pool.Query(ctx, query, userID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var res []coach.PRData
-	for rows.Next() {
-		var (
-			exID       uuid.UUID
-			exName     string
-			prType     string
-			val        float64
-			achievedAt time.Time
-		)
-		if err := rows.Scan(&exID, &exName, &prType, &val, &achievedAt); err == nil {
-			res = append(res, coach.PRData{
-				ExerciseID:   exID,
-				ExerciseName: exName,
-				PRType:       prType,
-				Value:        val,
-				AchievedAt:   achievedAt,
-			})
+func (c *TelemetryCollector) fetchPRs(ctx context.Context, userID uuid.UUID, workouts []coach.WorkoutData) ([]coach.PRData, error) {
+	// 1. Calculate PRs from workouts
+	prMap := make(map[string]coach.PRData)
+	for _, w := range workouts {
+		for _, ex := range w.Exercises {
+			for _, s := range ex.Sets {
+				if s.Completed && s.WeightKg > 0 {
+					existing, exists := prMap[ex.ExerciseName]
+					if !exists || s.WeightKg > existing.Value {
+						prMap[ex.ExerciseName] = coach.PRData{
+							ExerciseID:   ex.ExerciseID,
+							ExerciseName: ex.ExerciseName,
+							PRType:       "max_weight",
+							Value:        s.WeightKg,
+							AchievedAt:   w.StartedAt,
+						}
+					}
+				}
+			}
 		}
 	}
+
+	var res []coach.PRData
+	for _, pr := range prMap {
+		res = append(res, pr)
+	}
+
+	// 2. Also try reading from personal_records if available
+	if c.pool != nil {
+		query := `
+			SELECT exercise_id, exercise_name, pr_type, value, achieved_at
+			FROM personal_records
+			WHERE user_id = $1
+			ORDER BY achieved_at DESC
+			LIMIT 30
+		`
+		if rows, err := c.pool.Query(ctx, query, userID); err == nil {
+			defer rows.Close()
+			for rows.Next() {
+				var (
+					exID       uuid.UUID
+					exName     string
+					prType     string
+					val        float64
+					achievedAt time.Time
+				)
+				if err := rows.Scan(&exID, &exName, &prType, &val, &achievedAt); err == nil {
+					res = append(res, coach.PRData{
+						ExerciseID:   exID,
+						ExerciseName: exName,
+						PRType:       prType,
+						Value:        val,
+						AchievedAt:   achievedAt,
+					})
+				}
+			}
+		}
+	}
+
 	return res, nil
 }
 

@@ -67,11 +67,38 @@ type WorkoutSessionSummary struct {
 	DurationSeconds int       `json:"duration_seconds"`
 }
 
+type RoutineSummary struct {
+	ID        uuid.UUID `json:"id"`
+	Name      string    `json:"name"`
+	Notes     string    `json:"notes,omitempty"`
+	Exercises []string  `json:"exercises"`
+}
+
+type WorkoutDetail struct {
+	ID              uuid.UUID `json:"id"`
+	Name            string    `json:"name"`
+	StartedAt       time.Time `json:"started_at"`
+	TotalVolumeKg   float64   `json:"total_volume_kg"`
+	CompletedSets   int       `json:"completed_sets_count"`
+	DurationMinutes int       `json:"duration_minutes"`
+	ExerciseSummary string    `json:"exercise_summary"`
+}
+
+type MealSummaryItem struct {
+	Name     string  `json:"name"`
+	Calories int     `json:"calories"`
+	ProteinG float64 `json:"protein_g"`
+	CarbsG   float64 `json:"carbs_g"`
+	FatG     float64 `json:"fat_g"`
+	Time     string  `json:"time"`
+}
+
 type PersonalRecordItem struct {
 	ExerciseID   uuid.UUID `json:"exercise_id"`
 	ExerciseName string    `json:"exercise_name"`
 	PRType       string    `json:"pr_type"`
 	Value        float64   `json:"value"`
+	Estimated1RM float64   `json:"estimated_1rm_kg,omitempty"`
 	AchievedAt   time.Time `json:"achieved_at"`
 }
 
@@ -92,6 +119,11 @@ type CoachInsights struct {
 	MuscleDistribution  []MuscleVolume              `json:"muscle_distribution"`
 	Insights            []Insight                   `json:"insights"`
 	RecentTopPRs        []PersonalRecordItem        `json:"recent_top_prs,omitempty"`
+	AllTimePRs          []PersonalRecordItem        `json:"all_time_prs,omitempty"`
+	UserRoutines        []RoutineSummary            `json:"user_routines,omitempty"`
+	RecentWorkouts      []WorkoutDetail             `json:"recent_workouts,omitempty"`
+	TodayMeals          []MealSummaryItem           `json:"today_meals,omitempty"`
+	GapsAndWeaknesses   []string                    `json:"gaps_and_weaknesses,omitempty"`
 	GeneratedAt         time.Time                   `json:"generated_at"`
 }
 

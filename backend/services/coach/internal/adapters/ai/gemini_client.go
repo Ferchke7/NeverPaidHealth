@@ -322,48 +322,153 @@ type geminiResponse struct {
 	} `json:"error,omitempty"`
 }
 
+func formatAthleteProfile(telemetry coach.CoachInsights, userName string) string {
+	var sb strings.Builder
+
+	sb.WriteString(fmt.Sprintf("=== ДОСЬЕ АТЛЕТА (%s) ===\n", userName))
+
+	// 1. Physical & Recovery stats
+	sb.WriteString(fmt.Sprintf("• Готовность ЦНС: %d/100 (%s)\n", telemetry.ReadinessScore, telemetry.RecoveryStatus))
+	if telemetry.CurrentWeightKg > 0 {
+		sb.WriteString(fmt.Sprintf("• Вес тела: %.1f кг", telemetry.CurrentWeightKg))
+		if telemetry.BodyFatPercentage > 0 {
+			sb.WriteString(fmt.Sprintf(", Процент жира: %.1f%%", telemetry.BodyFatPercentage))
+		}
+		if telemetry.BMI > 0 {
+			sb.WriteString(fmt.Sprintf(", ИМТ: %.1f", telemetry.BMI))
+		}
+		sb.WriteString("\n")
+	} else {
+		sb.WriteString("• Вес тела: еще не записан в профиле\n")
+	}
+	sb.WriteString(fmt.Sprintf("• Активность за 7 дней: %d тренировок, суммарный тоннаж: %.0f кг\n", telemetry.WeeklyWorkoutsCount, telemetry.WeeklyVolumeKg))
+	sb.WriteString(fmt.Sprintf("• Дней с последней тренировки: %d дн.\n", telemetry.DaysSinceLastTrain))
+	sb.WriteString(fmt.Sprintf("• Рекомендуемый сплит: %s\n", telemetry.SuggestedSplit))
+
+	// 2. User Routines / Programs
+	sb.WriteString("\n=== СОХРАНЕННЫЕ ПРОГРАММЫ / ЗАНЯТИЯ АТЛЕТА ===\n")
+	if len(telemetry.UserRoutines) > 0 {
+		for i, r := range telemetry.UserRoutines {
+			exList := "без упражнений"
+			if len(r.Exercises) > 0 {
+				exList = strings.Join(r.Exercises, ", ")
+			}
+			notes := ""
+			if r.Notes != "" {
+				notes = fmt.Sprintf(" (%s)", r.Notes)
+			}
+			sb.WriteString(fmt.Sprintf("%d. Программа: «%s»%s -> Упражнения: [%s]\n", i+1, r.Name, notes, exList))
+		}
+	} else {
+		sb.WriteString("Сохраненных шаблонов программ пока нет.\n")
+	}
+
+	// 3. All-time PRs & Records
+	sb.WriteString("\n=== ЛИЧНЫЕ РЕКОРДЫ АТЛЕТА (PRs & 1RM) ===\n")
+	prs := telemetry.AllTimePRs
+	if len(prs) == 0 {
+		prs = telemetry.RecentTopPRs
+	}
+	if len(prs) > 0 {
+		for _, pr := range prs {
+			oneRMStr := ""
+			if pr.Estimated1RM > 0 {
+				oneRMStr = fmt.Sprintf(" (расчетный 1RM: %.1f кг)", pr.Estimated1RM)
+			}
+			dateStr := ""
+			if !pr.AchievedAt.IsZero() {
+				dateStr = fmt.Sprintf(" [%s]", pr.AchievedAt.Format("02.01.2006"))
+			}
+			sb.WriteString(fmt.Sprintf("• %s: %.1f кг %s%s%s\n", pr.ExerciseName, pr.Value, pr.PRType, oneRMStr, dateStr))
+		}
+	} else {
+		sb.WriteString("Зафиксированных личных рекордов пока нет (атлет еще нарабатывает базу).\n")
+	}
+
+	// 4. Recent Completed Workouts
+	sb.WriteString("\n=== ПОСЛЕДНИЕ ЗАВЕРШЕННЫЕ ТРЕНИРОВКИ ===\n")
+	if len(telemetry.RecentWorkouts) > 0 {
+		for i, w := range telemetry.RecentWorkouts {
+			dateStr := w.StartedAt.Format("02.01 15:04")
+			sb.WriteString(fmt.Sprintf("%d. «%s» (%s) - Тоннаж: %.0f кг, %d подходов, %d мин. Выполнено: %s\n",
+				i+1, w.Name, dateStr, w.TotalVolumeKg, w.CompletedSets, w.DurationMinutes, w.ExerciseSummary))
+		}
+	} else {
+		sb.WriteString("Завершенных тренировок в базе пока нет.\n")
+	}
+
+	// 5. Today's Nutrition & Meals
+	sb.WriteString("\n=== СЕГОДНЯШНЕЕ ПИТАНИЕ ===\n")
+	if telemetry.TodayCalories > 0 {
+		sb.WriteString(fmt.Sprintf("Суммарно за сегодня: %d ккал | Белки: %.1f г\n", telemetry.TodayCalories, telemetry.TodayProteinG))
+		if len(telemetry.TodayMeals) > 0 {
+			sb.WriteString("Приемы пищи:\n")
+			for _, m := range telemetry.TodayMeals {
+				tStr := ""
+				if m.Time != "" {
+					tStr = fmt.Sprintf(" (%s)", m.Time)
+				}
+				sb.WriteString(fmt.Sprintf("• %s%s: %d ккал, Б: %.1fг, У: %.1fг, Ж: %.1fг\n", m.Name, tStr, m.Calories, m.ProteinG, m.CarbsG, m.FatG))
+			}
+		}
+	} else {
+		sb.WriteString("Сегодня приемы пищи еще не внесены.\n")
+	}
+
+	// 6. Progressive Overload Targets
+	if len(telemetry.OverloadTargets) > 0 {
+		sb.WriteString("\n=== ЦЕЛИ ПРОГРЕССИВНОЙ ПЕРЕГРУЗКИ ===\n")
+		for _, t := range telemetry.OverloadTargets {
+			sb.WriteString(fmt.Sprintf("• %s: было %.1fкг × %d -> цель: %.1fкг × %d (%s)\n",
+				t.ExerciseName, t.LastBestWeight, t.LastBestReps, t.TargetWeightKg, t.TargetReps, t.Recommendation))
+		}
+	}
+
+	// 7. Gaps & Weaknesses / Plateaus
+	if len(telemetry.GapsAndWeaknesses) > 0 || len(telemetry.PlateauAlerts) > 0 {
+		sb.WriteString("\n=== ВЫЯВЛЕННЫЕ ПРОБЕЛЫ И ЗОНЫ РОСТА ===\n")
+		for _, g := range telemetry.GapsAndWeaknesses {
+			sb.WriteString(fmt.Sprintf("⚠️ %s\n", g))
+		}
+		for _, p := range telemetry.PlateauAlerts {
+			sb.WriteString(fmt.Sprintf("⚠️ Плато в упражнении «%s» (%d дн. без роста, 1RM: %.1fкг): %s\n",
+				p.ExerciseName, p.StagnantDays, p.Current1RM, p.Advice))
+		}
+	}
+
+	return sb.String()
+}
+
 func (p *CompositeAIProvider) callGemini(ctx context.Context, req coach.ChatRequest, telemetry coach.CoachInsights, userName string) (coach.ChatResponse, error) {
 	key := p.getAPIKey()
 	if key == "" {
 		return coach.ChatResponse{}, fmt.Errorf("gemini api key is empty")
 	}
 
-	bodyStats := "Body Weight: Not logged yet"
-	if telemetry.CurrentWeightKg > 0 {
-		bodyStats = fmt.Sprintf("Body Weight: %.1f kg", telemetry.CurrentWeightKg)
-		if telemetry.BodyFatPercentage > 0 {
-			bodyStats += fmt.Sprintf(", Body Fat: %.1f%%", telemetry.BodyFatPercentage)
-		}
-		if telemetry.BMI > 0 {
-			bodyStats += fmt.Sprintf(", BMI: %.1f", telemetry.BMI)
-		}
-	}
+	profileDossier := formatAthleteProfile(telemetry, userName)
 
-	nutritionStats := "Today's Nutrition: None logged yet"
-	if telemetry.TodayCalories > 0 {
-		nutritionStats = fmt.Sprintf("Today's Nutrition: %d kcal (Protein: %.1f g)", telemetry.TodayCalories, telemetry.TodayProteinG)
-	}
+	systemPrompt := fmt.Sprintf(`Ты — элитный персональный ИИ-тренер и спортивный нутрициолог атлета на платформе duda.uz.
+Твоя главная миссия — непрерывно улучшать спортивные результаты атлета, преодолевать плато, грамотно дозировать прогрессивную перегрузку (progressive overload), контролировать питание и восстановление.
 
-	systemPrompt := fmt.Sprintf(`Ты — персональный ИИ-тренер и спортивный нутрициолог duda.uz.
-Имя пользователя: %s.
-
-Телеметрия атлета:
-%s | %s | Готовность ЦНС: %d/100 (%s) | Объем 7д: %.0f кг (%d тр.) | Сплит: %s
+%s
 
 КЛЮЧЕВЫЕ ПРАВИЛА И СТИЛЬ ОТВЕТА:
-1. КРАТКОСТЬ — СТРОГОЕ ПРАВИЛО:
-   - В среднем ответ должен содержать около 40–60 слов.
-   - Максимум 100 слов. В редких сложных случаях (комплексный план/разбор формы) — максимум до 150–200 слов.
-   - Отвечай сразу по сути, без долгих вступлений, шаблонных приветствий и лишней воды.
-2. СВОБОДНЫЙ ДИАЛОГ:
-   - Отвечай дружелюбно, естественно и емко на ЛЮБЫЕ свободные вопросы пользователя (тренировки, питание, режим, сон, здоровье, самочувствие, мотивация, общение, любые темы).
-3. ЯЗЫК:
-   - Отвечай строго на том же языке, на котором пишет пользователь (русский, узбекский, английский).
-4. ЕСЛИ ПРИКРЕПЛЕНО ФОТО:
-   - Фото еды: назови блюдо, порцию в граммах, точный расчет калорий и БЖУ (Белки, Жиры, Углеводы) и 1-2 кратких совета.
-   - Фото формы/упражнения: кратко оцени пропорции/технику и дай 1-2 конкретных действия.`,
-		userName, bodyStats, nutritionStats, telemetry.ReadinessScore, telemetry.RecoveryStatus,
-		telemetry.WeeklyVolumeKg, telemetry.WeeklyWorkoutsCount, telemetry.SuggestedSplit)
+1. КРАТКОСТЬ И КОНКРЕТНОСТЬ — ЖЕЛЕЗНОЕ ПРАВИЛО:
+   - Средний объем ответа: 50–70 слов.
+   - Максимум: 100–120 слов (только в редких сложных разборах программы/техники — до 150–200 слов).
+   - Сразу отвечай по существу, без шаблонных «Привет, я твой ИИ-тренер!», без пустой воды и без лишних вступлений.
+2. ИСПОЛЬЗУЙ РЕАЛЬНЫЕ ДАННЫЕ ИЗ ДОСЬЕ АТЛЕТА:
+   - Если атлет спрашивает о своих программах/занятиях, рекордах, тренировках, весе или питании — бери и называй точные цифры, упражнения, веса и даты из ДОСЬЕ выше.
+   - Если каких-то данных в досье нет (например, еще нет рекорда или не внесен вес), честно и прямо скажи об этом и посоветуй записать.
+   - Ты знаешь, как улучшить результаты: если видишь плато или цель прогрессивной перегрузки, дай конкретный вес и число повторений на следующую тренировку.
+3. СВОБОДНЫЙ ДИАЛОГ:
+   - Отвечай емко, по-спортивному, мотивирующе на ЛЮБЫЕ свободные темы и вопросы атлета.
+4. ЯЗЫК:
+   - Отвечай строго на языке пользователя (русский, узбекский, английский).
+5. ЕСЛИ ПРИКРЕПЛЕНО ФОТО:
+   - Еда: четко назови блюдо, порцию, КБЖУ и краткий вывод для анаболизма/сушки.
+   - Форма/упражнение: емкая оценка пропорций/техники и 1-2 конкретных совета.`,
+		profileDossier)
 
 	contents := make([]geminiContent, 0)
 	// Limit history to last 6 messages for fast responsiveness

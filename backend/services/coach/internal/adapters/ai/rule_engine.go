@@ -133,13 +133,80 @@ func (r *RuleEngineProvider) GenerateChatResponse(
 				"Проанализируй мой прогресс",
 			}
 
-		default:
-			reply.WriteString(fmt.Sprintf("Привет, %s! 🦾 Готовность ЦНС: **%d/100** (%s).\n\n", userName, telemetry.ReadinessScore, telemetry.RecoveryStatus))
-			reply.WriteString("Я готов ответить на любой твой вопрос по тренировкам, упражнениям, питанию или оценить фото формы и блюда. Что тебя интересует?")
+		case strings.Contains(msg, "рекорд") || strings.Contains(msg, "1rm") || strings.Contains(msg, "максимум") || strings.Contains(msg, "личные"):
+			prs := telemetry.AllTimePRs
+			if len(prs) == 0 {
+				prs = telemetry.RecentTopPRs
+			}
+			if len(prs) > 0 {
+				reply.WriteString(fmt.Sprintf("🏆 **Личные рекорды %s:**\n\n", userName))
+				for i, pr := range prs {
+					if i >= 5 {
+						break
+					}
+					oneRM := ""
+					if pr.Estimated1RM > 0 {
+						oneRM = fmt.Sprintf(" *(расчетный 1RM: %.1f кг)*", pr.Estimated1RM)
+					}
+					reply.WriteString(fmt.Sprintf("• **%s:** `%.1f кг`%s\n", pr.ExerciseName, pr.Value, oneRM))
+				}
+				reply.WriteString("\n🎯 Чтобы прогрессировать дальше, держи шаг +1.25–2.5 кг раз в 1-2 недели.")
+			} else {
+				reply.WriteString("📝 В базе пока нет зафиксированных рекордов. Заверши тренировку с рабочими весами, и я автоматически рассчитаю твои 1RM и PRs!")
+			}
 			suggestions = []string{
+				"Какие у меня программы?",
+				"Что тренировать сегодня?",
+				"Как прогрессировать в жиме?",
+			}
+
+		case strings.Contains(msg, "программ") || strings.Contains(msg, "заняти") || strings.Contains(msg, "рутин") || strings.Contains(msg, "шаблон"):
+			if len(telemetry.UserRoutines) > 0 {
+				reply.WriteString(fmt.Sprintf("📋 **Твои программы тренировок (%d):**\n\n", len(telemetry.UserRoutines)))
+				for i, r := range telemetry.UserRoutines {
+					if i >= 4 {
+						break
+					}
+					exStr := "список упражнений пуст"
+					if len(r.Exercises) > 0 {
+						exStr = strings.Join(r.Exercises, ", ")
+					}
+					reply.WriteString(fmt.Sprintf("• **%s:** %s\n", r.Name, exStr))
+				}
+				reply.WriteString(fmt.Sprintf("\n💡 Рекомендуемый сплит на сегодня: **%s**", telemetry.SuggestedSplit))
+			} else {
+				reply.WriteString("📋 Сохраненных программ пока нет. Создай шаблон во вкладке «Тренировки» или выбери готовый сплит!")
+			}
+			suggestions = []string{
+				"Какие у меня рекорды?",
 				"Что тренировать сегодня?",
 				"Оптимальное восстановление",
-				"Как прогрессировать в жиме?",
+			}
+
+		case strings.Contains(msg, "данны") || strings.Contains(msg, "досье") || strings.Contains(msg, "инфо") || strings.Contains(msg, "что у меня есть"):
+			reply.WriteString(fmt.Sprintf("📊 **Досье атлета %s:**\n\n", userName))
+			if telemetry.CurrentWeightKg > 0 {
+				reply.WriteString(fmt.Sprintf("• **Вес:** `%.1f кг` | ИМТ: `%.1f`\n", telemetry.CurrentWeightKg, telemetry.BMI))
+			}
+			reply.WriteString(fmt.Sprintf("• **ЦНС / Восстановление:** `%d/100` (%s)\n", telemetry.ReadinessScore, telemetry.RecoveryStatus))
+			reply.WriteString(fmt.Sprintf("• **Активность 7д:** %d тренировок (тоннаж %.0f кг)\n", telemetry.WeeklyWorkoutsCount, telemetry.WeeklyVolumeKg))
+			reply.WriteString(fmt.Sprintf("• **Программ в базе:** %d | **Рекордов:** %d\n", len(telemetry.UserRoutines), len(telemetry.AllTimePRs)))
+			if len(telemetry.GapsAndWeaknesses) > 0 {
+				reply.WriteString(fmt.Sprintf("⚠️ **Зона роста:** %s", telemetry.GapsAndWeaknesses[0]))
+			}
+			suggestions = []string{
+				"Какие у меня рекорды?",
+				"Какие у меня программы?",
+				"Что тренировать сегодня?",
+			}
+
+		default:
+			reply.WriteString(fmt.Sprintf("Привет, %s! 🦾 Готовность ЦНС: **%d/100** (%s).\n\n", userName, telemetry.ReadinessScore, telemetry.RecoveryStatus))
+			reply.WriteString("Я знаю все твои программы, рекорды и историю тренировок. Задавай любой вопрос по тренингу, питанию или прогрессии — отвечу коротко и по фактам!")
+			suggestions = []string{
+				"Какие у меня рекорды?",
+				"Какие у меня программы?",
+				"Что тренировать сегодня?",
 			}
 		}
 	} else {
