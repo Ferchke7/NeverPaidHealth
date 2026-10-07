@@ -22,6 +22,10 @@ interface FocusTimerState {
   longBreakDurationSec: number;  // default 15 * 60 = 900
   targetDurationSec: number;     // for target_timer mode
 
+  targetEndTime: number | null;            // Date.now() + remaining * 1000 (drift-free)
+  currentSegmentStartedAt: number | null;  // Date.now() when last started/resumed
+  accumulatedWorkSeconds: number;          // Total work seconds logged before current segment
+  sessionStartedAt: number | null;
   secondsRemaining: number;
   secondsElapsedTotal: number;
 
@@ -34,19 +38,28 @@ interface FocusTimerState {
     category: TodoCategory;
     targetDurationMinutes?: number;
     mode?: TimerMode;
+    workMinutes?: number;
   }) => void;
-  startQuickSession: (title: string, category: TodoCategory, mode?: TimerMode) => void;
+  startQuickSession: (title: string, category: TodoCategory, mode?: TimerMode, workMinutes?: number) => void;
+  setMode: (mode: TimerMode) => void;
+  setWorkDurationMinutes: (minutes: number) => void;
+  setBreakDurationMinutes: (minutes: number) => void;
+  setLongBreakDurationMinutes: (minutes: number) => void;
+  setTargetDurationMinutes: (minutes: number) => void;
   pause: () => void;
   resume: () => void;
+  syncTick: () => void;
   tick: () => void;
   skipPhase: () => void;
+  resetCurrentPhase: () => void;
   stopAndLog: (markCompleted?: boolean, notes?: string) => Promise<void>;
   discard: () => void;
   openModal: () => void;
   closeModal: () => void;
+  requestNotificationPermission: () => Promise<void>;
 }
 
-// Simple Web Audio API sound alert
+// Web Audio API chime with multi-tone synthesis
 function playChimeSound(type: 'complete' | 'break' | 'work') {
   try {
     const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
@@ -61,14 +74,14 @@ function playChimeSound(type: 'complete' | 'break' | 'work') {
     const now = ctx.currentTime;
     if (type === 'work') {
       osc.frequency.setValueAtTime(587.33, now); // D5
-      osc.frequency.exponentialRampToValueAtTime(880, now + 0.3); // A5
+      osc.frequency.exponentialRampToValueAtTime(880, now + 0.25); // A5
     } else if (type === 'break') {
       osc.frequency.setValueAtTime(880, now);
-      osc.frequency.exponentialRampToValueAtTime(587.33, now + 0.3);
+      osc.frequency.exponentialRampToValueAtTime(587.33, now + 0.25);
     } else {
       osc.frequency.setValueAtTime(523.25, now); // C5
       osc.frequency.exponentialRampToValueAtTime(659.25, now + 0.15); // E5
-      osc.frequency.exponentialRampToValueAtTime(783.99, now + 0.3); // G5
+      osc.frequency.exponentialRampToValueAtTime(783.99, now + 0.35); // G5
     }
 
     gain.gain.setValueAtTime(0.3, now);
@@ -77,7 +90,20 @@ function playChimeSound(type: 'complete' | 'break' | 'work') {
     osc.start(now);
     osc.stop(now + 0.6);
   } catch {
-    // AudioContext blocked or not supported
+    // AudioContext blocked
+  }
+}
+
+function sendBrowserNotification(title: string, body: string) {
+  try {
+    if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+      new Notification(title, {
+        body,
+        icon: '/favicon.ico',
+      });
+    }
+  } catch {
+    // Ignore notification errors
   }
 }
 
@@ -99,13 +125,31 @@ export const useFocusTimerStore = create<FocusTimerState>()(
       longBreakDurationSec: 15 * 60,
       targetDurationSec: 25 * 60,
 
+      targetEndTime: null,
+      currentSegmentStartedAt: null,
+      accumulatedWorkSeconds: 0,
+      sessionStartedAt: null,
       secondsRemaining: 25 * 60,
       secondsElapsedTotal: 0,
       isModalOpen: false,
 
-      startForTodo: ({ todoId, title, category, targetDurationMinutes = 25, mode = 'pomodoro' }) => {
+      requestNotificationPermission: async () => {
+        if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default') {
+          try {
+            await Notification.requestPermission();
+          } catch {
+            // Permission request failed or rejected
+          }
+        }
+      },
+
+      startForTodo: ({ todoId, title, category, targetDurationMinutes = 25, mode = 'pomodoro', workMinutes = 25 }) => {
         const targetSec = Math.max(1, targetDurationMinutes) * 60;
-        const initialRemaining = mode === 'pomodoro' ? 25 * 60 : targetSec;
+        const workSec = Math.max(1, workMinutes) * 60;
+        const initialRemaining = mode === 'pomodoro' ? workSec : targetSec;
+        const now = Date.now();
+
+        get().requestNotificationPermission();
 
         set({
           isActive: true,
@@ -116,7 +160,12 @@ export const useFocusTimerStore = create<FocusTimerState>()(
           mode,
           pomodoroPhase: 'work',
           pomodoroRound: 1,
+          workDurationSec: workSec,
           targetDurationSec: targetSec,
+          targetEndTime: mode === 'stopwatch' ? null : now + initialRemaining * 1000,
+          currentSegmentStartedAt: now,
+          accumulatedWorkSeconds: 0,
+          sessionStartedAt: now,
           secondsRemaining: initialRemaining,
           secondsElapsedTotal: 0,
           isModalOpen: true,
@@ -125,7 +174,13 @@ export const useFocusTimerStore = create<FocusTimerState>()(
         playChimeSound('work');
       },
 
-      startQuickSession: (title, category, mode = 'pomodoro') => {
+      startQuickSession: (title, category, mode = 'pomodoro', workMinutes = 25) => {
+        const workSec = Math.max(1, workMinutes) * 60;
+        const initialRemaining = workSec;
+        const now = Date.now();
+
+        get().requestNotificationPermission();
+
         set({
           isActive: true,
           isRunning: true,
@@ -135,8 +190,13 @@ export const useFocusTimerStore = create<FocusTimerState>()(
           mode,
           pomodoroPhase: 'work',
           pomodoroRound: 1,
-          targetDurationSec: 25 * 60,
-          secondsRemaining: 25 * 60,
+          workDurationSec: workSec,
+          targetDurationSec: workSec,
+          targetEndTime: mode === 'stopwatch' ? null : now + initialRemaining * 1000,
+          currentSegmentStartedAt: now,
+          accumulatedWorkSeconds: 0,
+          sessionStartedAt: now,
+          secondsRemaining: initialRemaining,
           secondsElapsedTotal: 0,
           isModalOpen: true,
         });
@@ -144,49 +204,151 @@ export const useFocusTimerStore = create<FocusTimerState>()(
         playChimeSound('work');
       },
 
-      pause: () => set({ isRunning: false }),
-      resume: () => set({ isRunning: true }),
+      setMode: (mode: TimerMode) => {
+        const state = get();
+        let initialRemaining = state.workDurationSec;
+        if (mode === 'target_timer') initialRemaining = state.targetDurationSec;
+        if (mode === 'stopwatch') initialRemaining = 0;
 
-      tick: () => {
+        const now = Date.now();
+        set({
+          mode,
+          pomodoroPhase: 'work',
+          secondsRemaining: initialRemaining,
+          targetEndTime: state.isRunning && mode !== 'stopwatch' ? now + initialRemaining * 1000 : null,
+        });
+      },
+
+      setWorkDurationMinutes: (minutes: number) => {
+        const sec = Math.max(1, minutes) * 60;
+        const state = get();
+        set({ workDurationSec: sec });
+        if (state.pomodoroPhase === 'work' && !state.isRunning) {
+          set({ secondsRemaining: sec });
+        }
+      },
+
+      setBreakDurationMinutes: (minutes: number) => {
+        const sec = Math.max(1, minutes) * 60;
+        const state = get();
+        set({ shortBreakDurationSec: sec });
+        if (state.pomodoroPhase === 'short_break' && !state.isRunning) {
+          set({ secondsRemaining: sec });
+        }
+      },
+
+      setLongBreakDurationMinutes: (minutes: number) => {
+        const sec = Math.max(1, minutes) * 60;
+        const state = get();
+        set({ longBreakDurationSec: sec });
+        if (state.pomodoroPhase === 'long_break' && !state.isRunning) {
+          set({ secondsRemaining: sec });
+        }
+      },
+
+      setTargetDurationMinutes: (minutes: number) => {
+        const sec = Math.max(1, minutes) * 60;
+        const state = get();
+        set({ targetDurationSec: sec });
+        if (state.mode === 'target_timer' && !state.isRunning) {
+          set({ secondsRemaining: sec });
+        }
+      },
+
+      pause: () => {
+        const state = get();
+        if (!state.isRunning) return;
+
+        const now = Date.now();
+        let exactRemaining = state.secondsRemaining;
+        if (state.targetEndTime && state.mode !== 'stopwatch') {
+          exactRemaining = Math.max(0, Math.ceil((state.targetEndTime - now) / 1000));
+        }
+
+        const segmentElapsed = state.currentSegmentStartedAt
+          ? Math.max(0, Math.round((now - state.currentSegmentStartedAt) / 1000))
+          : 0;
+
+        const isWorkSegment = state.mode === 'stopwatch' || state.mode === 'target_timer' || state.pomodoroPhase === 'work';
+        const nextAccumulated = isWorkSegment ? state.accumulatedWorkSeconds + segmentElapsed : state.accumulatedWorkSeconds;
+
+        set({
+          isRunning: false,
+          targetEndTime: null,
+          currentSegmentStartedAt: null,
+          secondsRemaining: exactRemaining,
+          accumulatedWorkSeconds: nextAccumulated,
+          secondsElapsedTotal: nextAccumulated,
+        });
+      },
+
+      resume: () => {
+        const state = get();
+        if (state.isRunning) return;
+
+        const now = Date.now();
+        set({
+          isRunning: true,
+          currentSegmentStartedAt: now,
+          targetEndTime: state.mode === 'stopwatch' ? null : now + state.secondsRemaining * 1000,
+          sessionStartedAt: state.sessionStartedAt || now,
+        });
+      },
+
+      syncTick: () => {
         const state = get();
         if (!state.isActive || !state.isRunning) return;
 
+        const now = Date.now();
+        const segmentElapsed = state.currentSegmentStartedAt
+          ? Math.max(0, Math.round((now - state.currentSegmentStartedAt) / 1000))
+          : 0;
+
+        const isWorkSegment = state.mode === 'stopwatch' || state.mode === 'target_timer' || state.pomodoroPhase === 'work';
+        const currentTotalElapsed = isWorkSegment
+          ? state.accumulatedWorkSeconds + segmentElapsed
+          : state.accumulatedWorkSeconds;
+
         if (state.mode === 'stopwatch') {
           set({
-            secondsElapsedTotal: state.secondsElapsedTotal + 1,
+            secondsElapsedTotal: currentTotalElapsed,
           });
           return;
         }
 
-        // Countdown or Pomodoro
-        const nextRemaining = state.secondsRemaining - 1;
-        const nextElapsedTotal =
-          state.pomodoroPhase === 'work' || state.mode === 'target_timer'
-            ? state.secondsElapsedTotal + 1
-            : state.secondsElapsedTotal;
+        // Calculate accurate remaining seconds based on target timestamp
+        let remaining = state.secondsRemaining - 1;
+        if (state.targetEndTime) {
+          remaining = Math.max(0, Math.ceil((state.targetEndTime - now) / 1000));
+        }
 
-        if (nextRemaining > 0) {
+        if (remaining > 0) {
           set({
-            secondsRemaining: nextRemaining,
-            secondsElapsedTotal: nextElapsedTotal,
+            secondsRemaining: remaining,
+            secondsElapsedTotal: currentTotalElapsed,
           });
           return;
         }
 
-        // Phase finished!
+        // --- Active phase countdown reached ZERO! ---
         if (state.mode === 'target_timer') {
           playChimeSound('complete');
+          sendBrowserNotification('Таймер завершен!', `Сессия «${state.taskTitle}» завершена.`);
           set({
             secondsRemaining: 0,
-            secondsElapsedTotal: nextElapsedTotal,
+            secondsElapsedTotal: currentTotalElapsed,
             isRunning: false,
+            targetEndTime: null,
+            currentSegmentStartedAt: null,
+            accumulatedWorkSeconds: currentTotalElapsed,
           });
           return;
         }
 
-        // Pomodoro state machine
+        // Pomodoro State Machine transitions
         if (state.pomodoroPhase === 'work') {
           playChimeSound('break');
+          sendBrowserNotification('Время отдохнуть!', `Помодоро #${state.pomodoroRound} завершен. Сделайте перерыв.`);
           const isLongBreak = state.pomodoroRound >= state.totalPomodoroRounds;
           const nextPhase: PomodoroPhase = isLongBreak ? 'long_break' : 'short_break';
           const nextDuration = isLongBreak ? state.longBreakDurationSec : state.shortBreakDurationSec;
@@ -194,44 +356,103 @@ export const useFocusTimerStore = create<FocusTimerState>()(
           set({
             pomodoroPhase: nextPhase,
             secondsRemaining: nextDuration,
-            secondsElapsedTotal: nextElapsedTotal,
+            secondsElapsedTotal: currentTotalElapsed,
+            accumulatedWorkSeconds: currentTotalElapsed,
+            currentSegmentStartedAt: now,
+            targetEndTime: now + nextDuration * 1000,
           });
         } else {
-          // Break finished -> Next work round
+          // Break ended -> Next work round
           playChimeSound('work');
           const nextRound = state.pomodoroPhase === 'long_break' ? 1 : state.pomodoroRound + 1;
+          sendBrowserNotification('Время работать!', `Помодоро #${nextRound} начинается.`);
+          const workDuration = state.workDurationSec;
+
           set({
             pomodoroPhase: 'work',
             pomodoroRound: nextRound,
-            secondsRemaining: state.workDurationSec,
-            secondsElapsedTotal: nextElapsedTotal,
+            secondsRemaining: workDuration,
+            secondsElapsedTotal: currentTotalElapsed,
+            currentSegmentStartedAt: now,
+            targetEndTime: now + workDuration * 1000,
           });
         }
+      },
+
+      tick: () => {
+        get().syncTick();
       },
 
       skipPhase: () => {
         const state = get();
         if (state.mode !== 'pomodoro') return;
 
+        const now = Date.now();
+        const segmentElapsed = state.currentSegmentStartedAt
+          ? Math.max(0, Math.round((now - state.currentSegmentStartedAt) / 1000))
+          : 0;
+
         if (state.pomodoroPhase === 'work') {
           const isLong = state.pomodoroRound >= state.totalPomodoroRounds;
+          const nextPhase: PomodoroPhase = isLong ? 'long_break' : 'short_break';
+          const nextDuration = isLong ? state.longBreakDurationSec : state.shortBreakDurationSec;
+          const updatedAccumulated = state.accumulatedWorkSeconds + segmentElapsed;
+
           set({
-            pomodoroPhase: isLong ? 'long_break' : 'short_break',
-            secondsRemaining: isLong ? state.longBreakDurationSec : state.shortBreakDurationSec,
+            pomodoroPhase: nextPhase,
+            secondsRemaining: nextDuration,
+            accumulatedWorkSeconds: updatedAccumulated,
+            secondsElapsedTotal: updatedAccumulated,
+            currentSegmentStartedAt: state.isRunning ? now : null,
+            targetEndTime: state.isRunning ? now + nextDuration * 1000 : null,
           });
         } else {
           const nextRound = state.pomodoroPhase === 'long_break' ? 1 : state.pomodoroRound + 1;
+          const workDuration = state.workDurationSec;
+
           set({
             pomodoroPhase: 'work',
             pomodoroRound: nextRound,
-            secondsRemaining: state.workDurationSec,
+            secondsRemaining: workDuration,
+            currentSegmentStartedAt: state.isRunning ? now : null,
+            targetEndTime: state.isRunning ? now + workDuration * 1000 : null,
           });
         }
       },
 
+      resetCurrentPhase: () => {
+        const state = get();
+        let dur = state.workDurationSec;
+        if (state.mode === 'pomodoro') {
+          if (state.pomodoroPhase === 'short_break') dur = state.shortBreakDurationSec;
+          if (state.pomodoroPhase === 'long_break') dur = state.longBreakDurationSec;
+        } else if (state.mode === 'target_timer') {
+          dur = state.targetDurationSec;
+        } else {
+          dur = 0;
+        }
+
+        const now = Date.now();
+        set({
+          secondsRemaining: dur,
+          currentSegmentStartedAt: state.isRunning ? now : null,
+          targetEndTime: state.isRunning && state.mode !== 'stopwatch' ? now + dur * 1000 : null,
+        });
+      },
+
       stopAndLog: async (markCompleted = true, notes = '') => {
         const state = get();
-        const durationMins = Math.max(1, Math.round(state.secondsElapsedTotal / 60));
+        const now = Date.now();
+        const segmentElapsed = state.isRunning && state.currentSegmentStartedAt
+          ? Math.max(0, Math.round((now - state.currentSegmentStartedAt) / 1000))
+          : 0;
+
+        const isWorkSegment = state.mode === 'stopwatch' || state.mode === 'target_timer' || state.pomodoroPhase === 'work';
+        const finalTotalSec = isWorkSegment
+          ? state.accumulatedWorkSeconds + segmentElapsed
+          : state.accumulatedWorkSeconds;
+
+        const durationMins = Math.max(1, Math.round(finalTotalSec / 60));
 
         try {
           await apiClient.post('/todos/focus-sessions', {
@@ -253,6 +474,9 @@ export const useFocusTimerStore = create<FocusTimerState>()(
           isRunning: false,
           isModalOpen: false,
           todoId: null,
+          targetEndTime: null,
+          currentSegmentStartedAt: null,
+          accumulatedWorkSeconds: 0,
           secondsRemaining: 0,
           secondsElapsedTotal: 0,
         });
@@ -264,6 +488,9 @@ export const useFocusTimerStore = create<FocusTimerState>()(
           isRunning: false,
           isModalOpen: false,
           todoId: null,
+          targetEndTime: null,
+          currentSegmentStartedAt: null,
+          accumulatedWorkSeconds: 0,
           secondsRemaining: 0,
           secondsElapsedTotal: 0,
         });
@@ -273,7 +500,7 @@ export const useFocusTimerStore = create<FocusTimerState>()(
       closeModal: () => set({ isModalOpen: false }),
     }),
     {
-      name: 'np_focus_timer_state_v1',
+      name: 'np_focus_timer_state_v3',
       partialize: (state) => ({
         isActive: state.isActive,
         isRunning: state.isRunning,
@@ -283,8 +510,15 @@ export const useFocusTimerStore = create<FocusTimerState>()(
         mode: state.mode,
         pomodoroPhase: state.pomodoroPhase,
         pomodoroRound: state.pomodoroRound,
+        workDurationSec: state.workDurationSec,
+        shortBreakDurationSec: state.shortBreakDurationSec,
+        longBreakDurationSec: state.longBreakDurationSec,
+        targetDurationSec: state.targetDurationSec,
         secondsRemaining: state.secondsRemaining,
         secondsElapsedTotal: state.secondsElapsedTotal,
+        accumulatedWorkSeconds: state.accumulatedWorkSeconds,
+        currentSegmentStartedAt: state.currentSegmentStartedAt,
+        targetEndTime: state.targetEndTime,
       }),
     }
   )
