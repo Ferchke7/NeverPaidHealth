@@ -1,4 +1,4 @@
-const CACHE_NAME = 'duda-pwa-v1';
+const CACHE_NAME = 'duda-pwa-v2';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -21,7 +21,7 @@ self.addEventListener('install', (event) => {
   );
 });
 
-// Activate: Clean old caches and claim clients
+// Activate: Clean old caches and claim clients immediately
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => {
@@ -39,12 +39,12 @@ self.addEventListener('fetch', (event) => {
   const request = event.request;
   const url = new URL(request.url);
 
-  // Skip non-GET requests and browser extensions
+  // Skip non-GET requests and non-http schemes
   if (request.method !== 'GET' || !url.protocol.startsWith('http')) {
     return;
   }
 
-  // API Requests: Network First, no cache
+  // 1. API Requests: Network First, never cache
   if (url.pathname.startsWith('/api/') || url.pathname.includes('/auth/') || url.pathname.includes('/coach/')) {
     event.respondWith(
       fetch(request).catch(() => {
@@ -57,12 +57,12 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Static Assets (JS, CSS, images, icons, fonts): Stale-While-Revalidate
-  event.respondWith(
-    caches.match(request).then((cachedResponse) => {
-      const fetchPromise = fetch(request)
+  // 2. Navigation / HTML Requests: Network First with cache fallback
+  if (request.mode === 'navigate' || url.pathname === '/' || url.pathname.endsWith('.html')) {
+    event.respondWith(
+      fetch(request)
         .then((networkResponse) => {
-          if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
+          if (networkResponse && networkResponse.status === 200) {
             const responseToCache = networkResponse.clone();
             caches.open(CACHE_NAME).then((cache) => {
               cache.put(request, responseToCache);
@@ -70,15 +70,26 @@ self.addEventListener('fetch', (event) => {
           }
           return networkResponse;
         })
-        .catch(() => {
-          // If offline and requesting navigation, fallback to cached index.html
-          if (request.mode === 'navigate') {
-            return caches.match('/index.html');
-          }
-          return null;
-        });
+        .catch(() => caches.match('/index.html'))
+    );
+    return;
+  }
 
-      return cachedResponse || fetchPromise;
+  // 3. Static Assets: Cache First, fallback to Network
+  event.respondWith(
+    caches.match(request).then((cachedResponse) => {
+      if (cachedResponse) {
+        return cachedResponse;
+      }
+      return fetch(request).then((networkResponse) => {
+        if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
+          const responseToCache = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(request, responseToCache);
+          });
+        }
+        return networkResponse;
+      });
     })
   );
 });
