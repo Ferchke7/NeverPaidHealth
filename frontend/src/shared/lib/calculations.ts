@@ -82,6 +82,7 @@ export interface BMICategory {
   minBMI: number;
   maxBMI: number;
   adviceRu: string;
+  adviceEn: string;
 }
 
 /**
@@ -100,6 +101,7 @@ export function getBMICategory(bmi: number): BMICategory {
       minBMI: 0,
       maxBMI: 0,
       adviceRu: 'Укажите рост и вес для расчета индекса массы тела.',
+      adviceEn: 'Enter your height and weight to calculate BMI.',
     };
   }
   if (bmi < 18.5) {
@@ -114,6 +116,7 @@ export function getBMICategory(bmi: number): BMICategory {
       minBMI: 0,
       maxBMI: 18.4,
       adviceRu: 'Рекомендуется легкий профицит калорий (+300-500 ккал) и силовые тренировки для набора мышечной массы.',
+      adviceEn: 'Slight caloric surplus (+300-500 kcal) and progressive strength training recommended for muscle gain.',
     };
   }
   if (bmi < 25.0) {
@@ -128,6 +131,7 @@ export function getBMICategory(bmi: number): BMICategory {
       minBMI: 18.5,
       maxBMI: 24.9,
       adviceRu: 'Отличный диапазон! Поддерживайте сбалансированное питание и прогрессируйте в тренировках.',
+      adviceEn: 'Optimal healthy range! Maintain balanced nutrition and continue progressive overload.',
     };
   }
   if (bmi < 30.0) {
@@ -142,6 +146,7 @@ export function getBMICategory(bmi: number): BMICategory {
       minBMI: 25.0,
       maxBMI: 29.9,
       adviceRu: 'Для тренирующихся атлетов это частая норма за счет мышц. Для снижения жировой прослойки держите дефицит -300 ккал.',
+      adviceEn: 'Common for muscular athletes. For lean cutting, maintain a moderate -300 to -400 kcal deficit.',
     };
   }
   if (bmi < 35.0) {
@@ -156,6 +161,7 @@ export function getBMICategory(bmi: number): BMICategory {
       minBMI: 30.0,
       maxBMI: 34.9,
       adviceRu: 'Рекомендуется умеренный дефицит калорий (-400-500 ккал), регулярный силовой тренинг и 8 000+ шагов в день.',
+      adviceEn: 'Focus on a sustainable caloric deficit (-400-500 kcal), consistent lifting, and 8,000+ daily steps.',
     };
   }
   return {
@@ -169,6 +175,7 @@ export function getBMICategory(bmi: number): BMICategory {
     minBMI: 35.0,
     maxBMI: 60.0,
     adviceRu: 'Сфокусируйтесь на чистом рационе, постепенном снижении веса и контроле восстановления.',
+    adviceEn: 'Prioritize whole-food nutrition, gradual sustainable fat loss, and consistent daily movement.',
   };
 }
 
@@ -207,3 +214,73 @@ export function calculateTDEE(bmr: number, activityMultiplier: number = 1.375): 
   return Math.round(bmr * activityMultiplier);
 }
 
+/**
+ * Estimates body fat percentage using Deurenberg formula based on BMI, age, and sex.
+ * Adult BF% = (1.20 × BMI) + (0.23 × Age) − (10.8 × sex) − 5.4 (sex: male = 1, female = 0)
+ */
+export function estimateBodyFatPercentage(
+  bmi: number,
+  ageYears: number = 25,
+  gender: 'male' | 'female' = 'male'
+): number {
+  if (bmi <= 0 || ageYears <= 0) return 0;
+  const sexFactor = gender === 'male' ? 1 : 0;
+  const raw = (1.20 * bmi) + (0.23 * ageYears) - (10.8 * sexFactor) - 5.4;
+  return Math.max(3, Math.min(60, Math.round(raw * 10) / 10));
+}
+
+/**
+ * US Navy Body Fat formula estimation for males and females (circumferences in cm).
+ */
+export function calculateNavyBodyFat(
+  heightCm: number,
+  neckCm: number,
+  waistCm: number,
+  hipsCm?: number,
+  gender: 'male' | 'female' = 'male'
+): number | null {
+  if (heightCm <= 0 || neckCm <= 0 || waistCm <= 0) return null;
+
+  if (gender === 'male') {
+    const diff = waistCm - neckCm;
+    if (diff <= 0) return null;
+    // 495 / (1.0324 - 0.19077 * log10(waist - neck) + 0.15456 * log10(height)) - 450
+    const val = 495 / (1.0324 - 0.19077 * Math.log10(diff) + 0.15456 * Math.log10(heightCm)) - 450;
+    return Math.round(Math.max(2, Math.min(60, val)) * 10) / 10;
+  } else {
+    if (!hipsCm || hipsCm <= 0) return null;
+    const diff = waistCm + hipsCm - neckCm;
+    if (diff <= 0) return null;
+    // 495 / (1.29579 - 0.35004 * log10(waist + hip - neck) + 0.22100 * log10(height)) - 450
+    const val = 495 / (1.29579 - 0.35004 * Math.log10(diff) + 0.22100 * Math.log10(heightCm)) - 450;
+    return Math.round(Math.max(5, Math.min(60, val)) * 10) / 10;
+  }
+}
+
+/**
+ * Calculates optimal bodybuilding macro split based on bodyweight, calories, and diet goal.
+ */
+export function calculateMacroSplit(
+  weightKg: number,
+  calories: number,
+  goal: 'cut' | 'maintain' | 'bulk' = 'maintain'
+): { proteinG: number; fatG: number; carbG: number } {
+  if (weightKg <= 0 || calories <= 0) {
+    return { proteinG: 0, fatG: 0, carbG: 0 };
+  }
+
+  // Protein target: Cut -> 2.2 g/kg, Maintain -> 2.0 g/kg, Bulk -> 2.0 g/kg
+  const proteinMultiplier = goal === 'cut' ? 2.2 : 2.0;
+  const proteinG = Math.round(weightKg * proteinMultiplier);
+
+  // Fat target: ~0.9 g/kg (minimum 20% of calories)
+  const fatG = Math.max(30, Math.round(weightKg * 0.9));
+
+  // Carbs from remaining calories (4 kcal/g)
+  const proteinCal = proteinG * 4;
+  const fatCal = fatG * 9;
+  const remainingCal = Math.max(0, calories - (proteinCal + fatCal));
+  const carbG = Math.round(remainingCal / 4);
+
+  return { proteinG, fatG, carbG };
+}

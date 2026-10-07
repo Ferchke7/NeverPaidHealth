@@ -11,11 +11,14 @@ import {
   BarChart3,
   Shield,
   Scale,
+  Sparkles,
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '../../../shared/api/client.ts';
-import { Card } from '../../../shared/ui/card.tsx';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, Badge } from '../../../shared/ui/card.tsx';
 import { Input } from '../../../shared/ui/input.tsx';
+import { Tabs } from '../../../shared/ui/tabs.tsx';
+import { ProgressBar } from '../../../shared/ui/progress.tsx';
 import { formatDate } from '../../../shared/lib/dates.ts';
 import { formatWeight } from '../../../shared/lib/units.ts';
 import { useAuthStore } from '../../../entities/user/model/authStore.ts';
@@ -56,8 +59,6 @@ interface ExerciseHistoryResponse {
   data_points: HistoryDataPoint[];
 }
 
-type AnalyticsTab = 'overview' | 'body' | 'calendar' | 'muscles' | 'strength' | 'prs' | 'calculator';
-
 const MUSCLE_FILTER = [
   { id: 'all', label: 'All Muscles' },
   { id: 'chest', label: 'Chest' },
@@ -70,7 +71,7 @@ const MUSCLE_FILTER = [
 
 export const ProgressPage: React.FC = () => {
   const unitPref = useAuthStore((s) => s.unitPreference);
-  const [activeTab, setActiveTab] = useState<AnalyticsTab>('overview');
+  const [activeTab, setActiveTab] = useState<string>('overview');
   const [selectedMuscle, setSelectedMuscle] = useState('all');
   const [selectedExerciseId, setSelectedExerciseId] = useState<string | null>(null);
 
@@ -107,7 +108,7 @@ export const ProgressPage: React.FC = () => {
     enabled: !!activeExerciseId,
   });
 
-  // 1RM calculations based on Brzycki & Epley formulas
+  // 1RM calculations based on Brzycki formula
   const calculated1RM = useMemo(() => {
     if (calcReps <= 1) return calcWeight;
     const brzycki = calcWeight * (36 / (37 - Math.min(calcReps, 36)));
@@ -130,7 +131,7 @@ export const ProgressPage: React.FC = () => {
     }));
   }, [calculated1RM]);
 
-  // Filter PR groups by search or muscle
+  // Filter PR groups by muscle
   const filteredRecordGroups = useMemo(() => {
     if (selectedMuscle === 'all') return recordGroups;
     return recordGroups.filter((g) => {
@@ -186,7 +187,7 @@ export const ProgressPage: React.FC = () => {
     };
   }, [workouts, recordGroups]);
 
-  // Strength Level Classification (Standard Male/Female Strength Targets based on bodyweight ~80kg)
+  // Strength Standards
   const strengthStandards = useMemo(() => {
     const targets = [
       { name: 'Barbell Bench Press', beginner: 60, intermediate: 90, advanced: 120, elite: 150 },
@@ -202,28 +203,28 @@ export const ProgressPage: React.FC = () => {
 
       let level = 'Unranked';
       let progressPct = 0;
-      let badgeColor = 'text-zinc-500 bg-zinc-800/60 border-zinc-700';
+      let badgeColor = 'neutral';
 
       if (best1RM >= t.elite) {
         level = 'Elite Athlete';
         progressPct = 100;
-        badgeColor = 'text-amber-400 bg-amber-500/15 border-amber-500/30';
+        badgeColor = 'accent';
       } else if (best1RM >= t.advanced) {
         level = 'Advanced';
         progressPct = 75 + ((best1RM - t.advanced) / (t.elite - t.advanced)) * 25;
-        badgeColor = 'text-purple-400 bg-purple-500/15 border-purple-500/30';
+        badgeColor = 'brand';
       } else if (best1RM >= t.intermediate) {
         level = 'Intermediate';
         progressPct = 50 + ((best1RM - t.intermediate) / (t.advanced - t.intermediate)) * 25;
-        badgeColor = 'text-blue-400 bg-blue-500/15 border-blue-500/30';
+        badgeColor = 'info';
       } else if (best1RM >= t.beginner) {
         level = 'Novice';
         progressPct = 25 + ((best1RM - t.beginner) / (t.intermediate - t.beginner)) * 25;
-        badgeColor = 'text-emerald-400 bg-emerald-500/15 border-emerald-500/30';
+        badgeColor = 'success';
       } else if (best1RM > 0) {
         level = 'Beginner';
         progressPct = (best1RM / t.beginner) * 25;
-        badgeColor = 'text-zinc-300 bg-dark-700 border-dark-600';
+        badgeColor = 'neutral';
       }
 
       return {
@@ -231,24 +232,38 @@ export const ProgressPage: React.FC = () => {
         best1RM,
         level,
         progressPct: Math.min(100, Math.max(5, Math.round(progressPct))),
-        badgeColor,
+        badgeColor: badgeColor as any,
       };
     });
   }, [recordGroups]);
 
+  const navTabs = [
+    { id: 'overview', label: 'Overview & Volume', icon: <Activity className="w-4 h-4" /> },
+    { id: 'body', label: 'Body Weight & Goals', icon: <Scale className="w-4 h-4" /> },
+    { id: 'calendar', label: 'Workout Calendar', icon: <CalendarIcon className="w-4 h-4" /> },
+    { id: 'muscles', label: 'Muscle Heatmap', icon: <Layers className="w-4 h-4" /> },
+    { id: 'strength', label: 'Strength Standards', icon: <Shield className="w-4 h-4" /> },
+    { id: 'prs', label: 'PRs Hall of Fame', icon: <Trophy className="w-4 h-4" />, badge: recordGroups.length },
+    { id: 'calculator', label: '1RM Calculator', icon: <Calculator className="w-4 h-4" /> },
+  ];
+
   return (
     <div className="space-y-6 animate-fade-in pb-12">
       {/* Top Banner */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-dark-800 via-dark-800 to-brand-950/40 border border-dark-700/80 p-6 shadow-xl">
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-dark-850 via-dark-800 to-brand-950/40 border border-dark-700/80 p-6 sm:p-7 shadow-2xl">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-brand-500/10 border border-brand-500/30 flex items-center justify-center text-brand-400">
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-xl bg-brand-500/15 border border-brand-500/30 flex items-center justify-center text-brand-400 shadow-sm">
                 <BarChart3 className="w-5 h-5" />
               </div>
-              <h1 className="text-2xl font-bold text-zinc-100 tracking-tight">
+              <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
                 Analytics & Performance Hub
               </h1>
+              <Badge variant="brand" size="sm">
+                <Sparkles className="w-3 h-3 mr-1" />
+                Live Hub
+              </Badge>
             </div>
             <p className="text-xs text-zinc-400">
               Interactive progression curves, volume heatmaps, personal records, and strength standards.
@@ -256,33 +271,14 @@ export const ProgressPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Analytics Sub-Tabs Navigation */}
-        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pt-5 border-t border-dark-700/60 mt-4">
-          {[
-            { id: 'overview', label: 'Overview & Volume', icon: <Activity className="w-4 h-4" /> },
-            { id: 'body', label: 'Body Weight & Goals', icon: <Scale className="w-4 h-4" /> },
-            { id: 'calendar', label: 'Workout Calendar', icon: <CalendarIcon className="w-4 h-4" /> },
-            { id: 'muscles', label: 'Muscle Heatmap', icon: <Layers className="w-4 h-4" /> },
-            { id: 'strength', label: 'Strength Standards', icon: <Shield className="w-4 h-4" /> },
-            { id: 'prs', label: 'PRs Hall of Fame', icon: <Trophy className="w-4 h-4" /> },
-            { id: 'calculator', label: '1RM Calculator', icon: <Calculator className="w-4 h-4" /> },
-          ].map((tab) => {
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id as AnalyticsTab)}
-                className={`px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 whitespace-nowrap transition-all ${
-                  isActive
-                    ? 'bg-brand-500 text-dark-950 font-bold shadow-md shadow-brand-500/20'
-                    : 'bg-dark-900/80 text-zinc-400 hover:text-zinc-200 hover:bg-dark-700 border border-dark-700/60'
-                }`}
-              >
-                {tab.icon}
-                {tab.label}
-              </button>
-            );
-          })}
+        {/* HeroUI Tabs Navigation */}
+        <div className="pt-5 border-t border-dark-700/60 mt-4">
+          <Tabs
+            tabs={navTabs}
+            selectedKey={activeTab}
+            onSelectionChange={setActiveTab}
+            variant="bordered"
+          />
         </div>
       </div>
 
@@ -294,72 +290,72 @@ export const ProgressPage: React.FC = () => {
         </div>
       )}
 
-      {/* TAB 1: OVERVIEW & VOLUME PROGRESSION */}
+      {/* TAB: OVERVIEW & VOLUME PROGRESSION */}
       {activeTab === 'overview' && (
         <div className="space-y-6 animate-fade-in">
           {/* Top KPI Metric Cards */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <Card className="p-4 bg-dark-800/80 border-dark-700/80 space-y-1">
-              <div className="flex items-center gap-1.5 text-xs text-zinc-400 font-medium">
+            <Card className="p-4.5 bg-dark-800/80 border-dark-700/80 space-y-1.5">
+              <div className="flex items-center gap-1.5 text-xs text-zinc-400 font-bold">
                 <Dumbbell className="w-4 h-4 text-brand-400" />
                 <span>Total Workouts</span>
               </div>
-              <div className="text-2xl font-bold text-zinc-100 font-mono">
+              <div className="text-2xl font-black text-white font-mono">
                 {analyticsSummary.totalWorkouts}
               </div>
             </Card>
 
-            <Card className="p-4 bg-dark-800/80 border-dark-700/80 space-y-1">
-              <div className="flex items-center gap-1.5 text-xs text-zinc-400 font-medium">
+            <Card className="p-4.5 bg-dark-800/80 border-dark-700/80 space-y-1.5">
+              <div className="flex items-center gap-1.5 text-xs text-zinc-400 font-bold">
                 <Flame className="w-4 h-4 text-emerald-400" />
                 <span>Total Tonnage</span>
               </div>
-              <div className="text-2xl font-bold text-emerald-400 font-mono">
+              <div className="text-2xl font-black text-emerald-400 font-mono">
                 {analyticsSummary.totalTonnageKg > 1000
                   ? `${(analyticsSummary.totalTonnageKg / 1000).toFixed(1)} T`
                   : `${analyticsSummary.totalTonnageKg.toFixed(0)} kg`}
               </div>
             </Card>
 
-            <Card className="p-4 bg-dark-800/80 border-dark-700/80 space-y-1">
-              <div className="flex items-center gap-1.5 text-xs text-zinc-400 font-medium">
+            <Card className="p-4.5 bg-dark-800/80 border-dark-700/80 space-y-1.5">
+              <div className="flex items-center gap-1.5 text-xs text-zinc-400 font-bold">
                 <Trophy className="w-4 h-4 text-amber-400" />
                 <span>Personal Records</span>
               </div>
-              <div className="text-2xl font-bold text-amber-400 font-mono">
+              <div className="text-2xl font-black text-amber-400 font-mono">
                 {analyticsSummary.totalPRs}
               </div>
             </Card>
 
-            <Card className="p-4 bg-dark-800/80 border-dark-700/80 space-y-1">
-              <div className="flex items-center gap-1.5 text-xs text-zinc-400 font-medium">
+            <Card className="p-4.5 bg-dark-800/80 border-dark-700/80 space-y-1.5">
+              <div className="flex items-center gap-1.5 text-xs text-zinc-400 font-bold">
                 <Activity className="w-4 h-4 text-sky-400" />
                 <span>Time Under Load</span>
               </div>
-              <div className="text-2xl font-bold text-sky-400 font-mono">
+              <div className="text-2xl font-black text-sky-400 font-mono">
                 {analyticsSummary.totalHours} hrs
               </div>
             </Card>
           </div>
 
           {/* Exercise Progression Curve Chart */}
-          <Card className="p-5 bg-dark-800/90 border-dark-700/80 shadow-xl space-y-4">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <Card className="space-y-4">
+            <CardHeader>
               <div>
-                <h2 className="text-base font-bold text-zinc-100 flex items-center gap-2">
+                <CardTitle>
                   <TrendingUp className="w-5 h-5 text-brand-400" />
                   Strength & Weight Progression Curve
-                </h2>
-                <p className="text-xs text-zinc-400">
+                </CardTitle>
+                <CardDescription>
                   Track 1RM and working weight milestones over time for any movement.
-                </p>
+                </CardDescription>
               </div>
 
               {/* Exercise Selector */}
               <select
                 value={activeExerciseId}
                 onChange={(e) => setSelectedExerciseId(e.target.value)}
-                className="bg-dark-900 border border-dark-700 text-zinc-200 text-xs rounded-xl px-3 py-2 font-medium focus:outline-none focus:border-brand-500 max-w-xs"
+                className="bg-dark-900 border border-dark-700 text-zinc-200 text-xs rounded-xl px-3.5 py-2 font-bold focus:outline-none focus:border-brand-500 max-w-xs"
               >
                 {exercises.map((ex) => (
                   <option key={ex.id} value={ex.id}>
@@ -367,183 +363,183 @@ export const ProgressPage: React.FC = () => {
                   </option>
                 ))}
               </select>
-            </div>
+            </CardHeader>
 
-            {/* SVG Interactive Chart */}
-            {historyData?.data_points && historyData.data_points.length > 0 ? (
-              <div className="space-y-4 pt-2">
-                <div className="h-64 w-full bg-dark-950/60 rounded-xl p-4 border border-dark-700/60 relative flex items-end">
-                  <svg className="w-full h-full overflow-visible" preserveAspectRatio="none">
-                    <defs>
-                      <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#22c55e" stopOpacity="0.4" />
-                        <stop offset="100%" stopColor="#22c55e" stopOpacity="0.0" />
-                      </linearGradient>
-                    </defs>
+            <CardContent>
+              {/* SVG Interactive Chart */}
+              {historyData?.data_points && historyData.data_points.length > 0 ? (
+                <div className="space-y-4 pt-2">
+                  <div className="h-64 w-full bg-dark-950/70 rounded-2xl p-4 border border-dark-700/60 relative flex items-end">
+                    <svg className="w-full h-full overflow-visible" preserveAspectRatio="none">
+                      <defs>
+                        <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#22c55e" stopOpacity="0.35" />
+                          <stop offset="100%" stopColor="#22c55e" stopOpacity="0.0" />
+                        </linearGradient>
+                      </defs>
 
-                    {/* Plot Points */}
-                    {(() => {
-                      const pts = historyData.data_points;
-                      const maxVal = Math.max(...pts.map((p) => p.best_weight_kg || 1), 10);
-                      const minVal = Math.min(...pts.map((p) => p.best_weight_kg || 0), 0);
-                      const range = maxVal - minVal || 1;
+                      {(() => {
+                        const pts = historyData.data_points;
+                        const maxVal = Math.max(...pts.map((p) => p.best_weight_kg || 1), 10);
+                        const minVal = Math.min(...pts.map((p) => p.best_weight_kg || 0), 0);
+                        const range = maxVal - minVal || 1;
 
-                      const coords = pts.map((p, i) => {
-                        const x = pts.length === 1 ? 50 : (i / (pts.length - 1)) * 96 + 2;
-                        const y = 90 - ((p.best_weight_kg - minVal) / range) * 75;
-                        return { x, y, val: p.best_weight_kg, date: p.date };
-                      });
+                        const coords = pts.map((p, i) => {
+                          const x = pts.length === 1 ? 50 : (i / (pts.length - 1)) * 96 + 2;
+                          const y = 90 - ((p.best_weight_kg - minVal) / range) * 75;
+                          return { x, y, val: p.best_weight_kg, date: p.date };
+                        });
 
-                      const pathString = coords
-                        .map((c, i) => `${i === 0 ? 'M' : 'L'} ${c.x}% ${c.y}%`)
-                        .join(' ');
+                        const pathString = coords
+                          .map((c, i) => `${i === 0 ? 'M' : 'L'} ${c.x}% ${c.y}%`)
+                          .join(' ');
 
-                      return (
-                        <>
-                          <path
-                            d={`${pathString} L ${coords[coords.length - 1].x}% 95% L ${coords[0].x}% 95% Z`}
-                            fill="url(#areaGradient)"
-                          />
-                          <path
-                            d={pathString}
-                            fill="none"
-                            stroke="#22c55e"
-                            strokeWidth="3"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                          {coords.map((c, i) => (
-                            <g key={i} className="group cursor-pointer">
-                              <circle
-                                cx={`${c.x}%`}
-                                cy={`${c.y}%`}
-                                r="5"
-                                className="fill-emerald-400 stroke-dark-900 stroke-2 hover:r-7 transition-all"
-                              />
-                              <text
-                                x={`${c.x}%`}
-                                y={`${c.y - 8}%`}
-                                textAnchor="middle"
-                                className="text-[10px] font-bold fill-zinc-200 font-mono"
-                              >
-                                {c.val}kg
-                              </text>
-                            </g>
-                          ))}
-                        </>
-                      );
-                    })()}
-                  </svg>
+                        return (
+                          <>
+                            <path
+                              d={`${pathString} L ${coords[coords.length - 1].x}% 95% L ${coords[0].x}% 95% Z`}
+                              fill="url(#areaGradient)"
+                            />
+                            <path
+                              d={pathString}
+                              fill="none"
+                              stroke="#22c55e"
+                              strokeWidth="3"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                            {coords.map((c, i) => (
+                              <g key={i} className="group cursor-pointer">
+                                <circle
+                                  cx={`${c.x}%`}
+                                  cy={`${c.y}%`}
+                                  r="5"
+                                  className="fill-emerald-400 stroke-dark-900 stroke-2 hover:r-7 transition-all"
+                                />
+                                <text
+                                  x={`${c.x}%`}
+                                  y={`${c.y - 8}%`}
+                                  textAnchor="middle"
+                                  className="text-[10px] font-bold fill-zinc-200 font-mono"
+                                >
+                                  {c.val}kg
+                                </text>
+                              </g>
+                            ))}
+                          </>
+                        );
+                      })()}
+                    </svg>
+                  </div>
+
+                  {/* Session Data Table */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                    {historyData.data_points.map((p, idx) => (
+                      <div
+                        key={idx}
+                        className="p-3.5 rounded-xl bg-dark-900/80 border border-dark-750 flex items-center justify-between text-xs font-mono"
+                      >
+                        <span className="text-zinc-400 font-sans">{formatDate(p.date)}</span>
+                        <span className="text-emerald-400 font-bold">
+                          {formatWeight(p.best_weight_kg, unitPref)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-
-                {/* Session Data Table */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                  {historyData.data_points.map((p, idx) => (
-                    <div
-                      key={idx}
-                      className="p-3 rounded-xl bg-dark-900/70 border border-dark-750 flex items-center justify-between text-xs font-mono"
-                    >
-                      <span className="text-zinc-400">{formatDate(p.date)}</span>
-                      <span className="text-emerald-400 font-bold">
-                        {formatWeight(p.best_weight_kg, unitPref)}
-                      </span>
-                    </div>
-                  ))}
+              ) : (
+                <div className="text-center py-12 text-zinc-500 text-xs">
+                  No historical logs recorded yet for this exercise. Complete a workout with this movement to render the progression curve!
                 </div>
-              </div>
-            ) : (
-              <div className="text-center py-12 text-zinc-500 text-xs">
-                No historical logs recorded yet for this exercise. Complete a workout with this movement to render the progression curve!
-              </div>
-            )}
+              )}
+            </CardContent>
           </Card>
         </div>
       )}
 
-      {/* TAB 2: INTERACTIVE CALENDAR & ACTIVITY */}
+      {/* TAB: CALENDAR */}
       {activeTab === 'calendar' && (
         <WorkoutCalendar workouts={workouts} />
       )}
 
-      {/* TAB 3: MUSCLE GROUP HYPERTROPHY HEATMAP */}
+      {/* TAB: MUSCLE HEATMAP */}
       {activeTab === 'muscles' && (
         <div className="space-y-6 animate-fade-in">
-          <Card className="p-5 bg-dark-800/90 border-dark-700/80 shadow-xl space-y-5">
-            <div className="flex items-center justify-between">
+          <Card className="space-y-5">
+            <CardHeader>
               <div>
-                <h2 className="text-base font-bold text-zinc-100 flex items-center gap-2">
+                <CardTitle>
                   <Layers className="w-5 h-5 text-brand-400" />
                   Muscle Volume Distribution & Hypertrophy Targets
-                </h2>
-                <p className="text-xs text-zinc-400 mt-0.5">
+                </CardTitle>
+                <CardDescription>
                   Audited weekly set volume against optimal hypertrophy benchmarks (10–20 direct sets/week).
-                </p>
+                </CardDescription>
               </div>
-            </div>
+            </CardHeader>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {Object.entries(analyticsSummary.muscleSets).map(([muscle, setsCount]) => {
-                const targetSets = 16;
-                const pct = Math.min(100, Math.round((setsCount / targetSets) * 100));
-                const status =
-                  setsCount >= 10 && setsCount <= 20
-                    ? { label: 'Optimal Growth (MEV-MRV)', color: 'text-emerald-400', bar: 'bg-emerald-400' }
-                    : setsCount > 20
-                    ? { label: 'High Overload', color: 'text-amber-400', bar: 'bg-amber-400' }
-                    : setsCount > 0
-                    ? { label: 'Maintenance (MV)', color: 'text-blue-400', bar: 'bg-blue-400' }
-                    : { label: 'Untrained', color: 'text-zinc-500', bar: 'bg-zinc-700' };
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {Object.entries(analyticsSummary.muscleSets).map(([muscle, setsCount]) => {
+                  const targetSets = 16;
+                  const pct = Math.min(100, Math.round((setsCount / targetSets) * 100));
+                  const status =
+                    setsCount >= 10 && setsCount <= 20
+                      ? { label: 'Optimal Growth (MEV-MRV)', badge: 'success' }
+                      : setsCount > 20
+                      ? { label: 'High Overload', badge: 'warning' }
+                      : setsCount > 0
+                      ? { label: 'Maintenance (MV)', badge: 'info' }
+                      : { label: 'Untrained', badge: 'neutral' };
 
-                return (
-                  <div
-                    key={muscle}
-                    className="p-4 rounded-xl bg-dark-900/80 border border-dark-700/80 space-y-2.5"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-bold text-zinc-100">{muscle}</span>
-                      <span className={`text-xs font-semibold ${status.color}`}>
-                        {status.label}
-                      </span>
+                  return (
+                    <div
+                      key={muscle}
+                      className="p-4 rounded-2xl bg-dark-900/80 border border-dark-700/80 space-y-2.5"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-extrabold text-zinc-100">{muscle}</span>
+                        <Badge variant={status.badge as any} size="sm">
+                          {status.label}
+                        </Badge>
+                      </div>
+
+                      <ProgressBar value={pct} color={status.badge === 'success' ? 'success' : status.badge === 'warning' ? 'warning' : 'primary'} size="sm" />
+
+                      <div className="flex items-center justify-between text-[11px] text-zinc-400 font-mono">
+                        <span>{setsCount} completed sets</span>
+                        <span>Target: 12-16 sets/wk</span>
+                      </div>
                     </div>
-
-                    <div className="w-full bg-dark-800 h-2.5 rounded-full overflow-hidden">
-                      <div
-                        className={`h-full rounded-full transition-all duration-500 ${status.bar}`}
-                        style={{ width: `${Math.max(5, pct)}%` }}
-                      />
-                    </div>
-
-                    <div className="flex items-center justify-between text-[11px] text-zinc-400 font-mono">
-                      <span>{setsCount} completed sets</span>
-                      <span>Target: 12-16 sets/wk</span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            </CardContent>
           </Card>
         </div>
       )}
 
-      {/* TAB 4: STRENGTH LEVEL STANDARDS */}
+      {/* TAB: STRENGTH STANDARDS */}
       {activeTab === 'strength' && (
         <div className="space-y-6 animate-fade-in">
-          <Card className="p-5 bg-dark-800/90 border-dark-700/80 shadow-xl space-y-4">
-            <div>
-              <h2 className="text-base font-bold text-zinc-100 flex items-center gap-2">
-                <Shield className="w-5 h-5 text-brand-400" />
-                Athletic Strength Classification
-              </h2>
-              <p className="text-xs text-zinc-400 mt-0.5">
-                Evaluates your 1RM personal records against global powerlifting & athletic benchmarks.
-              </p>
-            </div>
+          <Card className="space-y-4">
+            <CardHeader>
+              <div>
+                <CardTitle>
+                  <Shield className="w-5 h-5 text-brand-400" />
+                  Athletic Strength Classification
+                </CardTitle>
+                <CardDescription>
+                  Evaluates your 1RM personal records against global powerlifting & athletic benchmarks.
+                </CardDescription>
+              </div>
+            </CardHeader>
 
-            <div className="space-y-3.5 pt-2">
+            <CardContent className="space-y-3.5 pt-1">
               {strengthStandards.map((std, idx) => (
                 <div
                   key={idx}
-                  className="p-4 rounded-xl bg-dark-900/90 border border-dark-700/80 space-y-3"
+                  className="p-4 rounded-2xl bg-dark-900/90 border border-dark-700/80 space-y-3"
                 >
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <div>
@@ -553,19 +549,13 @@ export const ProgressPage: React.FC = () => {
                       </div>
                     </div>
 
-                    <span className={`px-3 py-1 rounded-full text-xs font-bold border self-start sm:self-auto ${std.badgeColor}`}>
+                    <Badge variant={std.badgeColor} size="md">
                       {std.level}
-                    </span>
+                    </Badge>
                   </div>
 
-                  {/* Level Progress Bar */}
                   <div className="space-y-1">
-                    <div className="w-full bg-dark-800 h-2 rounded-full overflow-hidden">
-                      <div
-                        className="bg-gradient-to-r from-emerald-500 via-blue-500 to-amber-500 h-full rounded-full transition-all duration-500"
-                        style={{ width: `${std.progressPct}%` }}
-                      />
-                    </div>
+                    <ProgressBar value={std.progressPct} color="gradient" size="sm" />
                     <div className="flex justify-between text-[10px] text-zinc-500 font-mono pt-0.5">
                       <span>Beg ({std.beginner}kg)</span>
                       <span>Nov ({std.intermediate}kg)</span>
@@ -575,12 +565,12 @@ export const ProgressPage: React.FC = () => {
                   </div>
                 </div>
               ))}
-            </div>
+            </CardContent>
           </Card>
         </div>
       )}
 
-      {/* TAB 5: PRS HALL OF FAME */}
+      {/* TAB: PRS HALL OF FAME */}
       {activeTab === 'prs' && (
         <div className="space-y-6 animate-fade-in">
           {/* Muscle Filters */}
@@ -589,9 +579,9 @@ export const ProgressPage: React.FC = () => {
               <button
                 key={filter.id}
                 onClick={() => setSelectedMuscle(filter.id)}
-                className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${
+                className={`px-3.5 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
                   selectedMuscle === filter.id
-                    ? 'bg-brand-500 text-dark-950 font-bold shadow-md shadow-brand-500/20'
+                    ? 'bg-brand-500 text-dark-950 shadow-md shadow-brand-500/20'
                     : 'bg-dark-800 text-zinc-400 hover:text-zinc-200 border border-dark-700'
                 }`}
               >
@@ -605,12 +595,13 @@ export const ProgressPage: React.FC = () => {
             {filteredRecordGroups.map((group) => (
               <Card
                 key={group.exercise_id}
-                className="p-5 bg-dark-800/90 border-dark-700/80 shadow-xl space-y-4 hover:border-brand-500/40 transition-all"
+                isHoverable
+                className="space-y-4 hover:border-brand-500/40"
               >
-                <div className="flex items-center justify-between border-b border-dark-700 pb-3">
-                  <div className="flex items-center gap-2">
+                <div className="flex items-center justify-between border-b border-dark-700/70 pb-3">
+                  <div className="flex items-center gap-2.5">
                     <Trophy className="w-5 h-5 text-amber-400" />
-                    <h3 className="text-sm font-bold text-zinc-100">{group.exercise_name}</h3>
+                    <h3 className="text-sm font-black text-white">{group.exercise_name}</h3>
                   </div>
                 </div>
 
@@ -649,71 +640,71 @@ export const ProgressPage: React.FC = () => {
         </div>
       )}
 
-      {/* TAB 6: 1RM PERCENTAGE CALCULATOR */}
+      {/* TAB: 1RM PERCENTAGE CALCULATOR */}
       {activeTab === 'calculator' && (
         <div className="space-y-6 animate-fade-in">
-          <Card className="p-6 bg-dark-800/90 border-dark-700/80 shadow-2xl space-y-6">
-            <div className="border-b border-dark-700 pb-4">
-              <h2 className="text-lg font-bold text-zinc-100 flex items-center gap-2">
-                <Calculator className="w-5 h-5 text-brand-400" />
-                One-Rep Max & Working Percentages Calculator
-              </h2>
-              <p className="text-xs text-zinc-400 mt-1">
-                Enter your lift and reps to calculate theoretical 1RM and customized working loads for your training blocks.
-              </p>
-            </div>
+          <Card className="space-y-6">
+            <CardHeader>
+              <div>
+                <CardTitle>
+                  <Calculator className="w-5 h-5 text-brand-400" />
+                  One-Rep Max & Working Percentages Calculator
+                </CardTitle>
+                <CardDescription>
+                  Enter your lift and reps to calculate theoretical 1RM and customized working loads for your training blocks.
+                </CardDescription>
+              </div>
+            </CardHeader>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-zinc-300 uppercase">Weight Lifted ({unitPref.toUpperCase()})</label>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <Input
+                  label={`Weight Lifted (${unitPref.toUpperCase()})`}
                   type="number"
                   value={calcWeight}
                   onChange={(e) => setCalcWeight(Number(e.target.value))}
-                  className="bg-dark-900 border-dark-700 font-mono text-base font-bold text-brand-400"
+                  className="font-mono text-base font-bold text-brand-400"
                 />
-              </div>
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-zinc-300 uppercase">Reps Completed</label>
                 <Input
+                  label="Reps Completed"
                   type="number"
                   value={calcReps}
                   onChange={(e) => setCalcReps(Number(e.target.value))}
-                  className="bg-dark-900 border-dark-700 font-mono text-base font-bold text-blue-400"
+                  className="font-mono text-base font-bold text-blue-400"
                 />
-              </div>
 
-              <div className="p-4 rounded-xl bg-gradient-to-br from-dark-900 to-brand-950/40 border border-brand-500/30 flex flex-col justify-center items-center">
-                <div className="text-[11px] text-zinc-400 uppercase font-semibold">Estimated 1RM</div>
-                <div className="text-2xl font-black text-brand-400 font-mono">
-                  {formatWeight(calculated1RM, unitPref)}
+                <div className="p-4 rounded-2xl bg-gradient-to-br from-dark-900 to-brand-950/40 border border-brand-500/30 flex flex-col justify-center items-center">
+                  <div className="text-[11px] text-zinc-400 uppercase font-bold">Estimated 1RM</div>
+                  <div className="text-2xl font-black text-brand-400 font-mono">
+                    {formatWeight(calculated1RM, unitPref)}
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* Percentage Table */}
-            <div className="space-y-2">
-              <h3 className="text-xs font-bold text-zinc-300 uppercase tracking-wider">
-                Working Load Percentages Matrix
-              </h3>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                {percentageTable.map((item) => (
-                  <div
-                    key={item.percentage}
-                    className="p-3 rounded-xl bg-dark-900/80 border border-dark-750 flex flex-col justify-between space-y-1"
-                  >
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="font-bold text-zinc-300">{item.percentage}%</span>
-                      <span className="text-[10px] text-zinc-500 font-mono">{item.repsGoal}</span>
+              {/* Percentage Table */}
+              <div className="space-y-2.5">
+                <h3 className="text-xs font-bold text-zinc-300 uppercase tracking-wider">
+                  Working Load Percentages Matrix
+                </h3>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                  {percentageTable.map((item) => (
+                    <div
+                      key={item.percentage}
+                      className="p-3.5 rounded-xl bg-dark-900/80 border border-dark-750 flex flex-col justify-between space-y-1"
+                    >
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-bold text-zinc-300">{item.percentage}%</span>
+                        <span className="text-[10px] text-zinc-500 font-mono">{item.repsGoal}</span>
+                      </div>
+                      <div className="text-sm font-black text-brand-400 font-mono">
+                        {formatWeight(item.weightKg, unitPref)}
+                      </div>
                     </div>
-                    <div className="text-sm font-extrabold text-brand-400 font-mono">
-                      {formatWeight(item.weightKg, unitPref)}
-                    </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
+            </CardContent>
           </Card>
         </div>
       )}

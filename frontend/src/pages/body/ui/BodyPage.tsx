@@ -6,10 +6,12 @@ import {
   Trash2,
   Calculator,
   Calendar,
+  Sparkles,
+  Layers,
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../../shared/api/client.ts';
-import { Card } from '../../../shared/ui/card.tsx';
+import { Card, CardHeader, CardTitle, CardContent, Badge } from '../../../shared/ui/card.tsx';
 import { Button } from '../../../shared/ui/button.tsx';
 import { Input } from '../../../shared/ui/input.tsx';
 import { formatWeight, lbToKg, kgToLb } from '../../../shared/lib/units.ts';
@@ -27,6 +29,7 @@ interface BodyLog {
   chest_cm?: number | null;
   arms_cm?: number | null;
   thighs_cm?: number | null;
+  calves_cm?: number | null;
   neck_cm?: number | null;
   calculated_bmi?: number | null;
 }
@@ -63,6 +66,7 @@ export const BodyPage: React.FC = () => {
   const [waistCm, setWaistCm] = useState('');
   const [chestCm, setChestCm] = useState('');
   const [armsCm, setArmsCm] = useState('');
+  const [neckCm, setNeckCm] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [showCalculator, setShowCalculator] = useState(true);
 
@@ -117,6 +121,7 @@ export const BodyPage: React.FC = () => {
           waist_cm: waistCm ? parseFloat(waistCm) : undefined,
           chest_cm: chestCm ? parseFloat(chestCm) : undefined,
           arms_cm: armsCm ? parseFloat(armsCm) : undefined,
+          neck_cm: neckCm ? parseFloat(neckCm) : undefined,
         }),
       });
     },
@@ -128,6 +133,7 @@ export const BodyPage: React.FC = () => {
       setWaistCm('');
       setChestCm('');
       setArmsCm('');
+      setNeckCm('');
       setError(null);
     },
     onError: (err: any) => {
@@ -149,17 +155,19 @@ export const BodyPage: React.FC = () => {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Header */}
+      {/* Header Banner */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl font-extrabold tracking-tight text-white flex items-center gap-2">
-            <span>Body Composition & BMI Tracker</span>
-            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-brand-500/20 text-brand-400 border border-brand-500/30">
-              Health Hub
-            </span>
+          <h1 className="text-2xl font-black tracking-tight text-white flex items-center gap-2.5">
+            <Scale className="w-6 h-6 text-brand-400" />
+            <span>Body Composition & BMI Hub</span>
+            <Badge variant="brand" size="sm">
+              <Sparkles className="w-3 h-3 mr-1" />
+              Health Analytics
+            </Badge>
           </h1>
-          <p className="text-xs text-zinc-400 mt-0.5">
-            Log your daily weight, monitor 7-day moving averages (SMA), calculate BMI and metabolic expenditure.
+          <p className="text-xs text-zinc-400 mt-1">
+            Log your daily weigh-ins, monitor 7-day moving averages (SMA), track waist & body circumferences.
           </p>
         </div>
 
@@ -215,7 +223,7 @@ export const BodyPage: React.FC = () => {
                 {numHeight > 0 ? calculateBMI(trend.current_weight_kg, numHeight).toFixed(1) : '—'}
               </span>
               {numHeight > 0 && (
-                <span className="text-[10px] font-sans font-bold px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                <span className={`text-[9px] font-sans font-bold px-1.5 py-0.2 rounded border ${getBMICategory(calculateBMI(trend.current_weight_kg, numHeight)).bgColor} ${getBMICategory(calculateBMI(trend.current_weight_kg, numHeight)).textColor} ${getBMICategory(calculateBMI(trend.current_weight_kg, numHeight)).borderColor}`}>
                   {getBMICategory(calculateBMI(trend.current_weight_kg, numHeight)).labelRu}
                 </span>
               )}
@@ -253,157 +261,154 @@ export const BodyPage: React.FC = () => {
       )}
 
       {/* Daily Log Input Form */}
-      <Card className="p-5 bg-dark-800/90 border-dark-700/80 space-y-4 shadow-xl">
-        <div className="flex items-center justify-between border-b border-dark-700/70 pb-3">
+      <Card className="space-y-4">
+        <CardHeader>
           <div className="flex items-center gap-2">
             <Scale className="w-4 h-4 text-brand-400" />
-            <h2 className="text-sm font-bold uppercase tracking-wider text-zinc-200">
-              Log Weigh-In & Measurements
-            </h2>
+            <CardTitle className="text-sm">Log Weigh-In & Circumference Measurements</CardTitle>
           </div>
-          <span className="text-[11px] text-zinc-400 font-mono">
-            Active Unit: <strong className="text-brand-400">{unitPref.toUpperCase()}</strong>
-          </span>
-        </div>
+          <Badge variant="brand" size="sm">
+            Active: {unitPref.toUpperCase()}
+          </Badge>
+        </CardHeader>
 
-        {error && (
-          <div className="p-3 bg-red-950/50 border border-red-800/60 rounded-xl text-red-300 text-xs">
-            {error}
+        <CardContent className="space-y-4">
+          {error && (
+            <div className="p-3 bg-red-950/50 border border-red-800/60 rounded-xl text-red-300 text-xs">
+              {error}
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-zinc-300 mb-1">
+                Date *
+              </label>
+              <input
+                type="date"
+                value={logDate}
+                onChange={(e) => setLogDate(e.target.value)}
+                className="w-full bg-dark-900 border border-dark-700 rounded-xl px-3.5 py-2 text-xs font-mono text-white focus:outline-none focus:border-brand-500"
+              />
+            </div>
+
+            <div>
+              <Input
+                label={`Body Weight (${unitPref.toUpperCase()}) *`}
+                type="number"
+                step="0.1"
+                placeholder={unitPref === 'lb' ? '175.5' : '80.0'}
+                value={weightInput}
+                onChange={(e) => setWeightInput(e.target.value)}
+                className="font-mono font-bold"
+              />
+            </div>
+
+            <div>
+              <Input
+                label="Height (cm, for BMI)"
+                type="number"
+                placeholder="180"
+                value={heightCm}
+                onChange={(e) => setHeightCm(e.target.value)}
+                className="font-mono font-bold"
+              />
+            </div>
           </div>
-        )}
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
-          <div>
-            <label className="block text-xs font-semibold text-zinc-400 mb-1">
-              Date *
-            </label>
-            <input
-              type="date"
-              value={logDate}
-              onChange={(e) => setLogDate(e.target.value)}
-              className="w-full bg-dark-900 border border-dark-700 rounded-xl px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-brand-500"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-zinc-400 mb-1">
-              Body Weight ({unitPref.toUpperCase()}) *
-            </label>
-            <Input
-              type="number"
-              step="0.1"
-              placeholder={unitPref === 'lb' ? '175.5' : '80.0'}
-              value={weightInput}
-              onChange={(e) => setWeightInput(e.target.value)}
-              className="font-mono font-bold"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-zinc-400 mb-1">
-              Height (cm, for BMI)
-            </label>
-            <Input
-              type="number"
-              placeholder="180"
-              value={heightCm}
-              onChange={(e) => setHeightCm(e.target.value)}
-              className="font-mono font-bold"
-            />
-          </div>
-        </div>
-
-        {/* Live BMI preview banner during input */}
-        {liveBMI > 0 && (
-          <div className="p-3 rounded-xl bg-dark-900/90 border border-dark-700/80 flex items-center justify-between text-xs">
-            <div className="flex items-center gap-2">
-              <span className="text-zinc-400 font-medium">Calculated BMI:</span>
-              <strong className="font-mono font-bold text-white text-sm">{liveBMI.toFixed(1)}</strong>
-              <span className={`px-2 py-0.5 rounded text-[11px] font-bold border ${liveBMICat.bgColor} ${liveBMICat.textColor} ${liveBMICat.borderColor}`}>
-                {liveBMICat.labelRu}
+          {/* Live BMI preview banner during input */}
+          {liveBMI > 0 && (
+            <div className="p-3.5 rounded-2xl bg-dark-900/90 border border-dark-700/80 flex items-center justify-between text-xs">
+              <div className="flex items-center gap-2.5">
+                <span className="text-zinc-400 font-medium">Calculated BMI:</span>
+                <strong className="font-mono font-black text-white text-base">{liveBMI.toFixed(1)}</strong>
+                <Badge variant={liveBMICat.category === 'normal' ? 'success' : liveBMICat.category === 'underweight' ? 'info' : 'warning'}>
+                  {liveBMICat.labelRu}
+                </Badge>
+              </div>
+              <span className="text-[11px] text-zinc-400 font-mono">
+                WHO Standard Range
               </span>
             </div>
-            <span className="text-[11px] text-zinc-400">
-              WHO Standard
+          )}
+
+          {/* Body Circumferences */}
+          <div className="space-y-1.5 pt-1">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1">
+              <Layers className="w-3.5 h-3.5" />
+              Body Circumferences (Optional for Body Fat & Composition)
             </span>
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
+              <Input
+                label="Body Fat %"
+                type="number"
+                step="0.1"
+                placeholder="15.0"
+                value={bodyFat}
+                onChange={(e) => setBodyFat(e.target.value)}
+                className="font-mono text-xs"
+              />
+              <Input
+                label="Waist (cm)"
+                type="number"
+                step="0.1"
+                placeholder="82.0"
+                value={waistCm}
+                onChange={(e) => setWaistCm(e.target.value)}
+                className="font-mono text-xs"
+              />
+              <Input
+                label="Chest (cm)"
+                type="number"
+                step="0.1"
+                placeholder="102.0"
+                value={chestCm}
+                onChange={(e) => setChestCm(e.target.value)}
+                className="font-mono text-xs"
+              />
+              <Input
+                label="Arms (cm)"
+                type="number"
+                step="0.1"
+                placeholder="38.5"
+                value={armsCm}
+                onChange={(e) => setArmsCm(e.target.value)}
+                className="font-mono text-xs"
+              />
+              <Input
+                label="Neck (cm)"
+                type="number"
+                step="0.1"
+                placeholder="38.0"
+                value={neckCm}
+                onChange={(e) => setNeckCm(e.target.value)}
+                className="font-mono text-xs"
+              />
+            </div>
           </div>
-        )}
 
-        {/* Optional Circumferences */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-1">
-          <div>
-            <label className="block text-[10px] font-semibold uppercase tracking-wider text-zinc-400 mb-1">
-              Body Fat (%)
-            </label>
-            <Input
-              type="number"
-              step="0.1"
-              placeholder="15.0"
-              value={bodyFat}
-              onChange={(e) => setBodyFat(e.target.value)}
-              className="font-mono text-xs"
-            />
+          <div className="flex items-center justify-end pt-3 border-t border-dark-700/60">
+            <Button
+              variant="primary"
+              size="sm"
+              isLoading={logMutation.isPending}
+              onClick={() => logMutation.mutate()}
+              disabled={!weightInput}
+              className="px-6"
+            >
+              Save Weigh-In
+            </Button>
           </div>
-          <div>
-            <label className="block text-[10px] font-semibold uppercase tracking-wider text-zinc-400 mb-1">
-              Waist (cm)
-            </label>
-            <Input
-              type="number"
-              step="0.1"
-              placeholder="82.0"
-              value={waistCm}
-              onChange={(e) => setWaistCm(e.target.value)}
-              className="font-mono text-xs"
-            />
-          </div>
-          <div>
-            <label className="block text-[10px] font-semibold uppercase tracking-wider text-zinc-400 mb-1">
-              Chest (cm)
-            </label>
-            <Input
-              type="number"
-              step="0.1"
-              placeholder="102.0"
-              value={chestCm}
-              onChange={(e) => setChestCm(e.target.value)}
-              className="font-mono text-xs"
-            />
-          </div>
-          <div>
-            <label className="block text-[10px] font-semibold uppercase tracking-wider text-zinc-400 mb-1">
-              Arms (cm)
-            </label>
-            <Input
-              type="number"
-              step="0.1"
-              placeholder="38.5"
-              value={armsCm}
-              onChange={(e) => setArmsCm(e.target.value)}
-              className="font-mono text-xs"
-            />
-          </div>
-        </div>
-
-        <div className="flex items-center justify-end pt-2 border-t border-dark-700/60">
-          <Button
-            variant="primary"
-            size="sm"
-            isLoading={logMutation.isPending}
-            onClick={() => logMutation.mutate()}
-            disabled={!weightInput}
-            className="font-bold text-xs shadow-md shadow-brand-500/20 px-5"
-          >
-            Save Weigh-In
-          </Button>
-        </div>
+        </CardContent>
       </Card>
 
       {/* Measurement Logs Table */}
       <div className="space-y-3">
-        <h2 className="text-sm font-bold uppercase tracking-wider text-zinc-400 flex items-center justify-between">
-          <span>Weigh-In & Metric History ({logs.length})</span>
-        </h2>
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-extrabold uppercase tracking-wider text-zinc-300">
+            Weigh-In & Metric History ({logs.length})
+          </h2>
+        </div>
 
         {isLoadingLogs ? (
           <div className="h-36 bg-dark-800/60 rounded-2xl border border-dark-700 animate-pulse" />
@@ -415,59 +420,59 @@ export const BodyPage: React.FC = () => {
             </p>
           </div>
         ) : (
-          <Card className="bg-dark-800/90 border-dark-700 overflow-hidden shadow-xl">
+          <Card className="p-0 overflow-hidden shadow-xl border-dark-700">
             <div className="overflow-x-auto">
               <table className="w-full text-xs font-mono">
                 <thead>
-                  <tr className="border-b border-dark-700 text-zinc-400 uppercase text-[10px] text-left bg-dark-900/50">
-                    <th className="py-3 px-3.5">Date</th>
-                    <th className="py-3 px-3.5">Weight</th>
-                    <th className="py-3 px-3.5">BMI</th>
-                    <th className="py-3 px-3.5">Body Fat</th>
-                    <th className="py-3 px-3.5">Waist</th>
-                    <th className="py-3 px-3.5 text-right">Actions</th>
+                  <tr className="border-b border-dark-700 text-zinc-400 uppercase text-[10px] text-left bg-dark-900/70">
+                    <th className="py-3 px-4">Date</th>
+                    <th className="py-3 px-4">Weight</th>
+                    <th className="py-3 px-4">BMI</th>
+                    <th className="py-3 px-4">Body Fat</th>
+                    <th className="py-3 px-4">Waist</th>
+                    <th className="py-3 px-4 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-dark-700/50">
-                  {logs.map((log) => {
+                  {logs.slice().reverse().map((log) => {
                     const itemBmi = log.calculated_bmi ?? (numHeight > 0 ? calculateBMI(log.weight_kg, numHeight) : null);
                     const cat = itemBmi ? getBMICategory(itemBmi) : null;
 
                     return (
                       <tr key={log.id} className="hover:bg-dark-700/30 transition-colors">
-                        <td className="py-3 px-3.5 text-zinc-300 font-sans flex items-center gap-1.5">
+                        <td className="py-3 px-4 text-zinc-300 font-sans flex items-center gap-1.5">
                           <Calendar className="w-3.5 h-3.5 text-zinc-500" />
                           <span>{log.log_date}</span>
                         </td>
-                        <td className="py-3 px-3.5 text-white font-bold">
+                        <td className="py-3 px-4 text-white font-bold">
                           {formatWeight(log.weight_kg, unitPref)}
                         </td>
-                        <td className="py-3 px-3.5">
+                        <td className="py-3 px-4">
                           {itemBmi ? (
                             <div className="flex items-center gap-1.5">
                               <span className="font-bold text-white">{itemBmi.toFixed(1)}</span>
                               {cat && (
-                                <span className={`text-[9px] font-sans font-semibold px-1.5 py-0.2 rounded border ${cat.bgColor} ${cat.textColor} ${cat.borderColor}`}>
+                                <Badge variant={cat.category === 'normal' ? 'success' : cat.category === 'underweight' ? 'info' : 'warning'} size="sm">
                                   {cat.labelRu}
-                                </span>
+                                </Badge>
                               )}
                             </div>
                           ) : (
                             <span className="text-zinc-600">—</span>
                           )}
                         </td>
-                        <td className="py-3 px-3.5 text-zinc-300">
+                        <td className="py-3 px-4 text-zinc-300">
                           {log.body_fat_percentage !== undefined && log.body_fat_percentage !== null
                             ? `${log.body_fat_percentage.toFixed(1)}%`
                             : '—'}
                         </td>
-                        <td className="py-3 px-3.5 text-zinc-400">
+                        <td className="py-3 px-4 text-zinc-400">
                           {log.waist_cm ? `${log.waist_cm} cm` : '—'}
                         </td>
-                        <td className="py-3 px-3.5 text-right">
+                        <td className="py-3 px-4 text-right">
                           <button
                             onClick={() => deleteMutation.mutate(log.log_date)}
-                            className="text-zinc-500 hover:text-red-400 p-1 rounded-lg hover:bg-dark-700 transition-colors"
+                            className="text-zinc-500 hover:text-red-400 p-1.5 rounded-lg hover:bg-dark-700 transition-colors cursor-pointer"
                             title="Delete measurement"
                           >
                             <Trash2 className="w-3.5 h-3.5" />

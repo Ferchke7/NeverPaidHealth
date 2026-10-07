@@ -8,7 +8,11 @@ import {
   getIdealWeightRange,
   calculateBMR,
   calculateTDEE,
+  estimateBodyFatPercentage,
+  calculateNavyBodyFat,
+  calculateMacroSplit,
 } from './calculations.ts';
+import { cmToFtIn, ftInToCm, kgToLb, lbToKg } from './units.ts';
 
 describe('Calculations Contract Parity', () => {
   describe('E1RM (Epley Formula)', () => {
@@ -46,12 +50,6 @@ describe('Calculations Contract Parity', () => {
         { weight_kg: 100.0, reps: 5, type: 'normal', completed: false },
         { weight_kg: 90.0, reps: 6, type: 'drop', completed: true },
       ];
-
-      // Set 1: 100 * 5 = 500
-      // Set 2: warmup -> 0
-      // Set 3: uncompleted -> 0
-      // Set 4: 90 * 6 = 540
-      // Total: 500 + 540 = 1040
       expect(calculateVolume(sets)).toBe(1040.0);
     });
   });
@@ -105,6 +103,46 @@ describe('Calculations Contract Parity', () => {
 
     it('calculates TDEE with moderate multiplier (1.55) -> 2798 kcal', () => {
       expect(calculateTDEE(1805, 1.55)).toBe(2798);
+    });
+  });
+
+  describe('Body Fat Estimation & Macros', () => {
+    it('estimates body fat percentage using Deurenberg formula', () => {
+      const bf = estimateBodyFatPercentage(24.7, 25, 'male');
+      expect(bf).toBeGreaterThan(15);
+      expect(bf).toBeLessThan(25);
+    });
+
+    it('calculates US Navy body fat for male', () => {
+      // 180cm height, 38cm neck, 84cm waist
+      const navyBf = calculateNavyBodyFat(180, 38, 84, undefined, 'male');
+      expect(navyBf).not.toBeNull();
+      expect(navyBf).toBeGreaterThan(10);
+      expect(navyBf).toBeLessThan(20);
+    });
+
+    it('calculates macro splits for 80kg at 2500 kcal', () => {
+      const macros = calculateMacroSplit(80, 2500, 'maintain');
+      expect(macros.proteinG).toBe(160); // 80 * 2.0
+      expect(macros.fatG).toBe(72);     // 80 * 0.9
+      expect(macros.carbG).toBeGreaterThan(200);
+    });
+  });
+
+  describe('Unit Conversions', () => {
+    it('converts cm to ft/in and back accurately', () => {
+      const { feet, inches } = cmToFtIn(180);
+      expect(feet).toBe(5);
+      expect(Math.round(inches)).toBe(11);
+
+      const cmBack = ftInToCm(5, 11);
+      expect(Math.abs(cmBack - 180.3)).toBeLessThan(1);
+    });
+
+    it('converts kg and lb symmetrically', () => {
+      const lb = kgToLb(80);
+      expect(lb).toBe(176.4);
+      expect(lbToKg(lb)).toBe(80);
     });
   });
 });
