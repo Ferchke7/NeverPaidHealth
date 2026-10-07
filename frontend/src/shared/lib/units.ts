@@ -9,11 +9,13 @@ export function lbToKg(lb: number): number {
   return Math.round(lb * LB_TO_KG * 10) / 10;
 }
 
-export function formatWeight(kg: number, unit: 'kg' | 'lb'): string {
+export function formatWeight(kg: number, unit: 'kg' | 'lb' = 'kg'): string {
   if (unit === 'lb') {
-    return `${kgToLb(kg)} lb`;
+    const val = kgToLb(kg);
+    return Number.isInteger(val) ? `${val} lb` : `${val.toFixed(1)} lb`;
   }
-  return `${kg.toFixed(1)} kg`;
+  const cleanKg = Math.round(kg * 10) / 10;
+  return Number.isInteger(cleanKg) ? `${cleanKg} kg` : `${cleanKg.toFixed(1)} kg`;
 }
 
 // Calculate E1RM via Epley formula

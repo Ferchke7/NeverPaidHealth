@@ -74,37 +74,61 @@ export const ActiveWorkoutSheet: React.FC = () => {
     const prevMap = new Map<string, PreviousSetData[]>();
     const personalRecordMap = new Map<string, PreviousSetData>();
 
-    if (!historyData?.items) return { previousExerciseMap: prevMap, prMap: personalRecordMap };
+    const items: WorkoutHistoryItem[] = Array.isArray(historyData)
+      ? historyData
+      : (historyData?.items || []);
+
+    if (!items.length) return { previousExerciseMap: prevMap, prMap: personalRecordMap };
 
     // Sort finished workouts newest first
-    const sorted = [...historyData.items].sort(
-      (a, b) => new Date(b.started_at).getTime() - new Date(a.started_at).getTime()
+    const sorted = [...items].sort(
+      (a, b) =>
+        new Date(b.started_at || (b as any).startedAt || 0).getTime() -
+        new Date(a.started_at || (a as any).startedAt || 0).getTime()
     );
 
     for (const w of sorted) {
       if (!w.exercises) continue;
       for (const ex of w.exercises) {
-        const keyId = ex.exercise_id ? ex.exercise_id.toLowerCase() : null;
-        const keyName = ex.exercise_name ? ex.exercise_name.toLowerCase().trim() : null;
+        const rawId = (ex as any).exercise_id || (ex as any).exerciseId || (ex as any).id;
+        const keyId = rawId ? String(rawId).toLowerCase() : null;
+        const rawName = (ex as any).exercise_name || (ex as any).exerciseName || (ex as any).name || '';
+        const keyName = rawName.toLowerCase().trim();
+        const cleanKeyName = keyName.replace(/[^a-z0-9]/g, '');
 
-        const validSets: PreviousSetData[] = (ex.sets || [])
-          .filter((s) => s.completed || (s.weight_kg > 0 || s.reps > 0))
-          .map((s) => ({
-            weightKg: s.weight_kg,
-            reps: s.reps,
+        const setsArray = (ex as any).sets || [];
+        const validSets: PreviousSetData[] = setsArray
+          .filter(
+            (s: any) =>
+              s.completed ||
+              Number(s.weight_kg ?? s.weightKg ?? s.weight ?? 0) > 0 ||
+              Number(s.reps ?? s.target_reps ?? s.targetReps ?? 0) > 0
+          )
+          .map((s: any) => ({
+            weightKg: Number(s.weight_kg ?? s.weightKg ?? s.weight ?? 0) || 0,
+            reps: Number(s.reps ?? s.target_reps ?? s.targetReps ?? 0) || 0,
           }));
 
         if (validSets.length > 0) {
           // Record most recent session's sets for the previous column
           if (keyId && !prevMap.has(keyId)) prevMap.set(keyId, validSets);
           if (keyName && !prevMap.has(keyName)) prevMap.set(keyName, validSets);
+          if (cleanKeyName && !prevMap.has(cleanKeyName)) prevMap.set(cleanKeyName, validSets);
 
           // Update all-time max PR for this exercise
           for (const s of validSets) {
-            const currentPR = (keyId && personalRecordMap.get(keyId)) || (keyName && personalRecordMap.get(keyName));
-            if (!currentPR || s.weightKg > currentPR.weightKg || (s.weightKg === currentPR.weightKg && s.reps > currentPR.reps)) {
+            const currentPR =
+              (keyId && personalRecordMap.get(keyId)) ||
+              (keyName && personalRecordMap.get(keyName)) ||
+              (cleanKeyName && personalRecordMap.get(cleanKeyName));
+            if (
+              !currentPR ||
+              s.weightKg > currentPR.weightKg ||
+              (s.weightKg === currentPR.weightKg && s.reps > currentPR.reps)
+            ) {
               if (keyId) personalRecordMap.set(keyId, s);
               if (keyName) personalRecordMap.set(keyName, s);
+              if (cleanKeyName) personalRecordMap.set(cleanKeyName, s);
             }
           }
         }
@@ -112,7 +136,7 @@ export const ActiveWorkoutSheet: React.FC = () => {
     }
 
     return { previousExerciseMap: prevMap, prMap: personalRecordMap };
-  }, [historyData?.items]);
+  }, [historyData]);
 
   // Elapsed workout stopwatch
   useEffect(() => {
@@ -398,8 +422,15 @@ export const ActiveWorkoutSheet: React.FC = () => {
               workout.exercises.map((exercise, exIndex) => {
                 const keyId = exercise.exerciseId?.toLowerCase();
                 const keyName = exercise.exerciseName?.toLowerCase().trim();
-                const prevList = (keyId && previousExerciseMap.get(keyId)) || (keyName && previousExerciseMap.get(keyName));
-                const prRecord = (keyId && prMap.get(keyId)) || (keyName && prMap.get(keyName));
+                const cleanKeyName = keyName ? keyName.replace(/[^a-z0-9]/g, '') : null;
+                const prevList =
+                  (keyId && previousExerciseMap.get(keyId)) ||
+                  (keyName && previousExerciseMap.get(keyName)) ||
+                  (cleanKeyName && previousExerciseMap.get(cleanKeyName));
+                const prRecord =
+                  (keyId && prMap.get(keyId)) ||
+                  (keyName && prMap.get(keyName)) ||
+                  (cleanKeyName && prMap.get(cleanKeyName));
 
                 return (
                   <div

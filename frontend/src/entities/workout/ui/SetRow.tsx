@@ -43,16 +43,16 @@ export const SetRow: React.FC<SetRowProps> = ({
   const handleCopyPrevious = () => {
     if (!previousSet) return;
     onUpdate({
-      weightKg: previousSet.weightKg,
-      reps: previousSet.reps,
+      weightKg: Number(previousSet.weightKg) || 0,
+      reps: Number(previousSet.reps) || 10,
     });
   };
 
-  const hasPrevious = previousSet && (previousSet.weightKg > 0 || previousSet.reps > 0);
-  const previousText = hasPrevious
-    ? previousSet.weightKg > 0
-      ? `${formatWeight(previousSet.weightKg, unit)} × ${previousSet.reps}`
-      : `${previousSet.reps} reps`
+  const hasPrevious = Boolean(
+    previousSet && (Number(previousSet.weightKg) > 0 || Number(previousSet.reps) > 0)
+  );
+  const previousText = hasPrevious && previousSet
+    ? `${formatWeight(Number(previousSet.weightKg) || 0, unit)} × ${Number(previousSet.reps) || 0}`
     : '—';
 
   return (
