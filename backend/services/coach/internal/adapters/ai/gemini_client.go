@@ -113,36 +113,32 @@ func (p *CompositeAIProvider) getCandidateModels(ctx context.Context, key string
 			return
 		}
 
-		// Preferred order: High-availability fast multimodal models first
+		// Preferred order: High-availability fast multimodal models first (tested live)
 		priorityKeywords := []string{
+			"gemini-robotics-er-2-preview",
+			"gemini-3.5-flash",
+			"gemma-4-26b-a4b-it",
 			"gemini-3.1-flash-lite",
+			"gemini-flash-latest",
 			"gemini-flash-lite-latest",
-			"gemini-2.5-flash-lite",
+			"gemini-3.6-flash",
 			"gemini-3.7-flash",
 			"gemini-3.8-flash",
-			"gemini-3.6-flash",
-			"gemini-3.5-flash",
-			"gemini-flash-latest",
-			"gemini-pro-latest",
-			"gemini-2.5-flash",
-			"gemini-2.5-pro",
 		}
 
 		rawValid := []string{}
 		for _, m := range res.Models {
 			name := strings.TrimPrefix(m.Name, "models/")
-			// Filter out non-vision, generation-only, or experimental models
+			// Filter out audio-only, text-embedding, or video models
 			if strings.Contains(name, "tts") ||
 				strings.Contains(name, "lyria") ||
 				strings.Contains(name, "transcribe") ||
-				strings.Contains(name, "robotics") ||
 				strings.Contains(name, "clip") ||
 				strings.Contains(name, "image") ||
-				strings.Contains(name, "gemma") ||
+				strings.Contains(name, "embedding") ||
 				strings.Contains(name, "banana") ||
 				strings.Contains(name, "deep-research") ||
 				strings.Contains(name, "antigravity") ||
-				strings.Contains(name, "computer-use") ||
 				strings.Contains(name, "customtools") {
 				continue
 			}
@@ -194,13 +190,11 @@ func (p *CompositeAIProvider) getCandidateModels(ctx context.Context, key string
 
 	// Fallback list if discovery returned nothing
 	return []string{
-		"gemini-3.1-flash-lite",
-		"gemini-flash-lite-latest",
-		"gemini-3.7-flash",
-		"gemini-3.8-flash",
+		"gemini-robotics-er-2-preview",
 		"gemini-3.5-flash",
+		"gemma-4-26b-a4b-it",
+		"gemini-3.1-flash-lite",
 		"gemini-flash-latest",
-		"gemini-pro-latest",
 	}
 }
 
@@ -350,43 +344,34 @@ func (p *CompositeAIProvider) callGemini(ctx context.Context, req coach.ChatRequ
 		nutritionStats = fmt.Sprintf("Today's Nutrition: %d kcal (Protein: %.1f g)", telemetry.TodayCalories, telemetry.TodayProteinG)
 	}
 
-	systemPrompt := fmt.Sprintf(`You are duda.uz AI Coach — an elite, evidence-based strength & conditioning coach and sports nutritionist.
-The user is named %s.
+	systemPrompt := fmt.Sprintf(`Ты — персональный ИИ-тренер и спортивный нутрициолог duda.uz.
+Имя пользователя: %s.
 
-Current User Profile & Telemetry:
-- %s
-- %s
-- Readiness Score: %d/100 (%s)
-- Weekly Workouts: %d
-- Weekly Total Tonnage: %.1f kg
-- Days Since Last Workout: %d
-- Suggested Split: %s
-- Top Overload Recommendations: %v
-- Active Plateau Alerts: %v
-- Recent Top PRs: %v
+Телеметрия атлета:
+%s | %s | Готовность ЦНС: %d/100 (%s) | Объем 7д: %.0f кг (%d тр.) | Сплит: %s
 
-Guidelines:
-- Give concise, motivating, highly actionable, and scientific fitness & nutrition advice.
-- Always factor in the user's current body weight and protein intake when giving training or nutrition recommendations.
-- Answer in the same language as the user (Russian if user asks in Russian, Uzbek if user asks in Uzbek, English if user asks in English).
-- Focus on progressive overload, recovery, biomechanics, macros, and periodization.
-- When the user sends a photo:
-  A. IF THE PHOTO IS FOOD, A MEAL, DISH, DRINK, OR SNACK:
-     1. Accurately identify the dish or meal name (e.g. "Плов по-чайхански", "Куриная грудка с рисом и брокколи", "Самса с мясом", "Овсяная каша с ягодами", etc.).
-     2. Estimate visual portion weights in grams.
-     3. Provide a clear breakdown of estimated Calories (kcal), Protein (g), Carbohydrates (g), and Fat (g).
-     4. Give practical sports nutrition recommendations (pre/post workout timing, fitting into daily calorie & protein goals).
-  B. IF THE PHOTO IS PHYSIQUE, BODY CHECK, POSTURE, OR EXERCISE FORM:
-     1. Provide a professional, encouraging, and honest assessment of physique, conditioning, posture, and muscular symmetry (chest, shoulders, back, arms, core, legs).
-     2. Estimate approximate body fat percentage range if visible.
-     3. Highlight standout muscle groups and lagging areas with specific exercise selections.
-     4. Give concrete recommendations on nutrition (calorie surplus/deficit, protein target in grams) and training adjustments.`,
-		userName, bodyStats, nutritionStats, telemetry.ReadinessScore, telemetry.RecoveryStatus, telemetry.WeeklyWorkoutsCount,
-		telemetry.WeeklyVolumeKg, telemetry.DaysSinceLastTrain, telemetry.SuggestedSplit,
-		telemetry.OverloadTargets, telemetry.PlateauAlerts, telemetry.RecentTopPRs)
+КЛЮЧЕВЫЕ ПРАВИЛА И СТИЛЬ ОТВЕТА:
+1. КРАТКОСТЬ — СТРОГОЕ ПРАВИЛО:
+   - В среднем ответ должен содержать около 40–60 слов.
+   - Максимум 100 слов. В редких сложных случаях (комплексный план/разбор формы) — максимум до 150–200 слов.
+   - Отвечай сразу по сути, без долгих вступлений, шаблонных приветствий и лишней воды.
+2. СВОБОДНЫЙ ДИАЛОГ:
+   - Отвечай дружелюбно, естественно и емко на ЛЮБЫЕ свободные вопросы пользователя (тренировки, питание, режим, сон, здоровье, самочувствие, мотивация, общение, любые темы).
+3. ЯЗЫК:
+   - Отвечай строго на том же языке, на котором пишет пользователь (русский, узбекский, английский).
+4. ЕСЛИ ПРИКРЕПЛЕНО ФОТО:
+   - Фото еды: назови блюдо, порцию в граммах, точный расчет калорий и БЖУ (Белки, Жиры, Углеводы) и 1-2 кратких совета.
+   - Фото формы/упражнения: кратко оцени пропорции/технику и дай 1-2 конкретных действия.`,
+		userName, bodyStats, nutritionStats, telemetry.ReadinessScore, telemetry.RecoveryStatus,
+		telemetry.WeeklyVolumeKg, telemetry.WeeklyWorkoutsCount, telemetry.SuggestedSplit)
 
 	contents := make([]geminiContent, 0)
-	for _, h := range req.History {
+	// Limit history to last 6 messages for fast responsiveness
+	history := req.History
+	if len(history) > 6 {
+		history = history[len(history)-6:]
+	}
+	for _, h := range history {
 		role := "user"
 		if h.Role == "coach" {
 			role = "model"

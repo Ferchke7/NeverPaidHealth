@@ -27,18 +27,20 @@ func (r *RuleEngineProvider) GenerateChatResponse(
 	var suggestions []string
 
 	if isRussian {
-		reply.WriteString("ℹ️ *[Офлайн база знаний: спортивная наука]*\n\n")
-
 		switch {
+		case strings.Contains(msg, "привет") || strings.Contains(msg, "салам") || strings.Contains(msg, "здравствуй"):
+			reply.WriteString(fmt.Sprintf("Привет, %s! 🦾 Я на связи. Задавай любой вопрос по тренировкам, питанию или прикрепляй фото блюда/формы — отвечу коротко и по делу!", userName))
+			suggestions = []string{
+				"Что тренировать сегодня?",
+				"Сколько белка нужно в день?",
+				"Как прогрессировать в жиме?",
+			}
+
 		case strings.Contains(msg, "восстановлен") || strings.Contains(msg, "объем") || strings.Contains(msg, "отдых") || strings.Contains(msg, "перетрен"):
-			reply.WriteString(fmt.Sprintf("🔋 **Оптимизация восстановления и объема для %s:**\n\n", userName))
-			reply.WriteString(fmt.Sprintf("- **Текущий статус ЦНС:** %d/100 (%s)\n", telemetry.ReadinessScore, telemetry.RecoveryStatus))
-			reply.WriteString(fmt.Sprintf("- **Объем за 7 дней:** %.0f кг (%d тренировок)\n\n", telemetry.WeeklyVolumeKg, telemetry.WeeklyWorkoutsCount))
-			reply.WriteString("📌 **Научные принципы восстановления (по Dr. Mike Israetel & Jeff Nippard):**\n")
-			reply.WriteString("1. **Рабочий объем (MEV -> MAV):** Оптимум для мышечной группы — **10–20 тяжелых подходов в неделю** (RPE 7-9). Если делаешь больше 22 подходов, восстановление резко падает.\n")
-			reply.WriteString("2. **Частота на мышечную группу:** 2 раза в неделю стимулирует синтез белка лучше, чем редкие тренировки 1 раз в неделю.\n")
-			reply.WriteString("3. **Сон и гормоны:** 80% гормона роста и восстановления миофибрилл вырабатывается во время медленного сна (цель: 7.5–8.5 часов).\n")
-			reply.WriteString("4. **Интервал отдыха между подходами:** В базовых движениях (жим, присед, тяга) отдыхай **2.5–3.5 минуты**. В изоляции (бицепс, трицепс, махи) — **1.5–2 минуты**.\n")
+			reply.WriteString(fmt.Sprintf("🔋 **Восстановление (ЦНС: %d%%, %s):**\n\n", telemetry.ReadinessScore, telemetry.RecoveryStatus))
+			reply.WriteString("• **Объем:** 10–18 тяжелых подходов на группу в неделю (RPE 7-8.5).\n")
+			reply.WriteString("• **Сон:** 7.5–8.5 часов для синтеза белка и гормона роста.\n")
+			reply.WriteString("• **Отдых между сетами:** 2.5–3 мин в базе (жим/присед), 1.5–2 мин в изоляции.")
 			suggestions = []string{
 				"Что тренировать сегодня?",
 				"Сколько белка нужно в день?",
@@ -46,29 +48,25 @@ func (r *RuleEngineProvider) GenerateChatResponse(
 			}
 
 		case strings.Contains(msg, "сегодня") || strings.Contains(msg, "план") || strings.Contains(msg, "что тренировать") || strings.Contains(msg, "тренировк"):
-			reply.WriteString(fmt.Sprintf("Привет, %s! 🏋️‍♂️\n\n", userName))
-			reply.WriteString(fmt.Sprintf("**Твоя готовность к тренировке:** %d/100 (%s).\n", telemetry.ReadinessScore, telemetry.RecoveryStatus))
-			reply.WriteString(fmt.Sprintf("**Рекомендованная программа на сегодня:** %s.\n\n", telemetry.SuggestedSplit))
-			reply.WriteString("💡 **Совет тренера:**\n")
+			reply.WriteString(fmt.Sprintf("🏋️‍♂️ **План на сегодня:** `%s`\n\n", telemetry.SuggestedSplit))
+			reply.WriteString(fmt.Sprintf("Готовность ЦНС: **%d/100** (%s). Тоннаж 7д: **%.0f кг**.\n", telemetry.ReadinessScore, telemetry.RecoveryStatus, telemetry.WeeklyVolumeKg))
 			if len(telemetry.OverloadTargets) > 0 {
 				top := telemetry.OverloadTargets[0]
-				reply.WriteString(fmt.Sprintf("- В упражнении **%s** попробуй взять **%.1f кг** на **%d повт.**\n", top.ExerciseName, top.TargetWeightKg, top.TargetReps))
+				reply.WriteString(fmt.Sprintf("🎯 **Цель:** %s — попробуй **%.1f кг × %d повт.**", top.ExerciseName, top.TargetWeightKg, top.TargetReps))
 			} else {
-				reply.WriteString("- Начни с 2 разминочных подходов по 12-15 повторений с 50% веса.\n")
-				reply.WriteString("- В основных подходах держи запас в 1-2 повторения (RPE 8-8.5).\n")
+				reply.WriteString("💡 Держи запас 1–2 повтора (RPE 8) в основных рабочих сетах.")
 			}
 			suggestions = []string{
 				"Как прогрессировать в жиме?",
-				"Проанализируй мой недельный объем",
 				"Сколько отдыхать между подходами?",
+				"Норма белка на сегодня",
 			}
 
 		case strings.Contains(msg, "жим") || strings.Contains(msg, "груд"):
-			reply.WriteString("💪 **Прогрессия в жиме лежа (Evidence-Based):**\n\n")
-			reply.WriteString("1. **Микропериодизация:** Чередуй тяжелый день (4–6 повт., RPE 8.5) и объемный день (8–10 повт., RPE 7.5–8).\n")
-			reply.WriteString("2. **Техника и жесткость:** Своди лопатки, делай контролируемую паузу на груди (1 сек) и используй leg drive (упор ногами в пол).\n")
-			reply.WriteString("3. **Вспомогательные движения:** Добавь отжимания на брусьях с весом и французский жим для укрепления трицепса.\n")
-			reply.WriteString("4. **Шаг прогрессии:** Добавляй по 1.25–2.5 кг только после того, как выполнил все запланированные подходы на верхнюю границу повторений.")
+			reply.WriteString("💪 **Прогрессия в жиме лежа:**\n\n")
+			reply.WriteString("1. Чередуй тяжелый день (4–6 повт.) и объемный день (8–10 повт.).\n")
+			reply.WriteString("2. Своди лопатки, делай паузу 1 сек на груди и используй упор ногами (leg drive).\n")
+			reply.WriteString("3. Шаг веса: +1.25–2.5 кг только после закрытия всех подходов в целевом диапазоне.")
 			suggestions = []string{
 				"Что тренировать сегодня?",
 				"Как преодолеть плато?",
@@ -76,10 +74,10 @@ func (r *RuleEngineProvider) GenerateChatResponse(
 			}
 
 		case strings.Contains(msg, "присед") || strings.Contains(msg, "ног"):
-			reply.WriteString("🦵 **Прогрессия и механика приседаний:**\n\n")
-			reply.WriteString("1. **Глубина и траектория:** Приседай минимум до параллели (тазобедренный сустав на уровне или чуть ниже колена) для полной гипертрофии квадрицепсов и ягодиц.\n")
-			reply.WriteString("2. **Внутрибрюшное давление:** Освой маневр Вальсальвы — глубокий вдох животом и напряжение кора перед опусканием.\n")
-			reply.WriteString("3. **Дополнительный стимул:** Добавь румынскую тягу (RDL) и сгибания ног для баланса квадрицепсов и бицепсов бедра.")
+			reply.WriteString("🦵 **Прогрессия в приседаниях:**\n\n")
+			reply.WriteString("1. Приседай до параллели для максимальной гипертрофии квадрицепсов и ягодиц.\n")
+			reply.WriteString("2. Держи внутрибрюшное давление (маневр Вальсальвы) на всем повторении.\n")
+			reply.WriteString("3. Для баланса обязательно добавь румынскую тягу (RDL) 2–3 раза в неделю.")
 			suggestions = []string{
 				"Что тренировать сегодня?",
 				"Как восстанавливаться быстрее?",
@@ -87,10 +85,10 @@ func (r *RuleEngineProvider) GenerateChatResponse(
 			}
 
 		case strings.Contains(msg, "тяг") || strings.Contains(msg, "спин") || strings.Contains(msg, "подтягиван"):
-			reply.WriteString("🥋 **Развитие мышц спины и тяговых движений:**\n\n")
-			reply.WriteString("1. **Два вектора нагрузки:** Сочетай вертикальные тяги (подтягивания/тяга верхнего блока) для ширины и горизонтальные (тяга штанги в наклоне/тяга гантели) для толщины спины.\n")
-			reply.WriteString("2. **Фокус на сведение лопаток:** Тяни локтями к поясу, а не бицепсом. Делай паузу на пиковом сокращении.\n")
-			reply.WriteString("3. **Лямки:** В тяжелых рабочих подходах используй лямки, чтобы слабый хват не лимитировал целевые мышцы спины.")
+			reply.WriteString("🥋 **Развитие спины:**\n\n")
+			reply.WriteString("1. Сочетай вертикальную тягу (подтягивания) для ширины и горизонтальную (в наклоне) для толщины.\n")
+			reply.WriteString("2. Тяни локтями к поясу с паузой в пиковом сокращении.\n")
+			reply.WriteString("3. В тяжелых сетах используй лямки, чтобы слабый хват не ограничивал спину.")
 			suggestions = []string{
 				"Что тренировать сегодня?",
 				"Как избежать плато?",
@@ -98,11 +96,11 @@ func (r *RuleEngineProvider) GenerateChatResponse(
 			}
 
 		case strings.Contains(msg, "белок") || strings.Contains(msg, "питан") || strings.Contains(msg, "калор") || strings.Contains(msg, "диета"):
-			reply.WriteString("🥩 **Научные нормы питания для силового тренинга:**\n\n")
-			reply.WriteString("1. **Белок:** Оптимально **1.6–2.2 г на 1 кг массы тела** в день. Распределяй на 3–4 приема пищи по 30–45 г белка.\n")
-			reply.WriteString("2. **Углеводы:** Главный источник гликогена для силовых (3–5 г/кг). Принимай порцию сложных углеводов за 1.5–2 часа до тренировки.\n")
-			reply.WriteString("3. **Креатин моногидрат:** 3–5 г ежедневно без фазы загрузки повышает запас фосфокреатина и силовую выносливость на 5–10%.\n")
-			reply.WriteString("4. **Водный баланс:** 35–45 мл воды на 1 кг веса, особенно в дни тяжелых тренировок.")
+			reply.WriteString("🥩 **Нормы спортивного питания:**\n\n")
+			reply.WriteString("• **Белок:** 1.6–2.2 г на 1 кг веса (30–40 г на порцию).\n")
+			reply.WriteString("• **Углеводы:** 3–5 г/кг для энергии и гликогена.\n")
+			reply.WriteString("• **Вода:** 35–40 мл на 1 кг веса тела ежедневно.\n")
+			reply.WriteString("• **Креатин:** 3–5 г ежедневно без фазы загрузки.")
 			suggestions = []string{
 				"Что тренировать сегодня?",
 				"Оптимальное восстановление",
@@ -110,31 +108,14 @@ func (r *RuleEngineProvider) GenerateChatResponse(
 			}
 
 		case strings.Contains(msg, "прогресс") || strings.Contains(msg, "анализ") || strings.Contains(msg, "результат"):
-			reply.WriteString(fmt.Sprintf("📊 **Анализ твоего прогресса, %s:**\n\n", userName))
-			reply.WriteString(fmt.Sprintf("- 📅 Тренировок за 7 дней: **%d**\n", telemetry.WeeklyWorkoutsCount))
-			reply.WriteString(fmt.Sprintf("- ⚖️ Суммарный тоннаж за неделю: **%.0f кг**\n", telemetry.WeeklyVolumeKg))
-			reply.WriteString(fmt.Sprintf("- 🔋 Статус восстановления: **%s** (%d дней с прошлой тренировки)\n\n", telemetry.RecoveryStatus, telemetry.DaysSinceLastTrain))
-
+			reply.WriteString(fmt.Sprintf("📊 **Прогресс %s:** 7 дней: **%d тр.** (тоннаж **%.0f кг**), ЦНС: **%d%%** (%s).\n\n",
+				userName, telemetry.WeeklyWorkoutsCount, telemetry.WeeklyVolumeKg, telemetry.ReadinessScore, telemetry.RecoveryStatus))
 			if len(telemetry.OverloadTargets) > 0 {
-				reply.WriteString("🎯 **Точки роста и прогрессивной перегрузки:**\n")
-				for i, ot := range telemetry.OverloadTargets {
-					if i >= 3 {
-						break
-					}
-					reply.WriteString(fmt.Sprintf("• **%s**: прошлая сессия %.1f кг × %d повт. -> Цель: **%.1f кг × %d повт.**\n", ot.ExerciseName, ot.LastBestWeight, ot.LastBestReps, ot.TargetWeightKg, ot.TargetReps))
-				}
-				reply.WriteString("\n")
-			}
-
-			if len(telemetry.PlateauAlerts) > 0 {
-				reply.WriteString("⚠️ **Внимание: возможное плато:**\n")
-				for _, pl := range telemetry.PlateauAlerts {
-					reply.WriteString(fmt.Sprintf("• **%s**: вес стабилизировался. %s\n", pl.ExerciseName, pl.Advice))
-				}
+				top := telemetry.OverloadTargets[0]
+				reply.WriteString(fmt.Sprintf("🎯 **Ближайшая цель:** %s -> `%.1f кг × %d`.", top.ExerciseName, top.TargetWeightKg, top.TargetReps))
 			} else {
-				reply.WriteString("🚀 **Отличная динамика:** признаков застоя в основных движениях не обнаружено!")
+				reply.WriteString("🚀 Динамика стабильная, перетренированности нет!")
 			}
-
 			suggestions = []string{
 				"Что тренировать сегодня?",
 				"Оптимальное восстановление",
@@ -142,11 +123,10 @@ func (r *RuleEngineProvider) GenerateChatResponse(
 			}
 
 		case strings.Contains(msg, "плато") || strings.Contains(msg, "застой") || strings.Contains(msg, "не растет"):
-			reply.WriteString("🛑 **Стратегия преодоления силового плато:**\n\n")
-			reply.WriteString("1. **Временный Deload (разгрузка):** снизь рабочий вес на 10% на одну неделю, сохранив технику идеальной.\n")
-			reply.WriteString("2. **Смена диапазона повторений:** если делал 8-10 повторений, перейди на 4-6 с более тяжелым весом или 12-15 на памп.\n")
-			reply.WriteString("3. **Акцент на вспомогательные мышцы:** добавь трицепс/дельты для жима или подтягивания узким хватом для тяги.\n")
-			reply.WriteString("4. **Питание и сон:** силовой застой на 70% вызван недостатком калорий или сна (<7 часов).")
+			reply.WriteString("🛑 **Преодоление плато:**\n\n")
+			reply.WriteString("1. Сделай Deload (снизь вес на 10% на неделю).\n")
+			reply.WriteString("2. Смени диапазон (с 8–10 на 4–6 или 12–15).\n")
+			reply.WriteString("3. Проверь калории (+200-300 ккал) и сон (>=8ч).")
 			suggestions = []string{
 				"Рассчитай мой рабочий вес",
 				"Что тренировать сегодня?",
@@ -154,13 +134,8 @@ func (r *RuleEngineProvider) GenerateChatResponse(
 			}
 
 		default:
-			reply.WriteString(fmt.Sprintf("Привет, %s! 🦾\n\n", userName))
-			reply.WriteString(fmt.Sprintf("Твой текущий статус восстановления: **%s** (готовность ЦНС: **%d%%**). За последние 7 дней выполнено **%d тренировок** с тоннажем **%.0f кг**.\n\n", telemetry.RecoveryStatus, telemetry.ReadinessScore, telemetry.WeeklyWorkoutsCount, telemetry.WeeklyVolumeKg))
-			reply.WriteString("Ты можешь спросить меня о:\n")
-			reply.WriteString("- 🏋️ Оптимальной программе на сегодня и периодизации\n")
-			reply.WriteString("- 📈 Прогрессивной перегрузке в жиме, приседе, тягах\n")
-			reply.WriteString("- 🔋 Восстановлении, нормах объема и питании\n")
-			reply.WriteString("- 🛑 Преодолении плато и расчете 1ПМ")
+			reply.WriteString(fmt.Sprintf("Привет, %s! 🦾 Готовность ЦНС: **%d/100** (%s).\n\n", userName, telemetry.ReadinessScore, telemetry.RecoveryStatus))
+			reply.WriteString("Я готов ответить на любой твой вопрос по тренировкам, упражнениям, питанию или оценить фото формы и блюда. Что тебя интересует?")
 			suggestions = []string{
 				"Что тренировать сегодня?",
 				"Оптимальное восстановление",
@@ -169,19 +144,13 @@ func (r *RuleEngineProvider) GenerateChatResponse(
 		}
 	} else {
 		// English Response
-		reply.WriteString("ℹ️ *[Offline Sports Science Knowledge Base]*\n\n")
 		switch {
 		case strings.Contains(msg, "today") || strings.Contains(msg, "plan") || strings.Contains(msg, "workout") || strings.Contains(msg, "train"):
-			reply.WriteString(fmt.Sprintf("Hey %s! 🏋️‍♂️\n\n", userName))
-			reply.WriteString(fmt.Sprintf("**Readiness Score:** %d/100 (%s)\n", telemetry.ReadinessScore, telemetry.RecoveryStatus))
-			reply.WriteString(fmt.Sprintf("**Recommended Session:** %s\n\n", telemetry.SuggestedSplit))
-			reply.WriteString("💡 **Coach's Key Directives:**\n")
+			reply.WriteString(fmt.Sprintf("🏋️‍♂️ **Today's Session:** `%s`\n\n", telemetry.SuggestedSplit))
+			reply.WriteString(fmt.Sprintf("Readiness: **%d/100** (%s). 7-day volume: **%.0f kg**.\n", telemetry.ReadinessScore, telemetry.RecoveryStatus, telemetry.WeeklyVolumeKg))
 			if len(telemetry.OverloadTargets) > 0 {
 				top := telemetry.OverloadTargets[0]
-				reply.WriteString(fmt.Sprintf("- On **%s**, aim for **%.1f kg** for **%d reps**.\n", top.ExerciseName, top.TargetWeightKg, top.TargetReps))
-			} else {
-				reply.WriteString("- Warm up thoroughly with 2 progressive feeder sets at 50% & 70% load.\n")
-				reply.WriteString("- Keep 1-2 reps in reserve (RPE 8) on working compound sets.\n")
+				reply.WriteString(fmt.Sprintf("🎯 **Target:** %s — try **%.1f kg × %d reps**.", top.ExerciseName, top.TargetWeightKg, top.TargetReps))
 			}
 			suggestions = []string{
 				"Analyze my progress",
@@ -189,30 +158,9 @@ func (r *RuleEngineProvider) GenerateChatResponse(
 				"Optimal rest between sets?",
 			}
 
-		case strings.Contains(msg, "progress") || strings.Contains(msg, "analysis") || strings.Contains(msg, "results"):
-			reply.WriteString(fmt.Sprintf("📊 **Progress Breakdown for %s:**\n\n", userName))
-			reply.WriteString(fmt.Sprintf("- 📅 Past 7 Days: **%d Workouts**\n", telemetry.WeeklyWorkoutsCount))
-			reply.WriteString(fmt.Sprintf("- ⚖️ Weekly Volume Tonnage: **%.0f kg**\n", telemetry.WeeklyVolumeKg))
-			reply.WriteString(fmt.Sprintf("- 🔋 Recovery: **%s** (%d days since last session)\n\n", telemetry.RecoveryStatus, telemetry.DaysSinceLastTrain))
-
-			if len(telemetry.OverloadTargets) > 0 {
-				reply.WriteString("🎯 **Next Session Overload Targets:**\n")
-				for i, ot := range telemetry.OverloadTargets {
-					if i >= 3 {
-						break
-					}
-					reply.WriteString(fmt.Sprintf("• **%s**: Last %.1f kg × %d -> Target: **%.1f kg × %d reps**\n", ot.ExerciseName, ot.LastBestWeight, ot.LastBestReps, ot.TargetWeightKg, ot.TargetReps))
-				}
-			}
-			suggestions = []string{
-				"What to train today?",
-				"Plateau breakthrough tips",
-				"Muscle balance analysis",
-			}
-
 		default:
-			reply.WriteString(fmt.Sprintf("Hello %s! I am your NeverPaidHealth Coach. 🦾\n\n", userName))
-			reply.WriteString(fmt.Sprintf("Your current readiness is **%d/100** (%s). Ask me anything regarding progressive overload, workout programming, or plateau busting!", telemetry.ReadinessScore, telemetry.RecoveryStatus))
+			reply.WriteString(fmt.Sprintf("Hey %s! 🦾 Readiness is **%d/100** (%s).\n\n", userName, telemetry.ReadinessScore, telemetry.RecoveryStatus))
+			reply.WriteString("Feel free to ask any question about workout splits, progressive overload, nutrition, or attach a meal/physique photo!")
 			suggestions = []string{
 				"What should I train today?",
 				"Analyze my progress",
