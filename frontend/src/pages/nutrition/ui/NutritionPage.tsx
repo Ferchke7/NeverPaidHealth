@@ -570,6 +570,45 @@ export const NutritionPage: React.FC = () => {
               </div>
             </div>
 
+            {/* Quick Dish Selection Chips */}
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider flex items-center justify-between">
+                <span>Быстрый выбор блюда / Уточнить:</span>
+                <span className="text-[10px] text-brand-400 lowercase font-normal">авторасчет КБЖУ</span>
+              </label>
+              <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none pb-1">
+                {[
+                  { label: '🍚 Плов', value: 'Узбекский плов с говядиной' },
+                  { label: '🥟 Манты', value: 'Манты на пару с мясом' },
+                  { label: '🍗 Курица с рисом', value: 'Куриное филе с рисом и овощами' },
+                  { label: '🥟 Самса', value: 'Самса тандырная с мясом' },
+                  { label: '🌯 Шаурма', value: 'Шаурма с курицей' },
+                  { label: '🥣 Овсянка', value: 'Овсяная каша с ягодами' },
+                  { label: '🥩 Стейк', value: 'Стейк из говядины' },
+                  { label: '🍳 Яичница', value: 'Яичница из 3 яиц' },
+                  { label: '🥛 Творог', value: 'Творог 5%' },
+                  { label: '🍌 Банан', value: 'Свежий банан' },
+                ].map((chip, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => {
+                      setEditMealName(chip.value);
+                      if (selectedImage) {
+                        analyzeMutation.mutate({
+                          image_base64: selectedImage,
+                          notes: chip.value,
+                        });
+                      }
+                    }}
+                    className="px-2.5 py-1 rounded-xl text-xs bg-dark-800 hover:bg-dark-750 text-zinc-300 hover:text-white border border-dark-700 whitespace-nowrap shrink-0 transition-colors"
+                  >
+                    {chip.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {/* Loading / Vision Analyzing State */}
             {analyzeMutation.isPending && (
               <div className="p-4 rounded-2xl bg-dark-800 border border-brand-500/30 flex items-center gap-3 animate-pulse">
