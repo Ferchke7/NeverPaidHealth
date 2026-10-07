@@ -56,6 +56,12 @@ export const ru = {
   'nutrition.detectedItems': 'Распознанные продукты',
   'nutrition.aiAdvice': 'Совет нутрициолога',
   'nutrition.photoUploadHint': 'Нажмите или сделайте фото блюда',
+  'nutrition.remainingToday': 'Осталось на сегодня',
+  'nutrition.consumedToday': 'Съедено за день',
+  'nutrition.whatAIsaw': 'Что определил ИИ по фото',
+  'nutrition.exceeded': 'Превышено на',
+  'nutrition.remainingKcal': 'ккал осталось',
+  'nutrition.remainingG': 'г осталось',
 
   // Страница тренировок / Мои рутины
   'workouts.title': 'Мои программы',

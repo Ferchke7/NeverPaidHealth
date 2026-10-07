@@ -56,6 +56,12 @@ export const en = {
   'nutrition.detectedItems': 'Detected Ingredients',
   'nutrition.aiAdvice': 'Nutritionist Advice',
   'nutrition.photoUploadHint': 'Click or take a meal photo',
+  'nutrition.remainingToday': 'Remaining Today',
+  'nutrition.consumedToday': 'Consumed Today',
+  'nutrition.whatAIsaw': 'What AI Detected in Photo',
+  'nutrition.exceeded': 'Exceeded by',
+  'nutrition.remainingKcal': 'kcal left',
+  'nutrition.remainingG': 'g left',
 
   // Workouts Page
   'workouts.title': 'My Routines',

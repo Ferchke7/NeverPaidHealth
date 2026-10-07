@@ -56,6 +56,12 @@ export const uz = {
   'nutrition.detectedItems': 'Aniqlangan mahsulotlar',
   'nutrition.aiAdvice': 'Nutrisiolog maslahati',
   'nutrition.photoUploadHint': 'Bosing yoki taomni rasmga oling',
+  'nutrition.remainingToday': 'Bugungi qoldiq',
+  'nutrition.consumedToday': 'Bugun yeyilgan',
+  'nutrition.whatAIsaw': 'AI rasmda nima aniqladi',
+  'nutrition.exceeded': 'Oshib ketdi',
+  'nutrition.remainingKcal': 'kkal qoldi',
+  'nutrition.remainingG': 'g qoldi',
 
   // Mashg'ulotlar sahifasi
   'workouts.title': 'Mening dasturlarim',

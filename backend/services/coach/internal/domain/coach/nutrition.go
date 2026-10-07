@@ -16,15 +16,16 @@ type MealItem struct {
 }
 
 type MealAnalysisResult struct {
-	MealName      string     `json:"meal_name"`
-	Items         []MealItem `json:"items"`
-	TotalCalories int        `json:"total_calories"`
-	TotalProteinG float64    `json:"total_protein_g"`
-	TotalCarbsG   float64    `json:"total_carbs_g"`
-	TotalFatG     float64    `json:"total_fat_g"`
-	Confidence    string     `json:"confidence"`
-	HealthScore   int        `json:"health_score"`
-	Advice        string     `json:"advice"`
+	MealName          string     `json:"meal_name"`
+	VisualDescription string     `json:"visual_description,omitempty"`
+	Items             []MealItem `json:"items"`
+	TotalCalories     int        `json:"total_calories"`
+	TotalProteinG     float64    `json:"total_protein_g"`
+	TotalCarbsG       float64    `json:"total_carbs_g"`
+	TotalFatG         float64    `json:"total_fat_g"`
+	Confidence        string     `json:"confidence"`
+	HealthScore       int        `json:"health_score"`
+	Advice            string     `json:"advice"`
 }
 
 type MealLog struct {

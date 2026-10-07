@@ -258,12 +258,24 @@ Guidelines:
 	return coach.ChatResponse{}, fmt.Errorf("empty gemini response")
 }
 
+func (p *CompositeAIProvider) getAPIKey() string {
+	if k := os.Getenv("GEMINI_API_KEY"); k != "" {
+		return k
+	}
+	return p.geminiKey
+}
+
 func (p *CompositeAIProvider) callGeminiVision(ctx context.Context, imageBase64, mimeType, notes string) (coach.MealAnalysisResult, error) {
+	key := p.getAPIKey()
+	if key == "" {
+		return coach.MealAnalysisResult{}, fmt.Errorf("gemini api key is not configured")
+	}
+
 	modelName := os.Getenv("GEMINI_MODEL")
 	if modelName == "" {
-		modelName = "gemini-1.5-flash"
+		modelName = "gemini-2.0-flash"
 	}
-	apiURL := fmt.Sprintf("https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s", modelName, p.geminiKey)
+	apiURL := fmt.Sprintf("https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s", modelName, key)
 
 	// Clean base64 data prefix if present (e.g. data:image/jpeg;base64,...)
 	cleanBase64 := imageBase64
@@ -276,27 +288,29 @@ func (p *CompositeAIProvider) callGeminiVision(ctx context.Context, imageBase64,
 		mimeType = "image/jpeg"
 	}
 
-	prompt := `You are an elite AI sports nutritionist and computer vision meal analyst.
-Analyze this meal photo carefully.
-1. Identify all food items, ingredients, and approximate portion weights in grams on the plate.
-2. Estimate total calories (kcal), protein (g), carbohydrates (g), and fat (g).
-3. Return STRICTLY valid JSON without markdown code blocks, backticks, or extra text.
+	prompt := `You are an elite AI sports nutritionist and computer vision food recognition expert.
+Analyze this meal/food photo carefully:
+1. Identify the specific dish or food item (e.g. "Узбекская тандырная лепешка / выпечка в пакете", "Куриное филе с рисом и овощами", "Самса с мясом", "Овсянка с протеином и ягодами", "Стейк из говядины с картофелем", etc.).
+2. In "visual_description", explain in detail in Russian what you see in the photo (visual texture, shape, color, container/packaging, estimated size in cm and weight in grams).
+3. Break down the detected ingredients with portion weights in grams.
+4. Calculate total calories (kcal), protein (g), carbohydrates (g), and fat (g).
+5. Give practical nutritional advice for an athlete.
+6. Return STRICTLY valid JSON without markdown code blocks, backticks, or other text.
 
 Format:
 {
-  "meal_name": "Grilled Chicken Breast with Jasmine Rice & Broccoli",
+  "meal_name": "Тандырная лепешка / Выпечка в пакете",
+  "visual_description": "Круглая румяная пшеничная выпечка / узбекская лепешка в прозрачном целлофановом пакете, диаметр ~18-20 см, примерный вес ~220-250 г.",
   "items": [
-    {"name": "Grilled Chicken Breast", "portion": "200g", "calories": 330, "protein_g": 62.0, "carbs_g": 0.0, "fat_g": 7.0},
-    {"name": "Cooked Jasmine Rice", "portion": "180g", "calories": 234, "protein_g": 4.5, "carbs_g": 52.0, "fat_g": 0.5},
-    {"name": "Steamed Broccoli", "portion": "100g", "calories": 35, "protein_g": 2.5, "carbs_g": 7.0, "fat_g": 0.4}
+    {"name": "Пшеничная выпечка / лепешка", "portion": "230g", "calories": 590, "protein_g": 18.0, "carbs_g": 115.0, "fat_g": 5.0}
   ],
-  "total_calories": 599,
-  "total_protein_g": 69.0,
-  "total_carbs_g": 59.0,
-  "total_fat_g": 7.9,
+  "total_calories": 590,
+  "total_protein_g": 18.0,
+  "total_carbs_g": 115.0,
+  "total_fat_g": 5.0,
   "confidence": "high",
-  "health_score": 9,
-  "advice": "High-protein meal with lean macros, ideal for muscle hypertrophy and clean recovery."
+  "health_score": 7,
+  "advice": "Высокоуглеводный продукт с высоким гликемическим индексом. Идеален перед тяжелой силовой тренировкой или для закрытия углеводного окна."
 }`
 
 	if notes != "" {
@@ -339,6 +353,27 @@ Format:
 
 	if resp.StatusCode != http.StatusOK {
 		raw, _ := io.ReadAll(resp.Body)
+		// Try fallback to gemini-1.5-flash if 2.0-flash failed
+		if modelName != "gemini-1.5-flash" {
+			fallbackURL := fmt.Sprintf("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=%s", key)
+			fallbackReq, _ := http.NewRequestWithContext(ctx, "POST", fallbackURL, bytes.NewReader(bodyBytes))
+			fallbackReq.Header.Set("Content-Type", "application/json")
+			if fbResp, fbErr := p.httpClient.Do(fallbackReq); fbErr == nil && fbResp.StatusCode == http.StatusOK {
+				defer fbResp.Body.Close()
+				var fbGeminiResp geminiResponse
+				if json.NewDecoder(fbResp.Body).Decode(&fbGeminiResp) == nil && len(fbGeminiResp.Candidates) > 0 && len(fbGeminiResp.Candidates[0].Content.Parts) > 0 {
+					fbText := strings.TrimSpace(fbGeminiResp.Candidates[0].Content.Parts[0].Text)
+					fbText = strings.TrimPrefix(fbText, "```json")
+					fbText = strings.TrimPrefix(fbText, "```")
+					fbText = strings.TrimSuffix(fbText, "```")
+					fbText = strings.TrimSpace(fbText)
+					var analysis coach.MealAnalysisResult
+					if json.Unmarshal([]byte(fbText), &analysis) == nil {
+						return analysis, nil
+					}
+				}
+			}
+		}
 		return coach.MealAnalysisResult{}, fmt.Errorf("gemini vision error %d: %s", resp.StatusCode, string(raw))
 	}
 

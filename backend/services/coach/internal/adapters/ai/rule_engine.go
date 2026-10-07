@@ -250,17 +250,20 @@ func (r *RuleEngineProvider) GenerateChatResponse(
 }
 
 func (r *RuleEngineProvider) AnalyzeMealPhoto(ctx context.Context, notes string) (coach.MealAnalysisResult, error) {
-	name := "Balanced Athlete Meal"
+	name := "Сбалансированное блюдо"
+	visDesc := "Базовый анализ нутриентов. Для полноценного распознавания блюд по фото активируйте GEMINI_API_KEY."
 	if notes != "" {
 		name = notes
+		visDesc = fmt.Sprintf("Оценка блюда на основе пользовательской заметки: %s", notes)
 	}
 
 	return coach.MealAnalysisResult{
-		MealName: name,
+		MealName:          name,
+		VisualDescription: visDesc,
 		Items: []coach.MealItem{
-			{Name: "Lean Protein Source", Portion: "180g", Calories: 280, ProteinG: 45.0, CarbsG: 0.0, FatG: 6.0},
-			{Name: "Complex Carbohydrates", Portion: "150g", Calories: 210, ProteinG: 4.0, CarbsG: 45.0, FatG: 1.0},
-			{Name: "Vegetables & Greens", Portion: "100g", Calories: 40, ProteinG: 2.0, CarbsG: 8.0, FatG: 0.5},
+			{Name: "Источник белка", Portion: "180g", Calories: 280, ProteinG: 45.0, CarbsG: 0.0, FatG: 6.0},
+			{Name: "Сложные углеводы", Portion: "150g", Calories: 210, ProteinG: 4.0, CarbsG: 45.0, FatG: 1.0},
+			{Name: "Овощи и клетчатка", Portion: "100g", Calories: 40, ProteinG: 2.0, CarbsG: 8.0, FatG: 0.5},
 		},
 		TotalCalories: 530,
 		TotalProteinG: 51.0,
@@ -268,7 +271,7 @@ func (r *RuleEngineProvider) AnalyzeMealPhoto(ctx context.Context, notes string)
 		TotalFatG:     7.5,
 		Confidence:    "moderate",
 		HealthScore:   9,
-		Advice:        "Great macro distribution supporting muscle synthesis and sustained energy.",
+		Advice:        "Сбалансированное распределение БЖУ для поддержки мышечной гипертрофии и стабильной энергии.",
 	}, nil
 }
 
