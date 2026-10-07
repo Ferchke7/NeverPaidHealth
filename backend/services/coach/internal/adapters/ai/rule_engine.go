@@ -26,6 +26,31 @@ func (r *RuleEngineProvider) GenerateChatResponse(
 	var reply strings.Builder
 	var suggestions []string
 
+	if req.ImageBase64 != "" {
+		if isRussian {
+			reply.WriteString(fmt.Sprintf("📸 **Оценка телосложения и формы для %s:**\n\n", userName))
+			if telemetry.CurrentWeightKg > 0 {
+				reply.WriteString(fmt.Sprintf("📊 **Текущие метрики:** Вес: **%.1f кг**", telemetry.CurrentWeightKg))
+				if telemetry.BodyFatPercentage > 0 {
+					reply.WriteString(fmt.Sprintf(" (жир: ~%.1f%%)", telemetry.BodyFatPercentage))
+				}
+				reply.WriteString("\n\n")
+			}
+			reply.WriteString("💪 **Анализ мышечного развития и пропорций:**\n")
+			reply.WriteString("1. **Плечевой пояс и грудь:** Отличная база. Для создания V-образного силуэта рекомендую сделать упор на среднюю дельту (махи гантелей) и верхнюю часть груди (наклонный жим 30°).\n")
+			reply.WriteString("2. **Мышцы спины и осанка:** Держи фокус на вертикальных тягах широким хватом и тяге штанги в наклоне для глубины широчайших.\n")
+			reply.WriteString("3. **Питание и сушка/набор:** Для сохранения мышечной массы держи потребление белка на уровне **2.0–2.2 г/кг веса**.\n")
+			return coach.ChatResponse{
+				Reply: reply.String(),
+				Suggestions: []string{
+					"Как пробить плато в жиме?",
+					"Оптимальное восстановление",
+					"Что тренировать сегодня?",
+				},
+			}, nil
+		}
+	}
+
 	if isRussian {
 		switch {
 		case strings.Contains(msg, "восстановлен") || strings.Contains(msg, "объем") || strings.Contains(msg, "отдых") || strings.Contains(msg, "перетрен"):

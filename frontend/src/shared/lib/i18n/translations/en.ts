@@ -153,8 +153,11 @@ export const en = {
   // AI Coach
   'coach.title': 'AI Coach',
   'coach.subtitle': 'Science-based strength & hypertrophy advice tailored to your training logs.',
-  'coach.placeholder': 'Ask coach (e.g. "How to progress my Bench Press?", "Analyze my weekly volume")...',
+  'coach.placeholder': 'Ask coach or attach physique/form photo...',
   'coach.send': 'Send',
+  'coach.attachPhoto': 'Attach Physique Photo',
+  'coach.evaluatingPhoto': 'AI is analyzing your physique and form...',
+  'coach.photoAttached': 'Photo attached for physique check',
 
   // Profile & Settings
   'profile.title': 'Profile & Settings',

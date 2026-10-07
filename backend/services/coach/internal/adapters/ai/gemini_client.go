@@ -133,7 +133,13 @@ Guidelines:
 - Give concise, motivating, highly actionable, and scientific fitness & nutrition advice.
 - Always factor in the user's current body weight and protein intake when giving training or nutrition recommendations.
 - Answer in the same language as the user (Russian if user asks in Russian, Uzbek if user asks in Uzbek, English if user asks in English).
-- Focus on progressive overload, recovery, biomechanics, macros, and periodization.`,
+- Focus on progressive overload, recovery, biomechanics, macros, and periodization.
+- When the user sends a photo (physique/body check, posture, form evaluation, progress picture):
+  1. Provide a professional, encouraging, and honest assessment of their physique, conditioning, posture, and muscular symmetry (chest, shoulders, back, arms, core, legs).
+  2. Estimate body composition & approximate body fat percentage range if visible.
+  3. Highlight key strengths and standout muscle groups.
+  4. Identify lagging muscle groups or areas to prioritize with specific exercise selections and weekly volume.
+  5. Give concrete recommendations on nutrition (calorie surplus/deficit, protein target in grams) and training adjustments.`,
 		userName, bodyStats, nutritionStats, telemetry.ReadinessScore, telemetry.RecoveryStatus, telemetry.WeeklyWorkoutsCount,
 		telemetry.WeeklyVolumeKg, telemetry.DaysSinceLastTrain, telemetry.SuggestedSplit,
 		telemetry.OverloadTargets, telemetry.PlateauAlerts, telemetry.RecentTopPRs)
@@ -144,15 +150,64 @@ Guidelines:
 		if h.Role == "coach" {
 			role = "model"
 		}
-		contents = append(contents, geminiContent{
-			Role:  role,
-			Parts: []geminiPart{{Text: h.Content}},
+		parts := make([]geminiPart, 0)
+		if h.ImageBase64 != "" {
+			mime := h.MimeType
+			if mime == "" {
+				mime = "image/jpeg"
+			}
+			data := h.ImageBase64
+			if idx := strings.Index(data, ","); idx != -1 {
+				data = data[idx+1:]
+			}
+			parts = append(parts, geminiPart{
+				InlineData: &geminiInlineData{
+					MimeType: mime,
+					Data:     data,
+				},
+			})
+		}
+		if h.Content != "" {
+			parts = append(parts, geminiPart{Text: h.Content})
+		}
+		if len(parts) > 0 {
+			contents = append(contents, geminiContent{
+				Role:  role,
+				Parts: parts,
+			})
+		}
+	}
+
+	userParts := make([]geminiPart, 0)
+	if req.ImageBase64 != "" {
+		mime := req.MimeType
+		if mime == "" {
+			mime = "image/jpeg"
+		}
+		data := req.ImageBase64
+		if idx := strings.Index(data, ","); idx != -1 {
+			data = data[idx+1:]
+		}
+		userParts = append(userParts, geminiPart{
+			InlineData: &geminiInlineData{
+				MimeType: mime,
+				Data:     data,
+			},
 		})
 	}
-	contents = append(contents, geminiContent{
-		Role:  "user",
-		Parts: []geminiPart{{Text: req.Message}},
-	})
+	userText := req.Message
+	if userText == "" && req.ImageBase64 != "" {
+		userText = "Оцени мою форму и телосложение, дай честную оценку и рекомендации по тренировкам и питанию."
+	}
+	if userText != "" {
+		userParts = append(userParts, geminiPart{Text: userText})
+	}
+	if len(userParts) > 0 {
+		contents = append(contents, geminiContent{
+			Role:  "user",
+			Parts: userParts,
+		})
+	}
 
 	payload := geminiRequest{
 		SystemInstruction: &geminiContent{

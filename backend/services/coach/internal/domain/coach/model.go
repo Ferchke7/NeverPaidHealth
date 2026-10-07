@@ -96,14 +96,18 @@ type CoachInsights struct {
 }
 
 type ChatMessage struct {
-	Role    string    `json:"role"` // "user" | "coach"
-	Content string    `json:"content"`
-	SentAt  time.Time `json:"sent_at,omitempty"`
+	Role        string    `json:"role"` // "user" | "coach"
+	Content     string    `json:"content"`
+	ImageBase64 string    `json:"image_base64,omitempty"`
+	MimeType    string    `json:"mime_type,omitempty"`
+	SentAt      time.Time `json:"sent_at,omitempty"`
 }
 
 type ChatRequest struct {
-	Message string        `json:"message"`
-	History []ChatMessage `json:"history,omitempty"`
+	Message     string        `json:"message"`
+	ImageBase64 string        `json:"image_base64,omitempty"`
+	MimeType    string        `json:"mime_type,omitempty"`
+	History     []ChatMessage `json:"history,omitempty"`
 }
 
 type ChatResponse struct {

@@ -153,8 +153,11 @@ export const uz = {
   // AI Murabbiy
   'coach.title': 'AI Murabbiy',
   'coach.subtitle': 'Mashg‘ulotlaringiz asosida ilmiy kuch va gipertrofiya bo‘yicha maslahatlar.',
-  'coach.placeholder': 'Murabbiyga savol bering (masalan: "Bench pressda qanday o‘sish mumkin?")...',
+  'coach.placeholder': 'Murabbiyga savol bering yoki forma rasmini yuboring...',
   'coach.send': 'Yuborish',
+  'coach.attachPhoto': 'Forma rasmini biriktirish',
+  'coach.evaluatingPhoto': 'AI sizning forma rasmingizni tahlil qilmoqda...',
+  'coach.photoAttached': 'Forma tahlili uchun rasm biriktirildi',
 
   // Profil va Sozlamalar
   'profile.title': 'Profil va sozlamalar',

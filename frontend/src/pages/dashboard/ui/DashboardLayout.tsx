@@ -103,7 +103,13 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
       </header>
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-4xl w-full mx-auto p-4 pb-24 md:pb-8">
+      <main
+        className={
+          activeTab === 'coach'
+            ? 'flex-1 w-full max-w-5xl mx-auto flex flex-col p-0 pb-[54px] md:pb-3 md:pt-2 md:px-4 h-[calc(100dvh-53px)] md:h-[calc(100dvh-57px)] overflow-hidden'
+            : 'flex-1 max-w-4xl w-full mx-auto p-4 pb-24 md:pb-8'
+        }
+      >
         {children}
       </main>
 
