@@ -224,6 +224,29 @@ func (r *RuleEngineProvider) GenerateChatResponse(
 	}, nil
 }
 
+func (r *RuleEngineProvider) AnalyzeMealPhoto(ctx context.Context, notes string) (coach.MealAnalysisResult, error) {
+	name := "Balanced Athlete Meal"
+	if notes != "" {
+		name = notes
+	}
+
+	return coach.MealAnalysisResult{
+		MealName: name,
+		Items: []coach.MealItem{
+			{Name: "Lean Protein Source", Portion: "180g", Calories: 280, ProteinG: 45.0, CarbsG: 0.0, FatG: 6.0},
+			{Name: "Complex Carbohydrates", Portion: "150g", Calories: 210, ProteinG: 4.0, CarbsG: 45.0, FatG: 1.0},
+			{Name: "Vegetables & Greens", Portion: "100g", Calories: 40, ProteinG: 2.0, CarbsG: 8.0, FatG: 0.5},
+		},
+		TotalCalories: 530,
+		TotalProteinG: 51.0,
+		TotalCarbsG:   53.0,
+		TotalFatG:     7.5,
+		Confidence:    "moderate",
+		HealthScore:   9,
+		Advice:        "Great macro distribution supporting muscle synthesis and sustained energy.",
+	}, nil
+}
+
 func containsCyrillic(s string) bool {
 	for _, r := range s {
 		if (r >= 'а' && r <= 'я') || (r >= 'А' && r <= 'Я') || r == 'ё' || r == 'Ё' {

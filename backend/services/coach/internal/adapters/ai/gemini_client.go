@@ -17,6 +17,7 @@ import (
 
 type AIProvider interface {
 	GenerateChatResponse(ctx context.Context, req coach.ChatRequest, telemetry coach.CoachInsights, userName string) (coach.ChatResponse, error)
+	AnalyzeMealPhoto(ctx context.Context, imageBase64, mimeType, notes string) (coach.MealAnalysisResult, error)
 }
 
 type CompositeAIProvider struct {
@@ -30,12 +31,11 @@ func NewCompositeAIProvider() *CompositeAIProvider {
 	return &CompositeAIProvider{
 		geminiKey:  key,
 		ruleEngine: NewRuleEngineProvider(),
-		httpClient: &http.Client{Timeout: 20 * time.Second},
+		httpClient: &http.Client{Timeout: 25 * time.Second},
 	}
 }
 
 func (p *CompositeAIProvider) GenerateChatResponse(ctx context.Context, req coach.ChatRequest, telemetry coach.CoachInsights, userName string) (coach.ChatResponse, error) {
-	// If Gemini API Key is configured, try calling Gemini API first
 	if p.geminiKey != "" {
 		res, err := p.callGemini(ctx, req, telemetry, userName)
 		if err == nil && res.Reply != "" {
@@ -46,13 +46,24 @@ func (p *CompositeAIProvider) GenerateChatResponse(ctx context.Context, req coac
 		slog.Info("GEMINI_API_KEY not provided, using built-in sports science engine")
 	}
 
-	// Intelligent Rule-Based Sports Science Engine Fallback (Zero external dependencies)
 	return p.ruleEngine.GenerateChatResponse(ctx, req, telemetry, userName)
 }
 
+func (p *CompositeAIProvider) AnalyzeMealPhoto(ctx context.Context, imageBase64, mimeType, notes string) (coach.MealAnalysisResult, error) {
+	if p.geminiKey != "" {
+		res, err := p.callGeminiVision(ctx, imageBase64, mimeType, notes)
+		if err == nil && res.MealName != "" {
+			return res, nil
+		}
+		slog.Warn("Gemini Vision meal analysis failed, falling back to rule engine", "error", err)
+	}
+
+	return p.ruleEngine.AnalyzeMealPhoto(ctx, notes)
+}
+
 type geminiRequest struct {
-	Contents []geminiContent `json:"contents"`
-	SystemInstruction *geminiContent `json:"systemInstruction,omitempty"`
+	Contents          []geminiContent `json:"contents"`
+	SystemInstruction *geminiContent  `json:"systemInstruction,omitempty"`
 }
 
 type geminiContent struct {
@@ -61,7 +72,13 @@ type geminiContent struct {
 }
 
 type geminiPart struct {
-	Text string `json:"text"`
+	Text       string            `json:"text,omitempty"`
+	InlineData *geminiInlineData `json:"inline_data,omitempty"`
+}
+
+type geminiInlineData struct {
+	MimeType string `json:"mime_type"`
+	Data     string `json:"data"`
 }
 
 type geminiResponse struct {
@@ -81,9 +98,28 @@ func (p *CompositeAIProvider) callGemini(ctx context.Context, req coach.ChatRequ
 	}
 	apiURL := fmt.Sprintf("https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s", modelName, p.geminiKey)
 
-	systemPrompt := fmt.Sprintf(`You are NeverPaidHealth AI Coach — an elite, evidence-based strength & conditioning coach and sports scientist.
+	bodyStats := "Body Weight: Not logged yet"
+	if telemetry.CurrentWeightKg > 0 {
+		bodyStats = fmt.Sprintf("Body Weight: %.1f kg", telemetry.CurrentWeightKg)
+		if telemetry.BodyFatPercentage > 0 {
+			bodyStats += fmt.Sprintf(", Body Fat: %.1f%%", telemetry.BodyFatPercentage)
+		}
+		if telemetry.BMI > 0 {
+			bodyStats += fmt.Sprintf(", BMI: %.1f", telemetry.BMI)
+		}
+	}
+
+	nutritionStats := "Today's Nutrition: None logged yet"
+	if telemetry.TodayCalories > 0 {
+		nutritionStats = fmt.Sprintf("Today's Nutrition: %d kcal (Protein: %.1f g)", telemetry.TodayCalories, telemetry.TodayProteinG)
+	}
+
+	systemPrompt := fmt.Sprintf(`You are duda.uz AI Coach — an elite, evidence-based strength & conditioning coach and sports scientist.
 The user is named %s.
-Current User Telemetry:
+
+Current User Profile & Telemetry:
+- %s
+- %s
 - Readiness Score: %d/100 (%s)
 - Weekly Workouts: %d
 - Weekly Total Tonnage: %.1f kg
@@ -91,14 +127,16 @@ Current User Telemetry:
 - Suggested Split: %s
 - Top Overload Recommendations: %v
 - Active Plateau Alerts: %v
+- Recent Top PRs: %v
 
 Guidelines:
-- Give concise, motivating, actionable, and scientific fitness advice.
-- Answer in the same language as the user (Russian if user asks in Russian, English if user asks in English).
-- Focus on progressive overload, recovery, biomechanics, and periodization.`,
-		userName, telemetry.ReadinessScore, telemetry.RecoveryStatus, telemetry.WeeklyWorkoutsCount,
+- Give concise, motivating, highly actionable, and scientific fitness & nutrition advice.
+- Always factor in the user's current body weight and protein intake when giving training or nutrition recommendations.
+- Answer in the same language as the user (Russian if user asks in Russian, Uzbek if user asks in Uzbek, English if user asks in English).
+- Focus on progressive overload, recovery, biomechanics, macros, and periodization.`,
+		userName, bodyStats, nutritionStats, telemetry.ReadinessScore, telemetry.RecoveryStatus, telemetry.WeeklyWorkoutsCount,
 		telemetry.WeeklyVolumeKg, telemetry.DaysSinceLastTrain, telemetry.SuggestedSplit,
-		telemetry.OverloadTargets, telemetry.PlateauAlerts)
+		telemetry.OverloadTargets, telemetry.PlateauAlerts, telemetry.RecentTopPRs)
 
 	contents := make([]geminiContent, 0)
 	for _, h := range req.History {
@@ -142,7 +180,7 @@ Guidelines:
 
 	if resp.StatusCode != http.StatusOK {
 		raw, _ := io.ReadAll(resp.Body)
-		return coach.ChatResponse{}, fmt.Errorf("gemini api error: %s", string(raw))
+		return coach.ChatResponse{}, fmt.Errorf("gemini api error %d: %s", resp.StatusCode, string(raw))
 	}
 
 	var geminiResp geminiResponse
@@ -157,10 +195,118 @@ Guidelines:
 			Suggestions: []string{
 				"Прогрессивная перегрузка для жима лежа",
 				"Что тренировать сегодня?",
-				"Как избежать плато?",
+				"Оптимальное восстановление",
 			},
 		}, nil
 	}
 
 	return coach.ChatResponse{}, fmt.Errorf("empty gemini response")
+}
+
+func (p *CompositeAIProvider) callGeminiVision(ctx context.Context, imageBase64, mimeType, notes string) (coach.MealAnalysisResult, error) {
+	modelName := os.Getenv("GEMINI_MODEL")
+	if modelName == "" {
+		modelName = "gemini-1.5-flash"
+	}
+	apiURL := fmt.Sprintf("https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s", modelName, p.geminiKey)
+
+	// Clean base64 data prefix if present (e.g. data:image/jpeg;base64,...)
+	cleanBase64 := imageBase64
+	if idx := strings.Index(imageBase64, ","); idx != -1 {
+		cleanBase64 = imageBase64[idx+1:]
+	}
+	cleanBase64 = strings.TrimSpace(cleanBase64)
+
+	if mimeType == "" {
+		mimeType = "image/jpeg"
+	}
+
+	prompt := `You are an elite AI sports nutritionist and computer vision meal analyst.
+Analyze this meal photo carefully.
+1. Identify all food items, ingredients, and approximate portion weights in grams on the plate.
+2. Estimate total calories (kcal), protein (g), carbohydrates (g), and fat (g).
+3. Return STRICTLY valid JSON without markdown code blocks, backticks, or extra text.
+
+Format:
+{
+  "meal_name": "Grilled Chicken Breast with Jasmine Rice & Broccoli",
+  "items": [
+    {"name": "Grilled Chicken Breast", "portion": "200g", "calories": 330, "protein_g": 62.0, "carbs_g": 0.0, "fat_g": 7.0},
+    {"name": "Cooked Jasmine Rice", "portion": "180g", "calories": 234, "protein_g": 4.5, "carbs_g": 52.0, "fat_g": 0.5},
+    {"name": "Steamed Broccoli", "portion": "100g", "calories": 35, "protein_g": 2.5, "carbs_g": 7.0, "fat_g": 0.4}
+  ],
+  "total_calories": 599,
+  "total_protein_g": 69.0,
+  "total_carbs_g": 59.0,
+  "total_fat_g": 7.9,
+  "confidence": "high",
+  "health_score": 9,
+  "advice": "High-protein meal with lean macros, ideal for muscle hypertrophy and clean recovery."
+}`
+
+	if notes != "" {
+		prompt += fmt.Sprintf("\nUser context note: %s", notes)
+	}
+
+	payload := geminiRequest{
+		Contents: []geminiContent{
+			{
+				Role: "user",
+				Parts: []geminiPart{
+					{Text: prompt},
+					{
+						InlineData: &geminiInlineData{
+							MimeType: mimeType,
+							Data:     cleanBase64,
+						},
+					},
+				},
+			},
+		},
+	}
+
+	bodyBytes, err := json.Marshal(payload)
+	if err != nil {
+		return coach.MealAnalysisResult{}, err
+	}
+
+	httpReq, err := http.NewRequestWithContext(ctx, "POST", apiURL, bytes.NewReader(bodyBytes))
+	if err != nil {
+		return coach.MealAnalysisResult{}, err
+	}
+	httpReq.Header.Set("Content-Type", "application/json")
+
+	resp, err := p.httpClient.Do(httpReq)
+	if err != nil {
+		return coach.MealAnalysisResult{}, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		raw, _ := io.ReadAll(resp.Body)
+		return coach.MealAnalysisResult{}, fmt.Errorf("gemini vision error %d: %s", resp.StatusCode, string(raw))
+	}
+
+	var geminiResp geminiResponse
+	if err := json.NewDecoder(resp.Body).Decode(&geminiResp); err != nil {
+		return coach.MealAnalysisResult{}, err
+	}
+
+	if len(geminiResp.Candidates) == 0 || len(geminiResp.Candidates[0].Content.Parts) == 0 {
+		return coach.MealAnalysisResult{}, fmt.Errorf("empty vision response")
+	}
+
+	rawText := strings.TrimSpace(geminiResp.Candidates[0].Content.Parts[0].Text)
+	// Strip ```json and ``` if returned by model
+	rawText = strings.TrimPrefix(rawText, "```json")
+	rawText = strings.TrimPrefix(rawText, "```")
+	rawText = strings.TrimSuffix(rawText, "```")
+	rawText = strings.TrimSpace(rawText)
+
+	var analysis coach.MealAnalysisResult
+	if err := json.Unmarshal([]byte(rawText), &analysis); err != nil {
+		return coach.MealAnalysisResult{}, fmt.Errorf("failed to parse vision json: %w (raw: %s)", err, rawText)
+	}
+
+	return analysis, nil
 }

@@ -82,10 +82,16 @@ type CoachInsights struct {
 	WeeklyVolumeKg      float64                     `json:"weekly_volume_kg"`
 	DaysSinceLastTrain  int                         `json:"days_since_last_train"`
 	SuggestedSplit      string                      `json:"suggested_split"`
+	CurrentWeightKg     float64                     `json:"current_weight_kg,omitempty"`
+	BodyFatPercentage   float64                     `json:"body_fat_percentage,omitempty"`
+	BMI                 float64                     `json:"bmi,omitempty"`
+	TodayCalories       int                         `json:"today_calories,omitempty"`
+	TodayProteinG       float64                     `json:"today_protein_g,omitempty"`
 	OverloadTargets     []ProgressiveOverloadTarget `json:"overload_targets"`
 	PlateauAlerts       []PlateauAlert              `json:"plateau_alerts"`
 	MuscleDistribution  []MuscleVolume              `json:"muscle_distribution"`
 	Insights            []Insight                   `json:"insights"`
+	RecentTopPRs        []PersonalRecordItem        `json:"recent_top_prs,omitempty"`
 	GeneratedAt         time.Time                   `json:"generated_at"`
 }
 

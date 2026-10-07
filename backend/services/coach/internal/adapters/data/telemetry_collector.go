@@ -164,16 +164,29 @@ func (c *TelemetryCollector) fetchBodyLogs(ctx context.Context, userID uuid.UUID
 		return nil, nil
 	}
 
+	// Try reading from body_logs supporting both weight_grams and weight_kg schema
 	query := `
-		SELECT weight_kg, recorded_at
+		SELECT COALESCE(weight_grams::float8 / 1000.0, 0), COALESCE(body_fat_percentage, 0), COALESCE(calculated_bmi, 0), created_at
 		FROM body_logs
 		WHERE user_id = $1
-		ORDER BY recorded_at DESC
+		ORDER BY created_at DESC
 		LIMIT 10
 	`
 	rows, err := c.pool.Query(ctx, query, userID)
 	if err != nil {
-		return nil, err
+		// Fallback query if table schema has weight_kg directly
+		altQuery := `
+			SELECT COALESCE(weight_kg, 0), 0, 0, recorded_at
+			FROM body_logs
+			WHERE user_id = $1
+			ORDER BY recorded_at DESC
+			LIMIT 10
+		`
+		altRows, altErr := c.pool.Query(ctx, altQuery, userID)
+		if altErr != nil {
+			return nil, err
+		}
+		rows = altRows
 	}
 	defer rows.Close()
 
@@ -181,12 +194,16 @@ func (c *TelemetryCollector) fetchBodyLogs(ctx context.Context, userID uuid.UUID
 	for rows.Next() {
 		var (
 			w   float64
+			bf  float64
+			bmi float64
 			rec time.Time
 		)
-		if err := rows.Scan(&w, &rec); err == nil {
+		if err := rows.Scan(&w, &bf, &bmi, &rec); err == nil {
 			res = append(res, coach.BodyData{
-				WeightKg:   w,
-				RecordedAt: rec,
+				WeightKg:          w,
+				BodyFatPercentage: bf,
+				BMI:               bmi,
+				RecordedAt:        rec,
 			})
 		}
 	}

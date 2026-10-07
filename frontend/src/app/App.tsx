@@ -9,6 +9,7 @@ import { ExercisesPage } from '../pages/exercises/ui/ExercisesPage.tsx';
 import { ProgressPage } from '../pages/progress/ui/ProgressPage.tsx';
 import { BodyPage } from '../pages/body/ui/BodyPage.tsx';
 import { AICoachPage } from '../pages/coach/ui/AICoachPage.tsx';
+import { NutritionPage } from '../pages/nutrition/ui/NutritionPage.tsx';
 import { ProfilePage } from '../pages/profile/ui/ProfilePage.tsx';
 import { ActiveWorkoutSheet } from '../widgets/active-workout-panel/ui/ActiveWorkoutSheet.tsx';
 
@@ -28,6 +29,7 @@ export const App: React.FC = () => {
       {activeTab === 'programs' && (
         <ProgramsPage onNavigateToWorkouts={() => setActiveTab('workouts')} />
       )}
+      {activeTab === 'nutrition' && <NutritionPage />}
       {activeTab === 'history' && <HistoryPage />}
       {activeTab === 'coach' && <AICoachPage />}
       {activeTab === 'progress' && <ProgressPage />}

@@ -60,6 +60,7 @@ func NewRouter(cfg *config.Config, tokenService *jwtauth.TokenService) http.Hand
 			authed.Mount("/progress", progressProxy)
 			authed.Mount("/body", bodyProxy)
 			authed.Mount("/coach", coachProxy)
+			authed.Mount("/nutrition", coachProxy)
 		})
 	})
 

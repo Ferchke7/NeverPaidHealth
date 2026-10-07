@@ -55,8 +55,9 @@ func main() {
 	}
 
 	telemetryCollector := data.NewTelemetryCollector(pool)
+	mealRepo := data.NewMealRepository(pool)
 	aiProvider := ai.NewCompositeAIProvider()
-	coachService := application.NewCoachService(telemetryCollector, aiProvider)
+	coachService := application.NewCoachService(telemetryCollector, mealRepo, aiProvider)
 	httpHandler := transport.NewHandler(coachService)
 
 	srv := &http.Server{

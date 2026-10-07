@@ -1,12 +1,12 @@
 import React from 'react';
-import { Dumbbell, History, LineChart, BookOpen, LogOut, Bot, User, Activity } from 'lucide-react';
+import { Dumbbell, History, LineChart, BookOpen, LogOut, Bot, User, Utensils } from 'lucide-react';
 import { useAuthStore } from '../../../entities/user/model/authStore.ts';
 import { UserAvatar } from '../../../entities/user/ui/UserAvatar.tsx';
 import { UnitSwitchToggle } from '../../../features/switch-units/ui/UnitSwitchToggle.tsx';
 import { LanguageSwitchToggle } from '../../../features/switch-language/ui/LanguageSwitchToggle.tsx';
 import { useTranslation } from '../../../shared/lib/i18n/i18n.ts';
 
-export type NavTab = 'workouts' | 'programs' | 'exercises' | 'history' | 'coach' | 'progress' | 'body' | 'profile';
+export type NavTab = 'workouts' | 'programs' | 'exercises' | 'history' | 'coach' | 'nutrition' | 'progress' | 'body' | 'profile';
 
 interface DashboardLayoutProps {
   activeTab: NavTab;
@@ -26,9 +26,9 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   const navItems: { id: NavTab; label: string; icon: React.ReactNode; isAI?: boolean }[] = [
     { id: 'workouts', label: t('nav.workouts'), icon: <Dumbbell className="w-4 h-4 md:w-5 md:h-5" /> },
     { id: 'programs', label: t('nav.programs'), icon: <BookOpen className="w-4 h-4 md:w-5 md:h-5" /> },
-    { id: 'exercises', label: t('nav.exercises'), icon: <Activity className="w-4 h-4 md:w-5 md:h-5" /> },
-    { id: 'history', label: t('nav.history'), icon: <History className="w-4 h-4 md:w-5 md:h-5" /> },
+    { id: 'nutrition', label: t('nav.nutrition'), icon: <Utensils className="w-4 h-4 md:w-5 md:h-5 text-emerald-400" /> },
     { id: 'coach', label: t('nav.coach'), icon: <Bot className="w-4 h-4 md:w-5 md:h-5 text-brand-400" />, isAI: true },
+    { id: 'history', label: t('nav.history'), icon: <History className="w-4 h-4 md:w-5 md:h-5" /> },
     { id: 'progress', label: t('nav.progress'), icon: <LineChart className="w-4 h-4 md:w-5 md:h-5" /> },
     { id: 'profile', label: t('nav.profile'), icon: <User className="w-4 h-4 md:w-5 md:h-5" /> },
   ];

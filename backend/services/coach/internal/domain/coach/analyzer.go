@@ -41,8 +41,10 @@ type PRData struct {
 }
 
 type BodyData struct {
-	WeightKg  float64
-	RecordedAt time.Time
+	WeightKg          float64
+	BodyFatPercentage float64
+	BMI               float64
+	RecordedAt        time.Time
 }
 
 // AnalyzeUserData performs sports-science heuristics and returns actionable CoachInsights
@@ -260,6 +262,27 @@ func AnalyzeUserData(
 		})
 	}
 
+	var currentWeight, bodyFat, bmi float64
+	if len(bodyLogs) > 0 {
+		currentWeight = bodyLogs[0].WeightKg
+		bodyFat = bodyLogs[0].BodyFatPercentage
+		bmi = bodyLogs[0].BMI
+	}
+
+	topPRList := make([]PersonalRecordItem, 0)
+	for i, pr := range records {
+		if i >= 5 {
+			break
+		}
+		topPRList = append(topPRList, PersonalRecordItem{
+			ExerciseID:   pr.ExerciseID,
+			ExerciseName: pr.ExerciseName,
+			PRType:       pr.PRType,
+			Value:        pr.Value,
+			AchievedAt:   pr.AchievedAt,
+		})
+	}
+
 	return CoachInsights{
 		ReadinessScore:      readiness,
 		RecoveryStatus:      recoveryStatus,
@@ -267,10 +290,14 @@ func AnalyzeUserData(
 		WeeklyVolumeKg:      weeklyVolume,
 		DaysSinceLastTrain:  daysSinceLast,
 		SuggestedSplit:      suggestedSplit,
+		CurrentWeightKg:     currentWeight,
+		BodyFatPercentage:   bodyFat,
+		BMI:                 bmi,
 		OverloadTargets:     overloads,
 		PlateauAlerts:       plateaus,
 		MuscleDistribution:  distList,
 		Insights:            insightsList,
+		RecentTopPRs:        topPRList,
 		GeneratedAt:         now,
 	}
 }
