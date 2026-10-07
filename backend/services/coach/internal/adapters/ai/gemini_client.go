@@ -22,12 +22,13 @@ type AIProvider interface {
 }
 
 type CompositeAIProvider struct {
-	geminiKey      string
-	ruleEngine     *RuleEngineProvider
-	httpClient     *http.Client
-	discoveredOnce sync.Once
-	cachedModels   []string
-	modelsMutex    sync.RWMutex
+	geminiKey        string
+	ruleEngine       *RuleEngineProvider
+	httpClient       *http.Client
+	discoveredOnce   sync.Once
+	cachedModels     []string
+	lastWorkingModel string
+	modelsMutex      sync.RWMutex
 }
 
 func NewCompositeAIProvider() *CompositeAIProvider {
@@ -35,9 +36,15 @@ func NewCompositeAIProvider() *CompositeAIProvider {
 	p := &CompositeAIProvider{
 		geminiKey:  key,
 		ruleEngine: NewRuleEngineProvider(),
-		httpClient: &http.Client{Timeout: 35 * time.Second},
+		httpClient: &http.Client{Timeout: 40 * time.Second},
 	}
 	return p
+}
+
+func (p *CompositeAIProvider) recordWorkingModel(model string) {
+	p.modelsMutex.Lock()
+	defer p.modelsMutex.Unlock()
+	p.lastWorkingModel = model
 }
 
 type listModelsResponse struct {
@@ -54,9 +61,17 @@ type listModelsResponse struct {
 
 func (p *CompositeAIProvider) getCandidateModels(ctx context.Context, key string) []string {
 	p.modelsMutex.RLock()
+	lastWorking := p.lastWorkingModel
 	if len(p.cachedModels) > 0 {
-		models := make([]string, len(p.cachedModels))
-		copy(models, p.cachedModels)
+		models := make([]string, 0, len(p.cachedModels))
+		if lastWorking != "" {
+			models = append(models, lastWorking)
+		}
+		for _, m := range p.cachedModels {
+			if m != lastWorking {
+				models = append(models, m)
+			}
+		}
 		p.modelsMutex.RUnlock()
 		return models
 	}
@@ -98,20 +113,19 @@ func (p *CompositeAIProvider) getCandidateModels(ctx context.Context, key string
 			return
 		}
 
-		// Preferred order for real multimodal & chat models
+		// Preferred order: High-availability fast multimodal models first
 		priorityKeywords := []string{
-			"gemini-3.8-flash",
+			"gemini-3.1-flash-lite",
+			"gemini-flash-lite-latest",
+			"gemini-2.5-flash-lite",
 			"gemini-3.7-flash",
+			"gemini-3.8-flash",
 			"gemini-3.6-flash",
 			"gemini-3.5-flash",
 			"gemini-flash-latest",
-			"gemini-3.1-flash-lite",
 			"gemini-pro-latest",
-			"gemini-3-flash-preview",
 			"gemini-2.5-flash",
 			"gemini-2.5-pro",
-			"gemini-flash-lite-latest",
-			"gemini-2.5-flash-lite",
 		}
 
 		rawValid := []string{}
@@ -180,11 +194,12 @@ func (p *CompositeAIProvider) getCandidateModels(ctx context.Context, key string
 
 	// Fallback list if discovery returned nothing
 	return []string{
-		"gemini-3.8-flash",
+		"gemini-3.1-flash-lite",
+		"gemini-flash-lite-latest",
 		"gemini-3.7-flash",
+		"gemini-3.8-flash",
 		"gemini-3.5-flash",
 		"gemini-flash-latest",
-		"gemini-3.1-flash-lite",
 		"gemini-pro-latest",
 	}
 }
@@ -436,6 +451,7 @@ Guidelines:
 
 		if len(geminiResp.Candidates) > 0 && len(geminiResp.Candidates[0].Content.Parts) > 0 {
 			reply := geminiResp.Candidates[0].Content.Parts[0].Text
+			p.recordWorkingModel(model)
 			slog.Info("Gemini response successfully generated", "model", model)
 			return coach.ChatResponse{
 				Reply: strings.TrimSpace(reply),
@@ -603,6 +619,7 @@ Format:
 			}
 		}
 
+		p.recordWorkingModel(model)
 		slog.Info("Gemini Vision analysis successful", "model", model, "meal", analysis.MealName, "calories", analysis.TotalCalories)
 		return analysis, nil
 	}
