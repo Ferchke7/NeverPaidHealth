@@ -36,7 +36,8 @@ func NewCompositeAIProvider() *CompositeAIProvider {
 }
 
 func (p *CompositeAIProvider) GenerateChatResponse(ctx context.Context, req coach.ChatRequest, telemetry coach.CoachInsights, userName string) (coach.ChatResponse, error) {
-	if p.geminiKey != "" {
+	key := p.getAPIKey()
+	if key != "" {
 		res, err := p.callGemini(ctx, req, telemetry, userName)
 		if err == nil && res.Reply != "" {
 			return res, nil
@@ -50,7 +51,8 @@ func (p *CompositeAIProvider) GenerateChatResponse(ctx context.Context, req coac
 }
 
 func (p *CompositeAIProvider) AnalyzeMealPhoto(ctx context.Context, imageBase64, mimeType, notes string) (coach.MealAnalysisResult, error) {
-	if p.geminiKey != "" {
+	key := p.getAPIKey()
+	if key != "" {
 		res, err := p.callGeminiVision(ctx, imageBase64, mimeType, notes)
 		if err == nil && res.MealName != "" {
 			return res, nil
@@ -92,11 +94,15 @@ type geminiResponse struct {
 }
 
 func (p *CompositeAIProvider) callGemini(ctx context.Context, req coach.ChatRequest, telemetry coach.CoachInsights, userName string) (coach.ChatResponse, error) {
+	key := p.getAPIKey()
+	if key == "" {
+		return coach.ChatResponse{}, fmt.Errorf("gemini api key is empty")
+	}
 	modelName := os.Getenv("GEMINI_MODEL")
 	if modelName == "" {
-		modelName = "gemini-1.5-flash"
+		modelName = "gemini-2.0-flash"
 	}
-	apiURL := fmt.Sprintf("https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s", modelName, p.geminiKey)
+	apiURL := fmt.Sprintf("https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s", modelName, key)
 
 	bodyStats := "Body Weight: Not logged yet"
 	if telemetry.CurrentWeightKg > 0 {
@@ -235,6 +241,25 @@ Guidelines:
 
 	if resp.StatusCode != http.StatusOK {
 		raw, _ := io.ReadAll(resp.Body)
+		if modelName != "gemini-1.5-flash" {
+			fallbackURL := fmt.Sprintf("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=%s", key)
+			fallbackReq, _ := http.NewRequestWithContext(ctx, "POST", fallbackURL, bytes.NewReader(bodyBytes))
+			fallbackReq.Header.Set("Content-Type", "application/json")
+			if fbResp, fbErr := p.httpClient.Do(fallbackReq); fbErr == nil && fbResp.StatusCode == http.StatusOK {
+				defer fbResp.Body.Close()
+				var fbGeminiResp geminiResponse
+				if json.NewDecoder(fbResp.Body).Decode(&fbGeminiResp) == nil && len(fbGeminiResp.Candidates) > 0 && len(fbGeminiResp.Candidates[0].Content.Parts) > 0 {
+					return coach.ChatResponse{
+						Reply: strings.TrimSpace(fbGeminiResp.Candidates[0].Content.Parts[0].Text),
+						Suggestions: []string{
+							"Прогрессивная перегрузка для жима лежа",
+							"Что тренировать сегодня?",
+							"Оптимальное восстановление",
+						},
+					}, nil
+				}
+			}
+		}
 		return coach.ChatResponse{}, fmt.Errorf("gemini api error %d: %s", resp.StatusCode, string(raw))
 	}
 

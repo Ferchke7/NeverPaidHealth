@@ -42,23 +42,34 @@ jobs:
             git fetch origin main
             git reset --hard origin/main
             
-            # Write production environment variables if secrets exist
-            touch deploy/.env
+            # Reset and create clean production environment files
+            rm -f deploy/.env .env
+            cat << 'EOF' > .env
+AUTH_DEV_MODE=true
+EOF
             if [ -n "${{ secrets.GOOGLE_CLIENT_ID }}" ]; then
-              echo "GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}" >> deploy/.env
-              echo "VITE_GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}" >> deploy/.env
+              echo "GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}" >> .env
+              echo "VITE_GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}" >> .env
             fi
             if [ -n "${{ secrets.GOOGLE_CLIENT_SECRET }}" ]; then
-              echo "GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}" >> deploy/.env
+              echo "GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}" >> .env
             fi
             if [ -n "${{ secrets.GEMINI_API_KEY }}" ]; then
-              echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" >> deploy/.env
+              echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" >> .env
             fi
+            if [ -n "${{ secrets.GEMINI_MODEL }}" ]; then
+              echo "GEMINI_MODEL=${{ secrets.GEMINI_MODEL }}" >> .env
+            else
+              echo "GEMINI_MODEL=gemini-2.0-flash" >> .env
+            fi
+
+            mkdir -p deploy
+            cp .env deploy/.env
             
-            # Build and launch containers
+            # Build and launch containers with explicit env-file and force-recreate
             echo "📦 Building and restarting containers..."
-            docker compose -f deploy/docker-compose.prod.yml build
-            docker compose -f deploy/docker-compose.prod.yml up -d --remove-orphans
+            docker compose --env-file deploy/.env -f deploy/docker-compose.prod.yml build
+            docker compose --env-file deploy/.env -f deploy/docker-compose.prod.yml up -d --force-recreate --remove-orphans
             
             # Ensure static files permissions
             docker exec neverpaid-frontend chmod -R 755 /usr/share/nginx/html 2>/dev/null || true
