@@ -71,7 +71,7 @@ func (h *AuthenticateGoogleHandler) Handle(ctx context.Context, idToken string) 
 		u = newUser
 	}
 
-	accessToken, err := h.tokenIssuer.IssueAccessToken(u.ID(), u.Email().String(), 15*time.Minute)
+	accessToken, err := h.tokenIssuer.IssueAccessToken(u.ID(), u.Email().String(), 30*24*time.Hour)
 	if err != nil {
 		return nil, fmt.Errorf("failed to issue access token: %w", err)
 	}
@@ -79,6 +79,6 @@ func (h *AuthenticateGoogleHandler) Handle(ctx context.Context, idToken string) 
 	return &AuthResult{
 		User:        u,
 		AccessToken: accessToken,
-		ExpiresIn:   900,
+		ExpiresIn:   2592000, // 30 days
 	}, nil
 }

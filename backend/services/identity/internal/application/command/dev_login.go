@@ -61,7 +61,7 @@ func (h *DevLoginHandler) Handle(ctx context.Context, emailStr, displayName stri
 		u = newUser
 	}
 
-	accessToken, err := h.tokenIssuer.IssueAccessToken(u.ID(), u.Email().String(), 15*time.Minute)
+	accessToken, err := h.tokenIssuer.IssueAccessToken(u.ID(), u.Email().String(), 30*24*time.Hour)
 	if err != nil {
 		return nil, fmt.Errorf("failed to issue dev access token: %w", err)
 	}
@@ -69,6 +69,6 @@ func (h *DevLoginHandler) Handle(ctx context.Context, emailStr, displayName stri
 	return &AuthResult{
 		User:        u,
 		AccessToken: accessToken,
-		ExpiresIn:   900,
+		ExpiresIn:   2592000, // 30 days
 	}, nil
 }
