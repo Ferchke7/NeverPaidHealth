@@ -1,5 +1,5 @@
 import React from 'react';
-import { GoogleSignInButton, DevLoginModal } from '../../../features/auth-google/ui/AuthButtons.tsx';
+import { GoogleSignInButton } from '../../../features/auth-google/ui/AuthButtons.tsx';
 import { Dumbbell, ShieldCheck, Zap, Sparkles } from 'lucide-react';
 import { LanguageSwitchToggle } from '../../../features/switch-language/ui/LanguageSwitchToggle.tsx';
 import { useTranslation } from '../../../shared/lib/i18n/i18n.ts';
@@ -45,14 +45,8 @@ export const LoginPage: React.FC = () => {
         </div>
 
         {/* Auth Actions */}
-        <div className="space-y-3 pt-2">
+        <div className="pt-2">
           <GoogleSignInButton />
-          <div className="relative flex py-2 items-center">
-            <div className="flex-grow border-t border-dark-700"></div>
-            <span className="flex-shrink mx-4 text-xs uppercase tracking-widest text-zinc-500 font-semibold">Or</span>
-            <div className="flex-grow border-t border-dark-700"></div>
-          </div>
-          <DevLoginModal />
         </div>
       </div>
     </div>

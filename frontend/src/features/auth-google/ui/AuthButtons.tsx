@@ -189,27 +189,25 @@ export const GoogleSignInButton: React.FC = () => {
     <div className="space-y-2">
       {ENV.GOOGLE_CLIENT_ID ? (
         <div ref={googleBtnRef} className="w-full flex justify-center min-h-[44px]">
-          <Button
-            variant="secondary"
-            size="md"
-            className="w-full flex items-center justify-center gap-2 border-dark-600 hover:bg-dark-700 font-semibold"
+          <button
+            type="button"
+            className="w-full flex items-center justify-center gap-3 bg-black hover:bg-dark-950 text-white border border-zinc-700 hover:border-zinc-500 rounded-full py-3 px-5 shadow-lg active:scale-98 transition-all font-bold text-sm disabled:opacity-60 cursor-pointer"
             onClick={handleManualClick}
             disabled={loading}
           >
             <GoogleIcon />
             <span>{loading ? 'Authenticating...' : 'Continue with Google'}</span>
-          </Button>
+          </button>
         </div>
       ) : (
-        <Button
-          variant="secondary"
-          size="md"
-          className="w-full flex items-center justify-center gap-2 border-dark-600 hover:bg-dark-700 font-semibold"
+        <button
+          type="button"
+          className="w-full flex items-center justify-center gap-3 bg-black hover:bg-dark-950 text-white border border-zinc-700 hover:border-zinc-500 rounded-full py-3 px-5 shadow-lg active:scale-98 transition-all font-bold text-sm cursor-pointer"
           onClick={handleManualClick}
         >
           <GoogleIcon />
           <span>Continue with Google</span>
-        </Button>
+        </button>
       )}
 
       {error && <p className="text-xs text-amber-400 text-center">{error}</p>}
