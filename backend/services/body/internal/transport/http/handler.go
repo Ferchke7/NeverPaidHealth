@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 	"github.com/neverpaidhealth/backend/pkg/httpx"
 	"github.com/neverpaidhealth/backend/services/body/internal/application/command"
 	"github.com/neverpaidhealth/backend/services/body/internal/application/query"
@@ -34,14 +35,14 @@ func (h *Handler) Routes() http.Handler {
 
 	r.Use(httpx.ExtractUserHeaderMiddleware)
 
-	r.Get("/logs", h.handleListLogs)
-	r.Get("/body/logs", h.handleListLogs)
-	r.Post("/logs", h.handleLogMeasurement)
-	r.Post("/body/logs", h.handleLogMeasurement)
-	r.Delete("/logs/{date}", h.handleDeleteLog)
-	r.Delete("/body/logs/{date}", h.handleDeleteLog)
-	r.Get("/trend", h.handleGetTrend)
-	r.Get("/body/trend", h.handleGetTrend)
+	r.Get("/logs", httpx.RequireAuth(h.handleListLogs))
+	r.Get("/body/logs", httpx.RequireAuth(h.handleListLogs))
+	r.Post("/logs", httpx.RequireAuth(h.handleLogMeasurement))
+	r.Post("/body/logs", httpx.RequireAuth(h.handleLogMeasurement))
+	r.Delete("/logs/{date}", httpx.RequireAuth(h.handleDeleteLog))
+	r.Delete("/body/logs/{date}", httpx.RequireAuth(h.handleDeleteLog))
+	r.Get("/trend", httpx.RequireAuth(h.handleGetTrend))
+	r.Get("/body/trend", httpx.RequireAuth(h.handleGetTrend))
 
 	return r
 }
@@ -59,12 +60,7 @@ type logMeasurementReq struct {
 	NeckCm            *float64 `json:"neck_cm,omitempty"`
 }
 
-func (h *Handler) handleListLogs(w http.ResponseWriter, r *http.Request) {
-	userID, ok := httpx.UserIDFromContext(r.Context())
-	if !ok {
-		httpx.WriteProblem(w, http.StatusUnauthorized, "Unauthorized", "User context required", "ERR_UNAUTHORIZED")
-		return
-	}
+func (h *Handler) handleListLogs(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
 
 	fromDate := r.URL.Query().Get("from_date")
 	toDate := r.URL.Query().Get("to_date")
@@ -83,12 +79,7 @@ func (h *Handler) handleListLogs(w http.ResponseWriter, r *http.Request) {
 	httpx.WriteJSON(w, http.StatusOK, dtos)
 }
 
-func (h *Handler) handleLogMeasurement(w http.ResponseWriter, r *http.Request) {
-	userID, ok := httpx.UserIDFromContext(r.Context())
-	if !ok {
-		httpx.WriteProblem(w, http.StatusUnauthorized, "Unauthorized", "User context required", "ERR_UNAUTHORIZED")
-		return
-	}
+func (h *Handler) handleLogMeasurement(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
 
 	var req logMeasurementReq
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -117,12 +108,7 @@ func (h *Handler) handleLogMeasurement(w http.ResponseWriter, r *http.Request) {
 	httpx.WriteJSON(w, http.StatusOK, mapBodyLogDTO(log))
 }
 
-func (h *Handler) handleDeleteLog(w http.ResponseWriter, r *http.Request) {
-	userID, ok := httpx.UserIDFromContext(r.Context())
-	if !ok {
-		httpx.WriteProblem(w, http.StatusUnauthorized, "Unauthorized", "User context required", "ERR_UNAUTHORIZED")
-		return
-	}
+func (h *Handler) handleDeleteLog(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
 
 	date := chi.URLParam(r, "date")
 	if err := h.deleteCmd.Handle(r.Context(), userID, date); err != nil {
@@ -133,12 +119,7 @@ func (h *Handler) handleDeleteLog(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (h *Handler) handleGetTrend(w http.ResponseWriter, r *http.Request) {
-	userID, ok := httpx.UserIDFromContext(r.Context())
-	if !ok {
-		httpx.WriteProblem(w, http.StatusUnauthorized, "Unauthorized", "User context required", "ERR_UNAUTHORIZED")
-		return
-	}
+func (h *Handler) handleGetTrend(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
 
 	trend, err := h.queries.GetTrend(r.Context(), userID)
 	if err != nil {

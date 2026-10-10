@@ -27,47 +27,42 @@ func (h *Handler) Routes() http.Handler {
 
 	// Route group for /todos
 	r.Route("/todos", func(tr chi.Router) {
-		tr.Get("/", h.handleGetDailySchedule)
-		tr.Get("/schedule", h.handleGetDailySchedule)
-		tr.Post("/", h.handleCreateTodo)
-		tr.Post("/focus-sessions", h.handleLogFocusSession)
-		tr.Get("/activity-logs", h.handleGetActivityLogs)
-		tr.Get("/stats", h.handleGetStats)
-		tr.Put("/{id}", h.handleUpdateTodo)
-		tr.Delete("/{id}", h.handleDeleteTodo)
-		tr.Post("/{id}/toggle", h.handleToggleTodo)
-		tr.Post("/{id}/log-session", h.handleLogFocusSession)
+		tr.Get("/", httpx.RequireAuth(h.handleGetDailySchedule))
+		tr.Get("/schedule", httpx.RequireAuth(h.handleGetDailySchedule))
+		tr.Post("/", httpx.RequireAuth(h.handleCreateTodo))
+		tr.Post("/focus-sessions", httpx.RequireAuth(h.handleLogFocusSession))
+		tr.Get("/activity-logs", httpx.RequireAuth(h.handleGetActivityLogs))
+		tr.Get("/stats", httpx.RequireAuth(h.handleGetStats))
+		tr.Put("/{id}", httpx.RequireAuth(h.handleUpdateTodo))
+		tr.Delete("/{id}", httpx.RequireAuth(h.handleDeleteTodo))
+		tr.Post("/{id}/toggle", httpx.RequireAuth(h.handleToggleTodo))
+		tr.Post("/{id}/log-session", httpx.RequireAuth(h.handleLogFocusSession))
 	})
 
 	// Route group for /schedule
 	r.Route("/schedule", func(sr chi.Router) {
-		sr.Get("/", h.handleGetDailySchedule)
-		sr.Post("/", h.handleCreateTodo)
-		sr.Get("/stats", h.handleGetStats)
+		sr.Get("/", httpx.RequireAuth(h.handleGetDailySchedule))
+		sr.Post("/", httpx.RequireAuth(h.handleCreateTodo))
+		sr.Get("/stats", httpx.RequireAuth(h.handleGetStats))
 	})
 
 	// Standalone endpoints
-	r.Get("/activity-logs", h.handleGetActivityLogs)
-	r.Get("/stats", h.handleGetStats)
-	r.Post("/focus-sessions", h.handleLogFocusSession)
+	r.Get("/activity-logs", httpx.RequireAuth(h.handleGetActivityLogs))
+	r.Get("/stats", httpx.RequireAuth(h.handleGetStats))
+	r.Post("/focus-sessions", httpx.RequireAuth(h.handleLogFocusSession))
 
 	// Root routes fallback
-	r.Get("/", h.handleGetDailySchedule)
-	r.Post("/", h.handleCreateTodo)
-	r.Put("/{id}", h.handleUpdateTodo)
-	r.Delete("/{id}", h.handleDeleteTodo)
-	r.Post("/{id}/toggle", h.handleToggleTodo)
-	r.Post("/{id}/log-session", h.handleLogFocusSession)
+	r.Get("/", httpx.RequireAuth(h.handleGetDailySchedule))
+	r.Post("/", httpx.RequireAuth(h.handleCreateTodo))
+	r.Put("/{id}", httpx.RequireAuth(h.handleUpdateTodo))
+	r.Delete("/{id}", httpx.RequireAuth(h.handleDeleteTodo))
+	r.Post("/{id}/toggle", httpx.RequireAuth(h.handleToggleTodo))
+	r.Post("/{id}/log-session", httpx.RequireAuth(h.handleLogFocusSession))
 
 	return r
 }
 
-func (h *Handler) handleGetDailySchedule(w http.ResponseWriter, r *http.Request) {
-	userID, ok := httpx.UserIDFromContext(r.Context())
-	if !ok {
-		httpx.WriteProblem(w, http.StatusUnauthorized, "Unauthorized", "User context required", "ERR_UNAUTHORIZED")
-		return
-	}
+func (h *Handler) handleGetDailySchedule(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
 
 	dateStr := r.URL.Query().Get("date")
 	if dateStr == "" {
@@ -83,12 +78,7 @@ func (h *Handler) handleGetDailySchedule(w http.ResponseWriter, r *http.Request)
 	httpx.WriteJSON(w, http.StatusOK, res)
 }
 
-func (h *Handler) handleCreateTodo(w http.ResponseWriter, r *http.Request) {
-	userID, ok := httpx.UserIDFromContext(r.Context())
-	if !ok {
-		httpx.WriteProblem(w, http.StatusUnauthorized, "Unauthorized", "User context required", "ERR_UNAUTHORIZED")
-		return
-	}
+func (h *Handler) handleCreateTodo(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
 
 	var in application.CreateTodoInput
 	if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
@@ -105,12 +95,7 @@ func (h *Handler) handleCreateTodo(w http.ResponseWriter, r *http.Request) {
 	httpx.WriteJSON(w, http.StatusCreated, res)
 }
 
-func (h *Handler) handleUpdateTodo(w http.ResponseWriter, r *http.Request) {
-	userID, ok := httpx.UserIDFromContext(r.Context())
-	if !ok {
-		httpx.WriteProblem(w, http.StatusUnauthorized, "Unauthorized", "User context required", "ERR_UNAUTHORIZED")
-		return
-	}
+func (h *Handler) handleUpdateTodo(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
 
 	todoIDStr := chi.URLParam(r, "id")
 	todoID, err := uuid.Parse(todoIDStr)
@@ -134,12 +119,7 @@ func (h *Handler) handleUpdateTodo(w http.ResponseWriter, r *http.Request) {
 	httpx.WriteJSON(w, http.StatusOK, res)
 }
 
-func (h *Handler) handleDeleteTodo(w http.ResponseWriter, r *http.Request) {
-	userID, ok := httpx.UserIDFromContext(r.Context())
-	if !ok {
-		httpx.WriteProblem(w, http.StatusUnauthorized, "Unauthorized", "User context required", "ERR_UNAUTHORIZED")
-		return
-	}
+func (h *Handler) handleDeleteTodo(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
 
 	todoIDStr := chi.URLParam(r, "id")
 	todoID, err := uuid.Parse(todoIDStr)
@@ -156,12 +136,7 @@ func (h *Handler) handleDeleteTodo(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (h *Handler) handleToggleTodo(w http.ResponseWriter, r *http.Request) {
-	userID, ok := httpx.UserIDFromContext(r.Context())
-	if !ok {
-		httpx.WriteProblem(w, http.StatusUnauthorized, "Unauthorized", "User context required", "ERR_UNAUTHORIZED")
-		return
-	}
+func (h *Handler) handleToggleTodo(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
 
 	todoIDStr := chi.URLParam(r, "id")
 	todoID, err := uuid.Parse(todoIDStr)
@@ -179,12 +154,7 @@ func (h *Handler) handleToggleTodo(w http.ResponseWriter, r *http.Request) {
 	httpx.WriteJSON(w, http.StatusOK, res)
 }
 
-func (h *Handler) handleLogFocusSession(w http.ResponseWriter, r *http.Request) {
-	userID, ok := httpx.UserIDFromContext(r.Context())
-	if !ok {
-		httpx.WriteProblem(w, http.StatusUnauthorized, "Unauthorized", "User context required", "ERR_UNAUTHORIZED")
-		return
-	}
+func (h *Handler) handleLogFocusSession(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
 
 	var in application.LogFocusSessionInput
 	if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
@@ -208,12 +178,7 @@ func (h *Handler) handleLogFocusSession(w http.ResponseWriter, r *http.Request) 
 	httpx.WriteJSON(w, http.StatusCreated, res)
 }
 
-func (h *Handler) handleGetActivityLogs(w http.ResponseWriter, r *http.Request) {
-	userID, ok := httpx.UserIDFromContext(r.Context())
-	if !ok {
-		httpx.WriteProblem(w, http.StatusUnauthorized, "Unauthorized", "User context required", "ERR_UNAUTHORIZED")
-		return
-	}
+func (h *Handler) handleGetActivityLogs(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
 
 	dateStr := r.URL.Query().Get("date")
 	res, err := h.todoService.GetActivityLogs(r.Context(), userID, dateStr)
@@ -225,12 +190,7 @@ func (h *Handler) handleGetActivityLogs(w http.ResponseWriter, r *http.Request) 
 	httpx.WriteJSON(w, http.StatusOK, res)
 }
 
-func (h *Handler) handleGetStats(w http.ResponseWriter, r *http.Request) {
-	userID, ok := httpx.UserIDFromContext(r.Context())
-	if !ok {
-		httpx.WriteProblem(w, http.StatusUnauthorized, "Unauthorized", "User context required", "ERR_UNAUTHORIZED")
-		return
-	}
+func (h *Handler) handleGetStats(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
 
 	days := 7
 	if dStr := r.URL.Query().Get("days"); dStr != "" {

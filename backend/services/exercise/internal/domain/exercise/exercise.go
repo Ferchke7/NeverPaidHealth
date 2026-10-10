@@ -107,3 +107,29 @@ func (e *Exercise) CanDelete(requestingUserID uuid.UUID) error {
 	}
 	return nil
 }
+
+func (e *Exercise) Update(
+	requestingUserID uuid.UUID,
+	name string,
+	primary MuscleGroup,
+	secondaries []MuscleGroup,
+	equipment Equipment,
+	measurement MeasurementType,
+) error {
+	if !e.isCustom {
+		return ErrCannotModifySeeded
+	}
+	if e.createdByUserID == nil || *e.createdByUserID != requestingUserID {
+		return ErrUnauthorizedExercise
+	}
+	trimmedName := strings.TrimSpace(name)
+	if len(trimmedName) < 2 || len(trimmedName) > 80 {
+		return ErrInvalidExerciseName
+	}
+	e.name = trimmedName
+	e.primaryMuscleGroup = primary
+	e.secondaryMuscleGroups = secondaries
+	e.equipment = equipment
+	e.measurementType = measurement
+	return nil
+}

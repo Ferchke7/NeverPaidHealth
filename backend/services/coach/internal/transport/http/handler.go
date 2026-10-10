@@ -26,30 +26,25 @@ func (h *Handler) Routes() http.Handler {
 	r.Use(httpx.ExtractUserHeaderMiddleware)
 
 	// Coach & Insights
-	r.Get("/insights", h.handleGetInsights)
-	r.Get("/coach/insights", h.handleGetInsights)
-	r.Post("/chat", h.handleChat)
-	r.Post("/coach/chat", h.handleChat)
+	r.Get("/insights", httpx.RequireAuth(h.handleGetInsights))
+	r.Get("/coach/insights", httpx.RequireAuth(h.handleGetInsights))
+	r.Post("/chat", httpx.RequireAuth(h.handleChat))
+	r.Post("/coach/chat", httpx.RequireAuth(h.handleChat))
 
 	// Nutrition & Photo Analysis
-	r.Post("/nutrition/analyze-photo", h.handleAnalyzePhoto)
-	r.Post("/coach/nutrition/analyze-photo", h.handleAnalyzePhoto)
-	r.Get("/nutrition/today", h.handleGetTodayNutrition)
-	r.Get("/coach/nutrition/today", h.handleGetTodayNutrition)
-	r.Post("/nutrition/meals", h.handleSaveMeal)
-	r.Post("/coach/nutrition/meals", h.handleSaveMeal)
-	r.Delete("/nutrition/meals/{id}", h.handleDeleteMeal)
-	r.Delete("/coach/nutrition/meals/{id}", h.handleDeleteMeal)
+	r.Post("/nutrition/analyze-photo", httpx.RequireAuth(h.handleAnalyzePhoto))
+	r.Post("/coach/nutrition/analyze-photo", httpx.RequireAuth(h.handleAnalyzePhoto))
+	r.Get("/nutrition/today", httpx.RequireAuth(h.handleGetTodayNutrition))
+	r.Get("/coach/nutrition/today", httpx.RequireAuth(h.handleGetTodayNutrition))
+	r.Post("/nutrition/meals", httpx.RequireAuth(h.handleSaveMeal))
+	r.Post("/coach/nutrition/meals", httpx.RequireAuth(h.handleSaveMeal))
+	r.Delete("/nutrition/meals/{id}", httpx.RequireAuth(h.handleDeleteMeal))
+	r.Delete("/coach/nutrition/meals/{id}", httpx.RequireAuth(h.handleDeleteMeal))
 
 	return r
 }
 
-func (h *Handler) handleGetInsights(w http.ResponseWriter, r *http.Request) {
-	userID, ok := httpx.UserIDFromContext(r.Context())
-	if !ok {
-		httpx.WriteProblem(w, http.StatusUnauthorized, "Unauthorized", "User context required", "ERR_UNAUTHORIZED")
-		return
-	}
+func (h *Handler) handleGetInsights(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
 
 	insights, err := h.coachService.GetInsights(r.Context(), userID)
 	if err != nil {
@@ -60,12 +55,7 @@ func (h *Handler) handleGetInsights(w http.ResponseWriter, r *http.Request) {
 	httpx.WriteJSON(w, http.StatusOK, insights)
 }
 
-func (h *Handler) handleChat(w http.ResponseWriter, r *http.Request) {
-	userID, ok := httpx.UserIDFromContext(r.Context())
-	if !ok {
-		httpx.WriteProblem(w, http.StatusUnauthorized, "Unauthorized", "User context required", "ERR_UNAUTHORIZED")
-		return
-	}
+func (h *Handler) handleChat(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
 
 	var req coach.ChatRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -101,7 +91,7 @@ type analyzePhotoReq struct {
 	Notes       string `json:"notes,omitempty"`
 }
 
-func (h *Handler) handleAnalyzePhoto(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) handleAnalyzePhoto(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
 	_, ok := httpx.UserIDFromContext(r.Context())
 	if !ok {
 		httpx.WriteProblem(w, http.StatusUnauthorized, "Unauthorized", "User context required", "ERR_UNAUTHORIZED")
@@ -128,12 +118,7 @@ func (h *Handler) handleAnalyzePhoto(w http.ResponseWriter, r *http.Request) {
 	httpx.WriteJSON(w, http.StatusOK, analysis)
 }
 
-func (h *Handler) handleGetTodayNutrition(w http.ResponseWriter, r *http.Request) {
-	userID, ok := httpx.UserIDFromContext(r.Context())
-	if !ok {
-		httpx.WriteProblem(w, http.StatusUnauthorized, "Unauthorized", "User context required", "ERR_UNAUTHORIZED")
-		return
-	}
+func (h *Handler) handleGetTodayNutrition(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
 
 	summary, err := h.coachService.GetTodayNutrition(r.Context(), userID)
 	if err != nil {
@@ -145,23 +130,18 @@ func (h *Handler) handleGetTodayNutrition(w http.ResponseWriter, r *http.Request
 }
 
 type saveMealReq struct {
-	ID        *uuid.UUID       `json:"id,omitempty"`
-	MealType  string           `json:"meal_type"`
-	Name      string           `json:"name"`
-	Calories  int              `json:"calories"`
-	ProteinG  float64          `json:"protein_g"`
-	CarbsG    float64          `json:"carbs_g"`
-	FatG      float64          `json:"fat_g"`
-	PhotoURL  string           `json:"photo_url,omitempty"`
-	Items     []coach.MealItem `json:"items,omitempty"`
+	ID       *uuid.UUID       `json:"id,omitempty"`
+	MealType string           `json:"meal_type"`
+	Name     string           `json:"name"`
+	Calories int              `json:"calories"`
+	ProteinG float64          `json:"protein_g"`
+	CarbsG   float64          `json:"carbs_g"`
+	FatG     float64          `json:"fat_g"`
+	PhotoURL string           `json:"photo_url,omitempty"`
+	Items    []coach.MealItem `json:"items,omitempty"`
 }
 
-func (h *Handler) handleSaveMeal(w http.ResponseWriter, r *http.Request) {
-	userID, ok := httpx.UserIDFromContext(r.Context())
-	if !ok {
-		httpx.WriteProblem(w, http.StatusUnauthorized, "Unauthorized", "User context required", "ERR_UNAUTHORIZED")
-		return
-	}
+func (h *Handler) handleSaveMeal(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
 
 	var req saveMealReq
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -182,16 +162,16 @@ func (h *Handler) handleSaveMeal(w http.ResponseWriter, r *http.Request) {
 	}
 
 	meal := coach.MealLog{
-		ID:        mealID,
-		UserID:    userID,
-		MealType:  req.MealType,
-		Name:      req.Name,
-		Calories:  req.Calories,
-		ProteinG:  req.ProteinG,
-		CarbsG:    req.CarbsG,
-		FatG:      req.FatG,
-		PhotoURL:  req.PhotoURL,
-		Items:     req.Items,
+		ID:       mealID,
+		UserID:   userID,
+		MealType: req.MealType,
+		Name:     req.Name,
+		Calories: req.Calories,
+		ProteinG: req.ProteinG,
+		CarbsG:   req.CarbsG,
+		FatG:     req.FatG,
+		PhotoURL: req.PhotoURL,
+		Items:    req.Items,
 	}
 
 	if err := h.coachService.SaveMeal(r.Context(), meal); err != nil {
@@ -202,12 +182,7 @@ func (h *Handler) handleSaveMeal(w http.ResponseWriter, r *http.Request) {
 	httpx.WriteJSON(w, http.StatusCreated, meal)
 }
 
-func (h *Handler) handleDeleteMeal(w http.ResponseWriter, r *http.Request) {
-	userID, ok := httpx.UserIDFromContext(r.Context())
-	if !ok {
-		httpx.WriteProblem(w, http.StatusUnauthorized, "Unauthorized", "User context required", "ERR_UNAUTHORIZED")
-		return
-	}
+func (h *Handler) handleDeleteMeal(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
 
 	idStr := chi.URLParam(r, "id")
 	mealID, err := uuid.Parse(idStr)

@@ -31,11 +31,12 @@ func main() {
 
 	repo := postgres.NewExerciseRepository(pool)
 	createCustomCmd := command.NewCreateCustomExerciseHandler(repo)
+	updateCustomCmd := command.NewUpdateCustomExerciseHandler(repo)
 	deleteCustomCmd := command.NewDeleteCustomExerciseHandler(repo)
 	listQuery := query.NewListExercisesHandler(repo)
 	getQuery := query.NewGetExerciseHandler(repo)
 
-	handler := transport.NewHandler(createCustomCmd, deleteCustomCmd, listQuery, getQuery)
+	handler := transport.NewHandler(createCustomCmd, updateCustomCmd, deleteCustomCmd, listQuery, getQuery)
 
 	srv := &http.Server{
 		Addr:         ":" + port,

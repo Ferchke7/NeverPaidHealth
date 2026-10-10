@@ -55,22 +55,22 @@ func (h *Handler) Routes() http.Handler {
 	r.Use(httpx.ExtractUserHeaderMiddleware)
 
 	// Routines
-	r.Get("/routines", h.handleListRoutines)
-	r.Post("/routines", h.handleCreateRoutine)
-	r.Get("/routines/{id}", h.handleGetRoutineByID)
-	r.Delete("/routines/{id}", h.handleDeleteRoutine)
+	r.Get("/routines", httpx.RequireAuth(h.handleListRoutines))
+	r.Post("/routines", httpx.RequireAuth(h.handleCreateRoutine))
+	r.Get("/routines/{id}", httpx.RequireAuth(h.handleGetRoutineByID))
+	r.Delete("/routines/{id}", httpx.RequireAuth(h.handleDeleteRoutine))
 
 	// Workouts
-	r.Get("/workouts", h.handleListWorkouts)
-	r.Post("/workouts", h.handleStartWorkout)
-	r.Get("/workouts/active", h.handleGetActiveWorkout)
-	r.Get("/workouts/{id}", h.handleGetWorkoutByID)
-	r.Delete("/workouts/{id}", h.handleCancelWorkout)
-	r.Post("/workouts/{id}/cancel", h.handleCancelWorkout)
-	r.Post("/workouts/{id}/finish", h.handleFinishWorkout)
-	r.Post("/workouts/{id}/exercises", h.handleAddExercise)
-	r.Post("/workouts/{id}/exercises/{exerciseId}/sets", h.handleLogSet)
-	r.Put("/workouts/{id}/sets/{setId}", h.handleUpdateSet)
+	r.Get("/workouts", httpx.RequireAuth(h.handleListWorkouts))
+	r.Post("/workouts", httpx.RequireAuth(h.handleStartWorkout))
+	r.Get("/workouts/active", httpx.RequireAuth(h.handleGetActiveWorkout))
+	r.Get("/workouts/{id}", httpx.RequireAuth(h.handleGetWorkoutByID))
+	r.Delete("/workouts/{id}", httpx.RequireAuth(h.handleCancelWorkout))
+	r.Post("/workouts/{id}/cancel", httpx.RequireAuth(h.handleCancelWorkout))
+	r.Post("/workouts/{id}/finish", httpx.RequireAuth(h.handleFinishWorkout))
+	r.Post("/workouts/{id}/exercises", httpx.RequireAuth(h.handleAddExercise))
+	r.Post("/workouts/{id}/exercises/{exerciseId}/sets", httpx.RequireAuth(h.handleLogSet))
+	r.Put("/workouts/{id}/sets/{setId}", httpx.RequireAuth(h.handleUpdateSet))
 
 	return r
 }
@@ -102,17 +102,12 @@ type updateSetReq struct {
 }
 
 type createRoutineReq struct {
-	Name      string                      `json:"name"`
-	Notes     string                      `json:"notes,omitempty"`
+	Name      string                         `json:"name"`
+	Notes     string                         `json:"notes,omitempty"`
 	Exercises []command.RoutineExerciseInput `json:"exercises"`
 }
 
-func (h *Handler) handleStartWorkout(w http.ResponseWriter, r *http.Request) {
-	userID, ok := httpx.UserIDFromContext(r.Context())
-	if !ok {
-		httpx.WriteProblem(w, http.StatusUnauthorized, "Unauthorized", "User context required", "ERR_UNAUTHORIZED")
-		return
-	}
+func (h *Handler) handleStartWorkout(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
 
 	var req startWorkoutReq
 	_ = json.NewDecoder(r.Body).Decode(&req)
@@ -138,12 +133,7 @@ func (h *Handler) handleStartWorkout(w http.ResponseWriter, r *http.Request) {
 	httpx.WriteJSON(w, http.StatusCreated, mapWorkoutDTO(workoutRes))
 }
 
-func (h *Handler) handleGetActiveWorkout(w http.ResponseWriter, r *http.Request) {
-	userID, ok := httpx.UserIDFromContext(r.Context())
-	if !ok {
-		httpx.WriteProblem(w, http.StatusUnauthorized, "Unauthorized", "User context required", "ERR_UNAUTHORIZED")
-		return
-	}
+func (h *Handler) handleGetActiveWorkout(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
 
 	active, err := h.queries.GetActiveWorkout(r.Context(), userID)
 	if err != nil {
@@ -154,7 +144,7 @@ func (h *Handler) handleGetActiveWorkout(w http.ResponseWriter, r *http.Request)
 	httpx.WriteJSON(w, http.StatusOK, mapWorkoutDTO(active))
 }
 
-func (h *Handler) handleGetWorkoutByID(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) handleGetWorkoutByID(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
 	idStr := chi.URLParam(r, "id")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
@@ -171,12 +161,7 @@ func (h *Handler) handleGetWorkoutByID(w http.ResponseWriter, r *http.Request) {
 	httpx.WriteJSON(w, http.StatusOK, mapWorkoutDTO(res))
 }
 
-func (h *Handler) handleListWorkouts(w http.ResponseWriter, r *http.Request) {
-	userID, ok := httpx.UserIDFromContext(r.Context())
-	if !ok {
-		httpx.WriteProblem(w, http.StatusUnauthorized, "Unauthorized", "User context required", "ERR_UNAUTHORIZED")
-		return
-	}
+func (h *Handler) handleListWorkouts(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
 
 	workouts, err := h.queries.ListWorkouts(r.Context(), userID, 50, 0)
 	if err != nil {
@@ -197,7 +182,7 @@ type finishWorkoutReq struct {
 	Exercises       []command.FinishExerciseInput `json:"exercises,omitempty"`
 }
 
-func (h *Handler) handleFinishWorkout(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) handleFinishWorkout(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
 	idStr := chi.URLParam(r, "id")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
@@ -221,7 +206,7 @@ func (h *Handler) handleFinishWorkout(w http.ResponseWriter, r *http.Request) {
 	httpx.WriteJSON(w, http.StatusOK, mapWorkoutDTO(finished))
 }
 
-func (h *Handler) handleAddExercise(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) handleAddExercise(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
 	idStr := chi.URLParam(r, "id")
 	workoutID, err := uuid.Parse(idStr)
 	if err != nil {
@@ -249,7 +234,7 @@ func (h *Handler) handleAddExercise(w http.ResponseWriter, r *http.Request) {
 	httpx.WriteJSON(w, http.StatusCreated, mapExerciseDTO(we))
 }
 
-func (h *Handler) handleLogSet(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) handleLogSet(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
 	workoutID, _ := uuid.Parse(chi.URLParam(r, "id"))
 	exerciseID, _ := uuid.Parse(chi.URLParam(r, "exerciseId"))
 
@@ -276,7 +261,7 @@ func (h *Handler) handleLogSet(w http.ResponseWriter, r *http.Request) {
 	httpx.WriteJSON(w, http.StatusCreated, mapSetDTO(set))
 }
 
-func (h *Handler) handleUpdateSet(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) handleUpdateSet(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
 	workoutID, _ := uuid.Parse(chi.URLParam(r, "id"))
 	setID, _ := uuid.Parse(chi.URLParam(r, "setId"))
 
@@ -304,12 +289,7 @@ func (h *Handler) handleUpdateSet(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func (h *Handler) handleListRoutines(w http.ResponseWriter, r *http.Request) {
-	userID, ok := httpx.UserIDFromContext(r.Context())
-	if !ok {
-		httpx.WriteProblem(w, http.StatusUnauthorized, "Unauthorized", "User context required", "ERR_UNAUTHORIZED")
-		return
-	}
+func (h *Handler) handleListRoutines(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
 
 	routines, err := h.queries.ListRoutines(r.Context(), userID)
 	if err != nil {
@@ -324,12 +304,7 @@ func (h *Handler) handleListRoutines(w http.ResponseWriter, r *http.Request) {
 	httpx.WriteJSON(w, http.StatusOK, dtos)
 }
 
-func (h *Handler) handleCreateRoutine(w http.ResponseWriter, r *http.Request) {
-	userID, ok := httpx.UserIDFromContext(r.Context())
-	if !ok {
-		httpx.WriteProblem(w, http.StatusUnauthorized, "Unauthorized", "User context required", "ERR_UNAUTHORIZED")
-		return
-	}
+func (h *Handler) handleCreateRoutine(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
 
 	var req createRoutineReq
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -351,7 +326,7 @@ func (h *Handler) handleCreateRoutine(w http.ResponseWriter, r *http.Request) {
 	httpx.WriteJSON(w, http.StatusCreated, mapRoutineDTO(rot))
 }
 
-func (h *Handler) handleGetRoutineByID(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) handleGetRoutineByID(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
 	id, err := uuid.Parse(chi.URLParam(r, "id"))
 	if err != nil {
 		httpx.WriteProblem(w, http.StatusBadRequest, "Bad Request", "Invalid UUID", "ERR_INVALID_UUID")
@@ -367,7 +342,7 @@ func (h *Handler) handleGetRoutineByID(w http.ResponseWriter, r *http.Request) {
 	httpx.WriteJSON(w, http.StatusOK, mapRoutineDTO(rot))
 }
 
-func (h *Handler) handleDeleteRoutine(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) handleDeleteRoutine(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
 	id, err := uuid.Parse(chi.URLParam(r, "id"))
 	if err != nil {
 		httpx.WriteProblem(w, http.StatusBadRequest, "Bad Request", "Invalid UUID", "ERR_INVALID_UUID")
@@ -382,7 +357,7 @@ func (h *Handler) handleDeleteRoutine(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (h *Handler) handleCancelWorkout(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) handleCancelWorkout(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
 	id, err := uuid.Parse(chi.URLParam(r, "id"))
 	if err != nil {
 		httpx.WriteProblem(w, http.StatusBadRequest, "Bad Request", "Invalid UUID", "ERR_INVALID_UUID")

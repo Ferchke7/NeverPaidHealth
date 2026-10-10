@@ -31,25 +31,20 @@ func (h *Handler) Routes() http.Handler {
 
 	r.Use(httpx.ExtractUserHeaderMiddleware)
 
-	r.Get("/records", h.handleGetRecords)
-	r.Get("/progress/records", h.handleGetRecords)
-	r.Get("/history/{exerciseId}", h.handleGetExerciseHistory)
-	r.Get("/progress/history/{exerciseId}", h.handleGetExerciseHistory)
+	r.Get("/records", httpx.RequireAuth(h.handleGetRecords))
+	r.Get("/progress/records", httpx.RequireAuth(h.handleGetRecords))
+	r.Get("/history/{exerciseId}", httpx.RequireAuth(h.handleGetExerciseHistory))
+	r.Get("/progress/history/{exerciseId}", httpx.RequireAuth(h.handleGetExerciseHistory))
 
-	r.Post("/workouts", h.handleRecordFinishedWorkout)
-	r.Post("/progress/workouts", h.handleRecordFinishedWorkout)
-	r.Post("/sync", h.handleRecordFinishedWorkout)
-	r.Post("/progress/sync", h.handleRecordFinishedWorkout)
+	r.Post("/workouts", httpx.RequireAuth(h.handleRecordFinishedWorkout))
+	r.Post("/progress/workouts", httpx.RequireAuth(h.handleRecordFinishedWorkout))
+	r.Post("/sync", httpx.RequireAuth(h.handleRecordFinishedWorkout))
+	r.Post("/progress/sync", httpx.RequireAuth(h.handleRecordFinishedWorkout))
 
 	return r
 }
 
-func (h *Handler) handleRecordFinishedWorkout(w http.ResponseWriter, r *http.Request) {
-	userID, ok := httpx.UserIDFromContext(r.Context())
-	if !ok {
-		httpx.WriteProblem(w, http.StatusUnauthorized, "Unauthorized", "User context required", "ERR_UNAUTHORIZED")
-		return
-	}
+func (h *Handler) handleRecordFinishedWorkout(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
 
 	var evt handler.WorkoutFinishedEvent
 	if err := json.NewDecoder(r.Body).Decode(&evt); err != nil {
@@ -77,12 +72,7 @@ func (h *Handler) handleRecordFinishedWorkout(w http.ResponseWriter, r *http.Req
 	httpx.WriteJSON(w, http.StatusOK, map[string]any{"status": "recorded"})
 }
 
-func (h *Handler) handleGetRecords(w http.ResponseWriter, r *http.Request) {
-	userID, ok := httpx.UserIDFromContext(r.Context())
-	if !ok {
-		httpx.WriteProblem(w, http.StatusUnauthorized, "Unauthorized", "User context required", "ERR_UNAUTHORIZED")
-		return
-	}
+func (h *Handler) handleGetRecords(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
 
 	books, err := h.queries.GetPersonalRecords(r.Context(), userID)
 	if err != nil {
@@ -98,12 +88,7 @@ func (h *Handler) handleGetRecords(w http.ResponseWriter, r *http.Request) {
 	httpx.WriteJSON(w, http.StatusOK, dtos)
 }
 
-func (h *Handler) handleGetExerciseHistory(w http.ResponseWriter, r *http.Request) {
-	userID, ok := httpx.UserIDFromContext(r.Context())
-	if !ok {
-		httpx.WriteProblem(w, http.StatusUnauthorized, "Unauthorized", "User context required", "ERR_UNAUTHORIZED")
-		return
-	}
+func (h *Handler) handleGetExerciseHistory(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
 
 	exID, err := uuid.Parse(chi.URLParam(r, "exerciseId"))
 	if err != nil {
@@ -132,13 +117,13 @@ func mapRecordBookDTO(b *record.ExerciseRecordBook) map[string]any {
 	}
 
 	return map[string]any{
-		"exercise_id":        b.ExerciseID().String(),
-		"exercise_name":      b.ExerciseName(),
-		"best_weight_kg":     b.BestWeightKg(),
-		"best_e1rm_kg":       b.BestE1RMKg(),
-		"max_volume_set_kg":  b.MaxVolumeSetKg(),
-		"max_reps":           b.MaxReps(),
-		"records":            recordsList,
+		"exercise_id":       b.ExerciseID().String(),
+		"exercise_name":     b.ExerciseName(),
+		"best_weight_kg":    b.BestWeightKg(),
+		"best_e1rm_kg":      b.BestE1RMKg(),
+		"max_volume_set_kg": b.MaxVolumeSetKg(),
+		"max_reps":          b.MaxReps(),
+		"records":           recordsList,
 	}
 }
 
@@ -146,10 +131,10 @@ func mapHistorySeriesDTO(s *history.ExerciseHistorySeries) map[string]any {
 	var pts []any
 	for _, p := range s.DataPoints {
 		pts = append(pts, map[string]any{
-			"workout_id":                p.WorkoutID.String(),
-			"date":                      p.Date.Format("2006-01-02"),
-			"best_weight_kg":            p.BestWeightKg,
-			"best_e1rm_kg":              p.BestE1RMKg,
+			"workout_id":               p.WorkoutID.String(),
+			"date":                     p.Date.Format("2006-01-02"),
+			"best_weight_kg":           p.BestWeightKg,
+			"best_e1rm_kg":             p.BestE1RMKg,
 			"total_exercise_volume_kg": p.TotalExerciseVolumeKg,
 		})
 	}

@@ -17,6 +17,7 @@ import (
 
 type Handler struct {
 	createCustomHandler *command.CreateCustomExerciseHandler
+	updateCustomHandler *command.UpdateCustomExerciseHandler
 	deleteCustomHandler *command.DeleteCustomExerciseHandler
 	listHandler         *query.ListExercisesHandler
 	getHandler          *query.GetExerciseHandler
@@ -24,12 +25,14 @@ type Handler struct {
 
 func NewHandler(
 	createCustom *command.CreateCustomExerciseHandler,
+	updateCustom *command.UpdateCustomExerciseHandler,
 	deleteCustom *command.DeleteCustomExerciseHandler,
 	list *query.ListExercisesHandler,
 	get *query.GetExerciseHandler,
 ) *Handler {
 	return &Handler{
 		createCustomHandler: createCustom,
+		updateCustomHandler: updateCustom,
 		deleteCustomHandler: deleteCustom,
 		listHandler:         list,
 		getHandler:          get,
@@ -42,14 +45,16 @@ func (h *Handler) Routes() http.Handler {
 	r.Use(httpx.ExtractUserHeaderMiddleware)
 
 	// Routes supporting both root and /exercises paths
-	r.Get("/", h.handleList)
-	r.Get("/exercises", h.handleList)
-	r.Post("/", h.handleCreateCustom)
-	r.Post("/exercises", h.handleCreateCustom)
-	r.Get("/{id}", h.handleGetByID)
-	r.Get("/exercises/{id}", h.handleGetByID)
-	r.Delete("/{id}", h.handleDeleteCustom)
-	r.Delete("/exercises/{id}", h.handleDeleteCustom)
+	r.Get("/", httpx.RequireAuth(h.handleList))
+	r.Get("/exercises", httpx.RequireAuth(h.handleList))
+	r.Post("/", httpx.RequireAuth(h.handleCreateCustom))
+	r.Post("/exercises", httpx.RequireAuth(h.handleCreateCustom))
+	r.Get("/{id}", httpx.RequireAuth(h.handleGetByID))
+	r.Get("/exercises/{id}", httpx.RequireAuth(h.handleGetByID))
+	r.Put("/{id}", httpx.RequireAuth(h.handleUpdateCustom))
+	r.Put("/exercises/{id}", httpx.RequireAuth(h.handleUpdateCustom))
+	r.Delete("/{id}", httpx.RequireAuth(h.handleDeleteCustom))
+	r.Delete("/exercises/{id}", httpx.RequireAuth(h.handleDeleteCustom))
 
 	return r
 }
@@ -73,9 +78,7 @@ type createExerciseReq struct {
 	MeasurementType       string   `json:"measurement_type"`
 }
 
-func (h *Handler) handleList(w http.ResponseWriter, r *http.Request) {
-	userID, _ := httpx.UserIDFromContext(r.Context())
-
+func (h *Handler) handleList(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
 	var muscleGroup *string
 	if mg := r.URL.Query().Get("muscle_group"); mg != "" {
 		muscleGroup = &mg
@@ -119,13 +122,7 @@ func (h *Handler) handleList(w http.ResponseWriter, r *http.Request) {
 	httpx.WriteJSON(w, http.StatusOK, dtos)
 }
 
-func (h *Handler) handleCreateCustom(w http.ResponseWriter, r *http.Request) {
-	userID, ok := httpx.UserIDFromContext(r.Context())
-	if !ok {
-		httpx.WriteProblem(w, http.StatusUnauthorized, "Unauthorized", "User context required", "ERR_UNAUTHORIZED")
-		return
-	}
-
+func (h *Handler) handleCreateCustom(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
 	var req createExerciseReq
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		httpx.WriteProblem(w, http.StatusBadRequest, "Bad Request", "Invalid JSON payload", "ERR_INVALID_BODY")
@@ -148,7 +145,50 @@ func (h *Handler) handleCreateCustom(w http.ResponseWriter, r *http.Request) {
 	httpx.WriteJSON(w, http.StatusCreated, mapExerciseResponse(ex))
 }
 
-func (h *Handler) handleGetByID(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) handleUpdateCustom(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
+	idStr := chi.URLParam(r, "id")
+	exerciseID, err := uuid.Parse(idStr)
+	if err != nil {
+		httpx.WriteProblem(w, http.StatusBadRequest, "Bad Request", "Invalid UUID", "ERR_INVALID_UUID")
+		return
+	}
+
+	var req createExerciseReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		httpx.WriteProblem(w, http.StatusBadRequest, "Bad Request", "Invalid JSON payload", "ERR_INVALID_BODY")
+		return
+	}
+
+	ex, err := h.updateCustomHandler.Handle(r.Context(), command.UpdateCustomExerciseInput{
+		UserID:                userID,
+		ExerciseID:            exerciseID,
+		Name:                  req.Name,
+		PrimaryMuscleGroup:    req.PrimaryMuscleGroup,
+		SecondaryMuscleGroups: req.SecondaryMuscleGroups,
+		Equipment:             req.Equipment,
+		MeasurementType:       req.MeasurementType,
+	})
+	if err != nil {
+		if err == exercise.ErrCannotModifySeeded {
+			httpx.WriteProblem(w, http.StatusBadRequest, "Bad Request", err.Error(), "ERR_IMMUTABLE_SEED")
+			return
+		}
+		if err == exercise.ErrUnauthorizedExercise {
+			httpx.WriteProblem(w, http.StatusForbidden, "Forbidden", err.Error(), "ERR_FORBIDDEN")
+			return
+		}
+		if err == exercise.ErrExerciseNotFound {
+			httpx.WriteProblem(w, http.StatusNotFound, "Not Found", err.Error(), "ERR_NOT_FOUND")
+			return
+		}
+		httpx.WriteProblem(w, http.StatusBadRequest, "Bad Request", err.Error(), "ERR_UPDATE_EXERCISE_FAILED")
+		return
+	}
+
+	httpx.WriteJSON(w, http.StatusOK, mapExerciseResponse(ex))
+}
+
+func (h *Handler) handleGetByID(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
 	idStr := chi.URLParam(r, "id")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
@@ -165,12 +205,7 @@ func (h *Handler) handleGetByID(w http.ResponseWriter, r *http.Request) {
 	httpx.WriteJSON(w, http.StatusOK, mapExerciseResponse(ex))
 }
 
-func (h *Handler) handleDeleteCustom(w http.ResponseWriter, r *http.Request) {
-	userID, ok := httpx.UserIDFromContext(r.Context())
-	if !ok {
-		httpx.WriteProblem(w, http.StatusUnauthorized, "Unauthorized", "User context required", "ERR_UNAUTHORIZED")
-		return
-	}
+func (h *Handler) handleDeleteCustom(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
 
 	idStr := chi.URLParam(r, "id")
 	id, err := uuid.Parse(idStr)

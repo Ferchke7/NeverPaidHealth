@@ -68,16 +68,16 @@ func Reconstitute(
 	}
 }
 
-func (rb *ExerciseRecordBook) ID() uuid.UUID { return rb.id }
-func (rb *ExerciseRecordBook) UserID() uuid.UUID { return rb.userID }
-func (rb *ExerciseRecordBook) ExerciseID() uuid.UUID { return rb.exerciseID }
-func (rb *ExerciseRecordBook) ExerciseName() string { return rb.exerciseName }
-func (rb *ExerciseRecordBook) BestWeightKg() float64 { return rb.bestWeightKg }
-func (rb *ExerciseRecordBook) BestE1RMKg() float64 { return rb.bestE1RMKg }
-func (rb *ExerciseRecordBook) MaxVolumeSetKg() float64 { return rb.maxVolumeSetKg }
-func (rb *ExerciseRecordBook) MaxReps() int { return rb.maxReps }
+func (rb *ExerciseRecordBook) ID() uuid.UUID             { return rb.id }
+func (rb *ExerciseRecordBook) UserID() uuid.UUID         { return rb.userID }
+func (rb *ExerciseRecordBook) ExerciseID() uuid.UUID     { return rb.exerciseID }
+func (rb *ExerciseRecordBook) ExerciseName() string      { return rb.exerciseName }
+func (rb *ExerciseRecordBook) BestWeightKg() float64     { return rb.bestWeightKg }
+func (rb *ExerciseRecordBook) BestE1RMKg() float64       { return rb.bestE1RMKg }
+func (rb *ExerciseRecordBook) MaxVolumeSetKg() float64   { return rb.maxVolumeSetKg }
+func (rb *ExerciseRecordBook) MaxReps() int              { return rb.maxReps }
 func (rb *ExerciseRecordBook) Records() []PersonalRecord { return rb.records }
-func (rb *ExerciseRecordBook) UpdatedAt() time.Time { return rb.updatedAt }
+func (rb *ExerciseRecordBook) UpdatedAt() time.Time      { return rb.updatedAt }
 
 func (rb *ExerciseRecordBook) ApplySet(set PerformanceSet, workoutID uuid.UUID, achievedAt time.Time) []PersonalRecord {
 	var newPRs []PersonalRecord
@@ -109,6 +109,7 @@ func (rb *ExerciseRecordBook) ApplySet(set PerformanceSet, workoutID uuid.UUID, 
 	}
 
 	// 3. Max Volume Set (weight * reps)
+
 	setVolume := set.WeightKg * float64(set.Reps)
 	if setVolume > rb.maxVolumeSetKg {
 		rb.maxVolumeSetKg = setVolume

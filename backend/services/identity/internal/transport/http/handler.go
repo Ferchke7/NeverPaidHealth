@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 	"github.com/neverpaidhealth/backend/pkg/httpx"
 	"github.com/neverpaidhealth/backend/services/identity/internal/application/command"
 	"github.com/neverpaidhealth/backend/services/identity/internal/application/query"
@@ -44,9 +45,9 @@ func (h *Handler) Routes() http.Handler {
 	r.Post("/auth/dev-login", h.handleDevLogin)
 
 	// Profile & Me routes
-	r.Get("/me", h.handleGetMe)
-	r.Get("/profile/me", h.handleGetMe)
-	r.Put("/profile/unit-preference", h.handleUpdateUnitPreference)
+	r.Get("/me", httpx.RequireAuth(h.handleGetMe))
+	r.Get("/profile/me", httpx.RequireAuth(h.handleGetMe))
+	r.Put("/profile/unit-preference", httpx.RequireAuth(h.handleUpdateUnitPreference))
 
 	return r
 }
@@ -111,13 +112,7 @@ func (h *Handler) handleDevLogin(w http.ResponseWriter, r *http.Request) {
 	httpx.WriteJSON(w, http.StatusOK, mapAuthResponse(res))
 }
 
-func (h *Handler) handleGetMe(w http.ResponseWriter, r *http.Request) {
-	userID, ok := httpx.UserIDFromContext(r.Context())
-	if !ok {
-		httpx.WriteProblem(w, http.StatusUnauthorized, "Unauthorized", "Missing user authentication context", "ERR_UNAUTHORIZED")
-		return
-	}
-
+func (h *Handler) handleGetMe(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
 	u, err := h.getProfileHandler.Handle(r.Context(), userID)
 	if err != nil {
 		httpx.WriteProblem(w, http.StatusNotFound, "Not Found", "User profile not found", "ERR_USER_NOT_FOUND")
@@ -127,13 +122,7 @@ func (h *Handler) handleGetMe(w http.ResponseWriter, r *http.Request) {
 	httpx.WriteJSON(w, http.StatusOK, mapUserResponse(u))
 }
 
-func (h *Handler) handleUpdateUnitPreference(w http.ResponseWriter, r *http.Request) {
-	userID, ok := httpx.UserIDFromContext(r.Context())
-	if !ok {
-		httpx.WriteProblem(w, http.StatusUnauthorized, "Unauthorized", "Missing user authentication context", "ERR_UNAUTHORIZED")
-		return
-	}
-
+func (h *Handler) handleUpdateUnitPreference(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
 	var req updateUnitReq
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		httpx.WriteProblem(w, http.StatusBadRequest, "Bad Request", "Invalid JSON body", "ERR_INVALID_BODY")

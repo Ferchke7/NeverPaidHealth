@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -94,7 +95,12 @@ func (p *CompositeAIProvider) getCandidateModels(ctx context.Context, key string
 			slog.Warn("ListModels HTTP call failed", "error", err)
 			return
 		}
-		defer resp.Body.Close()
+		defer func(Body io.ReadCloser) {
+			err := Body.Close()
+			if err != nil {
+
+			}
+		}(resp.Body)
 
 		rawBody, _ := io.ReadAll(resp.Body)
 		if resp.StatusCode != http.StatusOK {
@@ -143,11 +149,8 @@ func (p *CompositeAIProvider) getCandidateModels(ctx context.Context, key string
 				continue
 			}
 			// Must support generateContent
-			for _, method := range m.SupportedGenerationMethods {
-				if method == "generateContent" {
-					rawValid = append(rawValid, name)
-					break
-				}
+			if slices.Contains(m.SupportedGenerationMethods, "generateContent") {
+				rawValid = append(rawValid, name)
 			}
 		}
 
@@ -161,13 +164,7 @@ func (p *CompositeAIProvider) getCandidateModels(ctx context.Context, key string
 		}
 		// Append remainder
 		for _, m := range rawValid {
-			alreadyIn := false
-			for _, d := range discovered {
-				if d == m {
-					alreadyIn = true
-					break
-				}
-			}
+			alreadyIn := slices.Contains(discovered, m)
 			if !alreadyIn {
 				discovered = append(discovered, m)
 			}
