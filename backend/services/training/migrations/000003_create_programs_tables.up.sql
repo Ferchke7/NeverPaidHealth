@@ -40,7 +40,7 @@ CREATE INDEX IF NOT EXISTS idx_user_programs_active ON user_programs(user_id, is
 INSERT INTO programs (id, user_id, name, description, split_type, days_per_week, level, is_public, author_name, likes_count, installs_count, days, created_at, updated_at)
 VALUES
 (
-  'p1111111-1111-1111-1111-111111111101',
+  'a1111111-1111-1111-1111-111111111101',
   '00000000-0000-0000-0000-000000000000',
   'Jeff Nippard: 6-Day Push / Pull / Legs Split',
   'Official 6-day science-based hypertrophy split designed by Jeff Nippard. Features push/pull/legs frequency with dedicated chest, shoulder, lat, and quad focus days.',
@@ -137,7 +137,7 @@ VALUES
   NOW()
 ),
 (
-  'p1111111-1111-1111-1111-111111111102',
+  'a1111111-1111-1111-1111-111111111102',
   '00000000-0000-0000-0000-000000000000',
   'Upper / Lower 4-Day Hypertrophy Split',
   'The gold standard 4-day split balancing frequency, systemic recovery, and heavy compound progression.',
@@ -200,7 +200,7 @@ VALUES
   NOW()
 ),
 (
-  'p1111111-1111-1111-1111-111111111103',
+  'a1111111-1111-1111-1111-111111111103',
   '00000000-0000-0000-0000-000000000000',
   'Full Body 3-Day Foundational Strength',
   'High-efficiency full body routine hitting all major movement patterns 3 times per week. Ideal for busy schedules and rapid baseline strength.',
