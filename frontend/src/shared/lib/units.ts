@@ -32,8 +32,8 @@ export function ftInToCm(feet: number, inches: number): number {
   return Math.round(totalInches * INCH_TO_CM * 10) / 10;
 }
 
-export function formatWeight(kg: number, unit: 'kg' | 'lb' = 'kg'): string {
-  if (unit === 'lb') {
+export function formatWeight(kg: number, unit: 'kg' | 'lb' | 'metric' | 'imperial' = 'kg'): string {
+  if (unit === 'lb' || unit === 'imperial') {
     const val = kgToLb(kg);
     return Number.isInteger(val) ? `${val} lb` : `${val.toFixed(1)} lb`;
   }

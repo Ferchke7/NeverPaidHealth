@@ -30,6 +30,7 @@ import { ExerciseThumbnail } from '../../../entities/exercise/ui/ExerciseThumbna
 import { ExerciseInfoModal } from '../../../features/exercise-detail/ui/ExerciseInfoModal.tsx';
 import { HelpCircle } from 'lucide-react';
 import { useTranslation } from '../../../shared/lib/i18n/i18n.ts';
+import { FloatingActiveWorkoutPill } from './FloatingActiveWorkoutPill.tsx';
 
 export const ActiveWorkoutSheet: React.FC = () => {
   const { t } = useTranslation();
@@ -279,41 +280,18 @@ export const ActiveWorkoutSheet: React.FC = () => {
 
   return (
     <>
-      {/* 1. Minimized Floating Bottom Bar */}
+      {/* 1. Minimized Floating Draggable Pill Widget */}
       {workout && !isOpen && (
-        <div className="fixed bottom-[calc(4.25rem+env(safe-area-inset-bottom,0px))] md:bottom-4 left-4 right-4 max-w-xl mx-auto z-40 bg-dark-900/95 backdrop-blur-md border border-brand-500/40 rounded-2xl p-3 shadow-2xl flex items-center justify-between animate-in slide-in-from-bottom duration-300">
-          <div className="flex items-center gap-3 cursor-pointer flex-1" onClick={openSheet}>
-            <div className="w-10 h-10 rounded-xl bg-brand-500/20 text-brand-400 flex items-center justify-center font-bold">
-              <Dumbbell className="w-5 h-5 animate-pulse" />
-            </div>
-            <div>
-              <h4 className="text-xs font-bold text-white tracking-tight">{workout.name}</h4>
-              <div className="flex items-center gap-2 text-[11px] text-zinc-400 font-mono">
-                <span className="flex items-center gap-1 text-emerald-400">
-                  <Clock className="w-3 h-3" />
-                  {formatDuration(elapsedSeconds)}
-                </span>
-                <span>•</span>
-                <span>{formatWeight(liveVolume, unitPref)}</span>
-                {isRestTimerActive && (
-                  <>
-                    <span>•</span>
-                    <span className="text-amber-400 font-bold flex items-center gap-0.5">
-                      <Timer className="w-3 h-3 animate-spin" />
-                      {restRemaining}s rest
-                    </span>
-                  </>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Button size="sm" variant="primary" onClick={openSheet} className="text-xs font-bold shadow-md shadow-brand-500/30">
-              {t('workouts.start')}
-            </Button>
-          </div>
-        </div>
+        <FloatingActiveWorkoutPill
+          workout={workout}
+          elapsedSeconds={elapsedSeconds}
+          liveVolume={liveVolume}
+          unitPref={unitPref}
+          isRestTimerActive={isRestTimerActive}
+          restRemaining={restRemaining}
+          onOpen={openSheet}
+          t={t}
+        />
       )}
 
       {/* 2. Full-Screen Workout Sheet */}
