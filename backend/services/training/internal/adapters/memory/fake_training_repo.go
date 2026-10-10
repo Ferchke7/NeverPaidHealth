@@ -35,7 +35,7 @@ func (r *FakeTrainingRepo) RegisterExercise(id uuid.UUID, name, measureType stri
 	}
 }
 
-func (r *FakeTrainingRepo) GetExercise(ctx context.Context, id uuid.UUID) (*application.ExerciseCatalogRef, error) {
+func (r *FakeTrainingRepo) GetExercise(_ context.Context, id uuid.UUID) (*application.ExerciseCatalogRef, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -46,7 +46,7 @@ func (r *FakeTrainingRepo) GetExercise(ctx context.Context, id uuid.UUID) (*appl
 	return ref, nil
 }
 
-func (r *FakeTrainingRepo) GetByID(ctx context.Context, id uuid.UUID) (*workout.Workout, error) {
+func (r *FakeTrainingRepo) GetByID(_ context.Context, id uuid.UUID) (*workout.Workout, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -57,7 +57,7 @@ func (r *FakeTrainingRepo) GetByID(ctx context.Context, id uuid.UUID) (*workout.
 	return w, nil
 }
 
-func (r *FakeTrainingRepo) GetActive(ctx context.Context, userID uuid.UUID) (*workout.Workout, error) {
+func (r *FakeTrainingRepo) GetActive(_ context.Context, userID uuid.UUID) (*workout.Workout, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -69,7 +69,7 @@ func (r *FakeTrainingRepo) GetActive(ctx context.Context, userID uuid.UUID) (*wo
 	return nil, workout.ErrWorkoutNotFound
 }
 
-func (r *FakeTrainingRepo) List(ctx context.Context, userID uuid.UUID, limit, offset int) ([]*workout.Workout, error) {
+func (r *FakeTrainingRepo) List(_ context.Context, userID uuid.UUID, limit, offset int) ([]*workout.Workout, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -82,7 +82,7 @@ func (r *FakeTrainingRepo) List(ctx context.Context, userID uuid.UUID, limit, of
 	return res, nil
 }
 
-func (r *FakeTrainingRepo) Save(ctx context.Context, w *workout.Workout) error {
+func (r *FakeTrainingRepo) Save(_ context.Context, w *workout.Workout) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -90,7 +90,7 @@ func (r *FakeTrainingRepo) Save(ctx context.Context, w *workout.Workout) error {
 	return nil
 }
 
-func (r *FakeTrainingRepo) Delete(ctx context.Context, id uuid.UUID) error {
+func (r *FakeTrainingRepo) Delete(_ context.Context, id uuid.UUID) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -98,8 +98,8 @@ func (r *FakeTrainingRepo) Delete(ctx context.Context, id uuid.UUID) error {
 	return nil
 }
 
-// Routines
-func (r *FakeTrainingRepo) GetRoutineByID(ctx context.Context, id uuid.UUID) (*routine.Routine, error) {
+// GetRoutineByID retrieves a routine by ID.
+func (r *FakeTrainingRepo) GetRoutineByID(_ context.Context, id uuid.UUID) (*routine.Routine, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -110,7 +110,7 @@ func (r *FakeTrainingRepo) GetRoutineByID(ctx context.Context, id uuid.UUID) (*r
 	return rot, nil
 }
 
-func (r *FakeTrainingRepo) ListByUserID(ctx context.Context, userID uuid.UUID) ([]*routine.Routine, error) {
+func (r *FakeTrainingRepo) ListByUserID(_ context.Context, userID uuid.UUID) ([]*routine.Routine, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -123,7 +123,7 @@ func (r *FakeTrainingRepo) ListByUserID(ctx context.Context, userID uuid.UUID) (
 	return res, nil
 }
 
-func (r *FakeTrainingRepo) SaveRoutine(ctx context.Context, rot *routine.Routine) error {
+func (r *FakeTrainingRepo) SaveRoutine(_ context.Context, rot *routine.Routine) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -131,7 +131,7 @@ func (r *FakeTrainingRepo) SaveRoutine(ctx context.Context, rot *routine.Routine
 	return nil
 }
 
-func (r *FakeTrainingRepo) DeleteRoutine(ctx context.Context, id uuid.UUID) error {
+func (r *FakeTrainingRepo) DeleteRoutine(_ context.Context, id uuid.UUID) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -139,8 +139,8 @@ func (r *FakeTrainingRepo) DeleteRoutine(ctx context.Context, id uuid.UUID) erro
 	return nil
 }
 
-// Outbox
-func (r *FakeTrainingRepo) SaveOutbox(ctx context.Context, msg outbox.Message) error {
+// SaveOutbox records an outbox message.
+func (r *FakeTrainingRepo) SaveOutbox(_ context.Context, msg outbox.Message) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 

@@ -97,3 +97,26 @@ func TestUserProgram_AdvanceDay(t *testing.T) {
 	up.AdvanceDay(3) // wrap around
 	assert.Equal(t, 0, up.CurrentDayIndex())
 }
+
+func TestSplitTypes_AndLevels(t *testing.T) {
+	splits := []program.SplitType{
+		program.SplitPPL,
+		program.SplitUpperLower,
+		program.SplitFullBody,
+		program.SplitBroSplit,
+		program.SplitStrength,
+		program.SplitCustom,
+	}
+	for _, s := range splits {
+		assert.NotEmpty(t, string(s))
+	}
+
+	levels := []program.Level{
+		program.LevelBeginner,
+		program.LevelIntermediate,
+		program.LevelAdvanced,
+	}
+	for _, l := range levels {
+		assert.NotEmpty(t, string(l))
+	}
+}

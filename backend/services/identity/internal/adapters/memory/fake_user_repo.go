@@ -19,7 +19,7 @@ func NewFakeUserRepo() *FakeUserRepo {
 	}
 }
 
-func (r *FakeUserRepo) GetByID(ctx context.Context, id uuid.UUID) (*user.User, error) {
+func (r *FakeUserRepo) GetByID(_ context.Context, id uuid.UUID) (*user.User, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -30,7 +30,7 @@ func (r *FakeUserRepo) GetByID(ctx context.Context, id uuid.UUID) (*user.User, e
 	return u, nil
 }
 
-func (r *FakeUserRepo) GetByGoogleSub(ctx context.Context, sub string) (*user.User, error) {
+func (r *FakeUserRepo) GetByGoogleSub(_ context.Context, sub string) (*user.User, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -42,7 +42,7 @@ func (r *FakeUserRepo) GetByGoogleSub(ctx context.Context, sub string) (*user.Us
 	return nil, user.ErrUserNotFound
 }
 
-func (r *FakeUserRepo) GetByEmail(ctx context.Context, email user.Email) (*user.User, error) {
+func (r *FakeUserRepo) GetByEmail(_ context.Context, email user.Email) (*user.User, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -54,7 +54,7 @@ func (r *FakeUserRepo) GetByEmail(ctx context.Context, email user.Email) (*user.
 	return nil, user.ErrUserNotFound
 }
 
-func (r *FakeUserRepo) Save(ctx context.Context, u *user.User) error {
+func (r *FakeUserRepo) Save(_ context.Context, u *user.User) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 

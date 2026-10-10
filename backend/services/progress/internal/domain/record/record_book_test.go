@@ -1,6 +1,7 @@
 package record_test
 
 import (
+	"errors"
 	"testing"
 	"time"
 
@@ -65,5 +66,17 @@ func TestRecordBook_ApplySet_EqualWeight_DoesNotSetPR(t *testing.T) {
 
 	if len(newPRs) != 0 {
 		t.Errorf("expected 0 PRs for equal weight, got %d", len(newPRs))
+	}
+}
+
+func TestNewPRType_Validation(t *testing.T) {
+	pt, err := record.NewPRType("heaviest_weight")
+	if err != nil || pt != record.PRHeaviestWeight {
+		t.Fatalf("expected valid PRType, got %v, err: %v", pt, err)
+	}
+
+	_, err = record.NewPRType("invalid_type")
+	if !errors.Is(err, record.ErrInvalidPRType) {
+		t.Fatalf("expected ErrInvalidPRType, got %v", err)
 	}
 }

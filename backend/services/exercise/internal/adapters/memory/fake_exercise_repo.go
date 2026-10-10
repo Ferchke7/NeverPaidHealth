@@ -21,7 +21,7 @@ func NewFakeExerciseRepo() *FakeExerciseRepo {
 	}
 }
 
-func (r *FakeExerciseRepo) GetByID(ctx context.Context, id uuid.UUID) (*exercise.Exercise, error) {
+func (r *FakeExerciseRepo) GetByID(_ context.Context, id uuid.UUID) (*exercise.Exercise, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -32,7 +32,7 @@ func (r *FakeExerciseRepo) GetByID(ctx context.Context, id uuid.UUID) (*exercise
 	return ex, nil
 }
 
-func (r *FakeExerciseRepo) List(ctx context.Context, filter application.ExerciseFilter) ([]*exercise.Exercise, error) {
+func (r *FakeExerciseRepo) List(_ context.Context, filter application.ExerciseFilter) ([]*exercise.Exercise, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -63,7 +63,7 @@ func (r *FakeExerciseRepo) List(ctx context.Context, filter application.Exercise
 	return result, nil
 }
 
-func (r *FakeExerciseRepo) Save(ctx context.Context, ex *exercise.Exercise) error {
+func (r *FakeExerciseRepo) Save(_ context.Context, ex *exercise.Exercise) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -71,7 +71,7 @@ func (r *FakeExerciseRepo) Save(ctx context.Context, ex *exercise.Exercise) erro
 	return nil
 }
 
-func (r *FakeExerciseRepo) Delete(ctx context.Context, id uuid.UUID) error {
+func (r *FakeExerciseRepo) Delete(_ context.Context, id uuid.UUID) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 

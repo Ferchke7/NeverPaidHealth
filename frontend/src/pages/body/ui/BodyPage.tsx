@@ -126,8 +126,8 @@ export const BodyPage: React.FC = () => {
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['body-trend'] });
-      queryClient.invalidateQueries({ queryKey: ['body-logs'] });
+      void queryClient.invalidateQueries({ queryKey: ['body-trend'] });
+      void queryClient.invalidateQueries({ queryKey: ['body-logs'] });
       setWeightInput('');
       setBodyFat('');
       setWaistCm('');
@@ -148,8 +148,8 @@ export const BodyPage: React.FC = () => {
         method: 'DELETE',
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['body-trend'] });
-      queryClient.invalidateQueries({ queryKey: ['body-logs'] });
+      void queryClient.invalidateQueries({ queryKey: ['body-trend'] });
+      void queryClient.invalidateQueries({ queryKey: ['body-logs'] });
     },
   });
 
@@ -192,7 +192,7 @@ export const BodyPage: React.FC = () => {
           initialWeightKg={trend?.current_weight_kg}
           onSaveStats={(s) => {
             setHeightCm(s.heightCm.toString());
-            queryClient.invalidateQueries({ queryKey: ['body-trend'] });
+            void queryClient.invalidateQueries({ queryKey: ['body-trend'] });
           }}
         />
       )}

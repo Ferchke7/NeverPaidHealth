@@ -56,3 +56,29 @@ func TestAnalyzeUserData_CalculatesReadinessAndOverload(t *testing.T) {
 		t.Errorf("expected target weight 102.5kg after hitting 100kg x 10, got %v", target.TargetWeightKg)
 	}
 }
+
+func TestInsightCategoriesAndSeverities(t *testing.T) {
+	cats := []coach.InsightCategory{
+		coach.CategoryOverload,
+		coach.CategoryRecovery,
+		coach.CategoryPlateau,
+		coach.CategoryBalance,
+		coach.CategoryMotivation,
+	}
+	for _, c := range cats {
+		if string(c) == "" {
+			t.Errorf("empty category")
+		}
+	}
+
+	sevs := []coach.InsightSeverity{
+		coach.SeverityInfo,
+		coach.SeveritySuccess,
+		coach.SeverityWarning,
+	}
+	for _, s := range sevs {
+		if string(s) == "" {
+			t.Errorf("empty severity")
+		}
+	}
+}

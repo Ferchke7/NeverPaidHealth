@@ -64,9 +64,9 @@ export const ProgramDetailModal: React.FC<ProgramDetailModalProps> = ({
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['programs'] });
-      queryClient.invalidateQueries({ queryKey: ['programs', 'active'] });
-      queryClient.invalidateQueries({ queryKey: ['programs', 'installed'] });
+      void queryClient.invalidateQueries({ queryKey: ['programs'] });
+      void queryClient.invalidateQueries({ queryKey: ['programs', 'active'] });
+      void queryClient.invalidateQueries({ queryKey: ['programs', 'installed'] });
       if (onProgramInstalled) {
         onProgramInstalled();
       }

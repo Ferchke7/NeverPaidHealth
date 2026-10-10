@@ -125,7 +125,7 @@ export const ExercisesPage: React.FC = () => {
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['exercises'] });
+      void queryClient.invalidateQueries({ queryKey: ['exercises'] });
       setCustomName('');
       setFormError(null);
       setIsCustomModalOpen(false);
@@ -141,7 +141,7 @@ export const ExercisesPage: React.FC = () => {
       return apiClient(`/exercises/${exerciseId}`, { method: 'DELETE' });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['exercises'] });
+      void queryClient.invalidateQueries({ queryKey: ['exercises'] });
       setIsCustomModalOpen(false);
       setEditingExercise(null);
     },

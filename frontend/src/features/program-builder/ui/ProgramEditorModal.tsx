@@ -270,9 +270,9 @@ export const ProgramEditorModal: React.FC<ProgramEditorModalProps> = ({
       });
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['programs'] });
-      queryClient.invalidateQueries({ queryKey: ['programs', 'user'] });
-      queryClient.invalidateQueries({ queryKey: ['programs', 'active'] });
+      void queryClient.invalidateQueries({ queryKey: ['programs'] });
+      void queryClient.invalidateQueries({ queryKey: ['programs', 'user'] });
+      void queryClient.invalidateQueries({ queryKey: ['programs', 'active'] });
       setError(null);
       onClose();
       if (onSaved && data?.id) {

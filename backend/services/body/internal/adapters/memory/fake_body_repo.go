@@ -24,7 +24,7 @@ func (r *FakeBodyRepo) key(userID uuid.UUID, logDate string) string {
 	return userID.String() + ":" + logDate
 }
 
-func (r *FakeBodyRepo) GetByDate(ctx context.Context, userID uuid.UUID, logDate string) (*body.BodyLog, error) {
+func (r *FakeBodyRepo) GetByDate(_ context.Context, userID uuid.UUID, logDate string) (*body.BodyLog, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -50,7 +50,7 @@ func (r *FakeBodyRepo) ListRange(ctx context.Context, userID uuid.UUID, fromDate
 	return res, nil
 }
 
-func (r *FakeBodyRepo) ListAll(ctx context.Context, userID uuid.UUID) ([]*body.BodyLog, error) {
+func (r *FakeBodyRepo) ListAll(_ context.Context, userID uuid.UUID) ([]*body.BodyLog, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -68,7 +68,7 @@ func (r *FakeBodyRepo) ListAll(ctx context.Context, userID uuid.UUID) ([]*body.B
 	return res, nil
 }
 
-func (r *FakeBodyRepo) Save(ctx context.Context, log *body.BodyLog) error {
+func (r *FakeBodyRepo) Save(_ context.Context, log *body.BodyLog) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -76,7 +76,7 @@ func (r *FakeBodyRepo) Save(ctx context.Context, log *body.BodyLog) error {
 	return nil
 }
 
-func (r *FakeBodyRepo) Delete(ctx context.Context, userID uuid.UUID, logDate string) error {
+func (r *FakeBodyRepo) Delete(_ context.Context, userID uuid.UUID, logDate string) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 

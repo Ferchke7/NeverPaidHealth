@@ -20,7 +20,7 @@ func NewFakeProgramRepo() *FakeProgramRepo {
 	}
 }
 
-func (r *FakeProgramRepo) GetByID(ctx context.Context, id uuid.UUID) (*program.Program, error) {
+func (r *FakeProgramRepo) GetByID(_ context.Context, id uuid.UUID) (*program.Program, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 	p, ok := r.programs[id]
@@ -30,7 +30,7 @@ func (r *FakeProgramRepo) GetByID(ctx context.Context, id uuid.UUID) (*program.P
 	return p, nil
 }
 
-func (r *FakeProgramRepo) ListLibrary(ctx context.Context, splitType string, search string) ([]*program.Program, error) {
+func (r *FakeProgramRepo) ListLibrary(_ context.Context, splitType string, search string) ([]*program.Program, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -43,7 +43,7 @@ func (r *FakeProgramRepo) ListLibrary(ctx context.Context, splitType string, sea
 	return list, nil
 }
 
-func (r *FakeProgramRepo) ListCommunity(ctx context.Context, splitType string, search string, limit int, offset int) ([]*program.Program, error) {
+func (r *FakeProgramRepo) ListCommunity(_ context.Context, splitType string, search string, limit int, offset int) ([]*program.Program, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -66,7 +66,7 @@ func matchesFilter(p *program.Program, splitType, search string) bool {
 	return true
 }
 
-func (r *FakeProgramRepo) ListByUserID(ctx context.Context, userID uuid.UUID) ([]*program.Program, error) {
+func (r *FakeProgramRepo) ListByUserID(_ context.Context, userID uuid.UUID) ([]*program.Program, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -79,14 +79,14 @@ func (r *FakeProgramRepo) ListByUserID(ctx context.Context, userID uuid.UUID) ([
 	return list, nil
 }
 
-func (r *FakeProgramRepo) Save(ctx context.Context, p *program.Program) error {
+func (r *FakeProgramRepo) Save(_ context.Context, p *program.Program) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	r.programs[p.ID()] = p
 	return nil
 }
 
-func (r *FakeProgramRepo) Delete(ctx context.Context, id uuid.UUID) error {
+func (r *FakeProgramRepo) Delete(_ context.Context, id uuid.UUID) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	delete(r.programs, id)
@@ -104,7 +104,7 @@ func NewFakeUserProgramRepo() *FakeUserProgramRepo {
 	}
 }
 
-func (r *FakeUserProgramRepo) GetByID(ctx context.Context, id uuid.UUID) (*program.UserProgram, error) {
+func (r *FakeUserProgramRepo) GetByID(_ context.Context, id uuid.UUID) (*program.UserProgram, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 	up, ok := r.userPrograms[id]
@@ -114,7 +114,7 @@ func (r *FakeUserProgramRepo) GetByID(ctx context.Context, id uuid.UUID) (*progr
 	return up, nil
 }
 
-func (r *FakeUserProgramRepo) GetActive(ctx context.Context, userID uuid.UUID) (*program.UserProgram, error) {
+func (r *FakeUserProgramRepo) GetActive(_ context.Context, userID uuid.UUID) (*program.UserProgram, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -126,7 +126,7 @@ func (r *FakeUserProgramRepo) GetActive(ctx context.Context, userID uuid.UUID) (
 	return nil, nil
 }
 
-func (r *FakeUserProgramRepo) ListByUserID(ctx context.Context, userID uuid.UUID) ([]*program.UserProgram, error) {
+func (r *FakeUserProgramRepo) ListByUserID(_ context.Context, userID uuid.UUID) ([]*program.UserProgram, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -139,14 +139,14 @@ func (r *FakeUserProgramRepo) ListByUserID(ctx context.Context, userID uuid.UUID
 	return list, nil
 }
 
-func (r *FakeUserProgramRepo) Save(ctx context.Context, up *program.UserProgram) error {
+func (r *FakeUserProgramRepo) Save(_ context.Context, up *program.UserProgram) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	r.userPrograms[up.ID()] = up
 	return nil
 }
 
-func (r *FakeUserProgramRepo) SetActive(ctx context.Context, userID uuid.UUID, userProgramID uuid.UUID) error {
+func (r *FakeUserProgramRepo) SetActive(_ context.Context, userID uuid.UUID, userProgramID uuid.UUID) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -158,7 +158,7 @@ func (r *FakeUserProgramRepo) SetActive(ctx context.Context, userID uuid.UUID, u
 	return nil
 }
 
-func (r *FakeUserProgramRepo) Delete(ctx context.Context, id uuid.UUID) error {
+func (r *FakeUserProgramRepo) Delete(_ context.Context, id uuid.UUID) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	delete(r.userPrograms, id)

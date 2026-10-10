@@ -167,14 +167,14 @@ func AnalyzeUserData(
 	} else if daysSinceLast == 2 {
 		readiness = 90
 		recoveryStatus = "Optimal Recovery"
-	} else if daysSinceLast >= 3 && daysSinceLast < 7 {
+	} else if daysSinceLast < 7 {
 		readiness = 80
 		recoveryStatus = "Well Rested"
-	} else if daysSinceLast >= 7 && daysSinceLast < 90 {
+	} else if daysSinceLast < 90 {
 		readiness = 65
 		recoveryStatus = "Detraining Risk (Break detected)"
 		gapsList = append(gapsList, fmt.Sprintf("Пропуск тренировок: прошло %d дней с последней тренировки", daysSinceLast))
-	} else if daysSinceLast >= 90 {
+	} else {
 		gapsList = append(gapsList, "Нет свежих записей тренировок (атлет только начинает)")
 	}
 

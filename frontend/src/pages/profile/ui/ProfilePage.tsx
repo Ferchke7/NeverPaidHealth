@@ -16,12 +16,12 @@ import {
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/entities/user/model/authStore.ts';
 import { apiClient } from '@/shared/api/client.ts';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../../../shared/ui/card.tsx';
-import { Button } from '../../../shared/ui/button.tsx';
-import { Input } from '../../../shared/ui/input.tsx';
-import { Switch } from '../../../shared/ui/switch.tsx';
-import { UserAvatar } from '../../../entities/user/ui/UserAvatar.tsx';
-import { BMICalculatorCard } from '../../../features/bmi-calculator/ui/BMICalculatorCard.tsx';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/shared/ui';
+import { Button } from '@/shared/ui';
+import { Input } from '@/shared/ui';
+import { Switch } from '@/shared/ui';
+import { UserAvatar } from '@/entities/user/ui/UserAvatar.tsx';
+import { BMICalculatorCard } from '@/features/bmi-calculator/ui/BMICalculatorCard.tsx';
 import { LanguageSwitchToggle } from '@/features/switch-language/ui/LanguageSwitchToggle.tsx';
 import { PWAInstallButton } from '@/features/pwa-install/ui/PWAInstallButton.tsx';
 import { BodyTargetProgressCard } from '@/features/body-target-progress/ui/BodyTargetProgressCard.tsx';
@@ -88,7 +88,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onNavigateToBody }) =>
       apiClient.put('/profile/unit-preference', { unit_preference: unit }),
     onSuccess: (_, unit) => {
       setUnitPreference(unit);
-      queryClient.invalidateQueries();
+      void queryClient.invalidateQueries();
     },
   });
 
@@ -115,7 +115,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onNavigateToBody }) =>
       target_fat_g: parsedF,
     });
 
-    queryClient.invalidateQueries({ queryKey: ['nutrition', 'today'] });
+    void queryClient.invalidateQueries({ queryKey: ['nutrition', 'today'] });
 
     if (unitPref !== user?.unit_preference) {
       updateUnitMutation.mutate(unitPref);

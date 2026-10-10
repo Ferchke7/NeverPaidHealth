@@ -252,8 +252,8 @@ export const BMICalculatorCard: React.FC<BMICalculatorCardProps> = ({
         height_cm: numericHeight,
       });
 
-      queryClient.invalidateQueries({ queryKey: ['body-trend'] });
-      queryClient.invalidateQueries({ queryKey: ['body-logs'] });
+      await queryClient.invalidateQueries({ queryKey: ['body-trend'] });
+      await queryClient.invalidateQueries({ queryKey: ['body-logs'] });
 
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 2500);

@@ -229,7 +229,7 @@ export const useFocusTimerStore = create<FocusTimerState>()(
         const initialRemaining = mode === 'pomodoro' ? initialRoundDuration : totalMin * 60;
         const now = Date.now();
 
-        get().requestNotificationPermission();
+        void get().requestNotificationPermission();
 
         set({
           isActive: true,
@@ -271,7 +271,7 @@ export const useFocusTimerStore = create<FocusTimerState>()(
         const initialRemaining = mode === 'pomodoro' ? initialRoundDuration : totalMin * 60;
         const now = Date.now();
 
-        get().requestNotificationPermission();
+        void get().requestNotificationPermission();
 
         set({
           isActive: true,

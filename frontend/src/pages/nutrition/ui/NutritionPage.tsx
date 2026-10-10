@@ -151,8 +151,8 @@ export const NutritionPage: React.FC = () => {
     mutationFn: (mealData: Partial<MealLog>) =>
       apiClient.post<MealLog>('/nutrition/meals', mealData),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['nutrition', 'today'] });
-      queryClient.invalidateQueries({ queryKey: ['coach', 'insights'] });
+      void queryClient.invalidateQueries({ queryKey: ['nutrition', 'today'] });
+      void queryClient.invalidateQueries({ queryKey: ['coach', 'insights'] });
       setIsScanModalOpen(false);
       setIsTextModalOpen(false);
       setIsManualModalOpen(false);
@@ -169,8 +169,8 @@ export const NutritionPage: React.FC = () => {
   const deleteMealMutation = useMutation({
     mutationFn: (mealId: string) => apiClient.delete(`/nutrition/meals/${mealId}`),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['nutrition', 'today'] });
-      queryClient.invalidateQueries({ queryKey: ['coach', 'insights'] });
+      void queryClient.invalidateQueries({ queryKey: ['nutrition', 'today'] });
+      void queryClient.invalidateQueries({ queryKey: ['coach', 'insights'] });
     },
   });
 

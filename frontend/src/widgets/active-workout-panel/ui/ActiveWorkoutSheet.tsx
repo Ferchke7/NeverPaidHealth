@@ -243,10 +243,12 @@ export const ActiveWorkoutSheet: React.FC = () => {
 
       stopRestTimer();
       finishWorkoutLocal();
-      queryClient.invalidateQueries({ queryKey: ['workouts'] });
-      queryClient.invalidateQueries({ queryKey: ['records'] });
-      queryClient.invalidateQueries({ queryKey: ['history'] });
-      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['workouts'] }),
+        queryClient.invalidateQueries({ queryKey: ['records'] }),
+        queryClient.invalidateQueries({ queryKey: ['history'] }),
+        queryClient.invalidateQueries({ queryKey: ['dashboard'] }),
+      ]);
     } finally {
       setIsSubmitting(false);
     }

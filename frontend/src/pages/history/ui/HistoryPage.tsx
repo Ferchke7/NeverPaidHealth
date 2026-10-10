@@ -52,9 +52,9 @@ export const HistoryPage: React.FC = () => {
         method: 'DELETE',
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['workouts'] });
-      queryClient.invalidateQueries({ queryKey: ['records'] });
-      queryClient.invalidateQueries({ queryKey: ['history'] });
+      void queryClient.invalidateQueries({ queryKey: ['workouts'] });
+      void queryClient.invalidateQueries({ queryKey: ['records'] });
+      void queryClient.invalidateQueries({ queryKey: ['history'] });
       setDeletingId(null);
     },
   });

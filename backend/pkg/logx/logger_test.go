@@ -1,17 +1,15 @@
 package logx_test
 
 import (
-	"bytes"
 	"context"
-	"os"
 	"testing"
 
 	"github.com/neverpaidhealth/backend/pkg/logx"
 )
 
 func TestNewLogger(t *testing.T) {
-	os.Setenv("LOG_LEVEL", "debug")
-	os.Setenv("LOG_FORMAT", "tint")
+	t.Setenv("LOG_LEVEL", "debug")
+	t.Setenv("LOG_FORMAT", "tint")
 
 	logger := logx.NewLogger("test-service")
 	if logger == nil {
@@ -40,14 +38,11 @@ func TestContextLogger(t *testing.T) {
 }
 
 func TestProductionJSONLogger(t *testing.T) {
-	os.Setenv("LOG_FORMAT", "json")
-	os.Setenv("ENV", "production")
+	t.Setenv("LOG_FORMAT", "json")
+	t.Setenv("ENV", "production")
 
-	var buf bytes.Buffer
 	logger := logx.NewLogger("prod-service")
 	if logger == nil {
 		t.Fatal("expected non-nil prod logger")
 	}
-
-	_ = buf
 }

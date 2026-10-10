@@ -27,8 +27,7 @@ export async function apiClient<T>(
     ...(options.headers as Record<string, string>),
   };
 
-  const lang = localStorage.getItem('np_app_lang') || 'ru';
-  headers['Accept-Language'] = lang;
+  headers['Accept-Language'] = localStorage.getItem('np_app_lang') || 'ru';
 
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
@@ -64,7 +63,7 @@ export async function apiClient<T>(
     throw new ApiError(problem);
   }
 
-  return response.json() as Promise<T>;
+  return (await response.json()) as T;
 }
 
 apiClient.get = <T>(endpoint: string, options?: RequestInit): Promise<T> =>

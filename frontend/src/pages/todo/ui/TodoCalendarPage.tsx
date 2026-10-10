@@ -74,7 +74,7 @@ export const TodoCalendarPage: React.FC = () => {
   const createTodoMutation = useMutation({
     mutationFn: (newTodo: any) => apiClient.post('/todos', newTodo),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['todos-daily'] });
+      void queryClient.invalidateQueries({ queryKey: ['todos-daily'] });
     },
   });
 
@@ -82,21 +82,21 @@ export const TodoCalendarPage: React.FC = () => {
     mutationFn: ({ id, data }: { id: string; data: any }) =>
       apiClient.put(`/todos/${id}`, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['todos-daily'] });
+      void queryClient.invalidateQueries({ queryKey: ['todos-daily'] });
     },
   });
 
   const toggleTodoMutation = useMutation({
     mutationFn: (id: string) => apiClient.post(`/todos/${id}/toggle`),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['todos-daily'] });
+      void queryClient.invalidateQueries({ queryKey: ['todos-daily'] });
     },
   });
 
   const deleteTodoMutation = useMutation({
     mutationFn: (id: string) => apiClient.delete(`/todos/${id}`),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['todos-daily'] });
+      void queryClient.invalidateQueries({ queryKey: ['todos-daily'] });
     },
   });
 

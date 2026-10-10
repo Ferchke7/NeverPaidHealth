@@ -126,7 +126,7 @@ func (p *CompositeAIProvider) getCandidateModels(ctx context.Context, key string
 			"gemini-flash-latest",
 		}
 
-		rawValid := []string{}
+		var rawValid []string
 		for _, m := range res.Models {
 			name := strings.TrimPrefix(m.Name, "models/")
 			if strings.Contains(name, "tts") ||

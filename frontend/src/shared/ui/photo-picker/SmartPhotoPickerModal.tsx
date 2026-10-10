@@ -86,7 +86,7 @@ export const SmartPhotoPickerModal: React.FC<SmartPhotoPickerModalProps> = ({
   const toggleFacingMode = () => {
     const nextFacing = facingMode === 'environment' ? 'user' : 'environment';
     setFacingMode(nextFacing);
-    startCamera(nextFacing);
+    void startCamera(nextFacing);
   };
 
   const captureSnapshot = () => {
@@ -216,7 +216,7 @@ export const SmartPhotoPickerModal: React.FC<SmartPhotoPickerModalProps> = ({
           <div className="space-y-3 py-2">
             <button
               type="button"
-              onClick={() => startCamera('environment')}
+              onClick={() => void startCamera('environment')}
               className="w-full p-4 rounded-2xl bg-gradient-to-r from-brand-950/40 via-dark-800 to-dark-800 border border-brand-500/30 hover:border-brand-500/60 transition-all flex items-center gap-3.5 text-left group shadow-md cursor-pointer"
             >
               <div className="w-12 h-12 rounded-xl bg-brand-500/20 text-brand-400 flex items-center justify-center group-hover:scale-105 transition-transform shrink-0">

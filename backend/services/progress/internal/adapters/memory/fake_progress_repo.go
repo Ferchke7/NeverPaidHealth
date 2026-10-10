@@ -28,7 +28,7 @@ func (r *FakeProgressRepo) key(userID, exerciseID uuid.UUID) string {
 	return userID.String() + ":" + exerciseID.String()
 }
 
-func (r *FakeProgressRepo) Get(ctx context.Context, userID, exerciseID uuid.UUID) (*record.ExerciseRecordBook, error) {
+func (r *FakeProgressRepo) Get(_ context.Context, userID, exerciseID uuid.UUID) (*record.ExerciseRecordBook, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -39,7 +39,7 @@ func (r *FakeProgressRepo) Get(ctx context.Context, userID, exerciseID uuid.UUID
 	return rb, nil
 }
 
-func (r *FakeProgressRepo) ListByUser(ctx context.Context, userID uuid.UUID) ([]*record.ExerciseRecordBook, error) {
+func (r *FakeProgressRepo) ListByUser(_ context.Context, userID uuid.UUID) ([]*record.ExerciseRecordBook, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -52,7 +52,7 @@ func (r *FakeProgressRepo) ListByUser(ctx context.Context, userID uuid.UUID) ([]
 	return list, nil
 }
 
-func (r *FakeProgressRepo) Save(ctx context.Context, rb *record.ExerciseRecordBook) error {
+func (r *FakeProgressRepo) Save(_ context.Context, rb *record.ExerciseRecordBook) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -60,7 +60,7 @@ func (r *FakeProgressRepo) Save(ctx context.Context, rb *record.ExerciseRecordBo
 	return nil
 }
 
-func (r *FakeProgressRepo) AppendDataPoint(ctx context.Context, userID, exerciseID uuid.UUID, exerciseName string, point history.HistoryDataPoint) error {
+func (r *FakeProgressRepo) AppendDataPoint(_ context.Context, userID, exerciseID uuid.UUID, exerciseName string, point history.HistoryDataPoint) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -79,7 +79,7 @@ func (r *FakeProgressRepo) AppendDataPoint(ctx context.Context, userID, exercise
 	return nil
 }
 
-func (r *FakeProgressRepo) GetSeries(ctx context.Context, userID, exerciseID uuid.UUID) (*history.ExerciseHistorySeries, error) {
+func (r *FakeProgressRepo) GetSeries(_ context.Context, userID, exerciseID uuid.UUID) (*history.ExerciseHistorySeries, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -90,14 +90,14 @@ func (r *FakeProgressRepo) GetSeries(ctx context.Context, userID, exerciseID uui
 	return s, nil
 }
 
-func (r *FakeProgressRepo) IsProcessed(ctx context.Context, eventID uuid.UUID) (bool, error) {
+func (r *FakeProgressRepo) IsProcessed(_ context.Context, eventID uuid.UUID) (bool, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
 	return r.eventsSeen[eventID], nil
 }
 
-func (r *FakeProgressRepo) MarkProcessed(ctx context.Context, eventID uuid.UUID) error {
+func (r *FakeProgressRepo) MarkProcessed(_ context.Context, eventID uuid.UUID) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 

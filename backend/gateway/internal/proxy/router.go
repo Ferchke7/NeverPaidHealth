@@ -80,23 +80,21 @@ func newReverseProxy(target string) http.Handler {
 		panic(err)
 	}
 
-	proxy := httputil.NewSingleHostReverseProxy(targetURL)
-	originalDirector := proxy.Director
+	return &httputil.ReverseProxy{
+		Rewrite: func(pr *httputil.ProxyRequest) {
+			pr.SetURL(targetURL)
+			pr.Out.Header.Set("X-Forwarded-Host", pr.In.Header.Get("Host"))
+			pr.Out.Host = targetURL.Host
 
-	proxy.Director = func(req *http.Request) {
-		originalDirector(req)
-		req.Header.Set("X-Forwarded-Host", req.Header.Get("Host"))
-		req.Host = targetURL.Host
-
-		// Strip /api/v1 prefix so downstream microservices receive clean paths
-		req.URL.Path = strings.TrimPrefix(req.URL.Path, "/api/v1")
-		if req.URL.Path == "" {
-			req.URL.Path = "/"
-		}
-		if req.URL.RawPath != "" {
-			req.URL.RawPath = strings.TrimPrefix(req.URL.RawPath, "/api/v1")
-		}
+			// Strip /api/v1 prefix so downstream microservices receive clean paths
+			cleanPath := strings.TrimPrefix(pr.In.URL.Path, "/api/v1")
+			if cleanPath == "" {
+				cleanPath = "/"
+			}
+			pr.Out.URL.Path = cleanPath
+			if pr.In.URL.RawPath != "" {
+				pr.Out.URL.RawPath = strings.TrimPrefix(pr.In.URL.RawPath, "/api/v1")
+			}
+		},
 	}
-
-	return proxy
 }

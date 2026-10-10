@@ -110,8 +110,8 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = ({ onNavigateToPrograms
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['programs', 'active'] });
-      queryClient.invalidateQueries({ queryKey: ['programs', 'installed'] });
+      void queryClient.invalidateQueries({ queryKey: ['programs', 'active'] });
+      void queryClient.invalidateQueries({ queryKey: ['programs', 'installed'] });
     },
   });
 
@@ -122,7 +122,7 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = ({ onNavigateToPrograms
         method: 'DELETE',
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['routines'] });
+      void queryClient.invalidateQueries({ queryKey: ['routines'] });
     },
   });
 
@@ -146,7 +146,7 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = ({ onNavigateToPrograms
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['routines'] });
+      void queryClient.invalidateQueries({ queryKey: ['routines'] });
     },
   });
 

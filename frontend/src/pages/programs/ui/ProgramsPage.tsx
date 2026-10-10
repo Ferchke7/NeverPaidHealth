@@ -103,9 +103,9 @@ export const ProgramsPage: React.FC<ProgramsPageProps> = ({ onNavigateToWorkouts
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['programs'] });
-      queryClient.invalidateQueries({ queryKey: ['programs', 'active'] });
-      queryClient.invalidateQueries({ queryKey: ['programs', 'installed'] });
+      void queryClient.invalidateQueries({ queryKey: ['programs'] });
+      void queryClient.invalidateQueries({ queryKey: ['programs', 'active'] });
+      void queryClient.invalidateQueries({ queryKey: ['programs', 'installed'] });
     },
   });
 
@@ -118,7 +118,7 @@ export const ProgramsPage: React.FC<ProgramsPageProps> = ({ onNavigateToWorkouts
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['programs'] });
+      void queryClient.invalidateQueries({ queryKey: ['programs'] });
     },
   });
 
@@ -130,9 +130,9 @@ export const ProgramsPage: React.FC<ProgramsPageProps> = ({ onNavigateToWorkouts
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['programs'] });
-      queryClient.invalidateQueries({ queryKey: ['programs', 'active'] });
-      queryClient.invalidateQueries({ queryKey: ['programs', 'installed'] });
+      void queryClient.invalidateQueries({ queryKey: ['programs'] });
+      void queryClient.invalidateQueries({ queryKey: ['programs', 'active'] });
+      void queryClient.invalidateQueries({ queryKey: ['programs', 'installed'] });
     },
   });
 

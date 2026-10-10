@@ -118,7 +118,7 @@ export const BodyTargetProgressCard: React.FC<BodyTargetProgressCardProps> = ({
       });
       localStorage.setItem('np_target_weight_kg', targetWeightKg.toString());
       setIsEditingTarget(false);
-      queryClient.invalidateQueries({ queryKey: ['body-trend'] });
+      void queryClient.invalidateQueries({ queryKey: ['body-trend'] });
     }
   };
 
@@ -137,8 +137,8 @@ export const BodyTargetProgressCard: React.FC<BodyTargetProgressCardProps> = ({
         weight_kg: weightValueKg,
       });
       localStorage.setItem('np_current_weight_kg', weightValueKg.toString());
-      queryClient.invalidateQueries({ queryKey: ['body-trend'] });
-      queryClient.invalidateQueries({ queryKey: ['body-logs'] });
+      void queryClient.invalidateQueries({ queryKey: ['body-trend'] });
+      void queryClient.invalidateQueries({ queryKey: ['body-logs'] });
       setLogSuccess(true);
       setTimeout(() => setLogSuccess(false), 2500);
     },

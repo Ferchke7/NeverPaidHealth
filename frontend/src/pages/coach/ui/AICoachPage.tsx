@@ -265,8 +265,12 @@ export const AICoachPage: React.FC = () => {
     }
   };
 
-  const handleCopyMessage = (id: string, text: string) => {
-    navigator.clipboard.writeText(text);
+  const handleCopyMessage = async (id: string, text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      // Ignore clipboard write error
+    }
     setCopiedMessageId(id);
     setTimeout(() => setCopiedMessageId(null), 2000);
   };
@@ -758,5 +762,3 @@ export const AICoachPage: React.FC = () => {
     </div>
   );
 };
-
-export default AICoachPage;

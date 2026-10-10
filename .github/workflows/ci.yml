@@ -80,6 +80,7 @@ jobs:
             ./services/progress/... \
             ./services/body/... \
             ./services/coach/... \
+            ./services/todo/... \
             ./archtest/...
 
       - name: Build Gateway Binary
@@ -102,6 +103,9 @@ jobs:
 
       - name: Build Coach Service Binary
         run: go build -o bin/coach ./services/coach/cmd/server
+
+      - name: Build Todo Service Binary
+        run: go build -o bin/todo ./services/todo/cmd/server
 
   # -------------------------------------------------------------
   # OpenAPI: Validate REST specifications

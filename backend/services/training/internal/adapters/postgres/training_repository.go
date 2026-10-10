@@ -24,14 +24,14 @@ func NewTrainingRepository(pool *pgxpool.Pool) *TrainingRepository {
 	return &TrainingRepository{pool: pool}
 }
 
-// Outbox
+// SaveOutbox stores an outbox event message.
 func (r *TrainingRepository) SaveOutbox(ctx context.Context, msg outbox.Message) error {
 	query := `INSERT INTO outbox (id, subject, payload, created_at, published_at) VALUES ($1, $2, $3, $4, $5)`
 	_, err := r.pool.Exec(ctx, query, msg.ID, msg.Subject, msg.Payload, msg.CreatedAt, msg.PublishedAt)
 	return err
 }
 
-// Routines
+// GetByID retrieves a routine by ID.
 func (r *TrainingRepository) GetByID(ctx context.Context, id uuid.UUID) (*routine.Routine, error) {
 	query := `SELECT id, user_id, name, notes, exercises, created_at, updated_at FROM routines WHERE id = $1`
 	row := r.pool.QueryRow(ctx, query, id)
@@ -108,7 +108,7 @@ func (r *TrainingRepository) Delete(ctx context.Context, id uuid.UUID) error {
 	return err
 }
 
-// Workouts
+// GetWorkoutByID retrieves a workout session by ID.
 func (r *TrainingRepository) GetWorkoutByID(ctx context.Context, id uuid.UUID) (*workout.Workout, error) {
 	query := `
 		SELECT id, user_id, name, routine_id, status, started_at, finished_at, exercises, total_volume_kg, completed_sets_count, duration_seconds

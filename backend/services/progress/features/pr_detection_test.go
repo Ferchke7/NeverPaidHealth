@@ -11,7 +11,7 @@ import (
 	"github.com/neverpaidhealth/backend/services/progress/internal/domain/record"
 )
 
-func TestBDD_Progress_HeavierWeightRecordsNewPR(t *testing.T) {
+func TestProgress_HeavierWeightRecordsNewPR(t *testing.T) {
 	ctx := context.Background()
 	repo := memory.NewFakeProgressRepo()
 	h := handler.NewOnWorkoutFinishedHandler(repo, repo, repo)
@@ -75,7 +75,7 @@ func TestBDD_Progress_HeavierWeightRecordsNewPR(t *testing.T) {
 	}
 }
 
-func TestBDD_Progress_DuplicateEvent_IsIdempotent(t *testing.T) {
+func TestProgress_DuplicateEvent_IsIdempotent(t *testing.T) {
 	ctx := context.Background()
 	repo := memory.NewFakeProgressRepo()
 	h := handler.NewOnWorkoutFinishedHandler(repo, repo, repo)

@@ -122,7 +122,7 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
       });
     },
     onSuccess: (data: any) => {
-      queryClient.invalidateQueries({ queryKey: ['routines'] });
+      void queryClient.invalidateQueries({ queryKey: ['routines'] });
       setName('');
       setNotes('');
       setExercises([]);
