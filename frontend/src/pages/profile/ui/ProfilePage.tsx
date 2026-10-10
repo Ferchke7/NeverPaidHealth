@@ -12,12 +12,11 @@ import {
   LogOut,
   Save,
   CheckCircle2,
-  Sparkles,
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '../../../entities/user/model/authStore.ts';
 import { apiClient } from '../../../shared/api/client.ts';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, Badge } from '../../../shared/ui/card.tsx';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../../../shared/ui/card.tsx';
 import { Button } from '../../../shared/ui/button.tsx';
 import { Input } from '../../../shared/ui/input.tsx';
 import { Switch } from '../../../shared/ui/switch.tsx';
@@ -159,10 +158,6 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onNavigateToBody }) =>
               <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
                 {user?.display_name || 'Athlete'}
               </h1>
-              <Badge variant="brand" size="md">
-                <Sparkles className="w-3 h-3 mr-1" />
-                NeverPaid PRO
-              </Badge>
             </div>
             <div className="flex flex-wrap items-center justify-center sm:justify-start gap-4 text-xs text-zinc-400">
               <span className="flex items-center gap-1.5">

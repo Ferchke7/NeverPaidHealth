@@ -141,37 +141,6 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = ({ onNavigateToPrograms
     localStorage.setItem('np_my_routines_custom_order', JSON.stringify(updated));
   };
 
-  const handleStartEmptyWorkout = async () => {
-    if (activeWorkout) {
-      const hasCompletedSets = activeWorkout.exercises.some((e) =>
-        e.sets.some((s) => s.completed)
-      );
-      if (hasCompletedSets) {
-        openSheet();
-        return;
-      }
-    }
-
-    const tempId = generateUUID();
-    startWorkout(tempId, 'Quick Workout');
-    openSheet();
-
-    try {
-      const res = await apiClient<{ id: string; name: string }>('/workouts', {
-        method: 'POST',
-        body: JSON.stringify({ name: 'Quick Workout' }),
-      });
-      if (res && res.id && res.id !== tempId) {
-        const current = useActiveWorkoutStore.getState().workout;
-        if (current && current.id === tempId) {
-          useActiveWorkoutStore.setState({ workout: { ...current, id: res.id } });
-        }
-      }
-    } catch {
-      // Keep running locally
-    }
-  };
-
   const handleStartRoutine = async (routine: Routine) => {
     if (activeWorkout) {
       const hasCompletedSets = activeWorkout.exercises.some((e) =>
@@ -265,9 +234,6 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = ({ onNavigateToPrograms
         <div>
           <h1 className="text-xl font-extrabold tracking-tight text-white flex items-center gap-2">
             <span>{t('workouts.title')}</span>
-            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-brand-500/20 text-brand-400 border border-brand-500/30">
-              Pro Hub
-            </span>
           </h1>
           <p className="text-xs text-zinc-400 mt-0.5">
             {t('workouts.quickWorkoutDesc')}
@@ -302,45 +268,6 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = ({ onNavigateToPrograms
           </Button>
         </div>
       </div>
-
-      {/* Quick Start Hero Card */}
-      <Card className="p-5 border-brand-500/30 bg-gradient-to-br from-brand-950/40 via-dark-900 to-dark-900 shadow-xl relative overflow-hidden">
-        <div className="absolute right-0 top-0 bottom-0 w-1/3 bg-radial-gradient from-brand-500/10 to-transparent pointer-events-none" />
-
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative z-10">
-          <div className="flex items-center gap-3.5">
-            <div className="w-12 h-12 rounded-2xl bg-brand-500 text-dark-950 flex items-center justify-center shadow-lg shadow-brand-500/30 shrink-0 font-extrabold">
-              <Play className="w-6 h-6 fill-current ml-0.5" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-base font-bold text-white">
-                  {activeWorkout ? t('activeWorkout.title') : t('workouts.quickWorkout')}
-                </h2>
-                {activeWorkout && (
-                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-400 bg-emerald-950/80 border border-emerald-800/60 px-2 py-0.5 rounded-full animate-pulse">
-                    ● Live
-                  </span>
-                )}
-              </div>
-              <p className="text-xs text-zinc-400 mt-0.5">
-                {activeWorkout
-                  ? `${activeWorkout.name} (${activeWorkout.exercises.length} ${t('workouts.exercisesCount', { count: activeWorkout.exercises.length })})`
-                  : t('workouts.quickWorkoutDesc')}
-              </p>
-            </div>
-          </div>
-
-          <Button
-            variant="primary"
-            size="md"
-            className="w-full sm:w-auto font-bold text-xs shadow-md shadow-brand-500/25 px-6"
-            onClick={handleStartEmptyWorkout}
-          >
-            {activeWorkout ? t('workouts.start') : t('workouts.quickWorkout')}
-          </Button>
-        </div>
-      </Card>
 
       {/* Routines Section Header & Controls */}
       <div className="space-y-3">

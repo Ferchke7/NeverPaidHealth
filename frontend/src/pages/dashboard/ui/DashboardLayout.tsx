@@ -3,7 +3,6 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { Dumbbell, History, LineChart, BookOpen, LogOut, Bot, User, Utensils, ListTodo } from 'lucide-react';
 import { useAuthStore } from '../../../entities/user/model/authStore.ts';
 import { UserAvatar } from '../../../entities/user/ui/UserAvatar.tsx';
-import { UnitSwitchToggle } from '../../../features/switch-units/ui/UnitSwitchToggle.tsx';
 import { LanguageSwitchToggle } from '../../../features/switch-language/ui/LanguageSwitchToggle.tsx';
 import { PWAInstallBanner } from '../../../features/pwa-install/ui/PWAInstallBanner.tsx';
 import { PWAInstallButton } from '../../../features/pwa-install/ui/PWAInstallButton.tsx';
@@ -39,15 +38,51 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
     navigate(`/${tabId}`);
   };
 
-  const navItems: { id: NavTab; label: string; icon: React.ReactNode; isAI?: boolean }[] = [
-    { id: 'workouts', label: t('nav.workouts'), icon: <Dumbbell className="w-4 h-4 md:w-5 md:h-5" /> },
-    { id: 'todo', label: t('nav.todo') || 'Todo & План', icon: <ListTodo className="w-4 h-4 md:w-5 md:h-5 text-brand-400" /> },
-    { id: 'programs', label: t('nav.programs'), icon: <BookOpen className="w-4 h-4 md:w-5 md:h-5" /> },
-    { id: 'nutrition', label: t('nav.nutrition'), icon: <Utensils className="w-4 h-4 md:w-5 md:h-5 text-emerald-400" /> },
-    { id: 'coach', label: t('nav.coach'), icon: <Bot className="w-4 h-4 md:w-5 md:h-5 text-brand-400" />, isAI: true },
-    { id: 'history', label: t('nav.history'), icon: <History className="w-4 h-4 md:w-5 md:h-5" /> },
-    { id: 'progress', label: t('nav.progress'), icon: <LineChart className="w-4 h-4 md:w-5 md:h-5" /> },
-    { id: 'profile', label: t('nav.profile'), icon: <User className="w-4 h-4 md:w-5 md:h-5" /> },
+  const navItems: {
+    id: NavTab;
+    label: string;
+    renderIcon: (active: boolean) => React.ReactNode;
+  }[] = [
+    {
+      id: 'workouts',
+      label: t('nav.workouts'),
+      renderIcon: (active) => <Dumbbell className={`w-4 h-4 md:w-5 md:h-5 transition-colors ${active ? 'text-brand-400' : 'text-zinc-400 group-hover:text-zinc-200'}`} />,
+    },
+    {
+      id: 'todo',
+      label: t('nav.todo') || 'Todo & План',
+      renderIcon: (active) => <ListTodo className={`w-4 h-4 md:w-5 md:h-5 transition-colors ${active ? 'text-brand-400' : 'text-zinc-400 group-hover:text-zinc-200'}`} />,
+    },
+    {
+      id: 'programs',
+      label: t('nav.programs'),
+      renderIcon: (active) => <BookOpen className={`w-4 h-4 md:w-5 md:h-5 transition-colors ${active ? 'text-brand-400' : 'text-zinc-400 group-hover:text-zinc-200'}`} />,
+    },
+    {
+      id: 'nutrition',
+      label: t('nav.nutrition'),
+      renderIcon: (active) => <Utensils className={`w-4 h-4 md:w-5 md:h-5 transition-colors ${active ? 'text-brand-400' : 'text-zinc-400 group-hover:text-zinc-200'}`} />,
+    },
+    {
+      id: 'coach',
+      label: t('nav.coach'),
+      renderIcon: (active) => <Bot className={`w-4 h-4 md:w-5 md:h-5 transition-colors ${active ? 'text-brand-400' : 'text-zinc-400 group-hover:text-zinc-200'}`} />,
+    },
+    {
+      id: 'history',
+      label: t('nav.history'),
+      renderIcon: (active) => <History className={`w-4 h-4 md:w-5 md:h-5 transition-colors ${active ? 'text-brand-400' : 'text-zinc-400 group-hover:text-zinc-200'}`} />,
+    },
+    {
+      id: 'progress',
+      label: t('nav.progress'),
+      renderIcon: (active) => <LineChart className={`w-4 h-4 md:w-5 md:h-5 transition-colors ${active ? 'text-brand-400' : 'text-zinc-400 group-hover:text-zinc-200'}`} />,
+    },
+    {
+      id: 'profile',
+      label: t('nav.profile'),
+      renderIcon: (active) => <User className={`w-4 h-4 md:w-5 md:h-5 transition-colors ${active ? 'text-brand-400' : 'text-zinc-400 group-hover:text-zinc-200'}`} />,
+    },
   ];
 
   if (currentTab === 'coach') {
@@ -58,7 +93,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           <div className="flex items-center gap-4 sm:gap-6">
             <button
               onClick={() => handleNavClick('workouts')}
-              className="flex items-center gap-2 hover:opacity-90 transition-opacity"
+              className="flex items-center gap-2 hover:opacity-90 transition-opacity cursor-pointer"
             >
               <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-brand-500/10 border border-brand-500/30 flex items-center justify-center text-brand-500 font-bold shadow-sm">
                 <Dumbbell className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
@@ -76,17 +111,14 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                   <button
                     key={item.id}
                     onClick={() => handleNavClick(item.id)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
                       isActive
-                        ? 'bg-brand-500/15 text-brand-400 border border-brand-500/30 shadow-sm'
+                        ? 'bg-brand-500/15 text-brand-400 border border-brand-500/30 shadow-sm font-bold'
                         : 'text-zinc-400 hover:text-zinc-200 hover:bg-dark-800'
                     }`}
                   >
-                    {item.icon}
-                    {item.label}
-                    {item.isAI && (
-                      <span className="w-1.5 h-1.5 rounded-full bg-brand-400 animate-pulse" />
-                    )}
+                    {item.renderIcon(isActive)}
+                    <span>{item.label}</span>
                   </button>
                 );
               })}
@@ -96,11 +128,10 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           <div className="flex items-center gap-1.5 sm:gap-3">
             <PWAInstallButton className="hidden lg:flex" />
             <LanguageSwitchToggle variant="header" />
-            <UnitSwitchToggle />
             <div className="flex items-center gap-1.5 pl-1.5 sm:pl-2 border-l border-dark-700">
               <button
                 onClick={() => handleNavClick('profile')}
-                className="flex items-center gap-1.5 p-1 rounded-lg hover:bg-dark-800 transition-colors"
+                className="flex items-center gap-1.5 p-1 rounded-lg hover:bg-dark-800 transition-colors cursor-pointer"
                 title={t('nav.profile')}
               >
                 <UserAvatar user={user} size="sm" />
@@ -110,7 +141,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               </button>
               <button
                 onClick={logout}
-                className="text-zinc-500 hover:text-red-400 p-1 sm:p-1.5 rounded-md transition-colors"
+                className="text-zinc-500 hover:text-red-400 p-1 sm:p-1.5 rounded-md transition-colors cursor-pointer"
                 title={t('nav.logout')}
               >
                 <LogOut className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
@@ -132,14 +163,16 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               <button
                 key={item.id}
                 onClick={() => handleNavClick(item.id)}
-                className={`flex flex-col items-center gap-0.5 py-1 px-1 rounded-xl transition-all relative min-w-0 flex-1 ${
-                  isActive ? 'text-brand-500 font-bold' : 'text-zinc-400 hover:text-zinc-200'
+                className={`flex flex-col items-center gap-0.5 py-1 px-1 rounded-xl transition-all relative min-w-0 flex-1 group cursor-pointer ${
+                  isActive ? 'text-brand-400 font-bold' : 'text-zinc-400 hover:text-zinc-200'
                 }`}
               >
-                {item.icon}
-                <span className="text-[9px] tracking-tight truncate">{item.label}</span>
-                {item.isAI && (
-                  <span className="w-1.5 h-1.5 rounded-full bg-brand-400 absolute top-1 right-2 animate-pulse" />
+                {item.renderIcon(isActive)}
+                <span className={`text-[9px] tracking-tight truncate ${isActive ? 'text-brand-400 font-bold' : 'text-zinc-400'}`}>
+                  {item.label}
+                </span>
+                {isActive && (
+                  <span className="w-1 h-1 rounded-full bg-brand-400 absolute -bottom-0.5" />
                 )}
               </button>
             );
@@ -156,7 +189,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
         <div className="flex items-center gap-6">
           <button
             onClick={() => handleNavClick('workouts')}
-            className="flex items-center gap-2.5 hover:opacity-90 transition-opacity"
+            className="flex items-center gap-2.5 hover:opacity-90 transition-opacity cursor-pointer"
           >
             <div className="w-8 h-8 rounded-lg bg-brand-500/10 border border-brand-500/30 flex items-center justify-center text-brand-500 font-bold shadow-sm">
               <Dumbbell className="w-4 h-4" />
@@ -174,17 +207,14 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 <button
                   key={item.id}
                   onClick={() => handleNavClick(item.id)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
                     isActive
-                      ? 'bg-brand-500/15 text-brand-400 border border-brand-500/30 shadow-sm'
+                      ? 'bg-brand-500/15 text-brand-400 border border-brand-500/30 shadow-sm font-bold'
                       : 'text-zinc-400 hover:text-zinc-200 hover:bg-dark-800'
                   }`}
                 >
-                  {item.icon}
-                  {item.label}
-                  {item.isAI && (
-                    <span className="w-1.5 h-1.5 rounded-full bg-brand-400 animate-pulse" />
-                  )}
+                  {item.renderIcon(isActive)}
+                  <span>{item.label}</span>
                 </button>
               );
             })}
@@ -194,11 +224,10 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
         <div className="flex items-center gap-2 sm:gap-3">
           <PWAInstallButton className="hidden lg:flex" />
           <LanguageSwitchToggle variant="header" />
-          <UnitSwitchToggle />
           <div className="flex items-center gap-2 pl-2 border-l border-dark-700">
             <button
               onClick={() => handleNavClick('profile')}
-              className={`flex items-center gap-2 p-1 rounded-lg transition-colors ${
+              className={`flex items-center gap-2 p-1 rounded-lg transition-colors cursor-pointer ${
                 currentTab === 'profile' ? 'ring-2 ring-brand-500/50 bg-dark-800' : 'hover:bg-dark-800'
               }`}
               title={t('nav.profile')}
@@ -210,7 +239,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
             </button>
             <button
               onClick={logout}
-              className="text-zinc-500 hover:text-red-400 p-1.5 rounded-md transition-colors"
+              className="text-zinc-500 hover:text-red-400 p-1.5 rounded-md transition-colors cursor-pointer"
               title={t('nav.logout')}
             >
               <LogOut className="w-4 h-4" />
@@ -233,14 +262,16 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
             <button
               key={item.id}
               onClick={() => handleNavClick(item.id)}
-              className={`flex flex-col items-center gap-0.5 py-1 px-1 rounded-xl transition-all relative min-w-0 flex-1 ${
-                isActive ? 'text-brand-500 font-bold' : 'text-zinc-400 hover:text-zinc-200'
+              className={`flex flex-col items-center gap-0.5 py-1 px-1 rounded-xl transition-all relative min-w-0 flex-1 group cursor-pointer ${
+                isActive ? 'text-brand-400 font-bold' : 'text-zinc-400 hover:text-zinc-200'
               }`}
             >
-              {item.icon}
-              <span className="text-[9px] tracking-tight truncate">{item.label}</span>
-              {item.isAI && (
-                <span className="w-1.5 h-1.5 rounded-full bg-brand-400 absolute top-1 right-2 animate-pulse" />
+              {item.renderIcon(isActive)}
+              <span className={`text-[9px] tracking-tight truncate ${isActive ? 'text-brand-400 font-bold' : 'text-zinc-400'}`}>
+                {item.label}
+              </span>
+              {isActive && (
+                <span className="w-1 h-1 rounded-full bg-brand-400 absolute -bottom-0.5" />
               )}
             </button>
           );
@@ -249,4 +280,3 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
     </div>
   );
 };
-
