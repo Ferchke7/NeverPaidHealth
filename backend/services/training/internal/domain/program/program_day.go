@@ -62,7 +62,7 @@ func NewProgramDay(
 	exercises []*ProgramExercise,
 ) (*ProgramDay, error) {
 	if dayNumber <= 0 {
-		dayNumber = 1
+		return nil, ErrInvalidDayNumber
 	}
 	trimmedName := strings.TrimSpace(name)
 	if trimmedName == "" {

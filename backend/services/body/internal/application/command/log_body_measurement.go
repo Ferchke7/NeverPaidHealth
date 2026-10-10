@@ -48,27 +48,16 @@ func (h *LogBodyMeasurementHandler) Handle(ctx context.Context, in LogBodyMeasur
 		bodyFatVO = &bf
 	}
 
-	circumferences := body.CircumferenceMetrics{}
-	if in.WaistCm != nil {
-		c, err := body.NewCircumferenceCm(*in.WaistCm)
-		if err != nil {
-			return nil, err
-		}
-		circumferences.Waist = &c
-	}
-	if in.ChestCm != nil {
-		c, err := body.NewCircumferenceCm(*in.ChestCm)
-		if err != nil {
-			return nil, err
-		}
-		circumferences.Chest = &c
-	}
-	if in.ArmsCm != nil {
-		c, err := body.NewCircumferenceCm(*in.ArmsCm)
-		if err != nil {
-			return nil, err
-		}
-		circumferences.Arms = &c
+	circumferences, err := body.NewCircumferenceMetrics(body.CircumferenceValues{
+		Waist:  in.WaistCm,
+		Chest:  in.ChestCm,
+		Arms:   in.ArmsCm,
+		Thighs: in.ThighsCm,
+		Calves: in.CalvesCm,
+		Neck:   in.NeckCm,
+	})
+	if err != nil {
+		return nil, err
 	}
 
 	now := h.clock.Now()

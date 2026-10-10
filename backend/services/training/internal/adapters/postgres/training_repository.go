@@ -174,21 +174,7 @@ func (r *TrainingRepository) SaveWorkout(ctx context.Context, w *workout.Workout
 	for _, ex := range w.Exercises() {
 		var setDTOs []SetDTO
 		for _, s := range ex.Sets() {
-			var rpeVal *float64
-			if s.RPE() != nil {
-				v := s.RPE().Value()
-				rpeVal = &v
-			}
-			var durVal *int
-			if s.Duration() != nil {
-				v := s.Duration().Seconds()
-				durVal = &v
-			}
-			var e1rmVal *int64
-			if s.CalculatedE1RM() != nil {
-				v := s.CalculatedE1RM().Grams()
-				e1rmVal = &v
-			}
+			rpeVal, durVal, e1rmVal := extractSetValues(s)
 
 			setDTOs = append(setDTOs, SetDTO{
 				ID:             s.ID(),
@@ -364,21 +350,7 @@ func scanWorkout(row pgx.Row) (*workout.Workout, error) {
 			st, _ := measure.NewSetType(s.SetType)
 			w, _ := measure.NewWeightGrams(s.WeightGrams)
 			r, _ := measure.NewReps(s.Reps)
-			var rpe *measure.RPE
-			if s.RPE != nil {
-				rpeVal, _ := measure.NewRPE(*s.RPE)
-				rpe = &rpeVal
-			}
-			var dur *measure.Duration
-			if s.DurationSecs != nil {
-				durVal := measure.NewDurationSeconds(*s.DurationSecs)
-				dur = &durVal
-			}
-			var e1rm *measure.Weight
-			if s.CalculatedE1RM != nil {
-				e1rmVal, _ := measure.NewWeightGrams(*s.CalculatedE1RM)
-				e1rm = &e1rmVal
-			}
+			rpe, dur, e1rm := parseOptionalMeasures(s.RPE, s.DurationSecs, s.CalculatedE1RM)
 
 			sets = append(sets, workout.ReconstituteSet(s.ID, s.SetNumber, st, w, r, rpe, dur, s.Completed, e1rm))
 		}
@@ -397,4 +369,39 @@ func scanWorkout(row pgx.Row) (*workout.Workout, error) {
 	}
 
 	return workout.Reconstitute(id, userID, name, routineID, workout.WorkoutStatus(statusStr), startedAt, finAt, exercises, summary), nil
+}
+
+func extractSetValues(s *workout.WorkoutSet) (rpeVal *float64, durVal *int, e1rmVal *int64) {
+	if s.RPE() != nil {
+		v := s.RPE().Value()
+		rpeVal = &v
+	}
+	if s.Duration() != nil {
+		v := s.Duration().Seconds()
+		durVal = &v
+	}
+	if s.CalculatedE1RM() != nil {
+		v := s.CalculatedE1RM().Grams()
+		e1rmVal = &v
+	}
+	return
+}
+
+func parseOptionalMeasures(rpeIn *float64, durSecs *int, e1rmGrams *int64) (*measure.RPE, *measure.Duration, *measure.Weight) {
+	var rpe *measure.RPE
+	if rpeIn != nil {
+		r, _ := measure.NewRPE(*rpeIn)
+		rpe = &r
+	}
+	var dur *measure.Duration
+	if durSecs != nil {
+		d := measure.NewDurationSeconds(*durSecs)
+		dur = &d
+	}
+	var e1rm *measure.Weight
+	if e1rmGrams != nil {
+		w, _ := measure.NewWeightGrams(*e1rmGrams)
+		e1rm = &w
+	}
+	return rpe, dur, e1rm
 }

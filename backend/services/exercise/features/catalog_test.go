@@ -2,6 +2,7 @@ package features_test
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/google/uuid"
@@ -50,7 +51,7 @@ func TestBDD_Exercise_FilteringAndImmutability(t *testing.T) {
 	// Scenario: Attempting to delete a seeded standard exercise fails
 	deleteHandler := command.NewDeleteCustomExerciseHandler(repo)
 	err = deleteHandler.Handle(ctx, userID, benchID)
-	if err != exercise.ErrCannotDeleteSeeded {
+	if !errors.Is(err, exercise.ErrCannotDeleteSeeded) {
 		t.Errorf("expected ErrCannotDeleteSeeded, got %v", err)
 	}
 }

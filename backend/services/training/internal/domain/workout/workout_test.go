@@ -1,6 +1,7 @@
 package workout_test
 
 import (
+	"errors"
 	"testing"
 	"time"
 
@@ -69,7 +70,7 @@ func TestWorkout_Finish_WithoutCompletedSets_ReturnsError(t *testing.T) {
 	_, _ = w.LogSet(exID, measure.SetTypeNormal, weight, reps, nil, nil)
 
 	_, err := w.Finish(now.Add(30 * time.Minute))
-	if err != workout.ErrWorkoutRequiresSets {
+	if !errors.Is(err, workout.ErrWorkoutRequiresSets) {
 		t.Errorf("expected ErrWorkoutRequiresSets, got %v", err)
 	}
 }
@@ -89,7 +90,7 @@ func TestWorkout_ModifyAfterFinish_ReturnsError(t *testing.T) {
 
 	// Attempting to log a new set after finishing
 	_, err := w.LogSet(exID, measure.SetTypeNormal, weight, reps, nil, nil)
-	if err != workout.ErrWorkoutNotInProgress {
+	if !errors.Is(err, workout.ErrWorkoutNotInProgress) {
 		t.Errorf("expected ErrWorkoutNotInProgress, got %v", err)
 	}
 }

@@ -79,31 +79,7 @@ func (r *BodyRepository) Save(ctx context.Context, l *body.BodyLog) error {
 		bf = &v
 	}
 
-	var waist, chest, arms, thighs, calves, neck *float64
-	if l.Circumferences().Waist != nil {
-		v := l.Circumferences().Waist.Cm()
-		waist = &v
-	}
-	if l.Circumferences().Chest != nil {
-		v := l.Circumferences().Chest.Cm()
-		chest = &v
-	}
-	if l.Circumferences().Arms != nil {
-		v := l.Circumferences().Arms.Cm()
-		arms = &v
-	}
-	if l.Circumferences().Thighs != nil {
-		v := l.Circumferences().Thighs.Cm()
-		thighs = &v
-	}
-	if l.Circumferences().Calves != nil {
-		v := l.Circumferences().Calves.Cm()
-		calves = &v
-	}
-	if l.Circumferences().Neck != nil {
-		v := l.Circumferences().Neck.Cm()
-		neck = &v
-	}
+	cv := l.Circumferences().Values()
 
 	query := `
 		INSERT INTO body_logs (id, user_id, log_date, weight_grams, body_fat_percentage, waist_cm, chest_cm, arms_cm, thighs_cm, calves_cm, neck_cm, calculated_bmi, created_at, updated_at)
@@ -126,12 +102,12 @@ func (r *BodyRepository) Save(ctx context.Context, l *body.BodyLog) error {
 		l.LogDate(),
 		l.Weight().Grams(),
 		bf,
-		waist,
-		chest,
-		arms,
-		thighs,
-		calves,
-		neck,
+		cv.Waist,
+		cv.Chest,
+		cv.Arms,
+		cv.Thighs,
+		cv.Calves,
+		cv.Neck,
 		l.CalculatedBMI(),
 		l.CreatedAt(),
 		l.UpdatedAt(),
@@ -184,43 +160,14 @@ func scanBodyLog(row pgx.Row) (*body.BodyLog, error) {
 		}
 	}
 
-	circumferences := body.CircumferenceMetrics{}
-	if waistVal != nil {
-		c, err := body.NewCircumferenceCm(*waistVal)
-		if err == nil {
-			circumferences.Waist = &c
-		}
-	}
-	if chestVal != nil {
-		c, err := body.NewCircumferenceCm(*chestVal)
-		if err == nil {
-			circumferences.Chest = &c
-		}
-	}
-	if armsVal != nil {
-		c, err := body.NewCircumferenceCm(*armsVal)
-		if err == nil {
-			circumferences.Arms = &c
-		}
-	}
-	if thighsVal != nil {
-		c, err := body.NewCircumferenceCm(*thighsVal)
-		if err == nil {
-			circumferences.Thighs = &c
-		}
-	}
-	if calvesVal != nil {
-		c, err := body.NewCircumferenceCm(*calvesVal)
-		if err == nil {
-			circumferences.Calves = &c
-		}
-	}
-	if neckVal != nil {
-		c, err := body.NewCircumferenceCm(*neckVal)
-		if err == nil {
-			circumferences.Neck = &c
-		}
-	}
+	circumferences, _ := body.NewCircumferenceMetrics(body.CircumferenceValues{
+		Waist:  waistVal,
+		Chest:  chestVal,
+		Arms:   armsVal,
+		Thighs: thighsVal,
+		Calves: calvesVal,
+		Neck:   neckVal,
+	})
 
 	return body.Reconstitute(id, userID, logDate, weight, bfVO, circumferences, bmiVal, createdAt, updatedAt), nil
 }

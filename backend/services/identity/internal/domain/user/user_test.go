@@ -1,6 +1,7 @@
 package user_test
 
 import (
+	"errors"
 	"testing"
 	"time"
 
@@ -50,12 +51,12 @@ func TestUser_UpdateUnitPreference_TogglesUnit(t *testing.T) {
 
 func TestUser_Validation_RejectsInvalidInputs(t *testing.T) {
 	_, err := user.NewEmail("not-an-email")
-	if err != user.ErrInvalidEmail {
+	if !errors.Is(err, user.ErrInvalidEmail) {
 		t.Errorf("expected ErrInvalidEmail, got %v", err)
 	}
 
 	_, err = user.NewUnitPreference("stones")
-	if err != user.ErrInvalidUnitPreference {
+	if !errors.Is(err, user.ErrInvalidUnitPreference) {
 		t.Errorf("expected ErrInvalidUnitPreference, got %v", err)
 	}
 }

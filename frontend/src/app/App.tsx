@@ -12,7 +12,7 @@ import { BodyPage } from '../pages/body/ui/BodyPage.tsx';
 import { AICoachPage } from '../pages/coach/ui/AICoachPage.tsx';
 import { NutritionPage } from '../pages/nutrition/ui/NutritionPage.tsx';
 import { TodoCalendarPage } from '../pages/todo/ui/TodoCalendarPage.tsx';
-import { ProfilePage } from '../pages/profile/ui/ProfilePage.tsx';
+import ProfilePage from '../pages/profile/ui/ProfilePage.tsx';
 import { ActiveWorkoutSheet } from '../widgets/active-workout-panel/ui/ActiveWorkoutSheet.tsx';
 import { FloatingFocusTimer } from '../features/focus-timer/ui/FloatingFocusTimer.tsx';
 

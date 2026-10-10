@@ -414,21 +414,8 @@ func (p *CompositeAIProvider) callGemini(ctx context.Context, req coach.ChatRequ
 			role = "model"
 		}
 		parts := make([]geminiPart, 0)
-		if h.ImageBase64 != "" {
-			mime := h.MimeType
-			if mime == "" {
-				mime = "image/jpeg"
-			}
-			data := h.ImageBase64
-			if idx := strings.Index(data, ","); idx != -1 {
-				data = data[idx+1:]
-			}
-			parts = append(parts, geminiPart{
-				InlineData: &geminiInlineData{
-					MimeType: mime,
-					Data:     data,
-				},
-			})
+		if p := createInlineDataPart(h.ImageBase64, h.MimeType); p != nil {
+			parts = append(parts, *p)
 		}
 		if h.Content != "" {
 			parts = append(parts, geminiPart{Text: h.Content})
@@ -442,21 +429,8 @@ func (p *CompositeAIProvider) callGemini(ctx context.Context, req coach.ChatRequ
 	}
 
 	userParts := make([]geminiPart, 0)
-	if req.ImageBase64 != "" {
-		mime := req.MimeType
-		if mime == "" {
-			mime = "image/jpeg"
-		}
-		data := req.ImageBase64
-		if idx := strings.Index(data, ","); idx != -1 {
-			data = data[idx+1:]
-		}
-		userParts = append(userParts, geminiPart{
-			InlineData: &geminiInlineData{
-				MimeType: mime,
-				Data:     data,
-			},
-		})
+	if p := createInlineDataPart(req.ImageBase64, req.MimeType); p != nil {
+		userParts = append(userParts, *p)
 	}
 	userText := req.Message
 	if userText == "" && req.ImageBase64 != "" {
@@ -484,70 +458,31 @@ func (p *CompositeAIProvider) callGemini(ctx context.Context, req coach.ChatRequ
 		return coach.ChatResponse{}, err
 	}
 
-	var lastErr error
-	models := p.getCandidateModels(ctx, key)
-
-	for _, model := range models {
-		apiURL := fmt.Sprintf("https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s", model, key)
-		reqCtx, cancel := context.WithTimeout(ctx, 8*time.Second)
-		httpReq, err := http.NewRequestWithContext(reqCtx, "POST", apiURL, bytes.NewReader(bodyBytes))
-		if err != nil {
-			cancel()
-			lastErr = err
-			continue
-		}
-		httpReq.Header.Set("Content-Type", "application/json")
-
-		resp, err := p.httpClient.Do(httpReq)
-		if err != nil {
-			cancel()
-			lastErr = err
-			continue
-		}
-
-		raw, _ := io.ReadAll(resp.Body)
-		_ = resp.Body.Close()
-		cancel()
-
-		if resp.StatusCode != http.StatusOK {
-			lastErr = fmt.Errorf("model %s returned %d: %s", model, resp.StatusCode, string(raw))
-			slog.Warn("Gemini model candidate failed, trying next", "model", model, "status", resp.StatusCode)
-			continue
-		}
-
-		var geminiResp geminiResponse
-		if err := json.Unmarshal(raw, &geminiResp); err != nil {
-			lastErr = err
-			continue
-		}
-
-		if len(geminiResp.Candidates) > 0 && len(geminiResp.Candidates[0].Content.Parts) > 0 {
-			reply := geminiResp.Candidates[0].Content.Parts[0].Text
-			p.recordWorkingModel(model)
-			slog.Info("Gemini response successfully generated", "model", model)
-
-			sugg1, sugg2, sugg3 := "Что тренировать сегодня?", "Сколько белка нужно в день?", "Как преодолеть плато?"
-			if lang == "uz" {
-				sugg1, sugg2, sugg3 = "Bugun nima mashq qilamiz?", "Kunlik oqsil me'yori qancha?", "Natijalarimni tahlil qil"
-			} else if lang == "en" {
-				sugg1, sugg2, sugg3 = "What should I train today?", "How much protein do I need?", "How to break plateaus?"
-			}
-
-			return coach.ChatResponse{
-				Reply: strings.TrimSpace(reply),
-				Suggestions: []string{
-					sugg1,
-					sugg2,
-					sugg3,
-				},
-			}, nil
-		}
+	geminiResp, err := p.executeGenerateContent(ctx, key, bodyBytes, 8*time.Second, "Chat")
+	if err != nil {
+		return coach.ChatResponse{}, err
 	}
 
-	if lastErr != nil {
-		return coach.ChatResponse{}, lastErr
+	reply := extractCandidateText(geminiResp)
+	if reply == "" {
+		return coach.ChatResponse{}, fmt.Errorf("gemini returned empty response")
 	}
-	return coach.ChatResponse{}, fmt.Errorf("no gemini model candidate succeeded")
+
+	sugg1, sugg2, sugg3 := "Что тренировать сегодня?", "Сколько белка нужно в день?", "Как преодолеть плато?"
+	if lang == "uz" {
+		sugg1, sugg2, sugg3 = "Bugun nima mashq qilamiz?", "Kunlik oqsil me'yori qancha?", "Natijalarimni tahlil qil"
+	} else if lang == "en" {
+		sugg1, sugg2, sugg3 = "What should I train today?", "How much protein do I need?", "How to break plateaus?"
+	}
+
+	return coach.ChatResponse{
+		Reply: strings.TrimSpace(reply),
+		Suggestions: []string{
+			sugg1,
+			sugg2,
+			sugg3,
+		},
+	}, nil
 }
 
 func (p *CompositeAIProvider) callGeminiTextNutrition(ctx context.Context, description, lang string) (coach.MealAnalysisResult, error) {
@@ -626,85 +561,12 @@ Required JSON Structure:
 		return coach.MealAnalysisResult{}, err
 	}
 
-	var lastErr error
-	models := p.getCandidateModels(ctx, key)
-
-	for _, model := range models {
-		apiURL := fmt.Sprintf("https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s", model, key)
-		reqCtx, cancel := context.WithTimeout(ctx, 7*time.Second)
-		httpReq, err := http.NewRequestWithContext(reqCtx, "POST", apiURL, bytes.NewReader(bodyBytes))
-		if err != nil {
-			cancel()
-			lastErr = err
-			continue
-		}
-		httpReq.Header.Set("Content-Type", "application/json")
-
-		resp, err := p.httpClient.Do(httpReq)
-		if err != nil {
-			cancel()
-			lastErr = err
-			continue
-		}
-
-		raw, _ := io.ReadAll(resp.Body)
-		_ = resp.Body.Close()
-		cancel()
-
-		if resp.StatusCode != http.StatusOK {
-			lastErr = fmt.Errorf("model %s returned %d: %s", model, resp.StatusCode, string(raw))
-			slog.Warn("Gemini Text Nutrition model failed, trying next", "model", model, "status", resp.StatusCode)
-			continue
-		}
-
-		var geminiResp geminiResponse
-		if err := json.Unmarshal(raw, &geminiResp); err != nil {
-			lastErr = err
-			continue
-		}
-
-		var rawText string
-		for _, cand := range geminiResp.Candidates {
-			for _, part := range cand.Content.Parts {
-				if part.Text != "" {
-					rawText += part.Text
-				}
-			}
-		}
-
-		rawText = strings.TrimSpace(rawText)
-		start := strings.Index(rawText, "{")
-		end := strings.LastIndex(rawText, "}")
-		if start == -1 || end == -1 || end <= start {
-			lastErr = fmt.Errorf("no json found in response: %s", rawText)
-			continue
-		}
-
-		jsonStr := rawText[start : end+1]
-		var analysis coach.MealAnalysisResult
-		if err := json.Unmarshal([]byte(jsonStr), &analysis); err != nil {
-			lastErr = fmt.Errorf("failed to unmarshal nutrition json: %w", err)
-			continue
-		}
-
-		if analysis.TotalCalories == 0 && len(analysis.Items) > 0 {
-			for _, item := range analysis.Items {
-				analysis.TotalCalories += item.Calories
-				analysis.TotalProteinG += item.ProteinG
-				analysis.TotalCarbsG += item.CarbsG
-				analysis.TotalFatG += item.FatG
-			}
-		}
-
-		p.recordWorkingModel(model)
-		slog.Info("Gemini Text Nutrition analysis successful", "model", model, "meal", analysis.MealName, "calories", analysis.TotalCalories)
-		return analysis, nil
+	geminiResp, err := p.executeGenerateContent(ctx, key, bodyBytes, 7*time.Second, "TextNutrition")
+	if err != nil {
+		return coach.MealAnalysisResult{}, err
 	}
 
-	if lastErr != nil {
-		return coach.MealAnalysisResult{}, lastErr
-	}
-	return coach.MealAnalysisResult{}, fmt.Errorf("no gemini model succeeded for text nutrition")
+	return parseMealAnalysisJSON(extractCandidateText(geminiResp))
 }
 
 func (p *CompositeAIProvider) callGeminiVision(ctx context.Context, imageBase64, mimeType, notes, lang string) (coach.MealAnalysisResult, error) {
@@ -713,14 +575,9 @@ func (p *CompositeAIProvider) callGeminiVision(ctx context.Context, imageBase64,
 		return coach.MealAnalysisResult{}, fmt.Errorf("gemini api key is not configured")
 	}
 
-	cleanBase64 := imageBase64
-	if idx := strings.Index(imageBase64, ","); idx != -1 {
-		cleanBase64 = imageBase64[idx+1:]
-	}
-	cleanBase64 = strings.TrimSpace(cleanBase64)
-
-	if mimeType == "" {
-		mimeType = "image/jpeg"
+	imgPart := createInlineDataPart(imageBase64, mimeType)
+	if imgPart == nil {
+		return coach.MealAnalysisResult{}, fmt.Errorf("empty image data for vision analysis")
 	}
 
 	langTarget := "Russian"
@@ -766,12 +623,7 @@ Format:
 				Role: "user",
 				Parts: []geminiPart{
 					{Text: prompt},
-					{
-						InlineData: &geminiInlineData{
-							MimeType: mimeType,
-							Data:     cleanBase64,
-						},
-					},
+					*imgPart,
 				},
 			},
 		},
@@ -782,12 +634,41 @@ Format:
 		return coach.MealAnalysisResult{}, err
 	}
 
-	var lastErr error
+	geminiResp, err := p.executeGenerateContent(ctx, key, bodyBytes, 8*time.Second, "VisionNutrition")
+	if err != nil {
+		return coach.MealAnalysisResult{}, err
+	}
+
+	return parseMealAnalysisJSON(extractCandidateText(geminiResp))
+}
+
+func createInlineDataPart(imageBase64, mimeType string) *geminiPart {
+	clean := strings.TrimSpace(imageBase64)
+	if clean == "" {
+		return nil
+	}
+	mime := mimeType
+	if mime == "" {
+		mime = "image/jpeg"
+	}
+	if idx := strings.Index(clean, ","); idx != -1 {
+		clean = clean[idx+1:]
+	}
+	return &geminiPart{
+		InlineData: &geminiInlineData{
+			MimeType: mime,
+			Data:     clean,
+		},
+	}
+}
+
+func (p *CompositeAIProvider) executeGenerateContent(ctx context.Context, key string, bodyBytes []byte, timeout time.Duration, logTag string) (*geminiResponse, error) {
 	models := p.getCandidateModels(ctx, key)
+	var lastErr error
 
 	for _, model := range models {
 		apiURL := fmt.Sprintf("https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s", model, key)
-		reqCtx, cancel := context.WithTimeout(ctx, 8*time.Second)
+		reqCtx, cancel := context.WithTimeout(ctx, timeout)
 		httpReq, err := http.NewRequestWithContext(reqCtx, "POST", apiURL, bytes.NewReader(bodyBytes))
 		if err != nil {
 			cancel()
@@ -809,7 +690,7 @@ Format:
 
 		if resp.StatusCode != http.StatusOK {
 			lastErr = fmt.Errorf("model %s returned %d: %s", model, resp.StatusCode, string(raw))
-			slog.Warn("Gemini Vision model candidate failed, trying next", "model", model, "status", resp.StatusCode)
+			slog.Warn("Gemini model candidate failed, trying next", "tag", logTag, "model", model, "status", resp.StatusCode)
 			continue
 		}
 
@@ -819,48 +700,59 @@ Format:
 			continue
 		}
 
-		var rawText string
-		for _, cand := range geminiResp.Candidates {
-			for _, part := range cand.Content.Parts {
-				if part.Text != "" {
-					rawText += part.Text
-				}
-			}
-		}
-
-		rawText = strings.TrimSpace(rawText)
-		start := strings.Index(rawText, "{")
-		end := strings.LastIndex(rawText, "}")
-		if start == -1 || end == -1 || end <= start {
-			lastErr = fmt.Errorf("could not find JSON object in response: %s", rawText)
-			continue
-		}
-
-		jsonStr := rawText[start : end+1]
-		var analysis coach.MealAnalysisResult
-		if err := json.Unmarshal([]byte(jsonStr), &analysis); err != nil {
-			lastErr = fmt.Errorf("failed to parse vision json (%w): %s", err, jsonStr)
-			continue
-		}
-
-		if analysis.TotalCalories == 0 && len(analysis.Items) > 0 {
-			for _, item := range analysis.Items {
-				analysis.TotalCalories += item.Calories
-				analysis.TotalProteinG += item.ProteinG
-				analysis.TotalCarbsG += item.CarbsG
-				analysis.TotalFatG += item.FatG
-			}
-		}
-
 		p.recordWorkingModel(model)
-		slog.Info("Gemini Vision analysis successful", "model", model, "meal", analysis.MealName, "calories", analysis.TotalCalories)
-		return analysis, nil
+		return &geminiResp, nil
 	}
 
 	if lastErr != nil {
-		return coach.MealAnalysisResult{}, lastErr
+		return nil, lastErr
 	}
-	return coach.MealAnalysisResult{}, fmt.Errorf("no gemini vision model candidate succeeded")
+	return nil, fmt.Errorf("no gemini model candidate succeeded for %s", logTag)
+}
+
+func extractCandidateText(resp *geminiResponse) string {
+	if resp == nil {
+		return ""
+	}
+	var rawText string
+	for _, cand := range resp.Candidates {
+		for _, part := range cand.Content.Parts {
+			if part.Text != "" {
+				rawText += part.Text
+			}
+		}
+	}
+	return strings.TrimSpace(rawText)
+}
+
+func extractJSON(rawText string) (string, error) {
+	trimmed := strings.TrimSpace(rawText)
+	start := strings.Index(trimmed, "{")
+	end := strings.LastIndex(trimmed, "}")
+	if start == -1 || end == -1 || end <= start {
+		return "", fmt.Errorf("could not find JSON object in response: %s", rawText)
+	}
+	return trimmed[start : end+1], nil
+}
+
+func parseMealAnalysisJSON(rawText string) (coach.MealAnalysisResult, error) {
+	jsonStr, err := extractJSON(rawText)
+	if err != nil {
+		return coach.MealAnalysisResult{}, err
+	}
+	var analysis coach.MealAnalysisResult
+	if err := json.Unmarshal([]byte(jsonStr), &analysis); err != nil {
+		return coach.MealAnalysisResult{}, fmt.Errorf("failed to parse meal json (%w): %s", err, jsonStr)
+	}
+	if analysis.TotalCalories == 0 && len(analysis.Items) > 0 {
+		for _, item := range analysis.Items {
+			analysis.TotalCalories += item.Calories
+			analysis.TotalProteinG += item.ProteinG
+			analysis.TotalCarbsG += item.CarbsG
+			analysis.TotalFatG += item.FatG
+		}
+	}
+	return analysis, nil
 }
 
 func (p *CompositeAIProvider) getAPIKey() string {

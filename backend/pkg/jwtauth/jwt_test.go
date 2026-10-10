@@ -1,6 +1,7 @@
 package jwtauth_test
 
 import (
+	"errors"
 	"testing"
 	"time"
 
@@ -49,7 +50,7 @@ func TestTokenService_Verify_ExpiredToken_ReturnsErrExpired(t *testing.T) {
 	}
 
 	_, err = svc.VerifyAccessToken(token)
-	if err != jwtauth.ErrExpiredToken {
+	if !errors.Is(err, jwtauth.ErrExpiredToken) {
 		t.Errorf("expected ErrExpiredToken, got %v", err)
 	}
 }
@@ -62,7 +63,7 @@ func TestTokenService_Verify_TamperedToken_ReturnsErrInvalid(t *testing.T) {
 	tamperedToken := token[:len(token)-5] + "AAAAA"
 
 	_, err := svc.VerifyAccessToken(tamperedToken)
-	if err != jwtauth.ErrInvalidToken {
+	if !errors.Is(err, jwtauth.ErrInvalidToken) {
 		t.Errorf("expected ErrInvalidToken, got %v", err)
 	}
 }

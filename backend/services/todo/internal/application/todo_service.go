@@ -334,9 +334,6 @@ func (s *TodoService) LogFocusSession(ctx context.Context, userID uuid.UUID, in 
 
 	taskTitle := strings.TrimSpace(in.TaskTitle)
 	category := strings.ToLower(strings.TrimSpace(in.Category))
-	if category == "" {
-		category = "work"
-	}
 	sessionType := in.SessionType
 	if sessionType == "" {
 		sessionType = "pomodoro"
@@ -348,7 +345,7 @@ func (s *TodoService) LogFocusSession(ctx context.Context, userID uuid.UUID, in 
 			if taskTitle == "" {
 				taskTitle = item.Title
 			}
-			if category == "" || category == "work" {
+			if category == "" {
 				category = item.Category
 			}
 			item.TotalSpentMinutes += in.DurationMinutes
@@ -358,6 +355,10 @@ func (s *TodoService) LogFocusSession(ctx context.Context, userID uuid.UUID, in 
 			}
 			_ = s.repo.Update(ctx, item)
 		}
+	}
+
+	if category == "" {
+		category = "work"
 	}
 
 	if taskTitle == "" {

@@ -1,6 +1,7 @@
 package exercise_test
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/google/uuid"
@@ -22,7 +23,7 @@ func TestExercise_NewSeeded_CannotBeDeleted(t *testing.T) {
 
 	randomUser := uuid.New()
 	err = ex.CanDelete(randomUser)
-	if err != exercise.ErrCannotDeleteSeeded {
+	if !errors.Is(err, exercise.ErrCannotDeleteSeeded) {
 		t.Errorf("expected ErrCannotDeleteSeeded, got %v", err)
 	}
 }
@@ -47,7 +48,7 @@ func TestExercise_NewCustom_OwnerCanDelete_OtherUserCannot(t *testing.T) {
 		t.Errorf("expected owner to be able to delete, got error: %v", err)
 	}
 
-	if err := ex.CanDelete(otherUserID); err != exercise.ErrUnauthorizedExercise {
+	if err := ex.CanDelete(otherUserID); !errors.Is(err, exercise.ErrUnauthorizedExercise) {
 		t.Errorf("expected ErrUnauthorizedExercise for other user, got %v", err)
 	}
 }
@@ -57,14 +58,14 @@ func TestExercise_NameValidation_RejectsInvalidLengths(t *testing.T) {
 
 	// Name too short (1 char)
 	_, err := exercise.NewCustomExercise(ownerID, "A", exercise.MuscleChest, nil, exercise.EquipBarbell, exercise.MeasureWeightReps)
-	if err != exercise.ErrInvalidExerciseName {
+	if !errors.Is(err, exercise.ErrInvalidExerciseName) {
 		t.Errorf("expected ErrInvalidExerciseName for 1-char name, got %v", err)
 	}
 
 	// Name too long (81 chars)
 	longName := "This is a super ridiculously long exercise name that definitely exceeds the eighty character maximum limit"
 	_, err = exercise.NewCustomExercise(ownerID, longName, exercise.MuscleChest, nil, exercise.EquipBarbell, exercise.MeasureWeightReps)
-	if err != exercise.ErrInvalidExerciseName {
+	if !errors.Is(err, exercise.ErrInvalidExerciseName) {
 		t.Errorf("expected ErrInvalidExerciseName for 81-char name, got %v", err)
 	}
 }

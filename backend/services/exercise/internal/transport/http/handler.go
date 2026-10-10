@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -44,17 +45,16 @@ func (h *Handler) Routes() http.Handler {
 
 	r.Use(httpx.ExtractUserHeaderMiddleware)
 
-	// Routes supporting both root and /exercises paths
-	r.Get("/", httpx.RequireAuth(h.handleList))
-	r.Get("/exercises", httpx.RequireAuth(h.handleList))
-	r.Post("/", httpx.RequireAuth(h.handleCreateCustom))
-	r.Post("/exercises", httpx.RequireAuth(h.handleCreateCustom))
-	r.Get("/{id}", httpx.RequireAuth(h.handleGetByID))
-	r.Get("/exercises/{id}", httpx.RequireAuth(h.handleGetByID))
-	r.Put("/{id}", httpx.RequireAuth(h.handleUpdateCustom))
-	r.Put("/exercises/{id}", httpx.RequireAuth(h.handleUpdateCustom))
-	r.Delete("/{id}", httpx.RequireAuth(h.handleDeleteCustom))
-	r.Delete("/exercises/{id}", httpx.RequireAuth(h.handleDeleteCustom))
+	registerRoutes := func(router chi.Router) {
+		router.Get("/", httpx.RequireAuth(h.handleList))
+		router.Post("/", httpx.RequireAuth(h.handleCreateCustom))
+		router.Get("/{id}", httpx.RequireAuth(h.handleGetByID))
+		router.Put("/{id}", httpx.RequireAuth(h.handleUpdateCustom))
+		router.Delete("/{id}", httpx.RequireAuth(h.handleDeleteCustom))
+	}
+
+	registerRoutes(r)
+	r.Route("/exercises", registerRoutes)
 
 	return r
 }
@@ -156,15 +156,15 @@ func (h *Handler) handleUpdateCustom(w http.ResponseWriter, r *http.Request, use
 		MeasurementType:       req.MeasurementType,
 	})
 	if err != nil {
-		if err == exercise.ErrCannotModifySeeded {
+		if errors.Is(err, exercise.ErrCannotModifySeeded) {
 			httpx.WriteProblem(w, http.StatusBadRequest, "Bad Request", err.Error(), "ERR_IMMUTABLE_SEED")
 			return
 		}
-		if err == exercise.ErrUnauthorizedExercise {
+		if errors.Is(err, exercise.ErrUnauthorizedExercise) {
 			httpx.WriteProblem(w, http.StatusForbidden, "Forbidden", err.Error(), "ERR_FORBIDDEN")
 			return
 		}
-		if err == exercise.ErrExerciseNotFound {
+		if errors.Is(err, exercise.ErrExerciseNotFound) {
 			httpx.WriteProblem(w, http.StatusNotFound, "Not Found", err.Error(), "ERR_NOT_FOUND")
 			return
 		}
@@ -197,7 +197,7 @@ func (h *Handler) handleDeleteCustom(w http.ResponseWriter, r *http.Request, use
 	}
 
 	if err := h.deleteCustomHandler.Handle(r.Context(), userID, id); err != nil {
-		if err == exercise.ErrCannotDeleteSeeded {
+		if errors.Is(err, exercise.ErrCannotDeleteSeeded) {
 			httpx.WriteProblem(w, http.StatusBadRequest, "Bad Request", err.Error(), "ERR_IMMUTABLE_SEED")
 			return
 		}

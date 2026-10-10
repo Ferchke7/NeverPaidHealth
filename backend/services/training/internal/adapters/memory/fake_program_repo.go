@@ -36,13 +36,7 @@ func (r *FakeProgramRepo) ListLibrary(ctx context.Context, splitType string, sea
 
 	var list []*program.Program
 	for _, p := range r.programs {
-		if p.IsSystem() {
-			if splitType != "" && splitType != "all" && string(p.SplitType()) != splitType {
-				continue
-			}
-			if search != "" && !strings.Contains(strings.ToLower(p.Name()), strings.ToLower(search)) {
-				continue
-			}
+		if p.IsSystem() && matchesFilter(p, splitType, search) {
 			list = append(list, p)
 		}
 	}
@@ -55,17 +49,21 @@ func (r *FakeProgramRepo) ListCommunity(ctx context.Context, splitType string, s
 
 	var list []*program.Program
 	for _, p := range r.programs {
-		if p.IsPublic() {
-			if splitType != "" && splitType != "all" && string(p.SplitType()) != splitType {
-				continue
-			}
-			if search != "" && !strings.Contains(strings.ToLower(p.Name()), strings.ToLower(search)) {
-				continue
-			}
+		if p.IsPublic() && matchesFilter(p, splitType, search) {
 			list = append(list, p)
 		}
 	}
 	return list, nil
+}
+
+func matchesFilter(p *program.Program, splitType, search string) bool {
+	if splitType != "" && splitType != "all" && string(p.SplitType()) != splitType {
+		return false
+	}
+	if search != "" && !strings.Contains(strings.ToLower(p.Name()), strings.ToLower(search)) {
+		return false
+	}
+	return true
 }
 
 func (r *FakeProgramRepo) ListByUserID(ctx context.Context, userID uuid.UUID) ([]*program.Program, error) {

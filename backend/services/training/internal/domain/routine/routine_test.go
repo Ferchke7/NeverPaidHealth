@@ -1,6 +1,7 @@
 package routine_test
 
 import (
+	"errors"
 	"testing"
 	"time"
 
@@ -14,7 +15,7 @@ func TestRoutine_Creation_RequiresExercises(t *testing.T) {
 
 	// Error case: Empty exercises
 	_, err := routine.NewRoutine(userID, "Push Day", "", nil, now)
-	if err != routine.ErrRoutineRequiresExercises {
+	if !errors.Is(err, routine.ErrRoutineRequiresExercises) {
 		t.Errorf("expected ErrRoutineRequiresExercises, got %v", err)
 	}
 
@@ -41,7 +42,7 @@ func TestRoutineExercise_RepRangeValidation_RejectsMinGreaterThanMax(t *testing.
 	maxReps := 10 // invalid (min > max)
 
 	_, err := routine.NewRoutineExercise(uuid.New(), "Bench Press", 0, 3, &minReps, &maxReps)
-	if err != routine.ErrInvalidTargetRepsRange {
+	if !errors.Is(err, routine.ErrInvalidTargetRepsRange) {
 		t.Errorf("expected ErrInvalidTargetRepsRange, got %v", err)
 	}
 }

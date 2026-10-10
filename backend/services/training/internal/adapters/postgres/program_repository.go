@@ -204,6 +204,9 @@ func (r *ProgramRepository) queryPrograms(ctx context.Context, query string, arg
 		}
 		list = append(list, p)
 	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
 	return list, nil
 }
 
@@ -262,6 +265,9 @@ func (r *UserProgramRepository) ListByUserID(ctx context.Context, userID uuid.UU
 			return nil, err
 		}
 		list = append(list, up)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 	return list, nil
 }
@@ -357,7 +363,11 @@ func scanProgram(row pgx.Row) (*program.Program, error) {
 	}
 
 	var rawDays []DayJSONItem
-	_ = json.Unmarshal(daysJSON, &rawDays)
+	if len(daysJSON) > 0 {
+		if err := json.Unmarshal(daysJSON, &rawDays); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal program days: %w", err)
+		}
+	}
 
 	var days []*program.ProgramDay
 	for _, rd := range rawDays {

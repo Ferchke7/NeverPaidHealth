@@ -1,6 +1,7 @@
 package measure_test
 
 import (
+	"errors"
 	"math"
 	"testing"
 
@@ -35,12 +36,12 @@ func TestWeight_LbConversion_MatchesExpected(t *testing.T) {
 
 func TestWeight_BoundsValidation_RejectsInvalidWeights(t *testing.T) {
 	_, err := measure.NewWeightKg(-5.0)
-	if err != measure.ErrWeightOutOfRange {
+	if !errors.Is(err, measure.ErrWeightOutOfRange) {
 		t.Errorf("expected ErrWeightOutOfRange for negative weight, got %v", err)
 	}
 
 	_, err = measure.NewWeightKg(2000000.0)
-	if err != measure.ErrWeightOutOfRange {
+	if !errors.Is(err, measure.ErrWeightOutOfRange) {
 		t.Errorf("expected ErrWeightOutOfRange for >1000000kg weight, got %v", err)
 	}
 }

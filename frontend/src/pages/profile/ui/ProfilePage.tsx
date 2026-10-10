@@ -14,18 +14,18 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useAuthStore } from '../../../entities/user/model/authStore.ts';
-import { apiClient } from '../../../shared/api/client.ts';
+import { useAuthStore } from '@/entities/user/model/authStore.ts';
+import { apiClient } from '@/shared/api/client.ts';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../../../shared/ui/card.tsx';
 import { Button } from '../../../shared/ui/button.tsx';
 import { Input } from '../../../shared/ui/input.tsx';
 import { Switch } from '../../../shared/ui/switch.tsx';
 import { UserAvatar } from '../../../entities/user/ui/UserAvatar.tsx';
 import { BMICalculatorCard } from '../../../features/bmi-calculator/ui/BMICalculatorCard.tsx';
-import { LanguageSwitchToggle } from '../../../features/switch-language/ui/LanguageSwitchToggle.tsx';
-import { PWAInstallButton } from '../../../features/pwa-install/ui/PWAInstallButton.tsx';
-import { BodyTargetProgressCard } from '../../../features/body-target-progress/ui/BodyTargetProgressCard.tsx';
-import { useTranslation } from '../../../shared/lib/i18n/i18n.ts';
+import { LanguageSwitchToggle } from '@/features/switch-language/ui/LanguageSwitchToggle.tsx';
+import { PWAInstallButton } from '@/features/pwa-install/ui/PWAInstallButton.tsx';
+import { BodyTargetProgressCard } from '@/features/body-target-progress/ui/BodyTargetProgressCard.tsx';
+import { useTranslation } from '@/shared/lib/i18n/i18n.ts';
 
 interface ProfilePageProps {
   onNavigateToBody?: () => void;
@@ -435,3 +435,4 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onNavigateToBody }) =>
     </div>
   );
 };
+export default ProfilePage

@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/google/uuid"
@@ -79,7 +80,7 @@ func (r *TodoRepository) GetByID(ctx context.Context, userID, todoID uuid.UUID) 
 		&t.MeetingURL, &t.ExternalCalendarID, &t.CreatedAt, &t.UpdatedAt,
 	)
 	if err != nil {
-		if err == pgx.ErrNoRows {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, nil
 		}
 		return nil, fmt.Errorf("failed to get todo by id: %w", err)

@@ -15,6 +15,91 @@ type CircumferenceMetrics struct {
 	Neck   *Circumference
 }
 
+type CircumferenceValues struct {
+	Waist  *float64
+	Chest  *float64
+	Arms   *float64
+	Thighs *float64
+	Calves *float64
+	Neck   *float64
+}
+
+func (c CircumferenceMetrics) Values() CircumferenceValues {
+	var v CircumferenceValues
+	if c.Waist != nil {
+		val := c.Waist.Cm()
+		v.Waist = &val
+	}
+	if c.Chest != nil {
+		val := c.Chest.Cm()
+		v.Chest = &val
+	}
+	if c.Arms != nil {
+		val := c.Arms.Cm()
+		v.Arms = &val
+	}
+	if c.Thighs != nil {
+		val := c.Thighs.Cm()
+		v.Thighs = &val
+	}
+	if c.Calves != nil {
+		val := c.Calves.Cm()
+		v.Calves = &val
+	}
+	if c.Neck != nil {
+		val := c.Neck.Cm()
+		v.Neck = &val
+	}
+	return v
+}
+
+func NewCircumferenceMetrics(v CircumferenceValues) (CircumferenceMetrics, error) {
+	var m CircumferenceMetrics
+	if v.Waist != nil {
+		c, err := NewCircumferenceCm(*v.Waist)
+		if err != nil {
+			return m, err
+		}
+		m.Waist = &c
+	}
+	if v.Chest != nil {
+		c, err := NewCircumferenceCm(*v.Chest)
+		if err != nil {
+			return m, err
+		}
+		m.Chest = &c
+	}
+	if v.Arms != nil {
+		c, err := NewCircumferenceCm(*v.Arms)
+		if err != nil {
+			return m, err
+		}
+		m.Arms = &c
+	}
+	if v.Thighs != nil {
+		c, err := NewCircumferenceCm(*v.Thighs)
+		if err != nil {
+			return m, err
+		}
+		m.Thighs = &c
+	}
+	if v.Calves != nil {
+		c, err := NewCircumferenceCm(*v.Calves)
+		if err != nil {
+			return m, err
+		}
+		m.Calves = &c
+	}
+	if v.Neck != nil {
+		c, err := NewCircumferenceCm(*v.Neck)
+		if err != nil {
+			return m, err
+		}
+		m.Neck = &c
+	}
+	return m, nil
+}
+
 type BodyLog struct {
 	id             uuid.UUID
 	userID         uuid.UUID

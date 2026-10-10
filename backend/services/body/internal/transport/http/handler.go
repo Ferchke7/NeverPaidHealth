@@ -34,14 +34,15 @@ func (h *Handler) Routes() http.Handler {
 
 	r.Use(httpx.ExtractUserHeaderMiddleware)
 
-	r.Get("/logs", httpx.RequireAuth(h.handleListLogs))
-	r.Get("/body/logs", httpx.RequireAuth(h.handleListLogs))
-	r.Post("/logs", httpx.RequireAuth(h.handleLogMeasurement))
-	r.Post("/body/logs", httpx.RequireAuth(h.handleLogMeasurement))
-	r.Delete("/logs/{date}", httpx.RequireAuth(h.handleDeleteLog))
-	r.Delete("/body/logs/{date}", httpx.RequireAuth(h.handleDeleteLog))
-	r.Get("/trend", httpx.RequireAuth(h.handleGetTrend))
-	r.Get("/body/trend", httpx.RequireAuth(h.handleGetTrend))
+	registerRoutes := func(router chi.Router) {
+		router.Get("/logs", httpx.RequireAuth(h.handleListLogs))
+		router.Post("/logs", httpx.RequireAuth(h.handleLogMeasurement))
+		router.Delete("/logs/{date}", httpx.RequireAuth(h.handleDeleteLog))
+		router.Get("/trend", httpx.RequireAuth(h.handleGetTrend))
+	}
+
+	registerRoutes(r)
+	r.Route("/body", registerRoutes)
 
 	return r
 }
@@ -59,6 +60,21 @@ type logMeasurementReq struct {
 	NeckCm            *float64 `json:"neck_cm,omitempty"`
 }
 
+type BodyLogResponse struct {
+	ID                string   `json:"id"`
+	UserID            string   `json:"user_id"`
+	LogDate           string   `json:"log_date"`
+	WeightKg          float64  `json:"weight_kg"`
+	BodyFatPercentage *float64 `json:"body_fat_percentage"`
+	WaistCm           *float64 `json:"waist_cm"`
+	ChestCm           *float64 `json:"chest_cm"`
+	ArmsCm            *float64 `json:"arms_cm"`
+	ThighsCm          *float64 `json:"thighs_cm"`
+	CalvesCm          *float64 `json:"calves_cm"`
+	NeckCm            *float64 `json:"neck_cm"`
+	CalculatedBMI     *float64 `json:"calculated_bmi"`
+}
+
 func (h *Handler) handleListLogs(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
 	fromDate := httpx.QueryString(r, "from_date", "")
 	toDate := httpx.QueryString(r, "to_date", "")
@@ -69,12 +85,12 @@ func (h *Handler) handleListLogs(w http.ResponseWriter, r *http.Request, userID 
 		return
 	}
 
-	dtos := make([]any, 0)
-	for _, l := range logs {
-		dtos = append(dtos, mapBodyLogDTO(l))
+	resp := make([]BodyLogResponse, len(logs))
+	for i, l := range logs {
+		resp[i] = toBodyLogResponse(l)
 	}
 
-	httpx.WriteJSON(w, http.StatusOK, dtos)
+	httpx.WriteJSON(w, http.StatusOK, resp)
 }
 
 func (h *Handler) handleLogMeasurement(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
@@ -101,7 +117,7 @@ func (h *Handler) handleLogMeasurement(w http.ResponseWriter, r *http.Request, u
 		return
 	}
 
-	httpx.WriteJSON(w, http.StatusOK, mapBodyLogDTO(log))
+	httpx.WriteJSON(w, http.StatusOK, toBodyLogResponse(log))
 }
 
 func (h *Handler) handleDeleteLog(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
@@ -129,50 +145,26 @@ func (h *Handler) handleGetTrend(w http.ResponseWriter, r *http.Request, userID 
 	httpx.WriteJSON(w, http.StatusOK, trend)
 }
 
-func mapBodyLogDTO(l *body.BodyLog) map[string]any {
+func toBodyLogResponse(l *body.BodyLog) BodyLogResponse {
 	var bf *float64
 	if l.BodyFat() != nil {
 		v := l.BodyFat().Value()
 		bf = &v
 	}
-	var waist, chest, arms, thighs, calves, neck *float64
-	if l.Circumferences().Waist != nil {
-		v := l.Circumferences().Waist.Cm()
-		waist = &v
-	}
-	if l.Circumferences().Chest != nil {
-		v := l.Circumferences().Chest.Cm()
-		chest = &v
-	}
-	if l.Circumferences().Arms != nil {
-		v := l.Circumferences().Arms.Cm()
-		arms = &v
-	}
-	if l.Circumferences().Thighs != nil {
-		v := l.Circumferences().Thighs.Cm()
-		thighs = &v
-	}
-	if l.Circumferences().Calves != nil {
-		v := l.Circumferences().Calves.Cm()
-		calves = &v
-	}
-	if l.Circumferences().Neck != nil {
-		v := l.Circumferences().Neck.Cm()
-		neck = &v
-	}
+	vals := l.Circumferences().Values()
 
-	return map[string]any{
-		"id":                  l.ID().String(),
-		"user_id":             l.UserID().String(),
-		"log_date":            l.LogDate(),
-		"weight_kg":           l.Weight().Kg(),
-		"body_fat_percentage": bf,
-		"waist_cm":            waist,
-		"chest_cm":            chest,
-		"arms_cm":             arms,
-		"thighs_cm":           thighs,
-		"calves_cm":           calves,
-		"neck_cm":             neck,
-		"calculated_bmi":      l.CalculatedBMI(),
+	return BodyLogResponse{
+		ID:                l.ID().String(),
+		UserID:            l.UserID().String(),
+		LogDate:           l.LogDate(),
+		WeightKg:          l.Weight().Kg(),
+		BodyFatPercentage: bf,
+		WaistCm:           vals.Waist,
+		ChestCm:           vals.Chest,
+		ArmsCm:            vals.Arms,
+		ThighsCm:          vals.Thighs,
+		CalvesCm:          vals.Calves,
+		NeckCm:            vals.Neck,
+		CalculatedBMI:     l.CalculatedBMI(),
 	}
 }

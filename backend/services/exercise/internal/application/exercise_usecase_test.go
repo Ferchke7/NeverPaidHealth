@@ -2,6 +2,7 @@ package application_test
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/google/uuid"
@@ -72,7 +73,7 @@ func TestExerciseUseCases_DeleteSeededExercise_IsRejected(t *testing.T) {
 
 	deleteHandler := command.NewDeleteCustomExerciseHandler(repo)
 	err := deleteHandler.Handle(ctx, userID, seededID)
-	if err != exercise.ErrCannotDeleteSeeded {
+	if !errors.Is(err, exercise.ErrCannotDeleteSeeded) {
 		t.Errorf("expected ErrCannotDeleteSeeded, got %v", err)
 	}
 }

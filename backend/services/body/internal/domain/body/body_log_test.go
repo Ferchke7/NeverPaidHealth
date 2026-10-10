@@ -1,6 +1,7 @@
 package body_test
 
 import (
+	"errors"
 	"math"
 	"testing"
 	"time"
@@ -36,12 +37,12 @@ func TestBodyLog_CreationAndBMICalculation(t *testing.T) {
 
 func TestBodyLog_WeightBoundsValidation(t *testing.T) {
 	_, err := body.NewBodyWeightKg(15.0)
-	if err != body.ErrWeightOutOfRange {
+	if !errors.Is(err, body.ErrWeightOutOfRange) {
 		t.Errorf("expected ErrWeightOutOfRange for 15kg, got %v", err)
 	}
 
 	_, err = body.NewBodyWeightKg(450.0)
-	if err != body.ErrWeightOutOfRange {
+	if !errors.Is(err, body.ErrWeightOutOfRange) {
 		t.Errorf("expected ErrWeightOutOfRange for 450kg, got %v", err)
 	}
 }
