@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { X } from 'lucide-react';
+import { useTranslation } from '../lib/i18n/i18n.ts';
 
 export interface ModalProps {
   isOpen: boolean;
@@ -30,6 +31,7 @@ export const Modal: React.FC<ModalProps> = ({
   className = '',
   hideCloseButton = false,
 }) => {
+  const { t } = useTranslation();
   const effectiveSubtitle = subtitle || description;
   const effectiveIcon = icon || headerIcon;
   useEffect(() => {
@@ -91,7 +93,8 @@ export const Modal: React.FC<ModalProps> = ({
               <button
                 onClick={onClose}
                 className="p-1.5 rounded-xl text-zinc-400 hover:text-white hover:bg-dark-800 transition-colors shrink-0 cursor-pointer"
-                title="Закрыть"
+                title={t('common.close')}
+                aria-label={t('common.close')}
               >
                 <X className="w-5 h-5" />
               </button>

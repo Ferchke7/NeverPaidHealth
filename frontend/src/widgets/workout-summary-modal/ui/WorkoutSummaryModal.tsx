@@ -5,6 +5,7 @@ import { Modal } from '../../../shared/ui/modal.tsx';
 import { formatDuration } from '../../../shared/lib/dates.ts';
 import { formatWeight } from '../../../shared/lib/units.ts';
 import { useAuthStore } from '../../../entities/user/model/authStore.ts';
+import { useTranslation } from '../../../shared/lib/i18n/i18n.ts';
 
 export interface FinishedWorkoutSummary {
   id: string;
@@ -29,6 +30,7 @@ export const WorkoutSummaryModal: React.FC<WorkoutSummaryModalProps> = ({
   summary,
   onClose,
 }) => {
+  const { t } = useTranslation();
   const unitPref = useAuthStore((s) => s.unitPreference);
 
   if (!summary) return null;
@@ -43,7 +45,7 @@ export const WorkoutSummaryModal: React.FC<WorkoutSummaryModalProps> = ({
           <Trophy className="w-5 h-5" />
         </div>
       }
-      title="Тренировка завершена!"
+      title={t('summary.workoutFinished')}
       subtitle={summary.name}
       footer={
         <Button
@@ -51,7 +53,7 @@ export const WorkoutSummaryModal: React.FC<WorkoutSummaryModalProps> = ({
           className="w-full font-bold shadow-lg shadow-brand-500/20"
           onClick={onClose}
         >
-          Отлично!
+          {t('summary.awesome')}
         </Button>
       }
     >
@@ -62,7 +64,7 @@ export const WorkoutSummaryModal: React.FC<WorkoutSummaryModalProps> = ({
             <div className="flex items-center justify-center text-blue-400 mb-1">
               <Clock className="w-4 h-4" />
             </div>
-            <span className="text-[11px] text-zinc-400 block">Время</span>
+            <span className="text-[11px] text-zinc-400 block">{t('summary.time')}</span>
             <span className="text-sm font-black font-mono text-white">
               {formatDuration(summary.durationSeconds)}
             </span>
@@ -72,7 +74,7 @@ export const WorkoutSummaryModal: React.FC<WorkoutSummaryModalProps> = ({
             <div className="flex items-center justify-center text-emerald-400 mb-1">
               <Flame className="w-4 h-4" />
             </div>
-            <span className="text-[11px] text-zinc-400 block">Тоннаж</span>
+            <span className="text-[11px] text-zinc-400 block">{t('summary.totalVolume')}</span>
             <span className="text-sm font-black font-mono text-white">
               {formatWeight(summary.totalVolumeKg, unitPref)}
             </span>
@@ -82,7 +84,7 @@ export const WorkoutSummaryModal: React.FC<WorkoutSummaryModalProps> = ({
             <div className="flex items-center justify-center text-brand-400 mb-1">
               <Dumbbell className="w-4 h-4" />
             </div>
-            <span className="text-[11px] text-zinc-400 block">Подходы</span>
+            <span className="text-[11px] text-zinc-400 block">{t('summary.sets')}</span>
             <span className="text-sm font-black font-mono text-white">
               {summary.completedSetsCount}
             </span>
@@ -94,7 +96,7 @@ export const WorkoutSummaryModal: React.FC<WorkoutSummaryModalProps> = ({
           <div className="bg-brand-950/30 border border-brand-800/40 rounded-2xl p-3.5 space-y-2">
             <div className="flex items-center gap-2 text-brand-400 font-bold text-xs uppercase tracking-wider">
               <Trophy className="w-4 h-4" />
-              Новые личные рекорды ({summary.prs.length})
+              {t('summary.newPRs', { count: summary.prs.length })}
             </div>
             <div className="space-y-1.5">
               {summary.prs.map((pr, idx) => (
@@ -112,7 +114,7 @@ export const WorkoutSummaryModal: React.FC<WorkoutSummaryModalProps> = ({
 
         <div className="flex items-center justify-center gap-2 text-xs text-zinc-400 bg-dark-900/60 py-2.5 px-4 rounded-2xl border border-dark-750">
           <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
-          <span>Данные сохранены и учтены в статистике</span>
+          <span>{t('summary.savedStats')}</span>
         </div>
       </div>
     </Modal>

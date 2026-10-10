@@ -50,7 +50,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
     },
     {
       id: 'todo',
-      label: t('nav.todo') || 'Todo & План',
+      label: t('nav.todo'),
       renderIcon: (active) => <ListTodo className={`w-4 h-4 md:w-5 md:h-5 transition-colors ${active ? 'text-brand-400' : 'text-zinc-400 group-hover:text-zinc-200'}`} />,
     },
     {

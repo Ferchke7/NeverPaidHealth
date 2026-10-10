@@ -20,10 +20,12 @@ interface I18nState {
 export const useI18nStore = create<I18nState>()(
   persist(
     (set, get) => ({
-      language: (localStorage.getItem('np_app_lang') as SupportedLanguage) || 'ru',
+      language: (typeof localStorage !== 'undefined' ? (localStorage.getItem('np_app_lang') as SupportedLanguage) : null) || 'ru',
 
       setLanguage: (lang: SupportedLanguage) => {
-        localStorage.setItem('np_app_lang', lang);
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem('np_app_lang', lang);
+        }
         set({ language: lang });
       },
 
@@ -54,3 +56,9 @@ export function useTranslation() {
 
   return { language, setLanguage, t, languages: SUPPORTED_LANGUAGES };
 }
+
+// Standalone translation helper for non-hook contexts
+export function t(key: string, params?: Record<string, string | number>): string {
+  return useI18nStore.getState().t(key, params);
+}
+

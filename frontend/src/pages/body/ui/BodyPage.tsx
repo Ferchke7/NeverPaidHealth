@@ -224,7 +224,7 @@ export const BodyPage: React.FC = () => {
               </span>
               {numHeight > 0 && (
                 <span className={`text-[9px] font-sans font-bold px-1.5 py-0.2 rounded border ${getBMICategory(calculateBMI(trend.current_weight_kg, numHeight)).bgColor} ${getBMICategory(calculateBMI(trend.current_weight_kg, numHeight)).textColor} ${getBMICategory(calculateBMI(trend.current_weight_kg, numHeight)).borderColor}`}>
-                  {getBMICategory(calculateBMI(trend.current_weight_kg, numHeight)).labelRu}
+                  {getBMICategory(calculateBMI(trend.current_weight_kg, numHeight)).label}
                 </span>
               )}
             </div>
@@ -323,7 +323,7 @@ export const BodyPage: React.FC = () => {
                 <span className="text-zinc-400 font-medium">Calculated BMI:</span>
                 <strong className="font-mono font-black text-white text-base">{liveBMI.toFixed(1)}</strong>
                 <Badge variant={liveBMICat.category === 'normal' ? 'success' : liveBMICat.category === 'underweight' ? 'info' : 'warning'}>
-                  {liveBMICat.labelRu}
+                  {liveBMICat.label}
                 </Badge>
               </div>
               <span className="text-[11px] text-zinc-400 font-mono">
@@ -453,7 +453,7 @@ export const BodyPage: React.FC = () => {
                               <span className="font-bold text-white">{itemBmi.toFixed(1)}</span>
                               {cat && (
                                 <Badge variant={cat.category === 'normal' ? 'success' : cat.category === 'underweight' ? 'info' : 'warning'} size="sm">
-                                  {cat.labelRu}
+                                  {cat.label}
                                 </Badge>
                               )}
                             </div>

@@ -33,7 +33,7 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({
             </div>
             <div>
               <div className="text-sm font-semibold text-zinc-200">{t('pwa.installed')}</div>
-              <div className="text-xs text-zinc-400">Приложение работает в автономном режиме</div>
+              <div className="text-xs text-zinc-400">{t('pwa.offlineReady')}</div>
             </div>
           </div>
         </div>

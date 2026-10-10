@@ -86,16 +86,16 @@ export const PWAInstallModal: React.FC<PWAInstallModalProps> = ({
         {/* Benefits */}
         <div className="grid grid-cols-2 gap-2 text-[11px] text-zinc-400">
           <div className="bg-dark-900/60 p-2.5 rounded-xl flex items-center gap-1.5 border border-dark-750">
-            <span className="text-emerald-400 font-bold">✓</span> Без адресной строки
+            <span className="text-emerald-400 font-bold">✓</span> {t('pwa.featureNoAddressBar')}
           </div>
           <div className="bg-dark-900/60 p-2.5 rounded-xl flex items-center gap-1.5 border border-dark-750">
-            <span className="text-emerald-400 font-bold">✓</span> Оффлайн-доступ
+            <span className="text-emerald-400 font-bold">✓</span> {t('pwa.featureOffline')}
           </div>
           <div className="bg-dark-900/60 p-2.5 rounded-xl flex items-center gap-1.5 border border-dark-750">
-            <span className="text-emerald-400 font-bold">✓</span> Мгновенный запуск
+            <span className="text-emerald-400 font-bold">✓</span> {t('pwa.featureInstant')}
           </div>
           <div className="bg-dark-900/60 p-2.5 rounded-xl flex items-center gap-1.5 border border-dark-750">
-            <span className="text-emerald-400 font-bold">✓</span> Полный экран (100dvh)
+            <span className="text-emerald-400 font-bold">✓</span> {t('pwa.featureFullscreen')}
           </div>
         </div>
       </div>

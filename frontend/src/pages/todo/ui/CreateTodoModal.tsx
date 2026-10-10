@@ -11,6 +11,7 @@ import {
 import { Button } from '../../../shared/ui/button.tsx';
 import { Input, Textarea } from '../../../shared/ui/input.tsx';
 import { Modal } from '../../../shared/ui/modal.tsx';
+import { useTranslation } from '../../../shared/lib/i18n/i18n.ts';
 import {
   TodoItem,
   TodoCategory,
@@ -37,22 +38,22 @@ interface CreateTodoModalProps {
   existingTodos?: TodoItem[];
 }
 
-const CATEGORIES: { id: TodoCategory; labelRu: string; labelEn: string; color: string }[] = [
-  { id: 'work', labelRu: 'Работа / Проект', labelEn: 'Work / Deep Work', color: 'bg-blue-500/15 text-blue-400 border-blue-500/30' },
-  { id: 'workout', labelRu: 'Тренировка / Спорт', labelEn: 'Workout / Gym', color: 'bg-amber-500/15 text-amber-400 border-amber-500/30' },
-  { id: 'study', labelRu: 'Учеба / Навыки', labelEn: 'Study / Reading', color: 'bg-purple-500/15 text-purple-400 border-purple-500/30' },
-  { id: 'health', labelRu: 'Здоровье / Режим', labelEn: 'Health / Nutrition', color: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' },
-  { id: 'meeting', labelRu: 'Google Meet / Звонок', labelEn: 'Google Meet / Call', color: 'bg-rose-500/15 text-rose-400 border-rose-500/30' },
-  { id: 'personal', labelRu: 'Личное / Быт', labelEn: 'Personal / Routine', color: 'bg-zinc-500/15 text-zinc-300 border-zinc-500/30' },
+const CATEGORIES: { id: TodoCategory; color: string }[] = [
+  { id: 'work', color: 'bg-blue-500/15 text-blue-400 border-blue-500/30' },
+  { id: 'workout', color: 'bg-amber-500/15 text-amber-400 border-amber-500/30' },
+  { id: 'study', color: 'bg-purple-500/15 text-purple-400 border-purple-500/30' },
+  { id: 'health', color: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' },
+  { id: 'meeting', color: 'bg-rose-500/15 text-rose-400 border-rose-500/30' },
+  { id: 'personal', color: 'bg-zinc-500/15 text-zinc-300 border-zinc-500/30' },
 ];
 
 const PRESET_DURATIONS = [
-  { label: '15 мин', value: 15 },
-  { label: '25 мин (🍅)', value: 25 },
-  { label: '45 мин', value: 45 },
-  { label: '60 мин (1 ч)', value: 60 },
-  { label: '90 мин (1.5 ч)', value: 90 },
-  { label: '120 мин (2 ч)', value: 120 },
+  { label: '15m', value: 15 },
+  { label: '25m (🍅)', value: 25 },
+  { label: '45m', value: 45 },
+  { label: '60m (1h)', value: 60 },
+  { label: '90m (1.5h)', value: 90 },
+  { label: '120m (2h)', value: 120 },
 ];
 
 export const CreateTodoModal: React.FC<CreateTodoModalProps> = ({
@@ -63,6 +64,7 @@ export const CreateTodoModal: React.FC<CreateTodoModalProps> = ({
   defaultDate,
   existingTodos = [],
 }) => {
+  const { t } = useTranslation();
   const today = defaultDate || new Date().toISOString().split('T')[0];
 
   const [title, setTitle] = useState('');
@@ -194,12 +196,12 @@ export const CreateTodoModal: React.FC<CreateTodoModalProps> = ({
           <ListTodo className="w-4 h-4" />
         </div>
       }
-      title={initialTodo ? 'Редактировать задачу' : 'Новая задача / событие'}
-      subtitle="Планирование времени, длительность и видеозвонки"
+      title={initialTodo ? t('todo.modalTitleEdit') : t('todo.modalTitleNew')}
+      subtitle={t('todo.modalSubtitle')}
       footer={
         <>
           <Button type="button" variant="ghost" size="sm" onClick={onClose}>
-            Отмена
+            {t('common.cancel')}
           </Button>
           <Button
             type="button"
@@ -209,7 +211,7 @@ export const CreateTodoModal: React.FC<CreateTodoModalProps> = ({
             disabled={!title.trim()}
             className="font-bold shadow-lg shadow-brand-500/20"
           >
-            {initialTodo ? 'Сохранить изменения' : 'Создать задачу'}
+            {initialTodo ? t('todo.saveChanges') : t('todo.createTask')}
           </Button>
         </>
       }
@@ -217,8 +219,8 @@ export const CreateTodoModal: React.FC<CreateTodoModalProps> = ({
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Title */}
         <Input
-          label="Название задачи / события *"
-          placeholder="Например: Разработка модуля / Звонок по проекту"
+          label={t('todo.titleInput')}
+          placeholder={t('todo.titlePlaceholder')}
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           autoFocus
@@ -227,7 +229,7 @@ export const CreateTodoModal: React.FC<CreateTodoModalProps> = ({
         {/* Category Selector */}
         <div>
           <label className="block text-xs font-bold text-zinc-300 uppercase tracking-wider mb-1.5">
-            Категория
+            {t('todo.categoryLabel')}
           </label>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             {CATEGORIES.map((cat) => {
@@ -248,7 +250,7 @@ export const CreateTodoModal: React.FC<CreateTodoModalProps> = ({
                       : 'bg-dark-800/80 border-dark-700/80 text-zinc-400 hover:text-zinc-200 hover:bg-dark-800'
                   }`}
                 >
-                  <span className="truncate">{cat.labelRu}</span>
+                  <span className="truncate">{t(`todo.cat.${cat.id}` as any)}</span>
                   {isSelected && <Check className="w-3.5 h-3.5 shrink-0" />}
                 </button>
               );
@@ -259,7 +261,7 @@ export const CreateTodoModal: React.FC<CreateTodoModalProps> = ({
         {/* Date Range */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Input
-            label="Дата начала"
+            label={t('todo.startDate')}
             type="date"
             value={startDate}
             onChange={(e) => {
@@ -270,7 +272,7 @@ export const CreateTodoModal: React.FC<CreateTodoModalProps> = ({
           />
 
           <Input
-            label="Дата окончания"
+            label={t('todo.endDate')}
             type="date"
             value={endDate}
             onChange={(e) => setEndDate(e.target.value)}
@@ -282,7 +284,7 @@ export const CreateTodoModal: React.FC<CreateTodoModalProps> = ({
         <div className="space-y-2">
           <div className="grid grid-cols-2 gap-3">
             <Input
-              label="Время начала (опц.)"
+              label={t('todo.startTime')}
               type="time"
               value={startTime}
               onChange={(e) => setStartTime(e.target.value)}
@@ -291,7 +293,7 @@ export const CreateTodoModal: React.FC<CreateTodoModalProps> = ({
             />
 
             <Input
-              label="Время окончания"
+              label={t('todo.endTime')}
               type="time"
               value={endTime}
               onChange={(e) => setEndTime(e.target.value)}
@@ -306,9 +308,9 @@ export const CreateTodoModal: React.FC<CreateTodoModalProps> = ({
               <div className="flex items-start gap-2 text-amber-300 text-xs">
                 <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
                 <div className="min-w-0 flex-1">
-                  <span className="font-extrabold text-amber-200">Пересечение времени!</span>
+                  <span className="font-extrabold text-amber-200">{t('todo.timeConflict')}</span>
                   <p className="text-zinc-300 text-[11px] mt-0.5">
-                    На это время уже запланировано:{' '}
+                    {t('todo.conflictAlert')}{' '}
                     <strong className="text-white font-semibold">«{conflict.conflictingTodo.title}»</strong>{' '}
                     <span className="font-mono font-bold text-amber-300">({conflict.conflictRange})</span>
                   </p>
@@ -321,7 +323,7 @@ export const CreateTodoModal: React.FC<CreateTodoModalProps> = ({
                 className="w-full text-xs font-bold py-1.5 px-3 rounded-xl bg-amber-500/25 hover:bg-amber-500/40 text-amber-200 border border-amber-500/50 flex items-center justify-center gap-1.5 transition-all active:scale-95 shadow-sm cursor-pointer"
               >
                 <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                <span>Перенести на свободный слот ({conflict.suggestedNextStartTime})</span>
+                <span>{t('todo.applySlot', { time: conflict.suggestedNextStartTime })}</span>
               </button>
             </div>
           )}
@@ -332,9 +334,9 @@ export const CreateTodoModal: React.FC<CreateTodoModalProps> = ({
           <label className="block text-xs font-bold text-zinc-300 uppercase tracking-wider mb-1.5 flex items-center justify-between">
             <span className="flex items-center gap-1.5">
               <Clock className="w-3.5 h-3.5 text-brand-400" />
-              Целевое время в день
+              {t('todo.targetDaily')}
             </span>
-            <strong className="text-brand-400 font-mono text-sm">{targetDuration} мин</strong>
+            <strong className="text-brand-400 font-mono text-sm">{targetDuration} min</strong>
           </label>
 
           <div className="flex flex-wrap gap-1.5 mb-2">
@@ -367,7 +369,7 @@ export const CreateTodoModal: React.FC<CreateTodoModalProps> = ({
 
         {/* Video Meeting URL */}
         <Input
-          label="Ссылка на Google Meet / звонок (опционально)"
+          label={t('todo.meetingUrl')}
           type="url"
           placeholder="https://meet.google.com/xxx-yyyy-zzz"
           value={meetingUrl}
@@ -377,8 +379,8 @@ export const CreateTodoModal: React.FC<CreateTodoModalProps> = ({
 
         {/* Notes */}
         <Textarea
-          label="Заметки / Описание (опционально)"
-          placeholder="Дополнительные детали или цели задачи..."
+          label={t('todo.notesLabel')}
+          placeholder={t('todo.notesPlaceholder')}
           value={description}
           rows={2}
           onChange={(e) => setDescription(e.target.value)}

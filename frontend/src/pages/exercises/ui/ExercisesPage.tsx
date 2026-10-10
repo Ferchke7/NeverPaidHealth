@@ -19,31 +19,34 @@ import { useActiveWorkoutStore } from '../../../entities/workout/model/activeWor
 import { ExerciseThumbnail } from '../../../entities/exercise/ui/ExerciseThumbnail.tsx';
 import { ExerciseInfoModal } from '../../../features/exercise-detail/ui/ExerciseInfoModal.tsx';
 
-const MUSCLE_GROUPS: { label: string; value: MuscleGroup | 'all' }[] = [
-  { label: 'Все мышцы', value: 'all' },
-  { label: 'Грудь', value: 'chest' },
-  { label: 'Спина', value: 'back' },
-  { label: 'Квадрицепсы / Ноги', value: 'quads' },
-  { label: 'Бицепс бедра / Ягодицы', value: 'hamstrings' },
-  { label: 'Плечи', value: 'shoulders' },
-  { label: 'Бицепс', value: 'biceps' },
-  { label: 'Трицепс', value: 'triceps' },
-  { label: 'Пресс / Кор', value: 'core' },
-  { label: 'Икры', value: 'calves' },
+import { useTranslation } from '../../../shared/lib/i18n/i18n.ts';
+
+const MUSCLE_GROUPS: { value: MuscleGroup | 'all'; key: string }[] = [
+  { value: 'all', key: 'exercises.allMuscles' },
+  { value: 'chest', key: 'exercises.chest' },
+  { value: 'back', key: 'exercises.back' },
+  { value: 'quads', key: 'exercises.quads' },
+  { value: 'hamstrings', key: 'exercises.hamstrings' },
+  { value: 'shoulders', key: 'exercises.shoulders' },
+  { value: 'biceps', key: 'exercises.biceps' },
+  { value: 'triceps', key: 'exercises.triceps' },
+  { value: 'core', key: 'exercises.core' },
+  { value: 'calves', key: 'exercises.calves' },
 ];
 
-const EQUIPMENT_LIST: { label: string; value: Equipment | 'all' }[] = [
-  { label: 'Любое оборудование', value: 'all' },
-  { label: 'Штанга', value: 'barbell' },
-  { label: 'Гантели', value: 'dumbbell' },
-  { label: 'Блочный тренажер', value: 'cable' },
-  { label: 'Тренажер', value: 'machine' },
-  { label: 'Свой вес', value: 'bodyweight' },
-  { label: 'Гиря', value: 'kettlebell' },
-  { label: 'Тренажер Смита', value: 'smith_machine' },
+const EQUIPMENT_LIST: { value: Equipment | 'all'; key: string }[] = [
+  { value: 'all', key: 'exercises.allEquipment' },
+  { value: 'barbell', key: 'exercises.barbell' },
+  { value: 'dumbbell', key: 'exercises.dumbbell' },
+  { value: 'cable', key: 'exercises.cable' },
+  { value: 'machine', key: 'exercises.machine' },
+  { value: 'bodyweight', key: 'exercises.bodyweight' },
+  { value: 'kettlebell', key: 'exercises.kettlebell' },
+  { value: 'smith_machine', key: 'exercises.smithMachine' },
 ];
 
 export const ExercisesPage: React.FC = () => {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   const [selectedMuscle, setSelectedMuscle] = useState<MuscleGroup | 'all'>('all');
@@ -99,7 +102,7 @@ export const ExercisesPage: React.FC = () => {
   const saveExerciseMutation = useMutation({
     mutationFn: async () => {
       if (!customName.trim()) {
-        throw new Error('Название упражнения обязательно');
+        throw new Error(t('exercises.nameRequired'));
       }
 
       const payload = {
@@ -129,7 +132,7 @@ export const ExercisesPage: React.FC = () => {
       setEditingExercise(null);
     },
     onError: (err: any) => {
-      setFormError(err.message || 'Ошибка сохранения упражнения');
+      setFormError(err.message || t('exercises.saveError'));
     },
   });
 
@@ -143,7 +146,7 @@ export const ExercisesPage: React.FC = () => {
       setEditingExercise(null);
     },
     onError: (err: any) => {
-      setFormError(err.message || 'Ошибка удаления упражнения');
+      setFormError(err.message || t('exercises.deleteError'));
     },
   });
 
@@ -195,13 +198,13 @@ export const ExercisesPage: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-extrabold tracking-tight text-white flex items-center gap-2">
-            <span>База упражнений</span>
+            <span>{t('exercises.title')}</span>
             <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-brand-500/20 text-brand-400 border border-brand-500/30">
-              {exercises.length} движений
+              {t('exercises.movements', { count: exercises.length })}
             </span>
           </h1>
           <p className="text-xs text-zinc-400 mt-0.5">
-            Каталог спортивных упражнений, мышечные группы, техника выполнения и создание своих упражнений.
+            {t('exercises.catalogDesc')}
           </p>
         </div>
 
@@ -212,7 +215,7 @@ export const ExercisesPage: React.FC = () => {
           onClick={openCreateModal}
         >
           <Plus className="w-4 h-4" />
-          <span>Своё упражнение</span>
+          <span>{t('exercises.createCustom')}</span>
         </Button>
       </div>
 
@@ -221,7 +224,7 @@ export const ExercisesPage: React.FC = () => {
         <div className="relative">
           <Search className="w-4 h-4 text-zinc-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
           <Input
-            placeholder="Поиск по названию, мышцам или инвентарю..."
+            placeholder={t('exercises.searchPlaceholder')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-10 text-xs"
@@ -239,7 +242,7 @@ export const ExercisesPage: React.FC = () => {
                 : 'bg-dark-800 text-zinc-400 hover:text-white border border-dark-700'
             }`}
           >
-            Все упражнения ({exercises.length})
+            {t('exercises.allExercises', { count: exercises.length })}
           </button>
 
           <button
@@ -252,7 +255,7 @@ export const ExercisesPage: React.FC = () => {
             }`}
           >
             <Sparkles className="w-3.5 h-3.5" />
-            <span>Мои упражнения ({customCount})</span>
+            <span>{t('exercises.myExercises', { count: customCount })}</span>
           </button>
         </div>
 
@@ -268,7 +271,7 @@ export const ExercisesPage: React.FC = () => {
                   : 'bg-dark-800 text-zinc-400 hover:text-zinc-200 hover:bg-dark-750'
               }`}
             >
-              {m.label}
+              {t(m.key as any)}
             </button>
           ))}
         </div>
@@ -285,7 +288,7 @@ export const ExercisesPage: React.FC = () => {
                   : 'bg-dark-900/60 text-zinc-500 hover:text-zinc-300'
               }`}
             >
-              {eq.label}
+              {t(eq.key as any)}
             </button>
           ))}
         </div>
@@ -304,9 +307,9 @@ export const ExercisesPage: React.FC = () => {
       ) : filteredExercises.length === 0 ? (
         <div className="text-center py-16 border border-dashed border-dark-800 rounded-2xl p-6 bg-dark-900/40">
           <BookOpen className="w-12 h-12 text-zinc-600 mx-auto mb-3" />
-          <h3 className="text-sm font-bold text-zinc-300">Упражнения не найдены</h3>
+          <h3 className="text-sm font-bold text-zinc-300">{t('exercises.notFound')}</h3>
           <p className="text-xs text-zinc-500 max-w-sm mx-auto mt-1 mb-4">
-            Попробуйте изменить поисковый запрос, фильтры или добавьте своё упражнение.
+            {t('exercises.notFoundDesc')}
           </p>
           <Button
             variant="outline"
@@ -315,7 +318,7 @@ export const ExercisesPage: React.FC = () => {
             className="text-xs"
           >
             <Plus className="w-3.5 h-3.5 mr-1 text-brand-400" />
-            Создать своё упражнение
+            {t('exercises.createCustom')}
           </Button>
         </div>
       ) : (
@@ -343,13 +346,13 @@ export const ExercisesPage: React.FC = () => {
                       <span className="capitalize text-brand-400 font-semibold">{muscle}</span>
                       <span>•</span>
                       <span className="capitalize text-zinc-400">
-                        {exercise.equipment ? exercise.equipment.replace('_', ' ') : 'Штанга'}
+                        {exercise.equipment ? exercise.equipment.replace('_', ' ') : t('exercises.barbell')}
                       </span>
                       {exercise.is_custom && (
                         <>
                           <span>•</span>
                           <span className="text-amber-400 font-bold text-[9px] bg-amber-400/15 border border-amber-400/30 px-1.5 py-0.2 rounded-md">
-                            Своё
+                            {t('exercises.customBadge')}
                           </span>
                         </>
                       )}
@@ -366,7 +369,7 @@ export const ExercisesPage: React.FC = () => {
                         openEditModal(exercise);
                       }}
                       className="p-1.5 rounded-xl bg-dark-800 hover:bg-dark-700 text-amber-400 hover:text-amber-300 border border-dark-700 transition-colors"
-                      title="Изменить упражнение"
+                      title={t('exercises.editCustom')}
                     >
                       <Edit3 className="w-3.5 h-3.5" />
                     </button>
@@ -380,10 +383,10 @@ export const ExercisesPage: React.FC = () => {
                         handleAddToActiveWorkout(exercise);
                       }}
                       className="px-2.5 py-1.5 rounded-xl bg-brand-500 text-dark-950 font-bold text-xs shadow-sm hover:bg-brand-400 flex items-center gap-1 transition-all active:scale-95"
-                      title="Добавить в активную тренировку"
+                      title={t('exercises.addToWorkout')}
                     >
                       <Plus className="w-3.5 h-3.5 stroke-[3]" />
-                      <span>В тренировку</span>
+                      <span>{t('exercises.addToWorkout')}</span>
                     </button>
                   )}
 
@@ -419,11 +422,11 @@ export const ExercisesPage: React.FC = () => {
           setIsCustomModalOpen(false);
           setEditingExercise(null);
         }}
-        title={editingExercise ? 'Изменить упражнение' : 'Создать своё упражнение'}
+        title={editingExercise ? t('exercises.editModalTitle') : t('exercises.createModalTitle')}
         subtitle={
           editingExercise
-            ? 'Редактирование параметров вашего персонального упражнения'
-            : 'Добавление упражнения в вашу личную коллекцию'
+            ? t('exercises.editModalSubtitle')
+            : t('exercises.createModalSubtitle')
         }
         icon={
           <div className="w-9 h-9 rounded-xl bg-brand-500/20 text-brand-400 border border-brand-500/30 flex items-center justify-center shrink-0 font-bold">
@@ -440,14 +443,14 @@ export const ExercisesPage: React.FC = () => {
                   size="sm"
                   isLoading={deleteExerciseMutation.isPending}
                   onClick={() => {
-                    if (window.confirm(`Удалить упражнение "${editingExercise.name}"?`)) {
+                    if (window.confirm(t('exercises.deleteConfirm', { name: editingExercise.name }))) {
                       deleteExerciseMutation.mutate(editingExercise.id);
                     }
                   }}
                   className="text-xs"
                 >
                   <Trash2 className="w-3.5 h-3.5 mr-1" />
-                  Удалить
+                  {t('common.delete')}
                 </Button>
               )}
             </div>
@@ -461,7 +464,7 @@ export const ExercisesPage: React.FC = () => {
                   setEditingExercise(null);
                 }}
               >
-                Отмена
+                {t('common.cancel')}
               </Button>
               <Button
                 variant="primary"
@@ -470,7 +473,7 @@ export const ExercisesPage: React.FC = () => {
                 onClick={() => saveExerciseMutation.mutate()}
                 disabled={!customName.trim()}
               >
-                {editingExercise ? 'Сохранить изменения' : 'Создать упражнение'}
+                {editingExercise ? t('common.save') : t('exercises.createCustom')}
               </Button>
             </div>
           </div>
@@ -485,10 +488,10 @@ export const ExercisesPage: React.FC = () => {
 
           <div>
             <label className="block text-xs font-semibold uppercase text-zinc-400 mb-1">
-              Название упражнения *
+              {t('exercises.nameLabel')}
             </label>
             <Input
-              placeholder="Например: Разводка в кроссовере на скамье"
+              placeholder={t('exercises.namePlaceholder')}
               value={customName}
               onChange={(e) => setCustomName(e.target.value)}
               autoFocus
@@ -498,61 +501,61 @@ export const ExercisesPage: React.FC = () => {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-semibold uppercase text-zinc-400 mb-1">
-                Целевая мышца
+                {t('exercises.targetMuscle')}
               </label>
               <select
                 value={customMuscle}
                 onChange={(e) => setCustomMuscle(e.target.value as MuscleGroup)}
                 className="w-full bg-dark-800 border border-dark-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-500"
               >
-                <option value="chest">Грудь (Chest)</option>
-                <option value="back">Спина (Back)</option>
-                <option value="quads">Квадрицепсы (Quads)</option>
-                <option value="hamstrings">Бицепс бедра / Ягодицы</option>
-                <option value="shoulders">Плечи (Shoulders)</option>
-                <option value="biceps">Бицепс (Biceps)</option>
-                <option value="triceps">Трицепс (Triceps)</option>
-                <option value="core">Пресс / Кор (Core)</option>
-                <option value="calves">Икры (Calves)</option>
-                <option value="full_body">Все тело (Full Body)</option>
-                <option value="cardio">Кардио (Cardio)</option>
+                <option value="chest">{t('exercises.chest')}</option>
+                <option value="back">{t('exercises.back')}</option>
+                <option value="quads">{t('exercises.quads')}</option>
+                <option value="hamstrings">{t('exercises.hamstrings')}</option>
+                <option value="shoulders">{t('exercises.shoulders')}</option>
+                <option value="biceps">{t('exercises.biceps')}</option>
+                <option value="triceps">{t('exercises.triceps')}</option>
+                <option value="core">{t('exercises.core')}</option>
+                <option value="calves">{t('exercises.calves')}</option>
+                <option value="full_body">{t('exercises.fullBody')}</option>
+                <option value="cardio">{t('exercises.cardio')}</option>
               </select>
             </div>
 
             <div>
               <label className="block text-xs font-semibold uppercase text-zinc-400 mb-1">
-                Инвентарь
+                {t('exercises.equipmentLabel')}
               </label>
               <select
                 value={customEquipment}
                 onChange={(e) => setCustomEquipment(e.target.value as Equipment)}
                 className="w-full bg-dark-800 border border-dark-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-500"
               >
-                <option value="barbell">Штанга (Barbell)</option>
-                <option value="dumbbell">Гантели (Dumbbell)</option>
-                <option value="cable">Кроссовер / Блок (Cable)</option>
-                <option value="machine">Тренажер (Machine)</option>
-                <option value="bodyweight">Свой вес (Bodyweight)</option>
-                <option value="kettlebell">Гиря (Kettlebell)</option>
-                <option value="smith_machine">Тренажер Смита</option>
-                <option value="band">Резина / Эспандер (Band)</option>
+                <option value="barbell">{t('exercises.barbell')}</option>
+                <option value="dumbbell">{t('exercises.dumbbell')}</option>
+                <option value="cable">{t('exercises.cable')}</option>
+                <option value="machine">{t('exercises.machine')}</option>
+                <option value="bodyweight">{t('exercises.bodyweight')}</option>
+                <option value="kettlebell">{t('exercises.kettlebell')}</option>
+                <option value="smith_machine">{t('exercises.smithMachine')}</option>
+                <option value="band">{t('exercises.band')}</option>
               </select>
             </div>
           </div>
 
           <div>
             <label className="block text-xs font-semibold uppercase text-zinc-400 mb-1">
-              Тип фиксации прогресса
+              {t('exercises.trackingType')}
             </label>
             <select
               value={customType}
               onChange={(e) => setCustomType(e.target.value as MeasurementType)}
               className="w-full bg-dark-800 border border-dark-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-500"
             >
-              <option value="weight_reps">Вес + Повторения (кг × повт)</option>
-              <option value="bodyweight_reps">Свой вес + Повторения</option>
-              <option value="duration">Только время (секунды/минуты)</option>
-              <option value="distance_duration">Дистанция + Время</option>
+              <option value="weight_reps">{t('exercises.weightReps')}</option>
+              <option value="bodyweight_reps">{t('exercises.bodyweightReps')}</option>
+              <option value="duration">{t('exercises.durationOnly')}</option>
+              <option value="distance_duration">{t('exercises.distDuration')}</option>
             </select>
           </div>
         </div>

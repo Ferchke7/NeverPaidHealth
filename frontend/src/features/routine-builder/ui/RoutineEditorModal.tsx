@@ -8,6 +8,7 @@ import { Modal } from '../../../shared/ui/modal.tsx';
 import { ExercisePickerModal } from '../../exercise-picker/ui/ExercisePickerModal.tsx';
 import { Exercise } from '../../../entities/exercise/model/types.ts';
 import { ExerciseThumbnail } from '../../../entities/exercise/ui/ExerciseThumbnail.tsx';
+import { useTranslation } from '../../../shared/lib/i18n/i18n.ts';
 
 interface RoutineExerciseFormItem {
   exercise_id: string;
@@ -47,6 +48,7 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
   onSaved,
   initialRoutine,
 }) => {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [name, setName] = useState('');
   const [notes, setNotes] = useState('');
@@ -61,17 +63,18 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
 
   useEffect(() => {
     if (isOpen && initialRoutine) {
+      const customSuffix = t('routines.customSuffix');
       const defaultName = isSystemRoutine
-        ? initialRoutine.name?.includes('(Своя)')
+        ? initialRoutine.name?.includes(customSuffix)
           ? initialRoutine.name
-          : `${initialRoutine.name || 'Программа'} (Своя)`
+          : `${initialRoutine.name || t('routines.defaultName')} ${customSuffix}`
         : initialRoutine.name || '';
 
       setName(defaultName);
       setNotes(initialRoutine.notes || '');
       const initialExs = (initialRoutine.exercises || []).map((e) => ({
         exercise_id: e.exercise_id || e.exerciseId || e.id || '',
-        exercise_name: e.exercise_name || e.exerciseName || e.name || 'Упражнение',
+        exercise_name: e.exercise_name || e.exerciseName || e.name || t('routines.defaultName'),
         target_sets: e.target_sets || e.targetSets || 3,
         target_reps_min: e.target_reps_min || 8,
         target_reps_max: e.target_reps_max || 12,
@@ -82,15 +85,15 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
       setNotes('');
       setExercises([]);
     }
-  }, [isOpen, initialRoutine, isSystemRoutine]);
+  }, [isOpen, initialRoutine, isSystemRoutine, t]);
 
   const saveMutation = useMutation({
     mutationFn: async () => {
       if (!name.trim()) {
-        throw new Error('Название программы обязательно');
+        throw new Error(t('routines.nameRequired'));
       }
       if (exercises.length === 0) {
-        throw new Error('Добавьте хотя бы одно упражнение');
+        throw new Error(t('routines.addAtLeastOneExercise'));
       }
 
       const payload = {
@@ -130,7 +133,7 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
       }
     },
     onError: (err: any) => {
-      setError(err.message || 'Ошибка сохранения программы');
+      setError(err.message || t('routines.saveError'));
     },
   });
 
@@ -203,19 +206,19 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
         title={
           initialRoutine
             ? isSystemRoutine
-              ? 'Настройка программы'
-              : 'Редактирование программы'
-            : 'Создание шаблона программы'
+              ? t('routines.editorCustomizing')
+              : t('routines.editorEditing')
+            : t('routines.editorCreating')
         }
         subtitle={
           isSystemRoutine && initialRoutine
-            ? `Базируется на: ${initialRoutine.name}`
-            : 'Составьте список упражнений и подходов'
+            ? t('routines.basedOn', { name: initialRoutine.name || '' })
+            : t('routines.editorSubtitle')
         }
         footer={
           <>
             <Button variant="ghost" onClick={onClose} size="sm">
-              Отмена
+              {t('common.cancel')}
             </Button>
             <Button
               variant="primary"
@@ -225,7 +228,7 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
               disabled={!name.trim() || exercises.length === 0}
               className="font-bold px-4 shadow-lg shadow-brand-500/20"
             >
-              {initialRoutine && !isSystemRoutine ? 'Сохранить изменения' : 'Сохранить программу'}
+              {initialRoutine && !isSystemRoutine ? t('routines.saveChanges') : t('routines.saveRoutine')}
             </Button>
           </>
         }
@@ -239,16 +242,16 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
 
           <div className="space-y-3">
             <Input
-              label="Название программы *"
-              placeholder="Например: Жимовой день (Грудь / Плечи / Трицепс)"
+              label={t('routines.nameLabel')}
+              placeholder={t('routines.namePlaceholder')}
               value={name}
               onChange={(e) => setName(e.target.value)}
               autoFocus
             />
 
             <Textarea
-              label="Заметки / Инструкции (опционально)"
-              placeholder="Например: Разминка 5 мин, акцент на негативную фазу"
+              label={t('routines.notesLabel')}
+              placeholder={t('routines.notesPlaceholder')}
               value={notes}
               rows={2}
               onChange={(e) => setNotes(e.target.value)}
@@ -259,7 +262,7 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
           <div className="space-y-3 pt-2">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold uppercase tracking-wider text-zinc-400">
-                Упражнения ({exercises.length})
+                {t('routines.exercisesCount', { count: exercises.length })}
               </span>
               <Button
                 type="button"
@@ -272,16 +275,16 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
                 className="text-xs flex items-center gap-1.5 border-dashed hover:border-brand-500/50"
               >
                 <Plus className="w-3.5 h-3.5 text-brand-400" />
-                Добавить упражнение
+                {t('routines.addExercise')}
               </Button>
             </div>
 
             {exercises.length === 0 ? (
               <div className="text-center py-8 border-2 border-dashed border-dark-750 rounded-2xl p-6 bg-dark-900/40">
                 <Dumbbell className="w-8 h-8 text-zinc-600 mx-auto mb-2" />
-                <p className="text-sm font-semibold text-zinc-400">Упражнения еще не добавлены</p>
+                <p className="text-sm font-semibold text-zinc-400">{t('routines.noExercisesAdded')}</p>
                 <p className="text-xs text-zinc-500 mt-1 mb-4">
-                  Выберите движения из каталога для составления плана тренировки.
+                  {t('routines.noExercisesDesc')}
                 </p>
                 <Button
                   type="button"
@@ -294,7 +297,7 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
                   className="gap-1.5 text-xs font-bold"
                 >
                   <Plus className="w-3.5 h-3.5" />
-                  Выбрать упражнение
+                  {t('routines.selectExercise')}
                 </Button>
               </div>
             ) : (
@@ -332,7 +335,7 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
                             setIsPickerOpen(true);
                           }}
                           className="text-zinc-500 hover:text-brand-400 p-1.5 rounded-lg hover:bg-dark-700 transition-colors"
-                          title="Заменить упражнение"
+                          title={t('routines.replaceExercise')}
                         >
                           <ArrowLeftRight className="w-3.5 h-3.5" />
                         </button>
@@ -341,7 +344,7 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
                           disabled={idx === 0}
                           onClick={() => moveExercise(idx, 'up')}
                           className="text-zinc-500 hover:text-zinc-300 disabled:opacity-30 p-1.5 rounded-lg hover:bg-dark-700 transition-colors"
-                          title="Выше"
+                          title={t('routines.moveUp')}
                         >
                           <ChevronUp className="w-3.5 h-3.5" />
                         </button>
@@ -350,7 +353,7 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
                           disabled={idx === exercises.length - 1}
                           onClick={() => moveExercise(idx, 'down')}
                           className="text-zinc-500 hover:text-zinc-300 disabled:opacity-30 p-1.5 rounded-lg hover:bg-dark-700 transition-colors"
-                          title="Ниже"
+                          title={t('routines.moveDown')}
                         >
                           <ChevronDown className="w-3.5 h-3.5" />
                         </button>
@@ -358,7 +361,7 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
                           type="button"
                           onClick={() => removeExercise(idx)}
                           className="text-zinc-500 hover:text-red-400 p-1.5 rounded-lg hover:bg-dark-700 transition-colors"
-                          title="Удалить"
+                          title={t('common.delete')}
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -369,7 +372,7 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
                     <div className="grid grid-cols-3 gap-2 pt-1 text-xs bg-dark-900/80 p-2.5 rounded-xl border border-dark-750">
                       <div>
                         <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 block mb-1">
-                          Подходы
+                          {t('routines.sets')}
                         </label>
                         <input
                           type="number"
@@ -386,7 +389,7 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
                       </div>
                       <div>
                         <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 block mb-1">
-                          Мин. повт.
+                          {t('routines.minReps')}
                         </label>
                         <input
                           type="number"
@@ -403,7 +406,7 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
                       </div>
                       <div>
                         <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 block mb-1">
-                          Макс. повт.
+                          {t('routines.maxReps')}
                         </label>
                         <input
                           type="number"

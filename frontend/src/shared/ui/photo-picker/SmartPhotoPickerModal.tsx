@@ -77,7 +77,7 @@ export const SmartPhotoPickerModal: React.FC<SmartPhotoPickerModalProps> = ({
     } catch (err: unknown) {
       console.warn('In-app camera stream failed:', err);
       setCameraError(
-        'Не удалось получить доступ к камере. Выберите фото из галереи.'
+        t('photoPicker.cameraError')
       );
       setMode('options');
     }
@@ -200,8 +200,8 @@ export const SmartPhotoPickerModal: React.FC<SmartPhotoPickerModalProps> = ({
           <Camera className="w-4 h-4" />
         </div>
       }
-      title={title || 'Сделать или выбрать фото'}
-      subtitle={subtitle || 'Быстрое сжатие без вылетов браузера'}
+      title={title || t('photoPicker.title')}
+      subtitle={subtitle || t('photoPicker.subtitle')}
     >
       <div className="space-y-4">
         {cameraError && (
@@ -224,11 +224,11 @@ export const SmartPhotoPickerModal: React.FC<SmartPhotoPickerModalProps> = ({
               </div>
               <div>
                 <div className="text-sm font-bold text-zinc-100 group-hover:text-brand-400 transition-colors flex items-center gap-1.5">
-                  Встроенная камера (без вылетов)
+                  {t('photoPicker.camera')}
                   <Sparkles className="w-3.5 h-3.5 text-brand-400" />
                 </div>
                 <div className="text-xs text-zinc-400 mt-0.5">
-                  Прямой снимок в приложении с малым расходом памяти
+                  {t('photoPicker.cameraDesc')}
                 </div>
               </div>
             </button>
@@ -243,10 +243,10 @@ export const SmartPhotoPickerModal: React.FC<SmartPhotoPickerModalProps> = ({
               </div>
               <div>
                 <div className="text-sm font-bold text-zinc-100 group-hover:text-emerald-400 transition-colors">
-                  Выбрать из галереи
+                  {t('photoPicker.gallery')}
                 </div>
                 <div className="text-xs text-zinc-400 mt-0.5">
-                  Загрузить готовое фото, селфи или скриншот
+                  {t('photoPicker.galleryDesc')}
                 </div>
               </div>
             </button>
@@ -279,7 +279,8 @@ export const SmartPhotoPickerModal: React.FC<SmartPhotoPickerModalProps> = ({
                 type="button"
                 onClick={toggleFacingMode}
                 className="absolute top-3 right-3 p-2.5 rounded-full bg-black/60 backdrop-blur-md text-white border border-white/20 hover:bg-black/80 transition-all active:scale-95 shadow-lg cursor-pointer"
-                title="Переключить камеру"
+                title={t('photoPicker.switchCamera')}
+                aria-label={t('photoPicker.switchCamera')}
               >
                 <RefreshCw className="w-4 h-4" />
               </button>
@@ -318,7 +319,7 @@ export const SmartPhotoPickerModal: React.FC<SmartPhotoPickerModalProps> = ({
                   fileInputRef.current?.click();
                 }}
               >
-                Галерея
+                {t('photoPicker.galleryBtn')}
               </Button>
             </div>
           </div>
@@ -343,7 +344,7 @@ export const SmartPhotoPickerModal: React.FC<SmartPhotoPickerModalProps> = ({
                 onClick={() => setMode('options')}
               >
                 <RefreshCw className="w-3.5 h-3.5 mr-1" />
-                Переснять
+                {t('photoPicker.retake')}
               </Button>
 
               <Button
@@ -353,7 +354,7 @@ export const SmartPhotoPickerModal: React.FC<SmartPhotoPickerModalProps> = ({
                 onClick={handleConfirmPhoto}
               >
                 <Check className="w-4 h-4 mr-1" />
-                Использовать фото
+                {t('photoPicker.usePhoto')}
               </Button>
             </div>
           </div>
@@ -362,3 +363,4 @@ export const SmartPhotoPickerModal: React.FC<SmartPhotoPickerModalProps> = ({
     </Modal>
   );
 };
+

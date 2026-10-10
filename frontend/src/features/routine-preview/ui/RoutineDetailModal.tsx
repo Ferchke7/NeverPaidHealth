@@ -6,6 +6,7 @@ import { Badge } from '../../../shared/ui/card.tsx';
 import { ExerciseThumbnail } from '../../../entities/exercise/ui/ExerciseThumbnail.tsx';
 import { ExerciseInfoModal } from '../../exercise-detail/ui/ExerciseInfoModal.tsx';
 import { getExerciseVisual } from '../../../shared/lib/exerciseImages.ts';
+import { useTranslation } from '../../../shared/lib/i18n/i18n.ts';
 
 export interface RoutineExercise {
   exercise_id?: string;
@@ -49,6 +50,7 @@ export const RoutineDetailModal: React.FC<RoutineDetailModalProps> = ({
   onEditRoutine,
   onCloneToMyRoutines,
 }) => {
+  const { t } = useTranslation();
   const [inspectingExercise, setInspectingExercise] = useState<{
     name: string;
     muscle?: string;
@@ -78,14 +80,14 @@ export const RoutineDetailModal: React.FC<RoutineDetailModalProps> = ({
           <div className="flex items-center gap-2 flex-wrap">
             <span>{routine.name}</span>
             <Badge variant={isSystemRoutine ? 'brand' : 'success'} size="sm">
-              {isSystemRoutine ? 'Библиотека' : 'Моя программа'}
+              {isSystemRoutine ? t('routines.systemLibrary') : t('routines.customRoutines')}
             </Badge>
           </div>
         }
         subtitle={
           routine.last_performed
-            ? `Выполнялась: ${routine.last_performed}`
-            : 'Еще не выполнялась'
+            ? t('routines.lastPerformed', { date: routine.last_performed })
+            : t('routines.neverPerformed')
         }
         footer={
           <div className="w-full grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -100,7 +102,7 @@ export const RoutineDetailModal: React.FC<RoutineDetailModalProps> = ({
                 }}
               >
                 <Edit3 className="w-3.5 h-3.5 text-brand-400" />
-                <span>{isSystemRoutine ? 'Настроить под себя' : 'Редактировать'}</span>
+                <span>{isSystemRoutine ? t('routines.customize') : t('common.edit')}</span>
               </Button>
             ) : onCloneToMyRoutines ? (
               <Button
@@ -113,7 +115,7 @@ export const RoutineDetailModal: React.FC<RoutineDetailModalProps> = ({
                 }}
               >
                 <Copy className="w-3.5 h-3.5 text-brand-400" />
-                <span>Сохранить в мои</span>
+                <span>{t('routines.saveToMy')}</span>
               </Button>
             ) : null}
 
@@ -127,7 +129,7 @@ export const RoutineDetailModal: React.FC<RoutineDetailModalProps> = ({
               }}
             >
               <Play className="w-4 h-4 fill-current ml-0.5" />
-              <span>Начать тренировку</span>
+              <span>{t('routines.startWorkout')}</span>
             </Button>
           </div>
         }
@@ -136,7 +138,7 @@ export const RoutineDetailModal: React.FC<RoutineDetailModalProps> = ({
           {/* Notes */}
           {routine.notes && (
             <div className="bg-dark-800/80 p-3 rounded-xl border border-dark-700/80 text-xs text-zinc-300 italic flex items-center gap-2">
-              <span className="text-zinc-500 font-sans not-italic font-semibold">Заметка:</span>
+              <span className="text-zinc-500 font-sans not-italic font-semibold">{t('routines.note')}</span>
               <span>"{routine.notes}"</span>
             </div>
           )}
@@ -145,12 +147,12 @@ export const RoutineDetailModal: React.FC<RoutineDetailModalProps> = ({
           <div className="p-3 bg-dark-900/80 rounded-xl border border-dark-750 flex items-center justify-between text-xs text-zinc-400">
             <span className="flex items-center gap-1.5">
               <Layers className="w-3.5 h-3.5 text-brand-400" />
-              <strong className="text-zinc-200">{totalExercises}</strong> упражнений
+              {t('routines.exercisesCount', { count: totalExercises })}
             </span>
 
             <span className="flex items-center gap-1.5">
               <Clock className="w-3.5 h-3.5 text-zinc-400" />
-              ~{estimatedDuration} минут
+              {t('routines.estimatedDuration', { mins: estimatedDuration })}
             </span>
           </div>
 
@@ -179,7 +181,7 @@ export const RoutineDetailModal: React.FC<RoutineDetailModalProps> = ({
                           muscle: primaryMuscle,
                         })
                       }
-                      title="Посмотреть технику"
+                      title={t('routines.viewTechnique')}
                     >
                       <ExerciseThumbnail
                         exerciseName={exName}
@@ -214,7 +216,7 @@ export const RoutineDetailModal: React.FC<RoutineDetailModalProps> = ({
                               {ex.target_reps_max && ex.target_reps_max !== ex.target_reps_min
                                 ? `-${ex.target_reps_max}`
                                 : ''}{' '}
-                              повт.
+                              {t('activeWorkout.reps')}
                             </span>
                           </>
                         )}
@@ -230,7 +232,7 @@ export const RoutineDetailModal: React.FC<RoutineDetailModalProps> = ({
                         })
                       }
                       className="w-8 h-8 rounded-xl border border-dark-700 text-zinc-400 hover:text-white hover:border-dark-600 hover:bg-dark-800 flex items-center justify-center transition-all shrink-0 cursor-pointer"
-                      title="Техника упражнения"
+                      title={t('routines.techniqueTooltip')}
                     >
                       <HelpCircle className="w-4 h-4" />
                     </button>
@@ -239,7 +241,7 @@ export const RoutineDetailModal: React.FC<RoutineDetailModalProps> = ({
               })
             ) : (
               <div className="text-center py-8 text-xs text-zinc-500">
-                В этой программе пока нет упражнений.
+                {t('routines.emptyExercises')}
               </div>
             )}
           </div>

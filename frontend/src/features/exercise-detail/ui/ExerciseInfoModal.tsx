@@ -3,6 +3,7 @@ import { Dumbbell, Play, Pause, Plus, Check } from 'lucide-react';
 import { getExerciseVisual } from '../../../shared/lib/exerciseImages.ts';
 import { Button } from '../../../shared/ui/button.tsx';
 import { Modal } from '../../../shared/ui/modal.tsx';
+import { useTranslation } from '../../../shared/lib/i18n/i18n.ts';
 
 interface ExerciseInfoModalProps {
   isOpen: boolean;
@@ -21,6 +22,7 @@ export const ExerciseInfoModal: React.FC<ExerciseInfoModalProps> = ({
   onAddToWorkout,
   canAddToWorkout = false,
 }) => {
+  const { t } = useTranslation();
   const [activeFrame, setActiveFrame] = useState<number>(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState<boolean>(true);
   const [added, setAdded] = useState(false);
@@ -57,7 +59,7 @@ export const ExerciseInfoModal: React.FC<ExerciseInfoModalProps> = ({
       footer={
         <>
           <Button variant="ghost" size="sm" onClick={onClose} className="text-xs text-zinc-400">
-            Закрыть
+            {t('common.close')}
           </Button>
 
           {canAddToWorkout && onAddToWorkout && (
@@ -74,12 +76,12 @@ export const ExerciseInfoModal: React.FC<ExerciseInfoModalProps> = ({
               {added ? (
                 <>
                   <Check className="w-3.5 h-3.5 text-black" />
-                  <span>Добавлено!</span>
+                  <span>{t('common.saved')}</span>
                 </>
               ) : (
                 <>
                   <Plus className="w-3.5 h-3.5" />
-                  <span>В текущую тренировку</span>
+                  <span>{t('exercises.addToWorkout')}</span>
                 </>
               )}
             </Button>
@@ -104,10 +106,10 @@ export const ExerciseInfoModal: React.FC<ExerciseInfoModalProps> = ({
                 <button
                   onClick={() => setIsAutoPlaying(!isAutoPlaying)}
                   className="text-zinc-400 hover:text-brand-400 flex items-center gap-1 font-medium"
-                  title={isAutoPlaying ? 'Пауза' : 'Воспроизведение'}
+                  title={isAutoPlaying ? t('exercises.pause') : t('exercises.animation')}
                 >
                   {isAutoPlaying ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3" />}
-                  <span>{isAutoPlaying ? 'Анимация' : 'Пауза'}</span>
+                  <span>{isAutoPlaying ? t('exercises.animation') : t('exercises.pause')}</span>
                 </button>
                 <span className="text-zinc-600">|</span>
                 <div className="flex gap-1">
@@ -122,7 +124,7 @@ export const ExerciseInfoModal: React.FC<ExerciseInfoModalProps> = ({
                         : 'bg-dark-800 text-zinc-400 hover:text-white'
                     }`}
                   >
-                    Старт
+                    {t('exercises.startPhase')}
                   </button>
                   <button
                     onClick={() => {
@@ -135,7 +137,7 @@ export const ExerciseInfoModal: React.FC<ExerciseInfoModalProps> = ({
                         : 'bg-dark-800 text-zinc-400 hover:text-white'
                     }`}
                   >
-                    Пик
+                    {t('exercises.peakPhase')}
                   </button>
                 </div>
               </div>
@@ -144,18 +146,18 @@ export const ExerciseInfoModal: React.FC<ExerciseInfoModalProps> = ({
         ) : (
           <div className="rounded-2xl bg-dark-800/60 border border-dark-700/80 h-36 flex flex-col items-center justify-center text-zinc-500 gap-2">
             <Dumbbell className="w-8 h-8 text-brand-400/60" />
-            <span className="text-xs">Визуализация скоро появится</span>
+            <span className="text-xs">{t('exercises.visualComingSoon')}</span>
           </div>
         )}
 
         {/* Target Anatomy */}
         <div className="space-y-2">
           <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-400">
-            Целевые мышечные группы
+            {t('exercises.targetMuscleGroups')}
           </span>
           <div className="bg-dark-800/80 p-3 rounded-xl border border-dark-700/70 space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-xs text-zinc-400">Основной фокус:</span>
+              <span className="text-xs text-zinc-400">{t('exercises.mainFocus')}</span>
               <div className="flex flex-wrap gap-1">
                 {meta.primaryMuscles.map((m, i) => (
                   <span
@@ -170,7 +172,7 @@ export const ExerciseInfoModal: React.FC<ExerciseInfoModalProps> = ({
 
             {meta.secondaryMuscles && meta.secondaryMuscles.length > 0 && (
               <div className="flex items-center justify-between pt-1 border-t border-dark-700/60">
-                <span className="text-xs text-zinc-500">Синергисты / Стабилизаторы:</span>
+                <span className="text-xs text-zinc-500">{t('exercises.synergists')}</span>
                 <div className="flex flex-wrap gap-1">
                   {meta.secondaryMuscles.map((m, i) => (
                     <span
@@ -189,7 +191,7 @@ export const ExerciseInfoModal: React.FC<ExerciseInfoModalProps> = ({
         {/* Form Guide & Execution */}
         <div className="space-y-2">
           <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-400">
-            Техника выполнения
+            {t('exercises.executionTechnique')}
           </span>
           <div className="bg-dark-800/40 p-3.5 rounded-xl border border-dark-700/60 space-y-2.5">
             {meta.instructions && meta.instructions.length > 0 ? (
@@ -203,7 +205,7 @@ export const ExerciseInfoModal: React.FC<ExerciseInfoModalProps> = ({
               ))
             ) : (
               <p className="text-xs text-zinc-400">
-                Выполняйте в подконтрольном темпе с акцентом на сокращение в пиковой точке и плавную негативную фазу.
+                {t('exercises.defaultTechniqueTip')}
               </p>
             )}
           </div>

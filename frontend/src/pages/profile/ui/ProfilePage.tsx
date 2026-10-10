@@ -320,17 +320,17 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onNavigateToBody }) =>
               <div>
                 <label className="text-xs font-bold text-zinc-200 uppercase tracking-wider flex items-center gap-1.5">
                   <Flame className="w-4 h-4 text-brand-400" />
-                  Дневные цели питания и калорий (Nutrition Targets)
+                  {t('profile.nutritionTargetsTitle')}
                 </label>
                 <p className="text-[11px] text-zinc-400 mt-0.5">
-                  Укажите свои индивидуальные цели калорий и БЖУ для страницы питания и рекомендаций тренера.
+                  {t('profile.nutritionTargetsDesc')}
                 </p>
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-2xl">
                 <div>
                   <label className="text-[10px] uppercase font-bold text-brand-400 block mb-1">
-                    Калории (ккал)
+                    {t('profile.caloriesKcal')}
                   </label>
                   <Input
                     type="number"
@@ -341,7 +341,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onNavigateToBody }) =>
                 </div>
                 <div>
                   <label className="text-[10px] uppercase font-bold text-emerald-400 block mb-1">
-                    Белки (г)
+                    {t('profile.proteinG')}
                   </label>
                   <Input
                     type="number"
@@ -352,7 +352,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onNavigateToBody }) =>
                 </div>
                 <div>
                   <label className="text-[10px] uppercase font-bold text-blue-400 block mb-1">
-                    Углеводы (г)
+                    {t('profile.carbsG')}
                   </label>
                   <Input
                     type="number"
@@ -363,7 +363,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onNavigateToBody }) =>
                 </div>
                 <div>
                   <label className="text-[10px] uppercase font-bold text-amber-400 block mb-1">
-                    Жиры (г)
+                    {t('profile.fatG')}
                   </label>
                   <Input
                     type="number"

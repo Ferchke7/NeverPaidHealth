@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { apiClient } from '../../../shared/api/client.ts';
 import { TodoCategory } from '../../../entities/todo/model/types.ts';
+import { t } from '../../../shared/lib/i18n/i18n.ts';
 
 export type TimerMode = 'pomodoro' | 'target_timer' | 'stopwatch';
 export type PomodoroPhase = 'work' | 'short_break' | 'long_break';
@@ -276,7 +277,7 @@ export const useFocusTimerStore = create<FocusTimerState>()(
           isActive: true,
           isRunning: true,
           todoId: null,
-          taskTitle: title || 'Фокус сессия',
+          taskTitle: title || t('focusTimer.session'),
           category: category || 'work',
           mode,
           pomodoroPhase: 'work',
@@ -463,7 +464,10 @@ export const useFocusTimerStore = create<FocusTimerState>()(
         // --- Active phase countdown reached ZERO! ---
         if (state.mode === 'target_timer') {
           playChimeSound('complete');
-          sendBrowserNotification('Таймер завершен!', `Сессия «${state.taskTitle}» завершена.`);
+          sendBrowserNotification(
+            t('focusTimer.timerFinished'),
+            t('focusTimer.timerFinishedDesc', { task: state.taskTitle })
+          );
           set({
             secondsRemaining: 0,
             secondsElapsedTotal: currentTotalElapsed,
@@ -480,7 +484,10 @@ export const useFocusTimerStore = create<FocusTimerState>()(
           // Check if this was the final work round!
           if (state.pomodoroRound >= state.totalPomodoroRounds) {
             playChimeSound('complete');
-            sendBrowserNotification('Все помодоро завершены! 🎉', `Задача «${state.taskTitle}» выполнена на 100%.`);
+            sendBrowserNotification(
+              t('focusTimer.allPomodoroFinished'),
+              t('focusTimer.allPomodoroFinishedDesc', { task: state.taskTitle })
+            );
             set({
               secondsRemaining: 0,
               secondsElapsedTotal: currentTotalElapsed,
@@ -494,7 +501,10 @@ export const useFocusTimerStore = create<FocusTimerState>()(
 
           // Move to break
           playChimeSound('break');
-          sendBrowserNotification('Время отдохнуть!', `Помодоро #${state.pomodoroRound} завершен. Сделайте перерыв.`);
+          sendBrowserNotification(
+            t('focusTimer.timeToRest'),
+            t('focusTimer.timeToRestDesc', { round: state.pomodoroRound })
+          );
           const isLongBreak = state.pomodoroRound % 4 === 0;
           const nextPhase: PomodoroPhase = isLongBreak ? 'long_break' : 'short_break';
           const nextDuration = isLongBreak ? state.longBreakDurationSec : state.shortBreakDurationSec;
@@ -512,7 +522,10 @@ export const useFocusTimerStore = create<FocusTimerState>()(
           playChimeSound('work');
           const nextRound = state.pomodoroRound + 1;
           const nextRoundSec = state.roundDurationsSec[nextRound - 1] || state.workDurationSec;
-          sendBrowserNotification('Время работать!', `Помодоро #${nextRound} из ${state.totalPomodoroRounds} начинается.`);
+          sendBrowserNotification(
+            t('focusTimer.timeToWork'),
+            t('focusTimer.timeToWorkDesc', { round: nextRound, total: state.totalPomodoroRounds })
+          );
 
           set({
             pomodoroPhase: 'work',

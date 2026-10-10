@@ -17,15 +17,12 @@ import {
 import { useFocusTimerStore, SplitStrategy } from '../model/focusTimerStore.ts';
 import { Badge } from '../../../shared/ui/badge.tsx';
 import { ProgressBar } from '../../../shared/ui/progress-bar.tsx';
+import { useTranslation } from '../../../shared/lib/i18n/i18n.ts';
 
-const BREAK_PRESETS = [
-  { label: '3м', value: 3 },
-  { label: '5м', value: 5 },
-  { label: '10м', value: 10 },
-  { label: '15м', value: 15 },
-];
+const BREAK_PRESET_MINUTES = [3, 5, 10, 15];
 
 export const FloatingFocusTimer: React.FC = () => {
+  const { t } = useTranslation();
   const {
     isActive,
     isRunning,
@@ -100,11 +97,11 @@ export const FloatingFocusTimer: React.FC = () => {
   };
 
   const getPhaseName = () => {
-    if (mode === 'stopwatch') return 'Секундомер';
-    if (mode === 'target_timer') return 'Фокус-таймер';
-    if (pomodoroPhase === 'work') return `Помодоро #${pomodoroRound} из ${totalPomodoroRounds}`;
-    if (pomodoroPhase === 'short_break') return 'Перерыв';
-    return 'Длинный отдых';
+    if (mode === 'stopwatch') return t('focusTimer.stopwatch');
+    if (mode === 'target_timer') return t('focusTimer.targetTimer');
+    if (pomodoroPhase === 'work') return t('focusTimer.pomodoroRound', { round: pomodoroRound, total: totalPomodoroRounds });
+    if (pomodoroPhase === 'short_break') return t('focusTimer.shortBreak');
+    return t('focusTimer.longBreak');
   };
 
   // Calculate percentage for circular progress of CURRENT active interval
@@ -168,7 +165,7 @@ export const FloatingFocusTimer: React.FC = () => {
           <div className="min-w-0 pr-1">
             <div className="flex items-center gap-1.5">
               <span className="text-xs font-extrabold text-white truncate max-w-[130px] sm:max-w-[180px]">
-                {taskTitle || 'Фокус сессия'}
+                {taskTitle || t('focusTimer.session')}
               </span>
               <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-dark-800 border border-dark-700 text-zinc-300">
                 {getPhaseName()}
@@ -181,7 +178,7 @@ export const FloatingFocusTimer: React.FC = () => {
                   : formatTime(secondsRemaining)}
               </div>
               <span className="text-[10px] text-zinc-400 font-mono">
-                ({Math.floor(secondsElapsedTotal / 60)}/{targetTotalMinutes}м)
+                ({Math.floor(secondsElapsedTotal / 60)}/{targetTotalMinutes}{t('common.minutes')})
               </span>
             </div>
           </div>
@@ -193,7 +190,7 @@ export const FloatingFocusTimer: React.FC = () => {
                 if (isRunning) pause();
                 else resume();
               }}
-              className="w-8 h-8 rounded-xl bg-dark-800 hover:bg-dark-700 text-white flex items-center justify-center transition-colors"
+              className="w-8 h-8 rounded-xl bg-dark-800 hover:bg-dark-700 text-white flex items-center justify-center transition-colors cursor-pointer"
             >
               {isRunning ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 fill-current" />}
             </button>
@@ -203,7 +200,7 @@ export const FloatingFocusTimer: React.FC = () => {
                 e.stopPropagation();
                 openModal();
               }}
-              className="w-8 h-8 rounded-xl bg-brand-500 hover:bg-brand-400 text-dark-950 flex items-center justify-center transition-colors font-bold"
+              className="w-8 h-8 rounded-xl bg-brand-500 hover:bg-brand-400 text-dark-950 flex items-center justify-center transition-colors font-bold cursor-pointer"
             >
               <Maximize2 className="w-3.5 h-3.5" />
             </button>
@@ -221,8 +218,8 @@ export const FloatingFocusTimer: React.FC = () => {
         <div className="w-full flex items-center justify-between mb-3">
           <button
             onClick={closeModal}
-            className="p-2 rounded-xl bg-dark-800/80 hover:bg-dark-700 text-zinc-400 hover:text-white transition-colors"
-            title="Свернуть виджет"
+            className="p-2 rounded-xl bg-dark-800/80 hover:bg-dark-700 text-zinc-400 hover:text-white transition-colors cursor-pointer"
+            title={t('focusTimer.minimize')}
           >
             <Minimize2 className="w-4 h-4" />
           </button>
@@ -234,12 +231,12 @@ export const FloatingFocusTimer: React.FC = () => {
 
           <button
             onClick={() => {
-              if (window.confirm('Сбросить и закрыть текущую сессию таймера?')) {
+              if (window.confirm(t('focusTimer.discardConfirm'))) {
                 discard();
               }
             }}
-            className="p-2 rounded-xl bg-dark-800/80 hover:bg-red-950/40 text-zinc-400 hover:text-red-400 transition-colors"
-            title="Отменить сессию"
+            className="p-2 rounded-xl bg-dark-800/80 hover:bg-red-950/40 text-zinc-400 hover:text-red-400 transition-colors cursor-pointer"
+            title={t('focusTimer.cancel')}
           >
             <X className="w-4 h-4" />
           </button>
@@ -250,46 +247,46 @@ export const FloatingFocusTimer: React.FC = () => {
           <button
             type="button"
             onClick={() => setMode('pomodoro')}
-            className={`px-3 py-1.5 rounded-xl transition-all ${
+            className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer ${
               mode === 'pomodoro'
                 ? 'bg-brand-500 text-dark-950 font-bold shadow-sm'
                 : 'text-zinc-400 hover:text-zinc-200'
             }`}
           >
-            🍅 Помодоро
+            {t('focusTimer.modePomodoro')}
           </button>
           <button
             type="button"
             onClick={() => setMode('target_timer')}
-            className={`px-3 py-1.5 rounded-xl transition-all ${
+            className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer ${
               mode === 'target_timer'
                 ? 'bg-brand-500 text-dark-950 font-bold shadow-sm'
                 : 'text-zinc-400 hover:text-zinc-200'
             }`}
           >
-            ⏱ Таймер ({targetTotalMinutes}м)
+            {t('focusTimer.modeTimer', { mins: targetTotalMinutes })}
           </button>
           <button
             type="button"
             onClick={() => setMode('stopwatch')}
-            className={`px-3 py-1.5 rounded-xl transition-all ${
+            className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer ${
               mode === 'stopwatch'
                 ? 'bg-brand-500 text-dark-950 font-bold shadow-sm'
                 : 'text-zinc-400 hover:text-zinc-200'
             }`}
           >
-            ⏳ Секундомер
+            {t('focusTimer.modeStopwatch')}
           </button>
         </div>
 
         {/* Task Title & Target Details */}
         <h2 className="text-base sm:text-lg font-extrabold text-white tracking-tight mb-0.5 line-clamp-2">
-          {taskTitle || 'Фокус сессия'}
+          {taskTitle || t('focusTimer.session')}
         </h2>
         <div className="flex items-center gap-2 text-xs text-zinc-400 mb-3 flex-wrap justify-center">
-          <span>Категория: <strong className="text-zinc-200 capitalize">{category}</strong></span>
+          <span>{t('focusTimer.category')} <strong className="text-zinc-200 capitalize">{category}</strong></span>
           <span>•</span>
-          <span>План на день: <strong className="text-brand-400 font-mono">{targetTotalMinutes} мин</strong></span>
+          <span>{t('focusTimer.dailyTarget')} <strong className="text-brand-400 font-mono">{targetTotalMinutes} {t('common.minutes')}</strong></span>
         </div>
 
         {/* Pomodoro Split Strategy Selector (when in Pomodoro mode) */}
@@ -298,24 +295,24 @@ export const FloatingFocusTimer: React.FC = () => {
             <div className="flex items-center justify-between text-[11px] text-zinc-400 font-bold">
               <span className="flex items-center gap-1.5">
                 <Layers className="w-3.5 h-3.5 text-brand-400" />
-                Разбивка {targetTotalMinutes} мин на раунды:
+                {t('focusTimer.splitRounds', { target: targetTotalMinutes })}
               </span>
-              <span className="text-brand-400 font-mono">{totalPomodoroRounds} {totalPomodoroRounds === 1 ? 'раунд' : totalPomodoroRounds < 5 ? 'раунда' : 'раундов'}</span>
+              <span className="text-brand-400 font-mono">{t('focusTimer.roundsCount', { count: totalPomodoroRounds })}</span>
             </div>
 
             {/* Split Strategy Options */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
               {[
-                { id: '25m', label: '🍅 25м блоки' },
-                { id: '30m', label: '⚡ 30м блоки' },
-                { id: '50m', label: '🔥 50м блоки' },
-                { id: 'single', label: '🎯 1 блок' },
+                { id: '25m', label: t('focusTimer.block25') },
+                { id: '30m', label: t('focusTimer.block30') },
+                { id: '50m', label: t('focusTimer.block50') },
+                { id: 'single', label: t('focusTimer.blockSingle') },
               ].map((opt) => (
                 <button
                   key={opt.id}
                   type="button"
                   onClick={() => setSplitStrategy(opt.id as SplitStrategy)}
-                  className={`px-2 py-1.5 rounded-xl text-[11px] font-bold border transition-all truncate ${
+                  className={`px-2 py-1.5 rounded-xl text-[11px] font-bold border transition-all truncate cursor-pointer ${
                     splitStrategy === opt.id
                       ? 'bg-brand-500/20 border-brand-500 text-brand-400 shadow-sm'
                       : 'bg-dark-800/80 border-dark-700/80 text-zinc-400 hover:text-zinc-200'
@@ -345,10 +342,10 @@ export const FloatingFocusTimer: React.FC = () => {
                           : 'bg-dark-800 border-dark-700 text-zinc-500'
                       }`}
                     >
-                      {isCompleted ? '✓' : `#${roundNum}`} {mins}м
+                      {isCompleted ? '✓' : `#${roundNum}`} {mins}{t('common.minutes')}
                     </div>
                     {idx < roundDurationsSec.length - 1 && (
-                      <span className="text-zinc-600 text-[10px]">☕ 5м</span>
+                      <span className="text-zinc-600 text-[10px]">☕ 5{t('common.minutes')}</span>
                     )}
                   </React.Fragment>
                 );
@@ -397,19 +394,19 @@ export const FloatingFocusTimer: React.FC = () => {
               {isRunning ? (
                 <>
                   <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-                  <span>Идет отсчет</span>
+                  <span>{t('focusTimer.inProgress')}</span>
                 </>
               ) : (
                 <>
                   <span className="w-2 h-2 rounded-full bg-amber-400" />
-                  <span>На паузе</span>
+                  <span>{t('focusTimer.onPause')}</span>
                 </>
               )}
             </div>
 
             <div className="text-[11px] text-zinc-400 mt-2 font-mono flex items-center gap-1">
               <Clock className="w-3 h-3 text-brand-400" />
-              <span>Накоплено: <strong className="text-white">{Math.floor(secondsElapsedTotal / 60)}</strong> / {targetTotalMinutes} мин</span>
+              <span>{t('focusTimer.accumulated')} <strong className="text-white">{Math.floor(secondsElapsedTotal / 60)}</strong> / {targetTotalMinutes} {t('common.minutes')}</span>
             </div>
           </div>
         </div>
@@ -417,8 +414,8 @@ export const FloatingFocusTimer: React.FC = () => {
         {/* Total Progress Bar */}
         <div className="w-full bg-dark-950/80 border border-dark-800 rounded-2xl p-2.5 my-2 space-y-1.5">
           <div className="flex items-center justify-between text-[11px] text-zinc-400">
-            <span>Общий прогресс задачи:</span>
-            <span className="font-bold text-brand-400 font-mono">{overallPercent}% ({Math.floor(secondsElapsedTotal / 60)}/{targetTotalMinutes}м)</span>
+            <span>{t('focusTimer.totalProgress')}</span>
+            <span className="font-bold text-brand-400 font-mono">{overallPercent}% ({Math.floor(secondsElapsedTotal / 60)}/{targetTotalMinutes}{t('common.minutes')})</span>
           </div>
           <ProgressBar value={overallPercent} variant="brand" size="sm" />
         </div>
@@ -427,22 +424,22 @@ export const FloatingFocusTimer: React.FC = () => {
         {mode === 'pomodoro' && pomodoroPhase !== 'work' && (
           <div className="w-full bg-dark-950/60 border border-dark-800 rounded-2xl p-2.5 my-1">
             <div className="flex items-center justify-between text-[11px] text-zinc-400 font-bold mb-1.5 px-1">
-              <span>Длительность отдыха:</span>
-              <span className="text-emerald-400">{Math.round(shortBreakDurationSec / 60)} мин</span>
+              <span>{t('focusTimer.breakDuration')}</span>
+              <span className="text-emerald-400">{Math.round(shortBreakDurationSec / 60)} {t('common.minutes')}</span>
             </div>
             <div className="flex justify-center gap-1.5">
-              {BREAK_PRESETS.map((p) => (
+              {BREAK_PRESET_MINUTES.map((mins) => (
                 <button
-                  key={p.value}
+                  key={mins}
                   type="button"
-                  onClick={() => setBreakDurationMinutes(p.value)}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-semibold border transition-all ${
-                    Math.round(shortBreakDurationSec / 60) === p.value
+                  onClick={() => setBreakDurationMinutes(mins)}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-semibold border transition-all cursor-pointer ${
+                    Math.round(shortBreakDurationSec / 60) === mins
                       ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400'
                       : 'bg-dark-800 border-dark-700 text-zinc-400 hover:text-zinc-200'
                   }`}
                 >
-                  {p.label}
+                  {mins} {t('common.minutes')}
                 </button>
               ))}
             </div>
@@ -455,25 +452,25 @@ export const FloatingFocusTimer: React.FC = () => {
           {mode === 'pomodoro' ? (
             <button
               onClick={skipPhase}
-              className="py-2.5 px-2 rounded-2xl bg-dark-800 hover:bg-dark-750 border border-dark-700 text-zinc-300 font-bold text-xs flex flex-col items-center justify-center gap-1 transition-all active:scale-95"
+              className="py-2.5 px-2 rounded-2xl bg-dark-800 hover:bg-dark-750 border border-dark-700 text-zinc-300 font-bold text-xs flex flex-col items-center justify-center gap-1 transition-all active:scale-95 cursor-pointer"
             >
               <FastForward className="w-4 h-4 text-zinc-400" />
-              <span>Пропуск</span>
+              <span>{t('focusTimer.skip')}</span>
             </button>
           ) : (
             <button
               onClick={resetCurrentPhase}
-              className="py-2.5 px-2 rounded-2xl bg-dark-800 hover:bg-dark-750 border border-dark-700 text-zinc-300 font-bold text-xs flex flex-col items-center justify-center gap-1 transition-all active:scale-95"
+              className="py-2.5 px-2 rounded-2xl bg-dark-800 hover:bg-dark-750 border border-dark-700 text-zinc-300 font-bold text-xs flex flex-col items-center justify-center gap-1 transition-all active:scale-95 cursor-pointer"
             >
               <RotateCcw className="w-4 h-4 text-zinc-400" />
-              <span>Сброс</span>
+              <span>{t('focusTimer.reset')}</span>
             </button>
           )}
 
           {/* Main Play/Pause Button */}
           <button
             onClick={isRunning ? pause : resume}
-            className={`py-2.5 px-2 rounded-2xl font-black text-xs sm:text-sm flex flex-col items-center justify-center gap-1 shadow-lg transition-all active:scale-95 ${
+            className={`py-2.5 px-2 rounded-2xl font-black text-xs sm:text-sm flex flex-col items-center justify-center gap-1 shadow-lg transition-all active:scale-95 cursor-pointer ${
               isRunning
                 ? 'bg-amber-500 hover:bg-amber-400 text-dark-950 shadow-amber-500/20'
                 : 'bg-brand-500 hover:bg-brand-400 text-dark-950 shadow-brand-500/20'
@@ -482,12 +479,12 @@ export const FloatingFocusTimer: React.FC = () => {
             {isRunning ? (
               <>
                 <Pause className="w-5 h-5" />
-                <span>Пауза</span>
+                <span>{t('focusTimer.pause')}</span>
               </>
             ) : (
               <>
                 <Play className="w-5 h-5 fill-current" />
-                <span>Старт</span>
+                <span>{t('focusTimer.start')}</span>
               </>
             )}
           </button>
@@ -496,10 +493,10 @@ export const FloatingFocusTimer: React.FC = () => {
           <button
             onClick={handleFinishAndSave}
             disabled={isSubmitting}
-            className="py-2.5 px-2 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex flex-col items-center justify-center gap-1 transition-all shadow-lg shadow-emerald-600/20 active:scale-95 disabled:opacity-50"
+            className="py-2.5 px-2 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex flex-col items-center justify-center gap-1 transition-all shadow-lg shadow-emerald-600/20 active:scale-95 disabled:opacity-50 cursor-pointer"
           >
             <CheckCircle2 className="w-4 h-4" />
-            <span>Готово</span>
+            <span>{t('focusTimer.done')}</span>
           </button>
         </div>
 
@@ -513,13 +510,13 @@ export const FloatingFocusTimer: React.FC = () => {
               className="w-4 h-4 rounded text-brand-500 accent-brand-500"
             />
             <span className="text-xs text-zinc-300 font-medium">
-              Отметить задачу выполненной при сохранении
+              {t('focusTimer.markCompleted')}
             </span>
           </label>
 
           <input
             type="text"
-            placeholder="Заметка к сессии (например: выполнил часть работы)..."
+            placeholder={t('focusTimer.notesPlaceholder')}
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             className="w-full bg-dark-950 border border-dark-800 rounded-xl px-3 py-1.5 text-xs text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-brand-500"

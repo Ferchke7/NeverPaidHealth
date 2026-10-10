@@ -20,6 +20,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, Badge } from
 import { Button } from '../../../shared/ui/button.tsx';
 import { Input } from '../../../shared/ui/input.tsx';
 import { ProgressBar } from '../../../shared/ui/progress.tsx';
+import { useTranslation } from '../../../shared/lib/i18n/i18n.ts';
 
 interface BodyTargetProgressCardProps {
   className?: string;
@@ -30,6 +31,7 @@ export const BodyTargetProgressCard: React.FC<BodyTargetProgressCardProps> = ({
   className = '',
   onNavigateToBody,
 }) => {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const user = useAuthStore((s) => s.user);
   const unitPref = useAuthStore((s) => s.unitPreference);
@@ -77,7 +79,6 @@ export const BodyTargetProgressCard: React.FC<BodyTargetProgressCardProps> = ({
   const targetWeightKg = unitPref === 'lb' ? lbToKg(parsedTargetRaw) : parsedTargetRaw;
 
   // First recorded weight for baseline progress calculation
-  // Backend returns logs in ASC order (earliest first)
   const startWeightKg = logs.length > 0 ? logs[0].weight_kg : currentWeightKg;
 
   // Calculate Progress Percentage
@@ -90,11 +91,9 @@ export const BodyTargetProgressCard: React.FC<BodyTargetProgressCardProps> = ({
     let pct = 0;
     if (totalDelta > 0) {
       if (isCut) {
-        // Cutting goal
         if (currentWeightKg <= targetWeightKg) pct = 100;
         else pct = Math.min(100, Math.max(0, Math.round((completedDelta / totalDelta) * 100)));
       } else {
-        // Bulking goal
         if (currentWeightKg >= targetWeightKg) pct = 100;
         else pct = Math.min(100, Math.max(0, Math.round((completedDelta / totalDelta) * 100)));
       }
@@ -148,15 +147,14 @@ export const BodyTargetProgressCard: React.FC<BodyTargetProgressCardProps> = ({
   const handleQuickLog = (e: React.FormEvent) => {
     e.preventDefault();
     const rawVal = parseFloat(quickWeight);
-    if (isNaN(rawVal) || rawVal <= 0) return;
+    if (!rawVal || rawVal <= 0) return;
 
     const valKg = unitPref === 'lb' ? lbToKg(rawVal) : rawVal;
     logWeightMutation.mutate(valKg);
   };
 
   return (
-    <Card variant="glow" className={`space-y-5 relative overflow-hidden ${className}`}>
-      {/* Background ambient glow */}
+    <Card className={`relative overflow-hidden ${className}`}>
       <div className="absolute top-0 right-0 w-48 h-48 bg-brand-500/5 rounded-full blur-3xl pointer-events-none" />
 
       {/* Header */}
@@ -167,14 +165,14 @@ export const BodyTargetProgressCard: React.FC<BodyTargetProgressCardProps> = ({
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <CardTitle>Цель и прогресс веса (Body Weight Goal)</CardTitle>
+              <CardTitle>{t('body.goalTitle')}</CardTitle>
               <Badge variant="brand" size="sm">
                 <Sparkles className="w-3 h-3 mr-1" />
                 Live Tracker
               </Badge>
             </div>
             <CardDescription>
-              Связка вашего профиля с динамикой веса, расчетом БЖУ и прогрессом к цели.
+              {t('body.goalSubtitle')}
             </CardDescription>
           </div>
         </div>
@@ -184,7 +182,7 @@ export const BodyTargetProgressCard: React.FC<BodyTargetProgressCardProps> = ({
             onClick={onNavigateToBody}
             className="text-xs text-brand-400 hover:text-brand-300 font-bold flex items-center gap-1 self-start sm:self-auto hover:underline cursor-pointer"
           >
-            <span>Вся история и замеры</span>
+            <span>{t('body.allHistory')}</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </button>
         )}
@@ -197,7 +195,7 @@ export const BodyTargetProgressCard: React.FC<BodyTargetProgressCardProps> = ({
           <div className="p-4 rounded-2xl bg-dark-900/80 border border-dark-700/80 space-y-1">
             <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
               <Scale className="w-3.5 h-3.5 text-zinc-400" />
-              Текущий вес
+              {t('body.currentWeight')}
             </span>
             <div className="text-2xl font-black font-mono text-white tracking-tight">
               {formatWeight(currentWeightKg, unitPref)}
@@ -205,7 +203,7 @@ export const BodyTargetProgressCard: React.FC<BodyTargetProgressCardProps> = ({
             <div className="text-[11px] text-zinc-400 flex items-center gap-1.5">
               <span>BMI {currentBMI > 0 ? currentBMI.toFixed(1) : '—'}</span>
               <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded border ${bmiCategory.bgColor} ${bmiCategory.textColor} ${bmiCategory.borderColor}`}>
-                {bmiCategory.labelRu}
+                {bmiCategory.label}
               </span>
             </div>
           </div>
@@ -215,13 +213,13 @@ export const BodyTargetProgressCard: React.FC<BodyTargetProgressCardProps> = ({
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-bold uppercase tracking-wider text-brand-400 flex items-center gap-1.5">
                 <Target className="w-3.5 h-3.5" />
-                Целевой вес
+                {t('body.targetWeight')}
               </span>
               <button
                 onClick={() => setIsEditingTarget(!isEditingTarget)}
                 className="text-[10px] font-semibold text-zinc-400 hover:text-brand-400 transition-colors cursor-pointer"
               >
-                {isEditingTarget ? 'Отмена' : 'Изменить'}
+                {isEditingTarget ? t('common.cancel') : t('common.edit')}
               </button>
             </div>
 
@@ -236,7 +234,7 @@ export const BodyTargetProgressCard: React.FC<BodyTargetProgressCardProps> = ({
                   className="font-mono text-xs"
                 />
                 <Button size="sm" variant="primary" onClick={handleSaveTarget} className="h-8 px-3 text-xs">
-                  OK
+                  {t('common.save')}
                 </Button>
               </div>
             ) : (
@@ -246,7 +244,7 @@ export const BodyTargetProgressCard: React.FC<BodyTargetProgressCardProps> = ({
             )}
 
             <div className="text-[11px] text-zinc-400">
-              Целевой BMI: <strong className="text-zinc-200">{targetBMI > 0 ? targetBMI.toFixed(1) : '—'}</strong>
+              {t('body.targetBMI')}: <strong className="text-zinc-200">{targetBMI > 0 ? targetBMI.toFixed(1) : '—'}</strong>
             </div>
           </div>
 
@@ -258,12 +256,12 @@ export const BodyTargetProgressCard: React.FC<BodyTargetProgressCardProps> = ({
               ) : (
                 <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
               )}
-              Осталось до цели
+              {t('body.remainingToGoal')}
             </span>
             <div className="text-2xl font-black font-mono text-emerald-400 tracking-tight">
               {Math.abs(diffToGoal) < 0.1 ? (
                 <span className="text-emerald-400 flex items-center gap-1 text-lg">
-                  <CheckCircle2 className="w-5 h-5" /> Цель достигнута!
+                  <CheckCircle2 className="w-5 h-5" /> {t('body.goalAchieved')}
                 </span>
               ) : (
                 <>
@@ -273,7 +271,7 @@ export const BodyTargetProgressCard: React.FC<BodyTargetProgressCardProps> = ({
               )}
             </div>
             <div className="text-[11px] text-zinc-400">
-              {diffToGoal > 0 ? 'Сброс веса (дефицит)' : 'Набор массы (профицит)'}
+              {diffToGoal > 0 ? t('body.cutting') : t('body.bulking')}
             </div>
           </div>
         </div>
@@ -283,7 +281,7 @@ export const BodyTargetProgressCard: React.FC<BodyTargetProgressCardProps> = ({
           <div className="flex items-center justify-between text-xs">
             <span className="font-bold text-zinc-200 flex items-center gap-1.5">
               <Flame className="w-4 h-4 text-brand-400" />
-              Прогресс достижения цели
+              {t('body.goalProgress')}
             </span>
             <span className="font-mono font-bold text-brand-400 text-sm">{progressPercent}%</span>
           </div>
@@ -291,9 +289,9 @@ export const BodyTargetProgressCard: React.FC<BodyTargetProgressCardProps> = ({
           <ProgressBar value={progressPercent} color="gradient" size="lg" />
 
           <div className="flex items-center justify-between text-[10px] text-zinc-400 font-mono pt-0.5">
-            <span>Старт: {formatWeight(startWeightKg, unitPref)}</span>
-            <span>Текущий: {formatWeight(currentWeightKg, unitPref)}</span>
-            <span className="text-brand-400 font-bold">Цель: {formatWeight(targetWeightKg, unitPref)}</span>
+            <span>{t('body.start')}: {formatWeight(startWeightKg, unitPref)}</span>
+            <span>{t('body.current')}: {formatWeight(currentWeightKg, unitPref)}</span>
+            <span className="text-brand-400 font-bold">{t('body.goal')}: {formatWeight(targetWeightKg, unitPref)}</span>
           </div>
         </div>
 
@@ -308,10 +306,10 @@ export const BodyTargetProgressCard: React.FC<BodyTargetProgressCardProps> = ({
             </div>
             <div>
               <div className="text-xs font-bold text-zinc-100">
-                Записать взвешивание за сегодня
+                {t('body.logTodayWeight')}
               </div>
               <div className="text-[10px] text-zinc-400">
-                Мгновенно обновляет прогресс и историю измерений
+                {t('body.logTodayDesc')}
               </div>
             </div>
           </div>
@@ -341,12 +339,12 @@ export const BodyTargetProgressCard: React.FC<BodyTargetProgressCardProps> = ({
               {logSuccess ? (
                 <>
                   <CheckCircle2 className="w-3.5 h-3.5" />
-                  <span>Записано!</span>
+                  <span>{t('body.weightSaved')}</span>
                 </>
               ) : (
                 <>
                   <Plus className="w-3.5 h-3.5" />
-                  <span>Записать вес</span>
+                  <span>{t('body.logWeightBtn')}</span>
                 </>
               )}
             </Button>

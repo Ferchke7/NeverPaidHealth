@@ -11,6 +11,8 @@ import { Skeleton } from '../../../shared/ui/skeleton.tsx';
 import { ExerciseThumbnail } from '../../../entities/exercise/ui/ExerciseThumbnail.tsx';
 import { ExerciseInfoModal } from '../../exercise-detail/ui/ExerciseInfoModal.tsx';
 
+import { useTranslation } from '../../../shared/lib/i18n/i18n.ts';
+
 interface ExercisePickerModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -35,6 +37,7 @@ export const ExercisePickerModal: React.FC<ExercisePickerModalProps> = ({
   onClose,
   onSelectExercise,
 }) => {
+  const { t } = useTranslation();
   const [search, setSearch] = useState('');
   const [selectedMuscle, setSelectedMuscle] = useState('all');
   const [inspectingExercise, setInspectingExercise] = useState<Exercise | null>(null);
@@ -61,13 +64,13 @@ export const ExercisePickerModal: React.FC<ExercisePickerModalProps> = ({
             <Dumbbell className="w-4 h-4" />
           </div>
         }
-        title="Выбор упражнения"
-        subtitle="Каталог спортивных упражнений"
+        title={t('exercises.exercisePickerTitle')}
+        subtitle={t('exercises.exercisePickerSubtitle')}
       >
         <div className="space-y-3">
           {/* Search Bar */}
           <Input
-            placeholder="Поиск по названию..."
+            placeholder={t('exercises.searchPlaceholder')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             startContent={<Search className="w-4 h-4 text-zinc-400" />}
@@ -86,7 +89,7 @@ export const ExercisePickerModal: React.FC<ExercisePickerModalProps> = ({
                     : 'bg-dark-800 text-zinc-400 hover:text-zinc-200 border border-dark-700'
                 }`}
               >
-                {mg.replace('_', ' ')}
+                {mg === 'all' ? t('exercises.allMuscles') : t(`exercises.${mg}` as any)}
               </button>
             ))}
           </div>
@@ -101,7 +104,7 @@ export const ExercisePickerModal: React.FC<ExercisePickerModalProps> = ({
               </div>
             ) : exercises.length === 0 ? (
               <div className="text-center py-8 text-xs text-zinc-500">
-                Упражнения не найдены
+                {t('exercises.notFound')}
               </div>
             ) : (
               exercises.map((ex) => (
@@ -140,7 +143,7 @@ export const ExercisePickerModal: React.FC<ExercisePickerModalProps> = ({
                         setInspectingExercise(ex);
                       }}
                       className="p-2 text-zinc-400 hover:text-white rounded-xl hover:bg-dark-700 transition-colors"
-                      title="Инструкция и техника"
+                      title={t('exercises.viewTechnique')}
                     >
                       <HelpCircle className="w-4 h-4" />
                     </button>

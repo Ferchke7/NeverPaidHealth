@@ -26,6 +26,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../..
 import { Button } from '../../../shared/ui/button.tsx';
 import { Input } from '../../../shared/ui/input.tsx';
 import { Badge } from '../../../shared/ui/card.tsx';
+import { useTranslation } from '../../../shared/lib/i18n/i18n.ts';
 
 interface BMICalculatorCardProps {
   initialHeightCm?: number;
@@ -34,24 +35,25 @@ interface BMICalculatorCardProps {
   className?: string;
 }
 
-const ACTIVITY_LEVELS = [
-  { id: 'sedentary', label: 'Sedentary', multiplier: 1.2, desc: 'Little to no exercise / desk job' },
-  { id: 'light', label: 'Light (1-3 days/wk)', multiplier: 1.375, desc: 'Light workouts 1-3 times a week' },
-  { id: 'moderate', label: 'Moderate (3-5 days/wk)', multiplier: 1.55, desc: 'Moderate gym sessions 3-5 days' },
-  { id: 'active', label: 'Active (6-7 days/wk)', multiplier: 1.725, desc: 'Hard training 6-7 days a week' },
-  { id: 'athlete', label: 'Very Active / Athlete', multiplier: 1.9, desc: 'Twice a day training or physical work' },
-];
-
 export const BMICalculatorCard: React.FC<BMICalculatorCardProps> = ({
   initialHeightCm,
   initialWeightKg,
   onSaveStats,
   className = '',
 }) => {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const user = useAuthStore((s) => s.user);
   const unitPref = useAuthStore((s) => s.unitPreference);
   const updateUserStats = useAuthStore((s) => s.updateUserStats);
+
+  const ACTIVITY_LEVELS = [
+    { id: 'sedentary', label: t('bmi.actSedentary'), multiplier: 1.2, desc: t('bmi.actSedentaryDesc') },
+    { id: 'light', label: t('bmi.actLight'), multiplier: 1.375, desc: t('bmi.actLightDesc') },
+    { id: 'moderate', label: t('bmi.actModerate'), multiplier: 1.55, desc: t('bmi.actModerateDesc') },
+    { id: 'active', label: t('bmi.actActive'), multiplier: 1.725, desc: t('bmi.actActiveDesc') },
+    { id: 'athlete', label: t('bmi.actAthlete'), multiplier: 1.9, desc: t('bmi.actAthleteDesc') },
+  ];
 
   // Fetch actual body trends and latest weigh-in logs from backend
   const { data: trend } = useQuery<{
@@ -156,106 +158,107 @@ export const BMICalculatorCard: React.FC<BMICalculatorCardProps> = ({
   }, [heightMode, heightCmInput, feetInput, inchesInput]);
 
   // Compute effective numeric weight in kg
-  const rawWeight = parseFloat(weightInput) || 0;
-  const numericWeightKg = unitPref === 'lb' ? lbToKg(rawWeight) : rawWeight;
+  const numericWeightKg = useMemo(() => {
+    const raw = parseFloat(weightInput) || 0;
+    return unitPref === 'lb' ? lbToKg(raw) : raw;
+  }, [weightInput, unitPref]);
+
+  // Primary BMI & Health calculations
+  const bmi = useMemo(() => {
+    return calculateBMI(numericWeightKg, numericHeight);
+  }, [numericWeightKg, numericHeight]);
+
+  const bmiCat = useMemo(() => {
+    return getBMICategory(bmi);
+  }, [bmi]);
+
+  const idealRange = useMemo(() => {
+    return getIdealWeightRange(numericHeight);
+  }, [numericHeight]);
+
   const numericAge = parseInt(age, 10) || 25;
 
-  // Real-time calculations
-  const bmi = useMemo(() => calculateBMI(numericWeightKg, numericHeight), [numericWeightKg, numericHeight]);
-  const bmiCat = useMemo(() => getBMICategory(bmi), [bmi]);
-  const idealRange = useMemo(() => getIdealWeightRange(numericHeight), [numericHeight]);
+  const bmr = useMemo(() => {
+    return calculateBMR(numericWeightKg, numericHeight, numericAge, gender);
+  }, [numericWeightKg, numericHeight, numericAge, gender]);
 
-  const bmr = useMemo(
-    () => calculateBMR(numericWeightKg, numericHeight, numericAge, gender),
-    [numericWeightKg, numericHeight, numericAge, gender]
-  );
+  const selectedActivityMultiplier = useMemo(() => {
+    const found = ACTIVITY_LEVELS.find((a) => a.id === activity);
+    return found ? found.multiplier : 1.55;
+  }, [activity, ACTIVITY_LEVELS]);
 
-  const selectedActivity = ACTIVITY_LEVELS.find((a) => a.id === activity) || ACTIVITY_LEVELS[2];
-  const tdee = useMemo(() => calculateTDEE(bmr, selectedActivity.multiplier), [bmr, selectedActivity]);
+  const tdee = useMemo(() => {
+    return calculateTDEE(bmr, selectedActivityMultiplier);
+  }, [bmr, selectedActivityMultiplier]);
 
-  const targetCalories = useMemo(() => {
-    if (goal === 'cut') return Math.max(1200, tdee - 450);
-    if (goal === 'bulk') return tdee + 350;
-    return tdee;
-  }, [tdee, goal]);
-
-  // Body Fat % estimation
   const estimatedBodyFat = useMemo(() => {
     return estimateBodyFatPercentage(bmi, numericAge, gender);
   }, [bmi, numericAge, gender]);
 
-  // Macronutrient breakdown
-  const macros = useMemo(() => {
-    return calculateMacroSplit(numericWeightKg, targetCalories, goal);
-  }, [numericWeightKg, targetCalories, goal]);
+  const targetCalories = useMemo(() => {
+    if (goal === 'cut') return Math.max(1200, Math.round(tdee - 400));
+    if (goal === 'bulk') return Math.round(tdee + 350);
+    return Math.round(tdee);
+  }, [tdee, goal]);
 
-  // Gauge needle position (15 to 40 BMI scale -> 0% to 100%)
+  const macros = useMemo(() => {
+    return calculateMacroSplit(targetCalories, numericWeightKg, goal);
+  }, [targetCalories, numericWeightKg, goal]);
+
+  // Gauge bar needle position calculation (0 to 100%)
   const gaugePercent = useMemo(() => {
-    if (bmi <= 15) return 2;
-    if (bmi >= 40) return 98;
-    return Math.min(98, Math.max(2, ((bmi - 15) / (40 - 15)) * 100));
+    if (bmi <= 0) return 0;
+    const minScale = 15;
+    const maxScale = 40;
+    const clamped = Math.min(Math.max(bmi, minScale), maxScale);
+    return ((clamped - minScale) / (maxScale - minScale)) * 100;
   }, [bmi]);
 
-  // Reset to live recorded weight
   const handleResetToCurrentWeight = () => {
-    setHasUserEditedWeight(false);
     setWeightInput(
       unitPref === 'lb'
         ? kgToLb(latestRecordedWeightKg).toFixed(1)
         : latestRecordedWeightKg.toFixed(1)
     );
+    setHasUserEditedWeight(false);
   };
 
-  // Handle Save
   const handleSave = async () => {
-    if (numericHeight <= 0 || numericWeightKg <= 0) return;
+    if (!numericHeight || !numericWeightKg) return;
 
     setIsSaving(true);
     try {
-      // 1. Update Zustand store
+      // 1. Update Auth Store & LocalStorage
       updateUserStats({
         height_cm: numericHeight,
         weight_kg: numericWeightKg,
         gender,
-        target_calories: targetCalories,
-        target_protein_g: macros.proteinG,
-        target_carbs_g: macros.carbG,
-        target_fat_g: macros.fatG,
         diet_goal: goal,
       });
-
-      // 2. Persist to localStorage for fast local retrieval
       localStorage.setItem('np_saved_height_cm', numericHeight.toString());
       localStorage.setItem('np_current_weight_kg', numericWeightKg.toString());
-      localStorage.setItem('np_nutrition_target_calories', targetCalories.toString());
-      localStorage.setItem('np_nutrition_target_protein_g', macros.proteinG.toString());
-      localStorage.setItem('np_nutrition_target_carbs_g', macros.carbG.toString());
-      localStorage.setItem('np_nutrition_target_fat_g', macros.fatG.toString());
       localStorage.setItem('np_diet_goal', goal);
 
-      // 3. Persist to Backend DB via body log endpoint
+      // 2. Call parent callback if provided
+      if (onSaveStats) {
+        onSaveStats({ heightCm: numericHeight, weightKg: numericWeightKg });
+      }
+
+      // 3. Log to backend body measurements if needed
       const todayStr = new Date().toISOString().split('T')[0];
       await apiClient.post('/body/logs', {
         log_date: todayStr,
         weight_kg: numericWeightKg,
         height_cm: numericHeight,
-        body_fat_percentage: estimatedBodyFat > 0 ? estimatedBodyFat : undefined,
       });
 
       queryClient.invalidateQueries({ queryKey: ['body-trend'] });
       queryClient.invalidateQueries({ queryKey: ['body-logs'] });
-      queryClient.invalidateQueries({ queryKey: ['nutrition', 'today'] });
-
-      if (onSaveStats) {
-        onSaveStats({ heightCm: numericHeight, weightKg: numericWeightKg });
-      }
 
       setSaveSuccess(true);
-      setTimeout(() => setSaveSuccess(false), 3000);
-    } catch {
-      // Fallback saved locally
-      setSaveSuccess(true);
-      setTimeout(() => setSaveSuccess(false), 3000);
+      setTimeout(() => setSaveSuccess(false), 2500);
+    } catch (err) {
+      console.error('Failed to save BMI stats to profile:', err);
     } finally {
       setIsSaving(false);
     }
@@ -271,14 +274,14 @@ export const BMICalculatorCard: React.FC<BMICalculatorCardProps> = ({
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <CardTitle>Body Metrics & BMI Calculator</CardTitle>
+              <CardTitle>{t('bmi.title')}</CardTitle>
               <Badge variant="brand" size="sm">
                 <Sparkles className="w-3 h-3 mr-1" />
-                Live Analysis
+                {t('bmi.liveAnalysis')}
               </Badge>
             </div>
             <CardDescription>
-              Автоматически синхронизирует ваш текущий вес ({formatWeight(latestRecordedWeightKg, unitPref)}), рассчитывает BMI, BMR, TDEE и БЖУ.
+              {t('bmi.autoSync', { weight: formatWeight(latestRecordedWeightKg, unitPref) })}
             </CardDescription>
           </div>
         </div>
@@ -294,12 +297,12 @@ export const BMICalculatorCard: React.FC<BMICalculatorCardProps> = ({
           {saveSuccess ? (
             <>
               <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-              <span>Saved to Profile!</span>
+              <span>{t('bmi.savedToProfile')}</span>
             </>
           ) : (
             <>
               <Save className="w-4 h-4 text-brand-400" />
-              <span>Save to Profile</span>
+              <span>{t('bmi.saveToProfile')}</span>
             </>
           )}
         </Button>
@@ -312,7 +315,7 @@ export const BMICalculatorCard: React.FC<BMICalculatorCardProps> = ({
           <div className="space-y-1">
             <div className="flex items-center justify-between">
               <label className="text-[11px] font-bold uppercase tracking-wider text-zinc-300">
-                Height *
+                {t('bmi.height')} *
               </label>
               <div className="flex items-center gap-1 text-[10px] font-bold">
                 <button
@@ -387,17 +390,17 @@ export const BMICalculatorCard: React.FC<BMICalculatorCardProps> = ({
           <div className="space-y-1">
             <div className="flex items-center justify-between">
               <label className="text-[11px] font-bold uppercase tracking-wider text-zinc-300 block">
-                Weight ({unitPref.toUpperCase()}) *
+                {t('bmi.weight')} ({unitPref.toUpperCase()}) *
               </label>
               {hasUserEditedWeight && (
                 <button
                   type="button"
                   onClick={handleResetToCurrentWeight}
                   className="text-[10px] text-brand-400 hover:text-brand-300 font-bold flex items-center gap-0.5"
-                  title="Сбросить к текущему зафиксированному весу"
+                  title={t('bmi.resetToLatest')}
                 >
                   <RotateCcw className="w-2.5 h-2.5" />
-                  <span>Текущий</span>
+                  <span>{t('bmi.current')}</span>
                 </button>
               )}
             </div>
@@ -421,7 +424,7 @@ export const BMICalculatorCard: React.FC<BMICalculatorCardProps> = ({
           {/* Gender */}
           <div className="space-y-1">
             <label className="text-[11px] font-bold uppercase tracking-wider text-zinc-300 block">
-              Biological Sex
+              {t('bmi.biologicalSex')}
             </label>
             <div className="grid grid-cols-2 gap-1 bg-dark-800 p-1 rounded-xl border border-dark-700 h-10 items-center">
               <button
@@ -433,7 +436,7 @@ export const BMICalculatorCard: React.FC<BMICalculatorCardProps> = ({
                     : 'text-zinc-400 hover:text-white'
                 }`}
               >
-                Male
+                {t('bmi.male')}
               </button>
               <button
                 type="button"
@@ -444,7 +447,7 @@ export const BMICalculatorCard: React.FC<BMICalculatorCardProps> = ({
                     : 'text-zinc-400 hover:text-white'
                 }`}
               >
-                Female
+                {t('bmi.female')}
               </button>
             </div>
           </div>
@@ -452,7 +455,7 @@ export const BMICalculatorCard: React.FC<BMICalculatorCardProps> = ({
           {/* Age */}
           <div className="space-y-1">
             <label className="text-[11px] font-bold uppercase tracking-wider text-zinc-300 block">
-              Age (Years)
+              {t('bmi.age')} ({t('bmi.years')})
             </label>
             <Input
               type="number"
@@ -462,7 +465,7 @@ export const BMICalculatorCard: React.FC<BMICalculatorCardProps> = ({
               value={age}
               onChange={(e) => setAge(e.target.value)}
               className="font-mono text-center font-bold"
-              endContent={<span className="text-xs text-zinc-500 font-bold">yrs</span>}
+              endContent={<span className="text-xs text-zinc-500 font-bold">{t('bmi.years')}</span>}
             />
           </div>
         </div>
@@ -476,12 +479,12 @@ export const BMICalculatorCard: React.FC<BMICalculatorCardProps> = ({
                 {bmi > 0 ? bmi.toFixed(1) : '—'}
               </div>
               <div>
-                <div className="text-xs uppercase font-bold text-zinc-400">BMI Index</div>
+                <div className="text-xs uppercase font-bold text-zinc-400">{t('body.bmi')}</div>
                 <div
                   className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold border mt-0.5 ${bmiCat.bgColor} ${bmiCat.textColor} ${bmiCat.borderColor}`}
                 >
                   <span className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: bmiCat.color }} />
-                  <span>{bmiCat.labelRu} ({bmiCat.labelEn})</span>
+                  <span>{bmiCat.label}</span>
                 </div>
               </div>
             </div>
@@ -491,7 +494,7 @@ export const BMICalculatorCard: React.FC<BMICalculatorCardProps> = ({
               {estimatedBodyFat > 0 && (
                 <div className="bg-dark-800/90 border border-dark-700/80 px-3 py-2 rounded-xl text-right text-xs">
                   <span className="text-[10px] text-zinc-400 uppercase font-semibold block">
-                    Est. Body Fat %
+                    {t('body.bodyFat')}
                   </span>
                   <span className="font-mono font-bold text-amber-400 text-sm">
                     ~{estimatedBodyFat.toFixed(1)}%
@@ -502,7 +505,7 @@ export const BMICalculatorCard: React.FC<BMICalculatorCardProps> = ({
               {idealRange.minKg > 0 && (
                 <div className="bg-dark-800/90 border border-dark-700/80 px-3 py-2 rounded-xl text-right text-xs">
                   <span className="text-[10px] text-zinc-400 uppercase font-semibold block">
-                    Healthy Weight Range
+                    {t('bmi.idealWeightRange')}
                   </span>
                   <span className="font-mono font-bold text-emerald-400 text-sm">
                     {formatWeight(idealRange.minKg, unitPref)} – {formatWeight(idealRange.maxKg, unitPref)}
@@ -515,11 +518,11 @@ export const BMICalculatorCard: React.FC<BMICalculatorCardProps> = ({
           {/* Multi-zone Color Gauge */}
           <div className="space-y-1.5 pt-1">
             <div className="relative h-4 rounded-full overflow-hidden flex bg-dark-800 border border-dark-700">
-              <div className="h-full bg-sky-500/80" style={{ width: '14%' }} title="Underweight (< 18.5)" />
-              <div className="h-full bg-emerald-500/90" style={{ width: '26%' }} title="Normal (18.5 - 24.9)" />
-              <div className="h-full bg-amber-500/90" style={{ width: '20%' }} title="Overweight (25 - 29.9)" />
-              <div className="h-full bg-orange-500/90" style={{ width: '20%' }} title="Obese I (30 - 34.9)" />
-              <div className="h-full bg-red-500/90" style={{ width: '20%' }} title="Obese II+ (35+)" />
+              <div className="h-full bg-sky-500/80" style={{ width: '14%' }} title={`${t('bmi.underweight')} (< 18.5)`} />
+              <div className="h-full bg-emerald-500/90" style={{ width: '26%' }} title={`${t('bmi.normal')} (18.5 - 24.9)`} />
+              <div className="h-full bg-amber-500/90" style={{ width: '20%' }} title={`${t('bmi.overweight')} (25 - 29.9)`} />
+              <div className="h-full bg-orange-500/90" style={{ width: '20%' }} title={`${t('bmi.obese1')} (30 - 34.9)`} />
+              <div className="h-full bg-red-500/90" style={{ width: '20%' }} title={`${t('bmi.obese2')} (35+)`} />
 
               {bmi > 0 && (
                 <div
@@ -541,7 +544,7 @@ export const BMICalculatorCard: React.FC<BMICalculatorCardProps> = ({
           {/* Coach Advice */}
           <div className="flex items-start gap-2.5 text-xs text-zinc-300 bg-dark-800/70 p-3 rounded-xl border border-dark-700/60">
             <Info className="w-4 h-4 text-brand-400 shrink-0 mt-0.5" />
-            <p className="leading-relaxed">{bmiCat.adviceRu}</p>
+            <p className="leading-relaxed">{bmiCat.advice}</p>
           </div>
         </div>
 
@@ -552,20 +555,20 @@ export const BMICalculatorCard: React.FC<BMICalculatorCardProps> = ({
             <div className="flex items-center gap-2">
               <Flame className="w-4 h-4 text-amber-400" />
               <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-200">
-                Metabolism & Daily Burn
+                BMR & TDEE
               </h3>
             </div>
 
             <div className="space-y-2">
               <div className="flex items-center justify-between text-xs py-1 border-b border-dark-800">
-                <span className="text-zinc-400">BMR (Basal Metabolic Rate):</span>
+                <span className="text-zinc-400">BMR:</span>
                 <span className="font-mono font-bold text-white">
                   {bmr > 0 ? `${bmr.toLocaleString()} kcal` : '—'}
                 </span>
               </div>
 
               <div className="space-y-1 pt-1">
-                <label className="text-[11px] text-zinc-400 block font-medium">Activity Multiplier:</label>
+                <label className="text-[11px] text-zinc-400 block font-medium">{t('bmi.activityLevel')}:</label>
                 <select
                   value={activity}
                   onChange={(e) => setActivity(e.target.value)}
@@ -580,9 +583,9 @@ export const BMICalculatorCard: React.FC<BMICalculatorCardProps> = ({
               </div>
 
               <div className="flex items-center justify-between text-xs pt-2">
-                <span className="text-zinc-300 font-semibold">TDEE (Daily Maintenance):</span>
+                <span className="text-zinc-300 font-semibold">TDEE:</span>
                 <span className="font-mono font-extrabold text-brand-400 text-sm">
-                  {tdee > 0 ? `${tdee.toLocaleString()} kcal/day` : '—'}
+                  {tdee > 0 ? `${tdee.toLocaleString()} kcal` : '—'}
                 </span>
               </div>
             </div>
@@ -594,7 +597,7 @@ export const BMICalculatorCard: React.FC<BMICalculatorCardProps> = ({
               <div className="flex items-center gap-2">
                 <Zap className="w-4 h-4 text-brand-400" />
                 <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-200">
-                  Target Nutrition
+                  {t('nutrition.target')}
                 </h3>
               </div>
 
@@ -607,7 +610,7 @@ export const BMICalculatorCard: React.FC<BMICalculatorCardProps> = ({
                     goal === 'cut' ? 'bg-amber-500 text-dark-950' : 'text-zinc-400 hover:text-zinc-200'
                   }`}
                 >
-                  Cut
+                  {t('body.cutting')}
                 </button>
                 <button
                   type="button"
@@ -616,7 +619,7 @@ export const BMICalculatorCard: React.FC<BMICalculatorCardProps> = ({
                     goal === 'maintain' ? 'bg-brand-500 text-dark-950' : 'text-zinc-400 hover:text-zinc-200'
                   }`}
                 >
-                  Maintain
+                  {t('nutrition.target')}
                 </button>
                 <button
                   type="button"
@@ -625,14 +628,14 @@ export const BMICalculatorCard: React.FC<BMICalculatorCardProps> = ({
                     goal === 'bulk' ? 'bg-emerald-500 text-dark-950' : 'text-zinc-400 hover:text-zinc-200'
                   }`}
                 >
-                  Bulk
+                  {t('body.bulking')}
                 </button>
               </div>
             </div>
 
             <div className="space-y-2">
               <div className="flex items-center justify-between text-xs py-1 border-b border-dark-800">
-                <span className="text-zinc-400">Target Calories:</span>
+                <span className="text-zinc-400">{t('nutrition.calories')}:</span>
                 <span className="font-mono font-bold text-white">
                   {targetCalories > 0 ? `${targetCalories.toLocaleString()} kcal` : '—'}
                 </span>
@@ -640,19 +643,19 @@ export const BMICalculatorCard: React.FC<BMICalculatorCardProps> = ({
 
               <div className="grid grid-cols-3 gap-2 pt-1">
                 <div className="bg-dark-800 p-2 rounded-xl border border-dark-700/80 text-center">
-                  <span className="text-[10px] text-zinc-400 uppercase block font-semibold">Protein</span>
+                  <span className="text-[10px] text-zinc-400 uppercase block font-semibold">{t('nutrition.protein')}</span>
                   <span className="font-mono font-bold text-xs text-rose-400">
                     {macros.proteinG}g
                   </span>
                 </div>
                 <div className="bg-dark-800 p-2 rounded-xl border border-dark-700/80 text-center">
-                  <span className="text-[10px] text-zinc-400 uppercase block font-semibold">Fats</span>
+                  <span className="text-[10px] text-zinc-400 uppercase block font-semibold">{t('nutrition.fat')}</span>
                   <span className="font-mono font-bold text-xs text-amber-400">
                     {macros.fatG}g
                   </span>
                 </div>
                 <div className="bg-dark-800 p-2 rounded-xl border border-dark-700/80 text-center">
-                  <span className="text-[10px] text-zinc-400 uppercase block font-semibold">Carbs</span>
+                  <span className="text-[10px] text-zinc-400 uppercase block font-semibold">{t('nutrition.carbs')}</span>
                   <span className="font-mono font-bold text-xs text-sky-400">
                     {macros.carbG}g
                   </span>

@@ -65,7 +65,7 @@ interface CoachInsights {
 }
 
 export const AICoachPage: React.FC = () => {
-  const { t, language } = useTranslation();
+  const { t } = useTranslation();
   const user = useAuthStore((s) => s.user);
 
   const [showInsightsModal, setShowInsightsModal] = useState(false);
@@ -93,46 +93,20 @@ export const AICoachPage: React.FC = () => {
   });
 
   const getInitialGreeting = useCallback(() => {
-    const name = user?.display_name || 'Атлет';
-    if (language === 'en') {
-      return `Hey ${name}! 🦾 I'm your AI Strength & Conditioning Coach on duda.uz.\n\nI analyze your live training telemetry, CNS readiness, volume overload, and daily nutrition targets.\n\n### What I can help you with:\n• **Physique & Food Photo Analysis:** Attach a photo of your meal for instant calorie & macro breakdown, or a physique photo for form and proportion analysis.\n• **Progressive Overload:** Compute exact weights and reps to break plateaus.\n• **Workout Programming:** Recommend optimal training splits based on recovery.\n• **Diet & Macros:** Calculate daily protein and calories.`;
-    }
-    if (language === 'uz') {
-      return `Salom, ${name}! 🦾 Men duda.uz platformasidagi shaxsiy AI murabbiyingizman.\n\nMen mashg'ulotlaringiz hajmi, asab tizimi (CNS) tayyorgarligi, og'irliklar progressi va kunlik ovqatlanishingizni tahlil qilaman.\n\n### Qanday yordam bera olaman:\n• **Taom va Forma Tahlili:** Taom rasmini yuborib kaloriya/BJU hisoblang, yoki forma va texnikani baholang.\n• **Progressive Overload:** Platoning oldini olish uchun aniq vazn va takrorlar tavsiyasi.\n• **Mashg'ulot Dasturi:** Tiklanishingizga mos optimal mashg'ulot splitlari.\n• **Ovqatlanish va BJU:** Kunlik oqsil va kaloriya me'yori.`;
-    }
-    return `Привет, ${name}! 🦾 Я твой персональный ИИ-тренер duda.uz.\n\nЯ анализирую твои реальные тренировки, готовность ЦНС к нагрузкам, прогрессию тоннажа и суточное БЖУ.\n\n### Чем я могу помочь:\n• **Оценка формы и еды по фото:** Прикрепи фото блюда для мгновенного расчета калорий и БЖУ, или фото формы для анализа пропорций и техники.\n• **Прогрессивная перегрузка:** Точный расчет рабочих весов и повторов для преодоления плато.\n• **План тренировок:** Подбор оптимального сплита на основе восстановления.\n• **Питание и калории:** Расчет индивидуальной нормы белка и калорий.`;
-  }, [user?.display_name, language]);
+    const name = user?.display_name || t('coach.athleteDefault');
+    return t('coach.greeting', { name });
+  }, [user?.display_name, t]);
 
   const getQuickPrompts = useCallback(() => {
-    if (language === 'en') {
-      return [
-        '📸 Check physique / food',
-        '🎯 Analyze my progress & split',
-        '🏋️‍♂️ What should I train today?',
-        '📈 How to progressive overload on bench?',
-        '🔋 Optimal recovery for my volume',
-        '🥩 Daily protein and nutrition targets',
-      ];
-    }
-    if (language === 'uz') {
-      return [
-        '📸 Forma / Taom rasmini baholash',
-        '🎯 Progressimni tahlil qiling',
-        '🏋️‍♂️ Bugun nima mashq qilishim kerak?',
-        '📈 Yotib shtanga ko\'tarishda progress',
-        '🔋 Tiklanish bo\'yicha maslahatlar',
-        '🥩 Kunlik oqsil va kaloriya me\'yori',
-      ];
-    }
     return [
-      '📸 Оценить фото еды / формы',
-      '🎯 Проанализируй мой прогресс и сплит',
-      '🏋️‍♂️ Что мне тренировать сегодня?',
-      '📈 Как прогрессировать в жиме лежа?',
-      '🔋 Оптимальное восстановление',
-      '🥩 Норма белка и калорий',
+      t('coach.prompt1'),
+      t('coach.prompt2'),
+      t('coach.prompt3'),
+      t('coach.prompt4'),
+      t('coach.prompt5'),
+      t('coach.prompt6'),
     ];
-  }, [language]);
+  }, [t]);
 
   const [messages, setMessages] = useState<ChatMessage[]>(() => {
     try {
@@ -235,12 +209,7 @@ export const AICoachPage: React.FC = () => {
         {
           id: String(Date.now()),
           role: 'coach',
-          content:
-            language === 'en'
-              ? 'Sorry, unable to connect to AI Coach server. Please check connection and try again.'
-              : language === 'uz'
-              ? "Kechirasiz, AI server bilan aloqa uzildi. Iltimos, qayta urinib ko'ring."
-              : 'Извини, возникла ошибка связи с ИИ-сервером. Попробуй еще раз!',
+          content: t('coach.connError'),
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         },
       ]);
@@ -261,13 +230,7 @@ export const AICoachPage: React.FC = () => {
     const text = (textToSend || inputMessage).trim();
     if ((!text && !attachedPhoto) || chatMutation.isPending) return;
 
-    const messageText =
-      text ||
-      (language === 'en'
-        ? 'Please analyze this photo: if it is food, estimate calories & macros; if physique/exercise, evaluate form & symmetry.'
-        : language === 'uz'
-        ? "Ushbu rasmni tahlil qiling: agar taom bo'lsa kaloriya va BJU hisoblang, agar forma bo'lsa texnikani baholang."
-        : 'Проанализируй фото: если это еда — рассчитай калории и БЖУ; если форма — оцени пропорции и технику.');
+    const messageText = text || t('coach.defaultPhotoPrompt');
 
     const userMsg: ChatMessage = {
       id: String(Date.now()),
@@ -353,7 +316,7 @@ export const AICoachPage: React.FC = () => {
               </span>
             </div>
             <p className="text-[10px] sm:text-[11px] text-zinc-400 truncate">
-              ЦНС: <strong className="text-emerald-400 font-semibold">{readinessScore}%</strong> • {readinessStatus}
+              {t('coach.cnsStatus')}: <strong className="text-emerald-400 font-semibold">{readinessScore}%</strong> • {readinessStatus}
             </p>
           </div>
         </div>
@@ -363,10 +326,11 @@ export const AICoachPage: React.FC = () => {
           <button
             onClick={() => setShowInsightsModal(true)}
             className="px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-xl border text-[11px] sm:text-xs font-semibold flex items-center gap-1 transition-all active:scale-95 bg-dark-800/80 hover:bg-dark-750 border-dark-700 text-zinc-300 hover:text-white shadow-sm"
-            title="Показать показатели готовности и нагрузки"
+            title={t('coach.telemetryTitle')}
+            aria-label={t('coach.telemetryTitle')}
           >
             <Activity className="w-3.5 h-3.5 text-brand-400" />
-            <span className="hidden sm:inline">Готовность</span>
+            <span className="hidden sm:inline">{t('coach.cnsReadiness')}</span>
             <span className="text-emerald-400 font-bold">{readinessScore}%</span>
           </button>
 
@@ -374,7 +338,8 @@ export const AICoachPage: React.FC = () => {
           <button
             onClick={() => setIsClearModalOpen(true)}
             className="p-1.5 sm:p-2 rounded-xl text-zinc-400 hover:text-red-400 hover:bg-red-950/20 border border-dark-800 hover:border-red-900/30 transition-all active:scale-95"
-            title="Очистить диалог"
+            title={t('coach.clearHistory')}
+            aria-label={t('coach.clearHistory')}
           >
             <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
           </button>
@@ -430,7 +395,7 @@ export const AICoachPage: React.FC = () => {
                       className="absolute bottom-2 right-2 px-2 py-0.5 rounded-lg bg-dark-950/80 backdrop-blur text-white text-[10px] font-semibold flex items-center gap-1 opacity-90 sm:opacity-0 sm:group-hover/img:opacity-100 transition-opacity shadow-md"
                     >
                       <ZoomIn className="w-3 h-3" />
-                      Увеличить
+                      <span className="text-[10px]">Zoom</span>
                     </button>
                   </div>
                 )}
@@ -458,17 +423,18 @@ export const AICoachPage: React.FC = () => {
                     <button
                       onClick={() => handleCopyMessage(msg.id, msg.content)}
                       className="flex items-center gap-1 px-1.5 py-0.5 rounded-md hover:bg-dark-800 text-zinc-400 hover:text-brand-400 transition-colors"
-                      title="Скопировать ответ"
+                      title={t('coach.copy')}
+                      aria-label={t('coach.copy')}
                     >
                       {copiedMessageId === msg.id ? (
                         <>
                           <Check className="w-3 h-3 text-emerald-400" />
-                          <span className="text-emerald-400 text-[10px]">Скопировано</span>
+                          <span className="text-emerald-400 text-[10px]">{t('coach.copied')}</span>
                         </>
                       ) : (
                         <>
                           <Copy className="w-3 h-3" />
-                          <span className="text-[10px]">Копировать</span>
+                          <span className="text-[10px]">{t('coach.copy')}</span>
                         </>
                       )}
                     </button>
@@ -492,7 +458,7 @@ export const AICoachPage: React.FC = () => {
                 <span className="w-1.5 h-1.5 rounded-full bg-brand-400 animate-bounce" />
               </div>
               <span className="text-zinc-300 font-medium text-[11px] sm:text-xs">
-                {attachedPhoto ? 'Анализирую фото и калории...' : 'ИИ-коуч формирует ответ...'}
+                {attachedPhoto ? t('coach.evaluatingPhoto') : t('coach.generating')}
               </span>
             </div>
           </div>
@@ -501,13 +467,14 @@ export const AICoachPage: React.FC = () => {
         <div ref={messagesEndRef} />
       </div>
 
+
       {/* Floating Scroll Navigation Controls */}
       <div className="absolute right-3 bottom-24 sm:bottom-28 z-30 flex flex-col gap-1.5 pointer-events-auto">
         {showScrollTop && (
           <button
             onClick={scrollToTop}
             className="p-2 rounded-full bg-dark-850/90 hover:bg-dark-800 text-zinc-300 hover:text-white border border-dark-700 shadow-xl backdrop-blur-md transition-all active:scale-90"
-            title="Прокрутить наверх"
+            title={t('coach.scrollToTop')}
           >
             <ArrowUp className="w-3.5 h-3.5" />
           </button>
@@ -521,11 +488,11 @@ export const AICoachPage: React.FC = () => {
                 ? 'bg-brand-500 text-dark-950 font-bold border-brand-400 ring-2 ring-brand-500/50 animate-bounce'
                 : 'bg-dark-850/90 hover:bg-dark-800 text-zinc-300 hover:text-white border-dark-700'
             }`}
-            title="Прокрутить вниз"
+            title={t('coach.scrollToBottom')}
           >
             <ArrowDown className="w-3.5 h-3.5" />
             {hasUnreadResponse && (
-              <span className="text-[10px] font-extrabold pr-1">Новый ответ</span>
+              <span className="text-[10px] font-extrabold pr-1">{t('coach.newResponse')}</span>
             )}
           </button>
         )}
@@ -582,14 +549,15 @@ export const AICoachPage: React.FC = () => {
                     <Sparkles className="w-3 h-3 text-brand-400" />
                     {t('coach.photoAttached')}
                   </p>
-                  <p className="text-[10px] text-zinc-400">ИИ определит калории/БЖУ или оценит форму</p>
+                  <p className="text-[10px] text-zinc-400">{t('coach.photoHint')}</p>
                 </div>
               </div>
               <button
                 type="button"
                 onClick={() => setAttachedPhoto(null)}
                 className="p-1 rounded-lg text-zinc-400 hover:text-red-400 hover:bg-dark-800 transition-colors"
-                title="Удалить фото"
+                title={t('coach.photoDelete')}
+                aria-label={t('coach.photoDelete')}
               >
                 <X className="w-3.5 h-3.5" />
               </button>
@@ -608,6 +576,7 @@ export const AICoachPage: React.FC = () => {
                   : 'bg-dark-850 hover:bg-dark-800 border-dark-700 text-zinc-400 hover:text-brand-400'
               }`}
               title={t('coach.attachPhoto')}
+              aria-label={t('coach.attachPhoto')}
             >
               <Camera className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
@@ -619,7 +588,7 @@ export const AICoachPage: React.FC = () => {
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder={attachedPhoto ? 'Добавьте вопрос к фото...' : t('coach.placeholder')}
+                placeholder={attachedPhoto ? t('coach.photoQuestionPlaceholder') : t('coach.placeholder')}
                 className="w-full bg-dark-850/90 border border-dark-700/90 rounded-xl px-3 py-2 text-xs sm:text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-brand-500/70 focus:ring-1 focus:ring-brand-500/30 transition-all shadow-inner resize-none max-h-28 min-h-[40px]"
               />
             </div>
@@ -628,7 +597,8 @@ export const AICoachPage: React.FC = () => {
               type="submit"
               disabled={(!inputMessage.trim() && !attachedPhoto) || chatMutation.isPending}
               className="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-brand-400 hover:from-brand-500 hover:to-brand-300 disabled:from-dark-800 disabled:to-dark-800 text-dark-950 disabled:text-zinc-600 font-bold flex items-center justify-center transition-all shadow-md shadow-brand-500/20 active:scale-95 shrink-0"
-              title="Отправить сообщение"
+              title={t('coach.send')}
+              aria-label={t('coach.send')}
             >
               {chatMutation.isPending ? (
                 <Sparkles className="w-4 h-4 animate-spin" />
@@ -644,8 +614,8 @@ export const AICoachPage: React.FC = () => {
       <Modal
         isOpen={showInsightsModal}
         onClose={() => setShowInsightsModal(false)}
-        title="Телеметрия тренировок"
-        description="Показатели готовности ЦНС и нагрузки"
+        title={t('coach.telemetryTitle')}
+        description={t('coach.telemetryDesc')}
         headerIcon={<Activity className="w-4 h-4 text-brand-400" />}
         size="md"
         footer={
@@ -654,7 +624,7 @@ export const AICoachPage: React.FC = () => {
             className="w-full text-xs font-semibold"
             onClick={() => setShowInsightsModal(false)}
           >
-            Закрыть
+            {t('common.close')}
           </Button>
         }
       >
@@ -662,7 +632,7 @@ export const AICoachPage: React.FC = () => {
           <div className="grid grid-cols-2 gap-2 text-xs">
             <div className="p-3 rounded-xl bg-dark-900 border border-dark-750 space-y-1">
               <span className="text-[11px] text-zinc-400 flex items-center gap-1">
-                <Activity className="w-3.5 h-3.5 text-emerald-400" /> Готовность ЦНС
+                <Activity className="w-3.5 h-3.5 text-emerald-400" /> {t('coach.cnsReadiness')}
               </span>
               <p className="text-base font-bold text-emerald-400">{readinessScore} / 100</p>
               <p className="text-[10px] text-zinc-400">{readinessStatus}</p>
@@ -670,15 +640,15 @@ export const AICoachPage: React.FC = () => {
 
             <div className="p-3 rounded-xl bg-dark-900 border border-dark-750 space-y-1">
               <span className="text-[11px] text-zinc-400 flex items-center gap-1">
-                <Dumbbell className="w-3.5 h-3.5 text-brand-400" /> Нагрузка 7 дней
+                <Dumbbell className="w-3.5 h-3.5 text-brand-400" /> {t('coach.workload7d')}
               </span>
-              <p className="text-base font-bold text-white">{weeklyWorkouts} тр.</p>
-              <p className="text-[10px] text-zinc-400">{weeklyVolumeTons} т общий тоннаж</p>
+              <p className="text-base font-bold text-white">{t('coach.workoutsCount', { count: weeklyWorkouts })}</p>
+              <p className="text-[10px] text-zinc-400">{t('coach.totalTonnage', { tons: weeklyVolumeTons })}</p>
             </div>
 
             <div className="col-span-2 p-3 rounded-xl bg-dark-900 border border-dark-750 space-y-1">
               <span className="text-[11px] text-zinc-400 flex items-center gap-1">
-                <Calendar className="w-3.5 h-3.5 text-brand-400" /> Рекомендуемый сплит
+                <Calendar className="w-3.5 h-3.5 text-brand-400" /> {t('coach.recommendedSplit')}
               </span>
               <p className="font-bold text-brand-300">{targetSplit}</p>
             </div>
@@ -686,10 +656,10 @@ export const AICoachPage: React.FC = () => {
             {insights?.today_calories !== undefined && insights.today_calories > 0 && (
               <div className="col-span-2 p-3 rounded-xl bg-emerald-950/20 border border-emerald-900/40 space-y-1">
                 <span className="text-[11px] text-emerald-400 flex items-center gap-1 font-semibold">
-                  <Utensils className="w-3.5 h-3.5" /> Питание за сегодня
+                  <Utensils className="w-3.5 h-3.5" /> {t('coach.todayNutrition')}
                 </span>
                 <p className="text-sm font-bold text-white">
-                  {insights.today_calories} kcal • {Math.round(insights.today_protein_g || 0)}g белка
+                  {t('coach.todayNutritionDesc', { calories: insights.today_calories, protein: Math.round(insights.today_protein_g || 0) })}
                 </p>
               </div>
             )}
@@ -699,7 +669,7 @@ export const AICoachPage: React.FC = () => {
           {insights?.overload_targets && insights.overload_targets.length > 0 && (
             <div className="space-y-1.5 pt-2 border-t border-dark-750">
               <p className="text-[11px] font-semibold text-zinc-300 flex items-center gap-1">
-                <TrendingUp className="w-3.5 h-3.5 text-brand-400" /> Ближайшие цели (Overload):
+                <TrendingUp className="w-3.5 h-3.5 text-brand-400" /> {t('coach.overloadGoals')}
               </p>
               <div className="space-y-1">
                 {insights.overload_targets.slice(0, 3).map((target, idx) => (
@@ -725,8 +695,8 @@ export const AICoachPage: React.FC = () => {
       <Modal
         isOpen={isClearModalOpen}
         onClose={() => setIsClearModalOpen(false)}
-        title="Очистить историю?"
-        description="Все сообщения диалога будут сброшены."
+        title={t('coach.clearModalTitle')}
+        description={t('coach.clearModalDesc')}
         headerIcon={<AlertTriangle className="w-5 h-5 text-red-400" />}
         size="sm"
         footer={
@@ -736,7 +706,7 @@ export const AICoachPage: React.FC = () => {
               size="sm"
               onClick={() => setIsClearModalOpen(false)}
             >
-              Отмена
+              {t('common.cancel')}
             </Button>
             <Button
               variant="danger"
@@ -744,13 +714,13 @@ export const AICoachPage: React.FC = () => {
               onClick={handleClearChatConfirm}
             >
               <Trash2 className="w-3.5 h-3.5 mr-1" />
-              Очистить
+              {t('coach.clearHistory')}
             </Button>
           </>
         }
       >
         <p className="text-xs text-zinc-400">
-          Вы уверены, что хотите удалить историю сообщений с ИИ-тренером?
+          {t('coach.clearConfirm')}
         </p>
       </Modal>
 
@@ -759,9 +729,10 @@ export const AICoachPage: React.FC = () => {
         isOpen={isPhotoPickerOpen}
         onClose={() => setIsPhotoPickerOpen(false)}
         onPhotoSelected={handlePhotoCaptured}
-        title="Фото для ИИ-тренера"
-        subtitle="Оценка формы, пропорций, блюда или техники упражнений"
+        title={t('coach.photoTitle')}
+        subtitle={t('coach.photoSubtitle')}
       />
+
 
       {/* 8. Fullscreen Image Modal / Lightbox */}
       {previewModalImg && (
