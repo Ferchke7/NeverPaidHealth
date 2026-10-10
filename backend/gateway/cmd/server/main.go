@@ -27,7 +27,7 @@ func main() {
 	}
 	tokenService := jwtauth.NewTokenService(priv, pub)
 
-	handler := proxy.NewRouter(cfg, tokenService)
+	handler := proxy.NewRouter(cfg, tokenService, logger)
 
 	server := &http.Server{
 		Addr:         ":" + cfg.Port,

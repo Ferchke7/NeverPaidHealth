@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/neverpaidhealth/backend/pkg/logx"
 	"github.com/neverpaidhealth/backend/services/coach/internal/adapters/ai"
 	"github.com/neverpaidhealth/backend/services/coach/internal/adapters/data"
 	"github.com/neverpaidhealth/backend/services/coach/internal/application"
@@ -19,7 +20,7 @@ import (
 )
 
 func main() {
-	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil)).With("service", "coach-service")
+	logger := logx.NewLogger("coach-service")
 	slog.SetDefault(logger)
 
 	port := os.Getenv("PORT")

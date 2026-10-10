@@ -1,6 +1,7 @@
 package proxy
 
 import (
+	"log/slog"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
@@ -10,15 +11,16 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 	"github.com/neverpaidhealth/backend/gateway/internal/config"
+	"github.com/neverpaidhealth/backend/pkg/httpx"
 	"github.com/neverpaidhealth/backend/pkg/jwtauth"
 )
 
-func NewRouter(cfg *config.Config, tokenService *jwtauth.TokenService) http.Handler {
+func NewRouter(cfg *config.Config, tokenService *jwtauth.TokenService, logger *slog.Logger) http.Handler {
 	r := chi.NewRouter()
 
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
-	r.Use(middleware.Logger)
+	r.Use(httpx.RequestLogger(logger))
 	r.Use(middleware.Recoverer)
 
 	r.Use(cors.Handler(cors.Options{
