@@ -10,7 +10,7 @@ type AuthFuncHandler func(w http.ResponseWriter, r *http.Request, userID uuid.UU
 
 func RequireAuth(fn AuthFuncHandler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		userID, ok := UserIDFromContext(r.Context())
+		userID, ok := UserIDFromRequest(r)
 		if !ok {
 			WriteProblem(w, http.StatusUnauthorized, "Unauthorized", "User context required", "ERR_UNAUTHORIZED")
 			return
