@@ -9,20 +9,27 @@ import (
 	"github.com/neverpaidhealth/backend/pkg/httpx"
 	"github.com/neverpaidhealth/backend/services/training/internal/application/command"
 	"github.com/neverpaidhealth/backend/services/training/internal/application/query"
+	"github.com/neverpaidhealth/backend/services/training/internal/domain/program"
 	"github.com/neverpaidhealth/backend/services/training/internal/domain/routine"
 	"github.com/neverpaidhealth/backend/services/training/internal/domain/workout"
 )
 
 type Handler struct {
-	startWorkoutCmd  *command.StartWorkoutHandler
-	addExerciseCmd   *command.AddExerciseHandler
-	logSetCmd        *command.LogSetHandler
-	updateSetCmd     *command.UpdateSetHandler
-	finishWorkoutCmd *command.FinishWorkoutHandler
-	createRoutineCmd *command.CreateRoutineHandler
-	deleteRoutineCmd *command.DeleteRoutineHandler
-	deleteWorkoutCmd *command.DeleteWorkoutHandler
-	queries          *query.TrainingQueriesHandler
+	startWorkoutCmd     *command.StartWorkoutHandler
+	addExerciseCmd      *command.AddExerciseHandler
+	logSetCmd           *command.LogSetHandler
+	updateSetCmd        *command.UpdateSetHandler
+	finishWorkoutCmd    *command.FinishWorkoutHandler
+	createRoutineCmd    *command.CreateRoutineHandler
+	deleteRoutineCmd    *command.DeleteRoutineHandler
+	deleteWorkoutCmd    *command.DeleteWorkoutHandler
+	createProgramCmd    *command.CreateProgramHandler
+	publishProgramCmd   *command.PublishProgramHandler
+	installProgramCmd   *command.InstallProgramHandler
+	setActiveProgramCmd *command.SetActiveProgramHandler
+	deleteProgramCmd    *command.DeleteProgramHandler
+	queries             *query.TrainingQueriesHandler
+	programQueries      *query.ProgramQueriesHandler
 }
 
 func NewHandler(
@@ -34,18 +41,30 @@ func NewHandler(
 	createRoutine *command.CreateRoutineHandler,
 	deleteRoutine *command.DeleteRoutineHandler,
 	deleteWorkout *command.DeleteWorkoutHandler,
+	createProgram *command.CreateProgramHandler,
+	publishProgram *command.PublishProgramHandler,
+	installProgram *command.InstallProgramHandler,
+	setActiveProgram *command.SetActiveProgramHandler,
+	deleteProgram *command.DeleteProgramHandler,
 	queries *query.TrainingQueriesHandler,
+	programQueries *query.ProgramQueriesHandler,
 ) *Handler {
 	return &Handler{
-		startWorkoutCmd:  startWorkout,
-		addExerciseCmd:   addExercise,
-		logSetCmd:        logSet,
-		updateSetCmd:     updateSet,
-		finishWorkoutCmd: finishWorkout,
-		createRoutineCmd: createRoutine,
-		deleteRoutineCmd: deleteRoutine,
-		deleteWorkoutCmd: deleteWorkout,
-		queries:          queries,
+		startWorkoutCmd:     startWorkout,
+		addExerciseCmd:      addExercise,
+		logSetCmd:           logSet,
+		updateSetCmd:        updateSet,
+		finishWorkoutCmd:    finishWorkout,
+		createRoutineCmd:    createRoutine,
+		deleteRoutineCmd:    deleteRoutine,
+		deleteWorkoutCmd:    deleteWorkout,
+		createProgramCmd:    createProgram,
+		publishProgramCmd:   publishProgram,
+		installProgramCmd:   installProgram,
+		setActiveProgramCmd: setActiveProgram,
+		deleteProgramCmd:    deleteProgram,
+		queries:             queries,
+		programQueries:      programQueries,
 	}
 }
 
@@ -53,6 +72,18 @@ func (h *Handler) Routes() http.Handler {
 	r := chi.NewRouter()
 
 	r.Use(httpx.ExtractUserHeaderMiddleware)
+
+	// Programs & Multi-Day Splits
+	r.Get("/programs", httpx.RequireAuth(h.handleListPrograms))
+	r.Post("/programs", httpx.RequireAuth(h.handleCreateProgram))
+	r.Get("/programs/user/active", httpx.RequireAuth(h.handleGetActiveProgram))
+	r.Post("/programs/user/active", httpx.RequireAuth(h.handleSetActiveProgram))
+	r.Get("/programs/user/installed", httpx.RequireAuth(h.handleListInstalledPrograms))
+	r.Get("/programs/{id}", httpx.RequireAuth(h.handleGetProgramByID))
+	r.Put("/programs/{id}", httpx.RequireAuth(h.handleUpdateProgram))
+	r.Delete("/programs/{id}", httpx.RequireAuth(h.handleDeleteProgram))
+	r.Post("/programs/{id}/publish", httpx.RequireAuth(h.handlePublishProgram))
+	r.Post("/programs/{id}/install", httpx.RequireAuth(h.handleInstallProgram))
 
 	// Routines
 	r.Get("/routines", httpx.RequireAuth(h.handleListRoutines))
@@ -74,6 +105,218 @@ func (h *Handler) Routes() http.Handler {
 
 	return r
 }
+
+// -------------------------------------------------------------
+// Program Handlers
+// -------------------------------------------------------------
+
+func (h *Handler) handleListPrograms(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
+	tab := httpx.QueryString(r, "tab", "library")
+	splitType := httpx.QueryString(r, "split_type", "")
+	search := httpx.QueryString(r, "search", "")
+	limit := httpx.QueryInt(r, "limit", 50)
+	offset := httpx.QueryInt(r, "offset", 0)
+
+	programs, err := h.programQueries.ListPrograms(r.Context(), tab, splitType, search, userID, limit, offset)
+	if err != nil {
+		httpx.WriteProblem(w, http.StatusInternalServerError, "Internal Server Error", err.Error(), "ERR_INTERNAL")
+		return
+	}
+
+	dtos := make([]any, 0, len(programs))
+	for _, p := range programs {
+		dtos = append(dtos, mapProgramDTO(p))
+	}
+	httpx.WriteJSON(w, http.StatusOK, dtos)
+}
+
+func (h *Handler) handleGetProgramByID(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
+	id, ok := httpx.PathUUID(w, r, "id")
+	if !ok {
+		return
+	}
+
+	p, err := h.programQueries.GetProgramByID(r.Context(), id)
+	if err != nil {
+		httpx.WriteProblem(w, http.StatusNotFound, "Not Found", "Program not found", "ERR_NOT_FOUND")
+		return
+	}
+
+	httpx.WriteJSON(w, http.StatusOK, mapProgramDTO(p))
+}
+
+func (h *Handler) handleCreateProgram(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
+	var in command.CreateProgramInput
+	if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
+		httpx.WriteProblem(w, http.StatusBadRequest, "Bad Request", "Invalid JSON body", "ERR_BAD_JSON")
+		return
+	}
+
+	in.UserID = userID
+	p, err := h.createProgramCmd.Handle(r.Context(), in)
+	if err != nil {
+		httpx.WriteProblem(w, http.StatusBadRequest, "Bad Request", err.Error(), "ERR_CREATE_PROGRAM")
+		return
+	}
+
+	httpx.WriteJSON(w, http.StatusCreated, mapProgramDTO(p))
+}
+
+func (h *Handler) handleUpdateProgram(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
+	id, ok := httpx.PathUUID(w, r, "id")
+	if !ok {
+		return
+	}
+
+	var in command.CreateProgramInput
+	if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
+		httpx.WriteProblem(w, http.StatusBadRequest, "Bad Request", "Invalid JSON body", "ERR_BAD_JSON")
+		return
+	}
+
+	in.ID = &id
+	in.UserID = userID
+	p, err := h.createProgramCmd.Handle(r.Context(), in)
+	if err != nil {
+		httpx.WriteProblem(w, http.StatusBadRequest, "Bad Request", err.Error(), "ERR_UPDATE_PROGRAM")
+		return
+	}
+
+	httpx.WriteJSON(w, http.StatusOK, mapProgramDTO(p))
+}
+
+func (h *Handler) handleDeleteProgram(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
+	id, ok := httpx.PathUUID(w, r, "id")
+	if !ok {
+		return
+	}
+
+	if err := h.deleteProgramCmd.Handle(r.Context(), userID, id); err != nil {
+		httpx.WriteProblem(w, http.StatusBadRequest, "Bad Request", err.Error(), "ERR_DELETE_PROGRAM")
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+type publishProgramReq struct {
+	IsPublic bool `json:"is_public"`
+}
+
+func (h *Handler) handlePublishProgram(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
+	id, ok := httpx.PathUUID(w, r, "id")
+	if !ok {
+		return
+	}
+
+	var req publishProgramReq
+	_ = json.NewDecoder(r.Body).Decode(&req)
+
+	if err := h.publishProgramCmd.Handle(r.Context(), userID, id, req.IsPublic); err != nil {
+		httpx.WriteProblem(w, http.StatusBadRequest, "Bad Request", err.Error(), "ERR_PUBLISH_PROGRAM")
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
+type installProgramReq struct {
+	SetActive bool `json:"set_active"`
+}
+
+func (h *Handler) handleInstallProgram(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
+	programID, ok := httpx.PathUUID(w, r, "id")
+	if !ok {
+		return
+	}
+
+	var req installProgramReq
+	_ = json.NewDecoder(r.Body).Decode(&req)
+
+	up, err := h.installProgramCmd.Handle(r.Context(), command.InstallProgramInput{
+		UserID:    userID,
+		ProgramID: programID,
+		SetActive: req.SetActive,
+	})
+	if err != nil {
+		httpx.WriteProblem(w, http.StatusBadRequest, "Bad Request", err.Error(), "ERR_INSTALL_PROGRAM")
+		return
+	}
+
+	httpx.WriteJSON(w, http.StatusCreated, mapUserProgramDTO(up))
+}
+
+func (h *Handler) handleGetActiveProgram(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
+	up, p, err := h.programQueries.GetActiveProgram(r.Context(), userID)
+	if err != nil {
+		httpx.WriteProblem(w, http.StatusInternalServerError, "Internal Server Error", err.Error(), "ERR_INTERNAL")
+		return
+	}
+	if up == nil {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+
+	res := map[string]any{
+		"user_program": mapUserProgramDTO(up),
+	}
+	if p != nil {
+		res["program"] = mapProgramDTO(p)
+	}
+
+	httpx.WriteJSON(w, http.StatusOK, res)
+}
+
+type setActiveProgramReq struct {
+	UserProgramID string `json:"user_program_id"`
+}
+
+func (h *Handler) handleSetActiveProgram(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
+	var req setActiveProgramReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		httpx.WriteProblem(w, http.StatusBadRequest, "Bad Request", "Invalid JSON body", "ERR_BAD_JSON")
+		return
+	}
+
+	upID, err := uuid.Parse(req.UserProgramID)
+	if err != nil {
+		httpx.WriteProblem(w, http.StatusBadRequest, "Bad Request", "Invalid User Program ID", "ERR_INVALID_UUID")
+		return
+	}
+
+	if err := h.setActiveProgramCmd.Handle(r.Context(), userID, upID); err != nil {
+		httpx.WriteProblem(w, http.StatusBadRequest, "Bad Request", err.Error(), "ERR_SET_ACTIVE_PROGRAM")
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
+func (h *Handler) handleListInstalledPrograms(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
+	ups, err := h.programQueries.ListInstalledPrograms(r.Context(), userID)
+	if err != nil {
+		httpx.WriteProblem(w, http.StatusInternalServerError, "Internal Server Error", err.Error(), "ERR_INTERNAL")
+		return
+	}
+
+	dtos := make([]any, 0, len(ups))
+	for _, up := range ups {
+		p, _ := h.programQueries.GetProgramByID(r.Context(), up.ProgramID())
+		item := map[string]any{
+			"user_program": mapUserProgramDTO(up),
+		}
+		if p != nil {
+			item["program"] = mapProgramDTO(p)
+		}
+		dtos = append(dtos, item)
+	}
+
+	httpx.WriteJSON(w, http.StatusOK, dtos)
+}
+
+// -------------------------------------------------------------
+// Workout & Routine Handlers
+// -------------------------------------------------------------
 
 type startWorkoutReq struct {
 	RoutineID *string `json:"routine_id,omitempty"`
@@ -367,6 +610,58 @@ func (h *Handler) handleCancelWorkout(w http.ResponseWriter, r *http.Request, us
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func mapProgramDTO(p *program.Program) map[string]any {
+	var daysList []any
+	for _, d := range p.Days() {
+		var exList []any
+		for _, ex := range d.Exercises() {
+			exList = append(exList, map[string]any{
+				"exercise_id":     ex.ExerciseID().String(),
+				"exercise_name":   ex.ExerciseName(),
+				"order_index":     ex.OrderIndex(),
+				"target_sets":     ex.TargetSets(),
+				"target_reps_min": ex.TargetRepsMin(),
+				"target_reps_max": ex.TargetRepsMax(),
+			})
+		}
+		daysList = append(daysList, map[string]any{
+			"day_number": d.DayNumber(),
+			"name":       d.Name(),
+			"notes":      d.Notes(),
+			"exercises":  exList,
+		})
+	}
+
+	return map[string]any{
+		"id":             p.ID().String(),
+		"user_id":        p.UserID().String(),
+		"name":           p.Name(),
+		"description":    p.Description(),
+		"split_type":     string(p.SplitType()),
+		"days_per_week":  p.DaysPerWeek(),
+		"level":          string(p.Level()),
+		"is_public":      p.IsPublic(),
+		"author_name":    p.AuthorName(),
+		"likes_count":    p.LikesCount(),
+		"installs_count": p.InstallsCount(),
+		"days":           daysList,
+		"created_at":     p.CreatedAt().Format("2006-01-02T15:04:05Z07:00"),
+		"updated_at":     p.UpdatedAt().Format("2006-01-02T15:04:05Z07:00"),
+	}
+}
+
+func mapUserProgramDTO(up *program.UserProgram) map[string]any {
+	return map[string]any{
+		"id":                up.ID().String(),
+		"user_id":           up.UserID().String(),
+		"program_id":        up.ProgramID().String(),
+		"custom_name":       up.CustomName(),
+		"is_active":         up.IsActive(),
+		"current_day_index": up.CurrentDayIndex(),
+		"installed_at":      up.InstalledAt().Format("2006-01-02T15:04:05Z07:00"),
+	}
 }
 
 func mapWorkoutDTO(w *workout.Workout) map[string]any {

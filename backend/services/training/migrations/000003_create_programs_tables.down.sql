@@ -1,0 +1,2 @@
+DROP TABLE IF EXISTS user_programs;
+DROP TABLE IF EXISTS programs;

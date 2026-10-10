@@ -6,6 +6,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/neverpaidhealth/backend/pkg/outbox"
+	"github.com/neverpaidhealth/backend/services/training/internal/domain/program"
 	"github.com/neverpaidhealth/backend/services/training/internal/domain/routine"
 	"github.com/neverpaidhealth/backend/services/training/internal/domain/workout"
 )
@@ -32,6 +33,24 @@ type RoutineRepo interface {
 	GetByID(ctx context.Context, id uuid.UUID) (*routine.Routine, error)
 	ListByUserID(ctx context.Context, userID uuid.UUID) ([]*routine.Routine, error)
 	Save(ctx context.Context, r *routine.Routine) error
+	Delete(ctx context.Context, id uuid.UUID) error
+}
+
+type ProgramRepo interface {
+	GetByID(ctx context.Context, id uuid.UUID) (*program.Program, error)
+	ListLibrary(ctx context.Context, splitType string, search string) ([]*program.Program, error)
+	ListCommunity(ctx context.Context, splitType string, search string, limit int, offset int) ([]*program.Program, error)
+	ListByUserID(ctx context.Context, userID uuid.UUID) ([]*program.Program, error)
+	Save(ctx context.Context, p *program.Program) error
+	Delete(ctx context.Context, id uuid.UUID) error
+}
+
+type UserProgramRepo interface {
+	GetByID(ctx context.Context, id uuid.UUID) (*program.UserProgram, error)
+	GetActive(ctx context.Context, userID uuid.UUID) (*program.UserProgram, error)
+	ListByUserID(ctx context.Context, userID uuid.UUID) ([]*program.UserProgram, error)
+	Save(ctx context.Context, up *program.UserProgram) error
+	SetActive(ctx context.Context, userID uuid.UUID, userProgramID uuid.UUID) error
 	Delete(ctx context.Context, id uuid.UUID) error
 }
 

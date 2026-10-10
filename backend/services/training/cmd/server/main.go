@@ -100,6 +100,9 @@ func main() {
 	}
 
 	repo := postgres.NewTrainingRepository(pool)
+	progRepo := postgres.NewProgramRepository(pool)
+	userProgRepo := postgres.NewUserProgramRepository(pool)
+
 	wRepo := workoutAdapter{repo: repo}
 	rRepo := routineAdapter{repo: repo}
 	oRepo := outboxAdapter{repo: repo, natsClient: natsClient}
@@ -114,9 +117,33 @@ func main() {
 	createRotCmd := command.NewCreateRoutineHandler(rRepo, clock)
 	deleteRotCmd := command.NewDeleteRoutineHandler(rRepo)
 	deleteWorkoutCmd := command.NewDeleteWorkoutHandler(wRepo)
-	queries := query.NewTrainingQueriesHandler(wRepo, rRepo)
 
-	handler := transport.NewHandler(startWorkoutCmd, addExCmd, logSetCmd, updateSetCmd, finishCmd, createRotCmd, deleteRotCmd, deleteWorkoutCmd, queries)
+	createProgCmd := command.NewCreateProgramHandler(progRepo, clock)
+	publishProgCmd := command.NewPublishProgramHandler(progRepo, clock)
+	installProgCmd := command.NewInstallProgramHandler(progRepo, userProgRepo, clock)
+	setActiveProgCmd := command.NewSetActiveProgramHandler(userProgRepo)
+	deleteProgCmd := command.NewDeleteProgramHandler(progRepo)
+
+	queries := query.NewTrainingQueriesHandler(wRepo, rRepo)
+	progQueries := query.NewProgramQueriesHandler(progRepo, userProgRepo)
+
+	handler := transport.NewHandler(
+		startWorkoutCmd,
+		addExCmd,
+		logSetCmd,
+		updateSetCmd,
+		finishCmd,
+		createRotCmd,
+		deleteRotCmd,
+		deleteWorkoutCmd,
+		createProgCmd,
+		publishProgCmd,
+		installProgCmd,
+		setActiveProgCmd,
+		deleteProgCmd,
+		queries,
+		progQueries,
+	)
 
 	srv := &http.Server{
 		Addr:         ":" + port,

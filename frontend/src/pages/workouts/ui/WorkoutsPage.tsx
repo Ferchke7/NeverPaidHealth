@@ -13,19 +13,29 @@ import {
   ArrowUp,
   ArrowDown,
   ArrowUpDown,
+  Calendar,
+  Sparkles,
+  ChevronRight,
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../../shared/api/client.ts';
 import { Button } from '../../../shared/ui/button.tsx';
-import { Card } from '../../../shared/ui/card.tsx';
+import { Card, Badge } from '../../../shared/ui/card.tsx';
 import { Input } from '../../../shared/ui/input.tsx';
 import { useActiveWorkoutStore } from '../../../entities/workout/model/activeWorkoutStore.ts';
 import { ActiveExercise, ActiveSet } from '../../../entities/workout/model/types.ts';
 import { generateUUID } from '../../../shared/lib/uuid.ts';
 import { RoutineEditorModal } from '../../../features/routine-builder/ui/RoutineEditorModal.tsx';
 import { RoutineDetailModal } from '../../../features/routine-preview/ui/RoutineDetailModal.tsx';
+import { ProgramDetailModal } from '../../../features/program-preview/ui/ProgramDetailModal.tsx';
 import { ExerciseThumbnail } from '../../../entities/exercise/ui/ExerciseThumbnail.tsx';
 import { useTranslation } from '../../../shared/lib/i18n/i18n.ts';
+import {
+  Program,
+  ProgramDay,
+  ActiveProgramResponse,
+  InstalledProgramItem,
+} from '../../../entities/program/model/types.ts';
 
 interface RoutineExercise {
   exercise_id: string;
@@ -56,6 +66,9 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = ({ onNavigateToPrograms
   const [isCreateRoutineOpen, setIsCreateRoutineOpen] = useState(false);
   const [editingRoutine, setEditingRoutine] = useState<Routine | null>(null);
   const [selectedRoutinePreview, setSelectedRoutinePreview] = useState<Routine | null>(null);
+  const [selectedProgramPreview, setSelectedProgramPreview] = useState<Program | null>(null);
+  const [selectedProgramDayIndex, setSelectedProgramDayIndex] = useState(0);
+
   const [customRoutineOrder, setCustomRoutineOrder] = useState<string[]>(() => {
     try {
       const stored = localStorage.getItem('np_my_routines_custom_order');
@@ -70,10 +83,36 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = ({ onNavigateToPrograms
   const activeWorkout = useActiveWorkoutStore((s) => s.workout);
   const openSheet = useActiveWorkoutStore((s) => s.openSheet);
 
+  // Fetch Active Program
+  const { data: activeProgramData } = useQuery<ActiveProgramResponse>({
+    queryKey: ['programs', 'active'],
+    queryFn: () => apiClient<ActiveProgramResponse>('/programs/user/active'),
+  });
+
+  // Fetch Installed Programs
+  const { data: installedPrograms = [] } = useQuery<InstalledProgramItem[]>({
+    queryKey: ['programs', 'installed'],
+    queryFn: () => apiClient<InstalledProgramItem[]>('/programs/user/installed'),
+  });
+
   // Fetch routines (both user + library templates)
-  const { data: routines = [], isLoading } = useQuery<Routine[]>({
+  const { data: routines = [], isLoading: isRoutinesLoading } = useQuery<Routine[]>({
     queryKey: ['routines'],
     queryFn: () => apiClient<Routine[]>('/routines'),
+  });
+
+  // Set Active Program Mutation
+  const setActiveProgramMutation = useMutation({
+    mutationFn: async (userProgramId: string) => {
+      return apiClient('/programs/user/active', {
+        method: 'POST',
+        body: JSON.stringify({ user_program_id: userProgramId }),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['programs', 'active'] });
+      queryClient.invalidateQueries({ queryKey: ['programs', 'installed'] });
+    },
   });
 
   // Delete routine mutation
@@ -93,7 +132,7 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = ({ onNavigateToPrograms
       return apiClient('/routines', {
         method: 'POST',
         body: JSON.stringify({
-          name: `${routine.name} (Copy)`,
+          name: `${routine.name} ${t('routines.copySuffix')}`,
           notes: routine.notes,
           exercises: routine.exercises.map((e, idx) => ({
             exercise_id: e.exercise_id,
@@ -148,7 +187,10 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = ({ onNavigateToPrograms
       );
       if (hasCompletedSets) {
         const confirmed = window.confirm(
-          `You have an active workout in progress ("${activeWorkout.name}"). Discard it and start "${routine.name}"?`
+          t('workouts.discardActiveConfirm', {
+            name: activeWorkout.name,
+            routine: routine.name,
+          })
         );
         if (!confirmed) {
           openSheet();
@@ -201,6 +243,60 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = ({ onNavigateToPrograms
     }
   };
 
+  const handleStartProgramDay = async (program: Program, day: ProgramDay) => {
+    if (activeWorkout) {
+      const hasCompletedSets = activeWorkout.exercises.some((e) =>
+        e.sets.some((s) => s.completed)
+      );
+      if (hasCompletedSets) {
+        const confirmed = window.confirm(
+          t('workouts.discardActiveConfirm', {
+            name: activeWorkout.name,
+            routine: `${program.name} - ${day.name}`,
+          })
+        );
+        if (!confirmed) {
+          openSheet();
+          return;
+        }
+      }
+    }
+
+    const initialExercises: ActiveExercise[] = (day.exercises || []).map((ex, idx) => ({
+      exerciseId: ex.exercise_id || `ex-${idx}-${generateUUID()}`,
+      exerciseName: ex.exercise_name || `Exercise ${idx + 1}`,
+      measurementType: 'weight_reps',
+      sets: Array.from({ length: Math.max(1, ex.target_sets || 3) }, (_, i) => ({
+        id: generateUUID(),
+        setNumber: i + 1,
+        setType: 'normal',
+        weightKg: 0,
+        reps: ex.target_reps_min || 10,
+        completed: false,
+      })),
+    }));
+
+    const tempId = generateUUID();
+    const workoutTitle = `${program.name} - ${day.name}`;
+    startWorkout(tempId, workoutTitle, undefined, initialExercises);
+    openSheet();
+
+    try {
+      const res = await apiClient<{ id: string; name: string }>('/workouts', {
+        method: 'POST',
+        body: JSON.stringify({ name: workoutTitle }),
+      });
+      if (res && res.id && res.id !== tempId) {
+        const current = useActiveWorkoutStore.getState().workout;
+        if (current && current.id === tempId) {
+          useActiveWorkoutStore.setState({ workout: { ...current, id: res.id } });
+        }
+      }
+    } catch (err) {
+      console.warn('Backend start day workout sync:', err);
+    }
+  };
+
   // Filter user's personal routines
   const userRoutines = useMemo(() => {
     const isSystem = (r: Routine) =>
@@ -226,6 +322,10 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = ({ onNavigateToPrograms
       );
     });
   }, [userRoutines, searchQuery]);
+
+  const activeProgram = activeProgramData?.program;
+  const activeProgramDays = activeProgram?.days || [];
+  const currentProgramDay = activeProgramDays[selectedProgramDayIndex] || activeProgramDays[0];
 
   return (
     <div className="space-y-6">
@@ -269,8 +369,176 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = ({ onNavigateToPrograms
         </div>
       </div>
 
-      {/* Routines Section Header & Controls */}
-      <div className="space-y-3">
+      {/* Active Program / Multi-Day Split Hero Section */}
+      {activeProgram ? (
+        <Card className="p-4 sm:p-5 bg-gradient-to-br from-dark-800 via-dark-850 to-dark-900 border border-brand-500/30 shadow-xl relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-48 h-48 bg-brand-500/5 rounded-full blur-3xl pointer-events-none" />
+
+          <div className="space-y-4 relative z-10">
+            {/* Split Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-dark-750 pb-3">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-brand-500/20 text-brand-400 border border-brand-500/30 flex items-center gap-1">
+                    <Sparkles className="w-3 h-3" />
+                    {t('programs.activeSplit')}
+                  </span>
+                  <Badge variant="neutral" size="sm">
+                    {activeProgram.days_per_week || activeProgramDays.length} {t('programs.daysCount')}
+                  </Badge>
+                </div>
+                <h2 className="text-base sm:text-lg font-black text-white flex items-center gap-2">
+                  <span>{activeProgram.name}</span>
+                </h2>
+                {activeProgram.description && (
+                  <p className="text-xs text-zinc-400 line-clamp-1 italic">
+                    "{activeProgram.description}"
+                  </p>
+                )}
+              </div>
+
+              {/* Program Switcher & Full View Actions */}
+              <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
+                {installedPrograms.length > 1 && (
+                  <div className="flex items-center gap-1">
+                    <select
+                      value={activeProgramData?.user_program?.id || ''}
+                      onChange={(e) => setActiveProgramMutation.mutate(e.target.value)}
+                      className="bg-dark-900 border border-dark-700 text-xs text-zinc-300 rounded-xl px-2.5 py-1.5 focus:outline-none focus:border-brand-500 font-medium"
+                      title={t('programs.switchProgram')}
+                    >
+                      {installedPrograms.map((item) => (
+                        <option key={item.user_program.id} value={item.user_program.id}>
+                          {item.program?.name || item.user_program.custom_name || 'Program'}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                <button
+                  onClick={() => setSelectedProgramPreview(activeProgram)}
+                  className="text-xs font-semibold px-3 py-1.5 rounded-xl bg-dark-900 hover:bg-dark-750 text-zinc-300 border border-dark-700 transition-all flex items-center gap-1.5"
+                >
+                  <BookOpen className="w-3.5 h-3.5 text-brand-400" />
+                  <span>{t('programs.viewSplit')}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Split Days Carousel / Selector */}
+            <div className="space-y-2.5">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
+                  <Calendar className="w-3.5 h-3.5 text-brand-400" />
+                  <span>{t('programs.trainingSchedule')}</span>
+                </span>
+                <span className="text-xs text-zinc-500 font-mono">
+                  {t('programs.dayShort')} {selectedProgramDayIndex + 1} / {activeProgramDays.length}
+                </span>
+              </div>
+
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+                {activeProgramDays.map((day, idx) => {
+                  const isSelected = idx === selectedProgramDayIndex;
+                  return (
+                    <button
+                      key={idx}
+                      onClick={() => setSelectedProgramDayIndex(idx)}
+                      className={`text-xs px-3 py-2 rounded-xl font-medium transition-all whitespace-nowrap flex items-center gap-2 ${
+                        isSelected
+                          ? 'bg-brand-500/20 text-brand-400 border border-brand-500/50 font-bold shadow-md'
+                          : 'bg-dark-900 text-zinc-400 hover:text-zinc-200 hover:bg-dark-800 border border-dark-750'
+                      }`}
+                    >
+                      <span className="font-mono text-brand-400">#{idx + 1}</span>
+                      <span className="truncate max-w-[120px]">{day.name}</span>
+                      <span className="text-[10px] text-zinc-500 font-mono">
+                        ({day.exercises?.length || 0})
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Selected Day Quick Card */}
+            {currentProgramDay && (
+              <div className="bg-dark-900/90 border border-dark-750 p-3.5 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="space-y-2 flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-mono font-bold text-brand-400 bg-brand-500/10 px-2 py-0.5 rounded-lg border border-brand-500/20">
+                      {t('programs.dayShort')} {selectedProgramDayIndex + 1}
+                    </span>
+                    <h3 className="text-sm font-bold text-white truncate">
+                      {currentProgramDay.name}
+                    </h3>
+                  </div>
+
+                  {/* Exercise tags preview */}
+                  <div className="flex flex-wrap gap-1.5">
+                    {currentProgramDay.exercises?.slice(0, 4).map((ex, i) => (
+                      <span
+                        key={i}
+                        className="text-[10px] bg-dark-800 border border-dark-700 text-zinc-300 px-2 py-0.5 rounded-lg flex items-center gap-1 font-mono"
+                      >
+                        <span className="text-brand-400 font-bold">{ex.target_sets || 3}×</span>
+                        <span className="font-sans truncate max-w-[110px]">{ex.exercise_name}</span>
+                      </span>
+                    ))}
+                    {(currentProgramDay.exercises?.length || 0) > 4 && (
+                      <span className="text-[10px] bg-dark-800 border border-dark-700 text-zinc-500 px-2 py-0.5 rounded-lg font-mono">
+                        +{(currentProgramDay.exercises?.length || 0) - 4} {t('programs.more')}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <Button
+                  variant="primary"
+                  size="sm"
+                  className="font-bold text-xs flex items-center justify-center gap-1.5 px-4 shadow-lg shadow-brand-500/20 shrink-0 self-start sm:self-auto"
+                  onClick={() => handleStartProgramDay(activeProgram, currentProgramDay)}
+                >
+                  <Play className="w-3.5 h-3.5 fill-current" />
+                  <span>
+                    {t('programs.startDayWorkout', {
+                      day: currentProgramDay.name || `${t('programs.dayShort')} ${selectedProgramDayIndex + 1}`,
+                    })}
+                  </span>
+                </Button>
+              </div>
+            )}
+          </div>
+        </Card>
+      ) : onNavigateToPrograms ? (
+        <Card
+          onClick={onNavigateToPrograms}
+          className="p-4 bg-dark-800/80 border border-dashed border-dark-700 hover:border-brand-500/40 transition-all cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-3 group"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-brand-500/10 text-brand-400 border border-brand-500/20 flex items-center justify-center shrink-0">
+              <Calendar className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-white group-hover:text-brand-400 transition-colors">
+                {t('programs.chooseSplitTitle')}
+              </h3>
+              <p className="text-xs text-zinc-400 mt-0.5">
+                {t('programs.chooseSplitDesc')}
+              </p>
+            </div>
+          </div>
+
+          <Button variant="outline" size="sm" className="text-xs self-start sm:self-auto pointer-events-none">
+            <span>{t('programs.browseSplits')}</span>
+            <ChevronRight className="w-3.5 h-3.5 ml-1 text-brand-400" />
+          </Button>
+        </Card>
+      ) : null}
+
+      {/* Standalone Routines Section Header & Controls */}
+      <div className="space-y-3 pt-2">
         <div className="flex items-center justify-between border-b border-dark-800 pb-2.5">
           <div className="flex items-center gap-2">
             <Layers className="w-4 h-4 text-brand-400" />
@@ -310,7 +578,7 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = ({ onNavigateToPrograms
       </div>
 
       {/* Routines Grid */}
-      {isLoading ? (
+      {isRoutinesLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {[1, 2, 3, 4].map((i) => (
             <div
@@ -320,8 +588,8 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = ({ onNavigateToPrograms
           ))}
         </div>
       ) : filteredRoutines.length === 0 ? (
-        <div className="text-center py-16 border border-dashed border-dark-800 rounded-2xl p-6 bg-dark-900/40">
-          <FolderPlus className="w-12 h-12 text-zinc-600 mx-auto mb-3" />
+        <div className="text-center py-12 border border-dashed border-dark-800 rounded-2xl p-6 bg-dark-900/40">
+          <FolderPlus className="w-10 h-10 text-zinc-600 mx-auto mb-2.5" />
           <h3 className="text-sm font-bold text-zinc-300">
             {userRoutines.length === 0 ? t('workouts.noRoutines') : t('common.search')}
           </h3>
@@ -340,7 +608,7 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = ({ onNavigateToPrograms
                 className="text-xs"
               >
                 <BookOpen className="w-3.5 h-3.5 mr-1 text-brand-400" />
-                {t('workouts.exploreLibrary')}
+                <span>{t('workouts.exploreLibrary')}</span>
               </Button>
             )}
             <Button
@@ -353,7 +621,7 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = ({ onNavigateToPrograms
               className="text-xs"
             >
               <Plus className="w-3.5 h-3.5 mr-1" />
-              {t('workouts.createFirstRoutine')}
+              <span>{t('workouts.createFirstRoutine')}</span>
             </Button>
           </div>
         </div>
@@ -386,7 +654,7 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = ({ onNavigateToPrograms
                       <div className="flex items-center gap-2 text-[11px] text-zinc-400 mt-1">
                         <span className="flex items-center gap-1">
                           <Layers className="w-3.5 h-3.5 text-zinc-500" />
-                          {routine.exercises?.length || 0} exercises
+                          {routine.exercises?.length || 0} {t('programs.exercises')}
                         </span>
                         <span>•</span>
                         <span className="flex items-center gap-1">
@@ -405,7 +673,7 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = ({ onNavigateToPrograms
                           }}
                           disabled={orderIndex <= 0}
                           className="p-1.5 text-zinc-400 hover:text-brand-400 disabled:opacity-20 disabled:hover:text-zinc-400 transition-colors rounded hover:bg-dark-700"
-                          title="Move Routine Up"
+                          title={t('routines.moveUp')}
                         >
                           <ArrowUp className="w-3.5 h-3.5" />
                         </button>
@@ -416,7 +684,7 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = ({ onNavigateToPrograms
                           }}
                           disabled={orderIndex === -1 || orderIndex >= totalUserRoutines - 1}
                           className="p-1.5 text-zinc-400 hover:text-brand-400 disabled:opacity-20 disabled:hover:text-zinc-400 transition-colors rounded hover:bg-dark-700"
-                          title="Move Routine Down"
+                          title={t('routines.moveDown')}
                         >
                           <ArrowDown className="w-3.5 h-3.5" />
                         </button>
@@ -428,7 +696,7 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = ({ onNavigateToPrograms
                           setIsCreateRoutineOpen(true);
                         }}
                         className="text-zinc-500 hover:text-brand-400 p-1.5 rounded-lg hover:bg-dark-700 transition-colors"
-                        title="Edit Routine"
+                        title={t('common.edit')}
                       >
                         <Edit3 className="w-3.5 h-3.5" />
                       </button>
@@ -436,7 +704,7 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = ({ onNavigateToPrograms
                       <button
                         onClick={() => deleteRoutineMutation.mutate(routine.id)}
                         className="text-zinc-500 hover:text-red-400 p-1.5 rounded-lg hover:bg-dark-700 transition-colors"
-                        title="Delete Routine"
+                        title={t('common.delete')}
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -494,17 +762,17 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = ({ onNavigateToPrograms
                         setIsCreateRoutineOpen(true);
                       }}
                       className="text-xs font-semibold px-2.5 py-1.5 rounded-xl bg-brand-500/10 hover:bg-brand-500/20 text-brand-400 border border-brand-500/25 transition-all flex items-center gap-1.5 shadow-sm"
-                      title="Edit routine"
+                      title={t('common.edit')}
                     >
                       <Edit3 className="w-3.5 h-3.5 text-brand-400" />
-                      <span>Edit</span>
+                      <span>{t('common.edit')}</span>
                     </button>
 
                     <button
                       onClick={() => cloneRoutineMutation.mutate(routine)}
                       disabled={cloneRoutineMutation.isPending}
                       className="text-xs text-zinc-400 hover:text-white p-1.5 rounded-lg hover:bg-dark-700 transition-colors"
-                      title="Clone as duplicate copy"
+                      title={t('routines.copyToMy')}
                     >
                       <Copy className="w-3.5 h-3.5 text-zinc-500" />
                     </button>
@@ -517,7 +785,7 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = ({ onNavigateToPrograms
                     onClick={() => handleStartRoutine(routine)}
                   >
                     <Play className="w-3.5 h-3.5 fill-current" />
-                    <span>Start</span>
+                    <span>{t('workouts.start')}</span>
                   </Button>
                 </div>
               </Card>
@@ -554,6 +822,14 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = ({ onNavigateToPrograms
           setIsCreateRoutineOpen(false);
           setEditingRoutine(null);
         }}
+      />
+
+      {/* Program Detail Modal */}
+      <ProgramDetailModal
+        isOpen={Boolean(selectedProgramPreview)}
+        program={selectedProgramPreview}
+        isActiveProgram={activeProgramData?.program?.id === selectedProgramPreview?.id}
+        onClose={() => setSelectedProgramPreview(null)}
       />
     </div>
   );
