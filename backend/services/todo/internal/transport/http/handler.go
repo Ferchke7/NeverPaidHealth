@@ -1,9 +1,7 @@
 package http
 
 import (
-	"encoding/json"
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -63,11 +61,7 @@ func (h *Handler) Routes() http.Handler {
 }
 
 func (h *Handler) handleGetDailySchedule(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
-
-	dateStr := r.URL.Query().Get("date")
-	if dateStr == "" {
-		dateStr = time.Now().Format("2006-01-02")
-	}
+	dateStr := httpx.QueryString(r, "date", time.Now().Format("2006-01-02"))
 
 	res, err := h.todoService.GetDailySchedule(r.Context(), userID, dateStr)
 	if err != nil {
@@ -79,10 +73,8 @@ func (h *Handler) handleGetDailySchedule(w http.ResponseWriter, r *http.Request,
 }
 
 func (h *Handler) handleCreateTodo(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
-
-	var in application.CreateTodoInput
-	if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
-		httpx.WriteProblem(w, http.StatusBadRequest, "Bad Request", "Invalid JSON body", "ERR_INVALID_BODY")
+	in, ok := httpx.DecodeJSON[application.CreateTodoInput](w, r)
+	if !ok {
 		return
 	}
 
@@ -96,17 +88,13 @@ func (h *Handler) handleCreateTodo(w http.ResponseWriter, r *http.Request, userI
 }
 
 func (h *Handler) handleUpdateTodo(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
-
-	todoIDStr := chi.URLParam(r, "id")
-	todoID, err := uuid.Parse(todoIDStr)
-	if err != nil {
-		httpx.WriteProblem(w, http.StatusBadRequest, "Bad Request", "Invalid todo ID", "ERR_INVALID_ID")
+	todoID, ok := httpx.PathUUID(w, r, "id")
+	if !ok {
 		return
 	}
 
-	var in application.UpdateTodoInput
-	if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
-		httpx.WriteProblem(w, http.StatusBadRequest, "Bad Request", "Invalid JSON body", "ERR_INVALID_BODY")
+	in, ok := httpx.DecodeJSON[application.UpdateTodoInput](w, r)
+	if !ok {
 		return
 	}
 
@@ -120,11 +108,8 @@ func (h *Handler) handleUpdateTodo(w http.ResponseWriter, r *http.Request, userI
 }
 
 func (h *Handler) handleDeleteTodo(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
-
-	todoIDStr := chi.URLParam(r, "id")
-	todoID, err := uuid.Parse(todoIDStr)
-	if err != nil {
-		httpx.WriteProblem(w, http.StatusBadRequest, "Bad Request", "Invalid todo ID", "ERR_INVALID_ID")
+	todoID, ok := httpx.PathUUID(w, r, "id")
+	if !ok {
 		return
 	}
 
@@ -137,11 +122,8 @@ func (h *Handler) handleDeleteTodo(w http.ResponseWriter, r *http.Request, userI
 }
 
 func (h *Handler) handleToggleTodo(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
-
-	todoIDStr := chi.URLParam(r, "id")
-	todoID, err := uuid.Parse(todoIDStr)
-	if err != nil {
-		httpx.WriteProblem(w, http.StatusBadRequest, "Bad Request", "Invalid todo ID", "ERR_INVALID_ID")
+	todoID, ok := httpx.PathUUID(w, r, "id")
+	if !ok {
 		return
 	}
 
@@ -155,10 +137,8 @@ func (h *Handler) handleToggleTodo(w http.ResponseWriter, r *http.Request, userI
 }
 
 func (h *Handler) handleLogFocusSession(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
-
-	var in application.LogFocusSessionInput
-	if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
-		httpx.WriteProblem(w, http.StatusBadRequest, "Bad Request", "Invalid JSON body", "ERR_INVALID_BODY")
+	in, ok := httpx.DecodeJSON[application.LogFocusSessionInput](w, r)
+	if !ok {
 		return
 	}
 
@@ -179,8 +159,7 @@ func (h *Handler) handleLogFocusSession(w http.ResponseWriter, r *http.Request, 
 }
 
 func (h *Handler) handleGetActivityLogs(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
-
-	dateStr := r.URL.Query().Get("date")
+	dateStr := httpx.QueryString(r, "date", "")
 	res, err := h.todoService.GetActivityLogs(r.Context(), userID, dateStr)
 	if err != nil {
 		httpx.WriteProblem(w, http.StatusInternalServerError, "Internal Error", err.Error(), "ERR_ACTIVITY_LOGS")
@@ -191,12 +170,9 @@ func (h *Handler) handleGetActivityLogs(w http.ResponseWriter, r *http.Request, 
 }
 
 func (h *Handler) handleGetStats(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
-
-	days := 7
-	if dStr := r.URL.Query().Get("days"); dStr != "" {
-		if d, err := strconv.Atoi(dStr); err == nil && d > 0 {
-			days = d
-		}
+	days := httpx.QueryInt(r, "days", 7)
+	if days <= 0 {
+		days = 7
 	}
 
 	res, err := h.todoService.GetStats(r.Context(), userID, days)

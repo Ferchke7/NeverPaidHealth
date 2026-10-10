@@ -10,6 +10,8 @@ import {
   Utensils,
   Target,
   AlertTriangle,
+  FileText,
+  RefreshCw,
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../../shared/api/client.ts';
@@ -71,11 +73,16 @@ interface DailyNutritionSummary {
 }
 
 export const NutritionPage: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const queryClient = useQueryClient();
 
   const [isScanModalOpen, setIsScanModalOpen] = useState(false);
+  const [isTextModalOpen, setIsTextModalOpen] = useState(false);
   const [isManualModalOpen, setIsManualModalOpen] = useState(false);
+
+  // Text estimation state
+  const [textDescription, setTextDescription] = useState('');
+  const [textResult, setTextResult] = useState<MealAnalysisResult | null>(null);
 
   // Scan state
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -83,7 +90,7 @@ export const NutritionPage: React.FC = () => {
   const [scanResult, setScanResult] = useState<MealAnalysisResult | null>(null);
   const [selectedMealType, setSelectedMealType] = useState<string>('lunch');
 
-  // Editable scan result fields
+  // Editable scan / text result fields
   const [editMealName, setEditMealName] = useState('');
   const [editCalories, setEditCalories] = useState('');
   const [editProtein, setEditProtein] = useState('');
@@ -107,10 +114,30 @@ export const NutritionPage: React.FC = () => {
 
   // Analyze Photo Mutation
   const analyzeMutation = useMutation({
-    mutationFn: (data: { image_base64: string; notes?: string }) =>
-      apiClient.post<MealAnalysisResult>('/nutrition/analyze-photo', data),
+    mutationFn: (data: { image_base64: string; notes?: string; language?: string }) =>
+      apiClient.post<MealAnalysisResult>('/nutrition/analyze-photo', {
+        ...data,
+        language,
+      }),
     onSuccess: (data) => {
       setScanResult(data);
+      setEditMealName(data.meal_name || '');
+      setEditCalories(String(data.total_calories || 0));
+      setEditProtein(String(data.total_protein_g || 0));
+      setEditCarbs(String(data.total_carbs_g || 0));
+      setEditFat(String(data.total_fat_g || 0));
+    },
+  });
+
+  // Analyze Text Mutation
+  const analyzeTextMutation = useMutation({
+    mutationFn: (data: { description: string; language?: string }) =>
+      apiClient.post<MealAnalysisResult>('/nutrition/estimate-text', {
+        ...data,
+        language,
+      }),
+    onSuccess: (data) => {
+      setTextResult(data);
       setEditMealName(data.meal_name || '');
       setEditCalories(String(data.total_calories || 0));
       setEditProtein(String(data.total_protein_g || 0));
@@ -127,10 +154,13 @@ export const NutritionPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['nutrition', 'today'] });
       queryClient.invalidateQueries({ queryKey: ['coach', 'insights'] });
       setIsScanModalOpen(false);
+      setIsTextModalOpen(false);
       setIsManualModalOpen(false);
       setSelectedImage(null);
       setScanResult(null);
+      setTextResult(null);
       setScanNotes('');
+      setTextDescription('');
       setManualName('');
     },
   });
@@ -144,16 +174,16 @@ export const NutritionPage: React.FC = () => {
     },
   });
 
-  // Photo captured callback from low-memory safe SmartPhotoPickerModal
+  // Photo captured callback from SmartPhotoPickerModal
   const handlePhotoCaptured = (photo: CompressedPhoto) => {
     setSelectedImage(photo.dataUrl);
     setScanResult(null);
     setIsScanModalOpen(true);
 
-    // Auto trigger AI analysis
     analyzeMutation.mutate({
       image_base64: photo.dataUrl,
       notes: scanNotes,
+      language,
     });
   };
 
@@ -168,6 +198,19 @@ export const NutritionPage: React.FC = () => {
       fat_g: parseFloat(editFat) || scanResult?.total_fat_g || 0,
       photo_url: selectedImage || undefined,
       items: scanResult?.items || [],
+    });
+  };
+
+  const handleSaveTextResult = () => {
+    if (!textResult && !editMealName) return;
+    saveMealMutation.mutate({
+      meal_type: selectedMealType,
+      name: editMealName || textResult?.meal_name || 'Meal',
+      calories: parseInt(editCalories, 10) || textResult?.total_calories || 0,
+      protein_g: parseFloat(editProtein) || textResult?.total_protein_g || 0,
+      carbs_g: parseFloat(editCarbs) || textResult?.total_carbs_g || 0,
+      fat_g: parseFloat(editFat) || textResult?.total_fat_g || 0,
+      items: textResult?.items || [],
     });
   };
 
@@ -229,6 +272,41 @@ export const NutritionPage: React.FC = () => {
   const remFat = targetFat - totalFat;
   const fatPct = Math.min(100, Math.round((totalFat / targetFat) * 100));
 
+  // Quick food presets based on language
+  const foodPresets =
+    language === 'uz'
+      ? [
+          { label: '🍚 Palov', val: "O'zbekcha mol go'shtli osh / palov" },
+          { label: '🥟 Somsa', val: 'Tandir go‘shtli somsa' },
+          { label: '🍗 Tovuq va guruch', val: '200g tovuq filesi 150g guruch bilan' },
+          { label: '🥚 3 ta tuxum', val: '3 ta qaynatilgan tuxum va non' },
+          { label: '🥣 Ovsyanqa', val: '100g suli bo‘tqasi banan bilan' },
+          { label: '🌯 Lavash', val: 'Tovuqli lavash va ayron' },
+          { label: '🥩 Steyk', val: '200g mol go‘shti steyki' },
+          { label: '🥛 Tvorog 5%', val: '200g tvorog va 1 ta banan' },
+        ]
+      : language === 'en'
+      ? [
+          { label: '🍗 Chicken & Rice', val: '200g chicken breast with 150g white rice' },
+          { label: '🥚 3 Eggs & Toast', val: '3 whole boiled eggs with 2 slices of whole wheat bread' },
+          { label: '🥩 Beef Steak', val: '250g grilled sirloin steak with sweet potato' },
+          { label: '🥣 Oatmeal & Banana', val: '80g rolled oats with 1 banana and 30g whey protein' },
+          { label: '🥗 Greek Salad', val: 'Greek salad with grilled chicken breast' },
+          { label: '🌯 Chicken Wrap', val: 'Whole wheat chicken wrap with veggies' },
+          { label: '🍚 Plov', val: 'Uzbek beef plov 300g' },
+          { label: '🥛 Cottage Cheese', val: '200g cottage cheese with berries' },
+        ]
+      : [
+          { label: '🍚 Плов', val: 'Узбекский плов с говядиной 300г' },
+          { label: '🍗 Курица с гречкой', val: '180г куриного филе со 150г отварной гречки' },
+          { label: '🥚 3 яйца и тост', val: '3 вареных яйца и цельнозерновой тост' },
+          { label: '🥩 Стейк с рисом', val: '220г говяжьего стейка с отварным рисом' },
+          { label: '🥟 Тандырная самса', val: '1 тандырная самса с мясом' },
+          { label: '🥣 Овсянка с протеином', val: '80г овсянки, скуп протеина и 1 банан' },
+          { label: '🌯 Шаурма с курицей', val: 'Лаваш / Шаурма с куриным филе' },
+          { label: '🥛 Творог 5%', val: '200г творога 5% и 1 банан' },
+        ];
+
   return (
     <div className="space-y-5 animate-fade-in pb-12">
       {/* 1. Header with Actions */}
@@ -239,7 +317,7 @@ export const NutritionPage: React.FC = () => {
             <span>{t('nutrition.title')}</span>
             <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-brand-500/20 text-brand-400 border border-brand-500/30 flex items-center gap-1">
               <Sparkles className="w-3 h-3 text-brand-400" />
-              Gemini Vision AI
+              Gemini AI
             </span>
           </h1>
           <p className="text-xs text-zinc-400 mt-0.5">
@@ -247,15 +325,28 @@ export const NutritionPage: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <Button
             variant="outline"
             size="sm"
             className="text-xs flex items-center gap-1.5"
             onClick={() => setIsManualModalOpen(true)}
           >
-            <Plus className="w-4 h-4 text-brand-400" />
+            <Plus className="w-4 h-4 text-zinc-400" />
             <span>{t('nutrition.addManual')}</span>
+          </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
+            className="text-xs flex items-center gap-1.5 border-brand-500/40 text-brand-300 hover:bg-brand-500/10"
+            onClick={() => {
+              setTextResult(null);
+              setIsTextModalOpen(true);
+            }}
+          >
+            <FileText className="w-4 h-4 text-brand-400" />
+            <span>{t('nutrition.estimateText')}</span>
           </Button>
 
           <Button
@@ -325,7 +416,7 @@ export const NutritionPage: React.FC = () => {
               </div>
               <ProgressBar value={calsPct} color="primary" size="sm" />
               <div className="text-[10px] font-mono text-zinc-400">
-                {remCals >= 0 ? `+${remCals} осталось` : `${remCals} перебор`}
+                {remCals >= 0 ? `+${remCals} ${t('nutrition.remainingKcal')}` : `${remCals} ${t('nutrition.exceeded')}`}
               </div>
             </div>
           </div>
@@ -343,7 +434,7 @@ export const NutritionPage: React.FC = () => {
               </div>
               <ProgressBar value={proteinPct} color="success" size="sm" />
               <div className="text-[10px] font-mono text-emerald-400/90">
-                {remProtein >= 0 ? `+${remProtein}g осталось` : `Норма выполнена!`}
+                {remProtein >= 0 ? `+${remProtein}g ${t('nutrition.remainingG')}` : `Норма выполнена!`}
               </div>
             </div>
           </div>
@@ -361,7 +452,7 @@ export const NutritionPage: React.FC = () => {
               </div>
               <ProgressBar value={carbsPct} color="primary" size="sm" />
               <div className="text-[10px] font-mono text-blue-400/90">
-                {remCarbs >= 0 ? `+${remCarbs}g осталось` : `${remCarbs}g перебор`}
+                {remCarbs >= 0 ? `+${remCarbs}g ${t('nutrition.remainingG')}` : `${remCarbs}g`}
               </div>
             </div>
           </div>
@@ -379,7 +470,7 @@ export const NutritionPage: React.FC = () => {
               </div>
               <ProgressBar value={fatPct} color="warning" size="sm" />
               <div className="text-[10px] font-mono text-amber-400/90">
-                {remFat >= 0 ? `+${remFat}g осталось` : `${remFat}g перебор`}
+                {remFat >= 0 ? `+${remFat}g ${t('nutrition.remainingG')}` : `${remFat}g`}
               </div>
             </div>
           </div>
@@ -404,14 +495,27 @@ export const NutritionPage: React.FC = () => {
             ))}
           </div>
         ) : !summary?.meals || summary.meals.length === 0 ? (
-          <div className="text-center py-14 border border-dashed border-dark-800 rounded-3xl p-6 bg-dark-900/40">
+          <div className="text-center py-12 border border-dashed border-dark-800 rounded-3xl p-6 bg-dark-900/40">
             <Utensils className="w-12 h-12 text-zinc-600 mx-auto mb-3" />
             <h3 className="text-sm font-bold text-zinc-300">{t('nutrition.noMeals')}</h3>
-            <p className="text-xs text-zinc-500 max-w-sm mx-auto mt-1 mb-4">
+            <p className="text-xs text-zinc-500 max-w-sm mx-auto mt-1 mb-5">
               {t('nutrition.noMealsDesc')}
             </p>
 
-            <div className="flex items-center justify-center gap-3">
+            <div className="flex items-center justify-center gap-3 flex-wrap">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setTextResult(null);
+                  setIsTextModalOpen(true);
+                }}
+                className="text-xs font-bold border-brand-500/30 text-brand-300"
+              >
+                <FileText className="w-3.5 h-3.5 mr-1 text-brand-400" />
+                {t('nutrition.estimateText')}
+              </Button>
+
               <Button
                 variant="primary"
                 size="sm"
@@ -480,7 +584,229 @@ export const NutritionPage: React.FC = () => {
         )}
       </div>
 
-      {/* 4. AI Photo Scan Modal */}
+      {/* 4. AI Text Meal Estimation Modal */}
+      <Modal
+        isOpen={isTextModalOpen}
+        onClose={() => setIsTextModalOpen(false)}
+        size="lg"
+        icon={
+          <div className="w-8 h-8 rounded-xl bg-brand-500/20 text-brand-400 border border-brand-500/30 flex items-center justify-center font-bold">
+            <FileText className="w-4 h-4" />
+          </div>
+        }
+        title={t('nutrition.textModalTitle')}
+        subtitle={t('nutrition.textModalSubtitle')}
+        footer={
+          <>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsTextModalOpen(false)}
+            >
+              {t('common.cancel')}
+            </Button>
+
+            {textResult && (
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={handleSaveTextResult}
+                disabled={saveMealMutation.isPending || (!textResult && !editMealName.trim())}
+                className="font-bold text-xs shadow-md shadow-brand-500/20"
+              >
+                <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
+                {t('nutrition.logMeal')}
+              </Button>
+            )}
+          </>
+        }
+      >
+        <div className="space-y-4">
+          {/* Text Input Area */}
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-zinc-300 uppercase tracking-wider">
+              {t('nutrition.textModalSubtitle')}
+            </label>
+            <div className="relative">
+              <textarea
+                rows={3}
+                placeholder={t('nutrition.textPlaceholder')}
+                value={textDescription}
+                onChange={(e) => setTextDescription(e.target.value)}
+                className="w-full bg-dark-900 border border-dark-700 rounded-2xl p-3.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-brand-500/80 transition-colors resize-none leading-relaxed"
+              />
+            </div>
+          </div>
+
+          {/* Quick Dish Selection Chips */}
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider flex items-center justify-between">
+              <span>{t('nutrition.quickPresets')}</span>
+              <span className="text-[10px] text-brand-400 lowercase font-normal">кликните для быстрой вставки</span>
+            </label>
+            <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none pb-1">
+              {foodPresets.map((chip, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => {
+                    setTextDescription(chip.val);
+                    analyzeTextMutation.mutate({
+                      description: chip.val,
+                      language,
+                    });
+                  }}
+                  className="px-2.5 py-1 rounded-xl text-xs bg-dark-800 hover:bg-dark-750 text-zinc-300 hover:text-white border border-dark-700 whitespace-nowrap shrink-0 transition-colors cursor-pointer"
+                >
+                  {chip.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Estimate Action Button */}
+          <div>
+            <Button
+              variant="primary"
+              size="md"
+              className="w-full text-xs font-bold shadow-md shadow-brand-500/20"
+              disabled={!textDescription.trim() || analyzeTextMutation.isPending}
+              onClick={() =>
+                analyzeTextMutation.mutate({
+                  description: textDescription.trim(),
+                  language,
+                })
+              }
+            >
+              {analyzeTextMutation.isPending ? (
+                <>
+                  <RefreshCw className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                  <span>{t('nutrition.analyzingText')}</span>
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-3.5 h-3.5 mr-1.5" />
+                  <span>{t('nutrition.estimateBtn')}</span>
+                </>
+              )}
+            </Button>
+          </div>
+
+          {/* Meal Type Selector */}
+          <div className="space-y-1.5 pt-1">
+            <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider">
+              {t('nutrition.mealType')}
+            </label>
+            <div className="grid grid-cols-4 gap-2">
+              {['breakfast', 'lunch', 'dinner', 'snack'].map((type) => (
+                <button
+                  key={type}
+                  type="button"
+                  onClick={() => setSelectedMealType(type)}
+                  className={`text-xs py-2 rounded-xl font-bold transition-all border cursor-pointer ${
+                    selectedMealType === type
+                      ? 'bg-brand-500 text-dark-950 border-brand-500 shadow-sm'
+                      : 'bg-dark-800 text-zinc-400 border-dark-700 hover:text-white'
+                  }`}
+                >
+                  {t(`nutrition.${type}` as any)}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Calculated Nutrition Result */}
+          {textResult && (
+            <div className="p-4 rounded-2xl bg-dark-850 border border-brand-500/30 space-y-3.5 animate-in fade-in">
+              {textResult.visual_description && (
+                <div className="p-3 bg-brand-500/10 border border-brand-500/30 rounded-xl text-xs space-y-1">
+                  <span className="font-bold text-brand-400 uppercase tracking-wider text-[10px] flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-brand-400" />
+                    {t('nutrition.whatAIsaw')}:
+                  </span>
+                  <p className="text-zinc-200 leading-relaxed font-medium">
+                    {textResult.visual_description}
+                  </p>
+                </div>
+              )}
+
+              <Input
+                label={t('nutrition.mealName')}
+                value={editMealName}
+                onChange={(e) => setEditMealName(e.target.value)}
+              />
+
+              <div className="grid grid-cols-4 gap-2 text-center font-mono">
+                <div className="p-2 bg-dark-900 rounded-xl border border-dark-700">
+                  <div className="text-[10px] text-zinc-500 font-sans">{t('nutrition.calories')}</div>
+                  <input
+                    type="number"
+                    value={editCalories}
+                    onChange={(e) => setEditCalories(e.target.value)}
+                    className="w-full bg-transparent text-center font-bold text-brand-400 text-xs focus:outline-none"
+                  />
+                </div>
+                <div className="p-2 bg-dark-900 rounded-xl border border-dark-700">
+                  <div className="text-[10px] text-zinc-500 font-sans">{t('nutrition.protein')} (г)</div>
+                  <input
+                    type="number"
+                    value={editProtein}
+                    onChange={(e) => setEditProtein(e.target.value)}
+                    className="w-full bg-transparent text-center font-bold text-emerald-400 text-xs focus:outline-none"
+                  />
+                </div>
+                <div className="p-2 bg-dark-900 rounded-xl border border-dark-700">
+                  <div className="text-[10px] text-zinc-500 font-sans">{t('nutrition.carbs')} (г)</div>
+                  <input
+                    type="number"
+                    value={editCarbs}
+                    onChange={(e) => setEditCarbs(e.target.value)}
+                    className="w-full bg-transparent text-center font-bold text-blue-400 text-xs focus:outline-none"
+                  />
+                </div>
+                <div className="p-2 bg-dark-900 rounded-xl border border-dark-700">
+                  <div className="text-[10px] text-zinc-500 font-sans">{t('nutrition.fat')} (г)</div>
+                  <input
+                    type="number"
+                    value={editFat}
+                    onChange={(e) => setEditFat(e.target.value)}
+                    className="w-full bg-transparent text-center font-bold text-amber-400 text-xs focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              {textResult.items && textResult.items.length > 0 && (
+                <div className="space-y-1.5 pt-1">
+                  <div className="text-[11px] font-bold text-zinc-400">{t('nutrition.detectedItems')}:</div>
+                  <div className="space-y-1">
+                    {textResult.items.map((item, idx) => (
+                      <div
+                        key={idx}
+                        className="flex items-center justify-between text-[11px] p-2 rounded-lg bg-dark-900/60 border border-dark-800"
+                      >
+                        <span className="text-zinc-200 font-medium">
+                          {item.name} ({item.portion})
+                        </span>
+                        <span className="text-zinc-400 font-mono">
+                          {item.calories} kcal • {item.protein_g}g P • {item.carbs_g}g C • {item.fat_g}g F
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {textResult.advice && (
+                <p className="text-[11px] text-brand-300/90 italic bg-brand-500/5 p-2.5 rounded-xl border border-brand-500/20">
+                  💡 {textResult.advice}
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      </Modal>
+
+      {/* 5. AI Photo Scan Modal */}
       <Modal
         isOpen={isScanModalOpen}
         onClose={() => setIsScanModalOpen(false)}
@@ -490,7 +816,7 @@ export const NutritionPage: React.FC = () => {
             <Camera className="w-4 h-4" />
           </div>
         }
-        title="AI Распознавание блюда"
+        title="AI Распознавание блюда (Vision)"
         subtitle="Анализ фото, ингредиентов и расчет КБЖУ"
         footer={
           <>
@@ -528,7 +854,7 @@ export const NutritionPage: React.FC = () => {
                 className="absolute bottom-3 right-3 bg-dark-900/90 hover:bg-dark-800 text-white text-xs font-bold px-3 py-1.5 rounded-xl border border-dark-700 flex items-center gap-1.5 shadow-lg backdrop-blur cursor-pointer"
               >
                 <Camera className="w-3.5 h-3.5" />
-                Сделать другое фото
+                {t('nutrition.changePhoto')}
               </button>
             </div>
           ) : (
@@ -538,7 +864,7 @@ export const NutritionPage: React.FC = () => {
             >
               <Upload className="w-10 h-10 text-brand-400 mx-auto mb-2" />
               <p className="text-xs font-bold text-zinc-200">{t('nutrition.photoUploadHint')}</p>
-              <p className="text-[11px] text-zinc-500 mt-1">Камера или Галерея (без перезагрузки)</p>
+              <p className="text-[11px] text-zinc-500 mt-1">Камера или Галерея</p>
             </div>
           )}
 
@@ -568,31 +894,21 @@ export const NutritionPage: React.FC = () => {
           {/* Quick Dish Selection Chips */}
           <div className="space-y-1.5">
             <label className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider flex items-center justify-between">
-              <span>Быстрый выбор блюда / Уточнить:</span>
+              <span>{t('nutrition.quickPresets')}</span>
               <span className="text-[10px] text-brand-400 lowercase font-normal">авторасчет КБЖУ</span>
             </label>
             <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none pb-1">
-              {[
-                { label: '🍚 Плов', value: 'Узбекский плов с говядиной' },
-                { label: '🥟 Манты', value: 'Манты на пару с мясом' },
-                { label: '🍗 Курица с рисом', value: 'Куриное филе с рисом и овощами' },
-                { label: '🥟 Самса', value: 'Самса тандырная с мясом' },
-                { label: '🌯 Шаурма', value: 'Шаурма с курицей' },
-                { label: '🥣 Овсянка', value: 'Овсяная каша с ягодами' },
-                { label: '🥩 Стейк', value: 'Стейк из говядины' },
-                { label: '🍳 Яичница', value: 'Яичница из 3 яиц' },
-                { label: '🥛 Творог', value: 'Творог 5%' },
-                { label: '🍌 Банан', value: 'Свежий банан' },
-              ].map((chip, idx) => (
+              {foodPresets.map((chip, idx) => (
                 <button
                   key={idx}
                   type="button"
                   onClick={() => {
-                    setEditMealName(chip.value);
+                    setEditMealName(chip.val);
                     if (selectedImage) {
                       analyzeMutation.mutate({
                         image_base64: selectedImage,
-                        notes: chip.value,
+                        notes: chip.val,
+                        language,
                       });
                     }
                   }}
@@ -640,7 +956,7 @@ export const NutritionPage: React.FC = () => {
 
                 <div className="grid grid-cols-4 gap-2 text-center font-mono">
                   <div className="p-2 bg-dark-900 rounded-xl border border-dark-700">
-                    <div className="text-[10px] text-zinc-500 font-sans">Калории</div>
+                    <div className="text-[10px] text-zinc-500 font-sans">{t('nutrition.calories')}</div>
                     <input
                       type="number"
                       placeholder="450"
@@ -650,7 +966,7 @@ export const NutritionPage: React.FC = () => {
                     />
                   </div>
                   <div className="p-2 bg-dark-900 rounded-xl border border-dark-700">
-                    <div className="text-[10px] text-zinc-500 font-sans">Белки (г)</div>
+                    <div className="text-[10px] text-zinc-500 font-sans">{t('nutrition.protein')} (г)</div>
                     <input
                       type="number"
                       placeholder="25"
@@ -660,7 +976,7 @@ export const NutritionPage: React.FC = () => {
                     />
                   </div>
                   <div className="p-2 bg-dark-900 rounded-xl border border-dark-700">
-                    <div className="text-[10px] text-zinc-500 font-sans">Углеводы (г)</div>
+                    <div className="text-[10px] text-zinc-500 font-sans">{t('nutrition.carbs')} (г)</div>
                     <input
                       type="number"
                       placeholder="50"
@@ -670,7 +986,7 @@ export const NutritionPage: React.FC = () => {
                     />
                   </div>
                   <div className="p-2 bg-dark-900 rounded-xl border border-dark-700">
-                    <div className="text-[10px] text-zinc-500 font-sans">Жиры (г)</div>
+                    <div className="text-[10px] text-zinc-500 font-sans">{t('nutrition.fat')} (г)</div>
                     <input
                       type="number"
                       placeholder="15"
@@ -707,7 +1023,7 @@ export const NutritionPage: React.FC = () => {
 
               <div className="grid grid-cols-4 gap-2 text-center font-mono">
                 <div className="p-2 bg-dark-900 rounded-xl border border-dark-700">
-                  <div className="text-[10px] text-zinc-500 font-sans">Калории</div>
+                  <div className="text-[10px] text-zinc-500 font-sans">{t('nutrition.calories')}</div>
                   <input
                     type="number"
                     value={editCalories}
@@ -716,7 +1032,7 @@ export const NutritionPage: React.FC = () => {
                   />
                 </div>
                 <div className="p-2 bg-dark-900 rounded-xl border border-dark-700">
-                  <div className="text-[10px] text-zinc-500 font-sans">Белки (г)</div>
+                  <div className="text-[10px] text-zinc-500 font-sans">{t('nutrition.protein')} (г)</div>
                   <input
                     type="number"
                     value={editProtein}
@@ -725,7 +1041,7 @@ export const NutritionPage: React.FC = () => {
                   />
                 </div>
                 <div className="p-2 bg-dark-900 rounded-xl border border-dark-700">
-                  <div className="text-[10px] text-zinc-500 font-sans">Углеводы (г)</div>
+                  <div className="text-[10px] text-zinc-500 font-sans">{t('nutrition.carbs')} (г)</div>
                   <input
                     type="number"
                     value={editCarbs}
@@ -734,7 +1050,7 @@ export const NutritionPage: React.FC = () => {
                   />
                 </div>
                 <div className="p-2 bg-dark-900 rounded-xl border border-dark-700">
-                  <div className="text-[10px] text-zinc-500 font-sans">Жиры (г)</div>
+                  <div className="text-[10px] text-zinc-500 font-sans">{t('nutrition.fat')} (г)</div>
                   <input
                     type="number"
                     value={editFat}
@@ -775,7 +1091,7 @@ export const NutritionPage: React.FC = () => {
         </div>
       </Modal>
 
-      {/* 5. Manual Meal Entry Modal */}
+      {/* 6. Manual Meal Entry Modal */}
       <Modal
         isOpen={isManualModalOpen}
         onClose={() => setIsManualModalOpen(false)}
@@ -802,22 +1118,22 @@ export const NutritionPage: React.FC = () => {
               form="manual-meal-form"
               variant="primary"
               size="sm"
-              disabled={!manualName.trim() || saveMealMutation.isPending}
+              disabled={saveMealMutation.isPending || !manualName.trim()}
               className="font-bold text-xs shadow-md shadow-brand-500/20"
             >
+              <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
               {t('nutrition.logMeal')}
             </Button>
           </>
         }
       >
-        <form id="manual-meal-form" onSubmit={handleSaveManual} className="space-y-3.5">
+        <form id="manual-meal-form" onSubmit={handleSaveManual} className="space-y-4">
           <Input
             label={t('nutrition.mealName')}
-            placeholder="напр. Овсянка с протеином и бананом"
+            placeholder="например: Обед в кафе, Курица с рисом..."
             value={manualName}
             onChange={(e) => setManualName(e.target.value)}
             required
-            autoFocus
           />
 
           <div className="space-y-1.5">
@@ -844,49 +1160,43 @@ export const NutritionPage: React.FC = () => {
 
           <div className="grid grid-cols-2 gap-3">
             <Input
-              label={`${t('nutrition.calories')} (kcal)`}
+              label={t('nutrition.calories')}
               type="number"
               value={manualCalories}
               onChange={(e) => setManualCalories(e.target.value)}
               required
             />
             <Input
-              label={`${t('nutrition.protein')} (g)`}
+              label={`${t('nutrition.protein')} (г)`}
               type="number"
               value={manualProtein}
               onChange={(e) => setManualProtein(e.target.value)}
               required
             />
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
             <Input
-              label={`${t('nutrition.carbs')} (g)`}
+              label={`${t('nutrition.carbs')} (г)`}
               type="number"
               value={manualCarbs}
               onChange={(e) => setManualCarbs(e.target.value)}
+              required
             />
             <Input
-              label={`${t('nutrition.fat')} (g)`}
+              label={`${t('nutrition.fat')} (г)`}
               type="number"
               value={manualFat}
               onChange={(e) => setManualFat(e.target.value)}
+              required
             />
           </div>
         </form>
       </Modal>
 
-      {/* 5. Smart In-App Photo Picker Modal */}
+      {/* Smart Low-Memory Photo Picker Modal */}
       <SmartPhotoPickerModal
         isOpen={isPhotoPickerOpen}
         onClose={() => setIsPhotoPickerOpen(false)}
         onPhotoSelected={handlePhotoCaptured}
-        title="AI Сканирование блюда"
-        subtitle="Сделайте снимок тарелки или выберите фото из галереи"
       />
     </div>
   );
 };
-
-export default NutritionPage;
-

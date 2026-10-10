@@ -27,6 +27,9 @@ export async function apiClient<T>(
     ...(options.headers as Record<string, string>),
   };
 
+  const lang = localStorage.getItem('np_app_lang') || 'ru';
+  headers['Accept-Language'] = lang;
+
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
   }

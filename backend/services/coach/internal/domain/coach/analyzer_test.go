@@ -41,7 +41,7 @@ func TestAnalyzeUserData_CalculatesReadinessAndOverload(t *testing.T) {
 		},
 	}
 
-	insights := coach.AnalyzeUserData(workouts, records, nil, now)
+	insights := coach.AnalyzeUserData(workouts, records, nil, nil, now)
 
 	if insights.ReadinessScore <= 0 || insights.ReadinessScore > 100 {
 		t.Errorf("expected valid readiness score between 1 and 100, got %d", insights.ReadinessScore)

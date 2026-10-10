@@ -1,7 +1,6 @@
 package http
 
 import (
-	"encoding/json"
 	"net/http"
 	"time"
 
@@ -45,10 +44,8 @@ func (h *Handler) Routes() http.Handler {
 }
 
 func (h *Handler) handleRecordFinishedWorkout(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
-
-	var evt handler.WorkoutFinishedEvent
-	if err := json.NewDecoder(r.Body).Decode(&evt); err != nil {
-		httpx.WriteProblem(w, http.StatusBadRequest, "Bad Request", "Invalid JSON", "ERR_INVALID_BODY")
+	evt, ok := httpx.DecodeJSON[handler.WorkoutFinishedEvent](w, r)
+	if !ok {
 		return
 	}
 
@@ -73,7 +70,6 @@ func (h *Handler) handleRecordFinishedWorkout(w http.ResponseWriter, r *http.Req
 }
 
 func (h *Handler) handleGetRecords(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
-
 	books, err := h.queries.GetPersonalRecords(r.Context(), userID)
 	if err != nil {
 		httpx.WriteProblem(w, http.StatusInternalServerError, "Internal Server Error", err.Error(), "ERR_INTERNAL")
@@ -89,10 +85,8 @@ func (h *Handler) handleGetRecords(w http.ResponseWriter, r *http.Request, userI
 }
 
 func (h *Handler) handleGetExerciseHistory(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
-
-	exID, err := uuid.Parse(chi.URLParam(r, "exerciseId"))
-	if err != nil {
-		httpx.WriteProblem(w, http.StatusBadRequest, "Bad Request", "Invalid Exercise ID", "ERR_INVALID_UUID")
+	exID, ok := httpx.PathUUID(w, r, "exerciseId")
+	if !ok {
 		return
 	}
 

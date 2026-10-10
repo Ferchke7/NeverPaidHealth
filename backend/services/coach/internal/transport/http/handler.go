@@ -1,7 +1,6 @@
 package http
 
 import (
-	"encoding/json"
 	"net/http"
 	"strings"
 
@@ -31,9 +30,13 @@ func (h *Handler) Routes() http.Handler {
 	r.Post("/chat", httpx.RequireAuth(h.handleChat))
 	r.Post("/coach/chat", httpx.RequireAuth(h.handleChat))
 
-	// Nutrition & Photo Analysis
+	// Nutrition & AI Analysis (Photo + Text)
 	r.Post("/nutrition/analyze-photo", httpx.RequireAuth(h.handleAnalyzePhoto))
 	r.Post("/coach/nutrition/analyze-photo", httpx.RequireAuth(h.handleAnalyzePhoto))
+	r.Post("/nutrition/estimate-text", httpx.RequireAuth(h.handleEstimateText))
+	r.Post("/coach/nutrition/estimate-text", httpx.RequireAuth(h.handleEstimateText))
+
+	// Meal Logs
 	r.Get("/nutrition/today", httpx.RequireAuth(h.handleGetTodayNutrition))
 	r.Get("/coach/nutrition/today", httpx.RequireAuth(h.handleGetTodayNutrition))
 	r.Post("/nutrition/meals", httpx.RequireAuth(h.handleSaveMeal))
@@ -45,7 +48,6 @@ func (h *Handler) Routes() http.Handler {
 }
 
 func (h *Handler) handleGetInsights(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
-
 	insights, err := h.coachService.GetInsights(r.Context(), userID)
 	if err != nil {
 		httpx.WriteProblem(w, http.StatusInternalServerError, "Internal Server Error", err.Error(), "ERR_INTERNAL")
@@ -56,12 +58,12 @@ func (h *Handler) handleGetInsights(w http.ResponseWriter, r *http.Request, user
 }
 
 func (h *Handler) handleChat(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
-
-	var req coach.ChatRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		httpx.WriteProblem(w, http.StatusBadRequest, "Bad Request", "Invalid JSON body", "ERR_INVALID_BODY")
+	req, ok := httpx.DecodeJSON[coach.ChatRequest](w, r)
+	if !ok {
 		return
 	}
+
+	lang := extractLanguage(r)
 
 	userName := r.Header.Get("X-User-Name")
 	if userName == "" {
@@ -76,7 +78,7 @@ func (h *Handler) handleChat(w http.ResponseWriter, r *http.Request, userID uuid
 		userName = strings.Title(strings.ReplaceAll(userName, "_", " "))
 	}
 
-	res, err := h.coachService.Chat(r.Context(), userID, userName, req)
+	res, err := h.coachService.Chat(r.Context(), userID, userName, req, lang)
 	if err != nil {
 		httpx.WriteProblem(w, http.StatusInternalServerError, "Internal Server Error", err.Error(), "ERR_CHAT_FAILED")
 		return
@@ -89,18 +91,12 @@ type analyzePhotoReq struct {
 	ImageBase64 string `json:"image_base64"`
 	MimeType    string `json:"mime_type,omitempty"`
 	Notes       string `json:"notes,omitempty"`
+	Language    string `json:"language,omitempty"`
 }
 
 func (h *Handler) handleAnalyzePhoto(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
-	_, ok := httpx.UserIDFromContext(r.Context())
+	req, ok := httpx.DecodeJSON[analyzePhotoReq](w, r)
 	if !ok {
-		httpx.WriteProblem(w, http.StatusUnauthorized, "Unauthorized", "User context required", "ERR_UNAUTHORIZED")
-		return
-	}
-
-	var req analyzePhotoReq
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		httpx.WriteProblem(w, http.StatusBadRequest, "Bad Request", "Invalid JSON body", "ERR_INVALID_BODY")
 		return
 	}
 
@@ -109,7 +105,12 @@ func (h *Handler) handleAnalyzePhoto(w http.ResponseWriter, r *http.Request, use
 		return
 	}
 
-	analysis, err := h.coachService.AnalyzeMealPhoto(r.Context(), req.ImageBase64, req.MimeType, req.Notes)
+	lang := req.Language
+	if lang == "" {
+		lang = extractLanguage(r)
+	}
+
+	analysis, err := h.coachService.AnalyzeMealPhoto(r.Context(), req.ImageBase64, req.MimeType, req.Notes, lang)
 	if err != nil {
 		httpx.WriteProblem(w, http.StatusInternalServerError, "Vision Analysis Failed", err.Error(), "ERR_VISION_FAILED")
 		return
@@ -118,8 +119,37 @@ func (h *Handler) handleAnalyzePhoto(w http.ResponseWriter, r *http.Request, use
 	httpx.WriteJSON(w, http.StatusOK, analysis)
 }
 
-func (h *Handler) handleGetTodayNutrition(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
+type estimateTextReq struct {
+	Description string `json:"description"`
+	Language    string `json:"language,omitempty"`
+}
 
+func (h *Handler) handleEstimateText(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
+	req, ok := httpx.DecodeJSON[estimateTextReq](w, r)
+	if !ok {
+		return
+	}
+
+	if strings.TrimSpace(req.Description) == "" {
+		httpx.WriteProblem(w, http.StatusBadRequest, "Bad Request", "description is required", "ERR_EMPTY_DESCRIPTION")
+		return
+	}
+
+	lang := req.Language
+	if lang == "" {
+		lang = extractLanguage(r)
+	}
+
+	analysis, err := h.coachService.AnalyzeMealText(r.Context(), req.Description, lang)
+	if err != nil {
+		httpx.WriteProblem(w, http.StatusInternalServerError, "Nutrition Estimation Failed", err.Error(), "ERR_ESTIMATE_FAILED")
+		return
+	}
+
+	httpx.WriteJSON(w, http.StatusOK, analysis)
+}
+
+func (h *Handler) handleGetTodayNutrition(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
 	summary, err := h.coachService.GetTodayNutrition(r.Context(), userID)
 	if err != nil {
 		httpx.WriteProblem(w, http.StatusInternalServerError, "Internal Server Error", err.Error(), "ERR_INTERNAL")
@@ -142,10 +172,8 @@ type saveMealReq struct {
 }
 
 func (h *Handler) handleSaveMeal(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
-
-	var req saveMealReq
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		httpx.WriteProblem(w, http.StatusBadRequest, "Bad Request", "Invalid JSON body", "ERR_INVALID_BODY")
+	req, ok := httpx.DecodeJSON[saveMealReq](w, r)
+	if !ok {
 		return
 	}
 
@@ -153,7 +181,7 @@ func (h *Handler) handleSaveMeal(w http.ResponseWriter, r *http.Request, userID 
 		req.Name = "Meal"
 	}
 	if req.MealType == "" {
-		req.MealType = "meal"
+		req.MealType = "lunch"
 	}
 
 	mealID := uuid.New()
@@ -183,11 +211,8 @@ func (h *Handler) handleSaveMeal(w http.ResponseWriter, r *http.Request, userID 
 }
 
 func (h *Handler) handleDeleteMeal(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
-
-	idStr := chi.URLParam(r, "id")
-	mealID, err := uuid.Parse(idStr)
-	if err != nil {
-		httpx.WriteProblem(w, http.StatusBadRequest, "Bad Request", "Invalid meal id", "ERR_INVALID_ID")
+	mealID, ok := httpx.PathUUID(w, r, "id")
+	if !ok {
 		return
 	}
 
@@ -197,4 +222,23 @@ func (h *Handler) handleDeleteMeal(w http.ResponseWriter, r *http.Request, userI
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func extractLanguage(r *http.Request) string {
+	if l := r.URL.Query().Get("lang"); l != "" {
+		return strings.ToLower(l)
+	}
+	if al := r.Header.Get("Accept-Language"); al != "" {
+		al = strings.ToLower(al)
+		if strings.Contains(al, "uz") {
+			return "uz"
+		}
+		if strings.Contains(al, "en") {
+			return "en"
+		}
+		if strings.Contains(al, "ru") {
+			return "ru"
+		}
+	}
+	return "ru"
 }

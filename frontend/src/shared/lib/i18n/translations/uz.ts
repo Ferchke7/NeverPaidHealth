@@ -30,13 +30,16 @@ export const uz = {
   'common.sets': 'yondashuv',
   'common.saved': 'Saqlandi!',
   'common.discard': 'Bekor qilish',
+  'common.or': 'yoki',
 
   // Ovqatlanish va Ratsion
   'nutrition.title': 'Ovqatlanish va Kaloriyalar',
-  'nutrition.subtitle': 'Aqlli ratsion nazorati: Gemini Vision AI orqali taom rasmini skanerlash va KBJU hisoblash.',
-  'nutrition.snapPhoto': 'Taomni rasmga olish (AI Scan)',
+  'nutrition.subtitle': 'Aqlli ratsion nazorati: matnli tavsif yoki taom rasmi orqali Gemini AI yordamida KBJU hisoblash.',
+  'nutrition.snapPhoto': 'Taom rasmi (Vision)',
+  'nutrition.estimateText': 'Matn bilan yozish (AI)',
   'nutrition.addManual': '+ Qo‘lda kiritish',
   'nutrition.analyzing': 'Gemini Vision taom va porsiyani tahlil qilmoqda...',
+  'nutrition.analyzingText': 'AI nutrisiolog taom tarkibini tahlil qilib, KBJU ni hisoblamoqda...',
   'nutrition.calories': 'Kaloriya',
   'nutrition.protein': 'Oqsil',
   'nutrition.carbs': 'Uglevod',
@@ -46,23 +49,30 @@ export const uz = {
   'nutrition.remaining': 'Qoldi',
   'nutrition.mealsToday': 'Bugungi taomlar',
   'nutrition.noMeals': 'Bugun hali taomlar kiritilmagan',
-  'nutrition.noMealsDesc': 'Taomingizni rasmga oling yoki qo‘lda kiriting — AI darhol kaloriya va oqsilni aniqlaydi.',
-  'nutrition.logMeal': 'Taomni saqlash',
+  'nutrition.noMealsDesc': 'Yegan taomingizni matn bilan yozing (masalan: «2 ta tuxum, 150g tovuq go‘shti guruch bilan») yoki rasmga oling — AI darhol kaloriya va oqsilni hisoblab beradi.',
+  'nutrition.logMeal': 'Ratsionga kiritish',
   'nutrition.mealName': 'Taom nomi',
   'nutrition.mealType': 'Taom turi',
   'nutrition.breakfast': 'Nonushta',
   'nutrition.lunch': 'Tushlik',
   'nutrition.dinner': 'Kechki ovqat',
   'nutrition.snack': 'Tamaddi',
-  'nutrition.detectedItems': 'Aniqlangan mahsulotlar',
+  'nutrition.detectedItems': 'Aniqlangan mahsulotlar va grammlar',
   'nutrition.aiAdvice': 'Nutrisiolog maslahati',
   'nutrition.photoUploadHint': 'Bosing yoki taomni rasmga oling',
   'nutrition.remainingToday': 'Bugungi qoldiq',
   'nutrition.consumedToday': 'Bugun yeyilgan',
-  'nutrition.whatAIsaw': 'AI rasmda nima aniqladi',
+  'nutrition.whatAIsaw': 'AI nima aniqladi',
   'nutrition.exceeded': 'Oshib ketdi',
   'nutrition.remainingKcal': 'kkal qoldi',
   'nutrition.remainingG': 'g qoldi',
+  'nutrition.textModalTitle': 'AI Taomni tavsif bo‘yicha hisoblash',
+  'nutrition.textModalSubtitle': 'Nima yeganingizni yozing yoki ayting, AI aniq KBJU ni hisoblab beradi',
+  'nutrition.textPlaceholder': 'Masalan: 2 ta qaynatilgan tuxum, 150g tovuq filesi grechka bilan va yangi bodring...',
+  'nutrition.estimateBtn': 'Kaloriya va KBJU ni hisoblash',
+  'nutrition.quickPresets': 'Tezkor namunalar / Ommabop taomlar:',
+  'nutrition.changePhoto': 'Boshqa rasm olish',
+  'nutrition.recalculate': 'Qayta hisoblash',
 
   // Mashg'ulotlar sahifasi
   'workouts.title': 'Mening dasturlarim',
@@ -100,6 +110,7 @@ export const uz = {
   'activeWorkout.title': 'Faol mashg‘ulot',
   'activeWorkout.restTimer': 'Dam olish taymeri',
   'activeWorkout.addExercise': 'Mashq qo‘shish',
+  'activeWorkout.changeExercise': 'Mashqni almashtirish',
   'activeWorkout.finishWorkout': 'Mashg‘ulotni yakunlash',
   'activeWorkout.discardWorkout': 'Mashg‘ulotni bekor qilish',
   'activeWorkout.discardConfirm': 'Mashg‘ulotni bekor qilmoqchimisiz? Barcha qayd etilgan natijalar o‘chib ketadi.',
@@ -134,8 +145,12 @@ export const uz = {
   'exercises.calves': 'Boldir',
   'exercises.core': 'Matbuot (Press)',
   'exercises.addCustom': 'Yangi mashq yaratish',
+  'exercises.editCustom': 'Mashqni tahrirlash',
+  'exercises.deleteCustom': 'Mashqni o‘chirish',
+  'exercises.deleteConfirm': '«{name}» mashqini o‘chirishga ishonchingiz komilmi?',
   'exercises.equipment': 'Jihoz',
   'exercises.primaryMuscle': 'Asosiy mushak',
+  'exercises.secondaryMuscles': 'Qo‘shimcha mushaklar',
   'exercises.history': 'Tarix va rekordlar',
 
   // Tarix va Tahlil
@@ -165,6 +180,12 @@ export const uz = {
   'coach.attachPhoto': 'Forma rasmini biriktirish',
   'coach.evaluatingPhoto': 'AI sizning forma rasmingizni tahlil qilmoqda...',
   'coach.photoAttached': 'Forma tahlili uchun rasm biriktirildi',
+
+  // Todo & Reja
+  'todo.title': 'Reja va vazifalar',
+  'todo.subtitle': 'Kundalik rejalar boshqaruvi, fokus-taymer va faollik hisobi.',
+  'todo.add': 'Vazifa qo‘shish',
+  'todo.completed': 'Bajarildi',
 
   // Profil va Sozlamalar
   'profile.title': 'Profil va sozlamalar',
@@ -204,4 +225,3 @@ export const uz = {
   'pwa.androidPrompt': 'Telefoningiz bosh ekraniga o‘rnatish uchun quyidagi tugmani bosing.',
   'pwa.dismiss': 'Keyinroq',
 };
-

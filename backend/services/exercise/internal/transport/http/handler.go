@@ -79,17 +79,9 @@ type createExerciseReq struct {
 }
 
 func (h *Handler) handleList(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
-	var muscleGroup *string
-	if mg := r.URL.Query().Get("muscle_group"); mg != "" {
-		muscleGroup = &mg
-	}
-
-	var equipment *string
-	if eq := r.URL.Query().Get("equipment"); eq != "" {
-		equipment = &eq
-	}
-
-	search := r.URL.Query().Get("search")
+	muscleGroup := httpx.QueryOptionalString(r, "muscle_group")
+	equipment := httpx.QueryOptionalString(r, "equipment")
+	search := httpx.QueryString(r, "search", "")
 
 	exercises, err := h.listHandler.Handle(r.Context(), query.ListExercisesQuery{
 		UserID:         userID,
@@ -107,7 +99,6 @@ func (h *Handler) handleList(w http.ResponseWriter, r *http.Request, userID uuid
 		dtos = append(dtos, mapExerciseResponse(ex))
 	}
 
-	// Compute ETag for caching
 	dataBytes, _ := json.Marshal(dtos)
 	hash := sha256.Sum256(dataBytes)
 	etag := fmt.Sprintf(`"%s"`, hex.EncodeToString(hash[:8]))
@@ -123,9 +114,8 @@ func (h *Handler) handleList(w http.ResponseWriter, r *http.Request, userID uuid
 }
 
 func (h *Handler) handleCreateCustom(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
-	var req createExerciseReq
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		httpx.WriteProblem(w, http.StatusBadRequest, "Bad Request", "Invalid JSON payload", "ERR_INVALID_BODY")
+	req, ok := httpx.DecodeJSON[createExerciseReq](w, r)
+	if !ok {
 		return
 	}
 
@@ -146,16 +136,13 @@ func (h *Handler) handleCreateCustom(w http.ResponseWriter, r *http.Request, use
 }
 
 func (h *Handler) handleUpdateCustom(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
-	idStr := chi.URLParam(r, "id")
-	exerciseID, err := uuid.Parse(idStr)
-	if err != nil {
-		httpx.WriteProblem(w, http.StatusBadRequest, "Bad Request", "Invalid UUID", "ERR_INVALID_UUID")
+	exerciseID, ok := httpx.PathUUID(w, r, "id")
+	if !ok {
 		return
 	}
 
-	var req createExerciseReq
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		httpx.WriteProblem(w, http.StatusBadRequest, "Bad Request", "Invalid JSON payload", "ERR_INVALID_BODY")
+	req, ok := httpx.DecodeJSON[createExerciseReq](w, r)
+	if !ok {
 		return
 	}
 
@@ -189,10 +176,8 @@ func (h *Handler) handleUpdateCustom(w http.ResponseWriter, r *http.Request, use
 }
 
 func (h *Handler) handleGetByID(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
-	idStr := chi.URLParam(r, "id")
-	id, err := uuid.Parse(idStr)
-	if err != nil {
-		httpx.WriteProblem(w, http.StatusBadRequest, "Bad Request", "Invalid UUID", "ERR_INVALID_UUID")
+	id, ok := httpx.PathUUID(w, r, "id")
+	if !ok {
 		return
 	}
 
@@ -206,11 +191,8 @@ func (h *Handler) handleGetByID(w http.ResponseWriter, r *http.Request, userID u
 }
 
 func (h *Handler) handleDeleteCustom(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
-
-	idStr := chi.URLParam(r, "id")
-	id, err := uuid.Parse(idStr)
-	if err != nil {
-		httpx.WriteProblem(w, http.StatusBadRequest, "Bad Request", "Invalid UUID", "ERR_INVALID_UUID")
+	id, ok := httpx.PathUUID(w, r, "id")
+	if !ok {
 		return
 	}
 

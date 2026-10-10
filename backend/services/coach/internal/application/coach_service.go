@@ -61,7 +61,7 @@ func (s *CoachService) GetInsights(ctx context.Context, userID uuid.UUID) (coach
 	return insights, nil
 }
 
-func (s *CoachService) Chat(ctx context.Context, userID uuid.UUID, userName string, req coach.ChatRequest) (coach.ChatResponse, error) {
+func (s *CoachService) Chat(ctx context.Context, userID uuid.UUID, userName string, req coach.ChatRequest, lang string) (coach.ChatResponse, error) {
 	insights, err := s.GetInsights(ctx, userID)
 	if err != nil {
 		insights = coach.AnalyzeUserData(nil, nil, nil, nil, time.Now())
@@ -71,11 +71,15 @@ func (s *CoachService) Chat(ctx context.Context, userID uuid.UUID, userName stri
 		userName = "Athlete"
 	}
 
-	return s.ai.GenerateChatResponse(ctx, req, insights, userName)
+	return s.ai.GenerateChatResponse(ctx, req, insights, userName, lang)
 }
 
-func (s *CoachService) AnalyzeMealPhoto(ctx context.Context, imageBase64, mimeType, notes string) (coach.MealAnalysisResult, error) {
-	return s.ai.AnalyzeMealPhoto(ctx, imageBase64, mimeType, notes)
+func (s *CoachService) AnalyzeMealPhoto(ctx context.Context, imageBase64, mimeType, notes string, lang string) (coach.MealAnalysisResult, error) {
+	return s.ai.AnalyzeMealPhoto(ctx, imageBase64, mimeType, notes, lang)
+}
+
+func (s *CoachService) AnalyzeMealText(ctx context.Context, description string, lang string) (coach.MealAnalysisResult, error) {
+	return s.ai.AnalyzeMealText(ctx, description, lang)
 }
 
 func (s *CoachService) SaveMeal(ctx context.Context, meal coach.MealLog) error {

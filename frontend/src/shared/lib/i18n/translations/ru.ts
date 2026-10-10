@@ -30,13 +30,16 @@ export const ru = {
   'common.sets': 'подх',
   'common.saved': 'Сохранено!',
   'common.discard': 'Сбросить',
+  'common.or': 'или',
 
   // Питание и Рацион
   'nutrition.title': 'Питание и БЖУ',
-  'nutrition.subtitle': 'Умный трекинг рациона: сканирование блюд по фото через Gemini Vision и расчет макронутриентов.',
-  'nutrition.snapPhoto': 'Сфоткать еду (AI Scan)',
+  'nutrition.subtitle': 'Умный трекинг рациона: расчет КБЖУ по тексту или фото блюда через Gemini AI.',
+  'nutrition.snapPhoto': 'Фото блюда (Vision)',
+  'nutrition.estimateText': 'Описать текстом (AI)',
   'nutrition.addManual': '+ Записать вручную',
   'nutrition.analyzing': 'Gemini Vision распознает еду на тарелке...',
+  'nutrition.analyzingText': 'AI нутрициолог анализирует состав и рассчитывает КБЖУ...',
   'nutrition.calories': 'Калории',
   'nutrition.protein': 'Белки',
   'nutrition.carbs': 'Углеводы',
@@ -46,23 +49,30 @@ export const ru = {
   'nutrition.remaining': 'Осталось',
   'nutrition.mealsToday': 'Приемы пищи за сегодня',
   'nutrition.noMeals': 'Сегодня еще нет записанных приемов пищи',
-  'nutrition.noMealsDesc': 'Сфотографируйте свою тарелку или добавьте блюдо вручную — AI моментально определит калории и БЖУ.',
-  'nutrition.logMeal': 'Записать прием пищи',
+  'nutrition.noMealsDesc': 'Опишите блюдо текстом (например, «2 яйца, 150г филе с рисом») или сфотографируйте тарелку — AI моментально определит калории и БЖУ.',
+  'nutrition.logMeal': 'Записать в рацион',
   'nutrition.mealName': 'Название блюда',
   'nutrition.mealType': 'Тип приема пищи',
   'nutrition.breakfast': 'Завтрак',
   'nutrition.lunch': 'Обед',
   'nutrition.dinner': 'Ужин',
   'nutrition.snack': 'Перекус',
-  'nutrition.detectedItems': 'Распознанные продукты',
+  'nutrition.detectedItems': 'Распознанные продукты и граммовки',
   'nutrition.aiAdvice': 'Совет нутрициолога',
   'nutrition.photoUploadHint': 'Нажмите или сделайте фото блюда',
   'nutrition.remainingToday': 'Осталось на сегодня',
   'nutrition.consumedToday': 'Съедено за день',
-  'nutrition.whatAIsaw': 'Что определил ИИ по фото',
+  'nutrition.whatAIsaw': 'Что определил ИИ',
   'nutrition.exceeded': 'Превышено на',
   'nutrition.remainingKcal': 'ккал осталось',
   'nutrition.remainingG': 'г осталось',
+  'nutrition.textModalTitle': 'AI Оценка блюда по описанию',
+  'nutrition.textModalSubtitle': 'Напишите или продиктуйте, что вы съели, и AI рассчитает состав',
+  'nutrition.textPlaceholder': 'Например: 2 вареных яйца, 150г куриного филе с гречкой и свежий огурец...',
+  'nutrition.estimateBtn': 'Рассчитать калории и БЖУ',
+  'nutrition.quickPresets': 'Быстрые примеры / Популярные блюда:',
+  'nutrition.changePhoto': 'Сделать другое фото',
+  'nutrition.recalculate': 'Пересчитать',
 
   // Страница тренировок / Мои рутины
   'workouts.title': 'Мои программы',
@@ -100,6 +110,7 @@ export const ru = {
   'activeWorkout.title': 'Текущая тренировка',
   'activeWorkout.restTimer': 'Таймер отдыха',
   'activeWorkout.addExercise': 'Добавить упражнение',
+  'activeWorkout.changeExercise': 'Заменить упражнение',
   'activeWorkout.finishWorkout': 'Завершить тренировку',
   'activeWorkout.discardWorkout': 'Отменить тренировку',
   'activeWorkout.discardConfirm': 'Вы уверены, что хотите отменить тренировку? Все записанные подходы будут удалены.',
@@ -134,8 +145,12 @@ export const ru = {
   'exercises.calves': 'Икры',
   'exercises.core': 'Пресс / Кор',
   'exercises.addCustom': 'Создать свое упражнение',
+  'exercises.editCustom': 'Редактировать упражнение',
+  'exercises.deleteCustom': 'Удалить упражнение',
+  'exercises.deleteConfirm': 'Вы уверены, что хотите удалить упражнение «{name}»?',
   'exercises.equipment': 'Оборудование',
   'exercises.primaryMuscle': 'Основная мышца',
+  'exercises.secondaryMuscles': 'Вторичные мышцы',
   'exercises.history': 'История и рекорды',
 
   // История и Аналитика
@@ -165,6 +180,12 @@ export const ru = {
   'coach.attachPhoto': 'Прикрепить фото формы',
   'coach.evaluatingPhoto': 'ИИ анализирует фото вашей формы...',
   'coach.photoAttached': 'Фото прикреплено для оценки формы',
+
+  // Todo & Расписание
+  'todo.title': 'План и задачи',
+  'todo.subtitle': 'Управление ежедневными делами, фокус-таймер и трекинг активности.',
+  'todo.add': 'Добавить задачу',
+  'todo.completed': 'Выполнено',
 
   // Профиль и Настройки
   'profile.title': 'Профиль и настройки',
@@ -204,4 +225,3 @@ export const ru = {
   'pwa.androidPrompt': 'Нажмите кнопку ниже для быстрой установки на главный экран вашего устройства.',
   'pwa.dismiss': 'Позже',
 };
-

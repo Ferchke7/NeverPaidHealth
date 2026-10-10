@@ -1,7 +1,6 @@
 package http
 
 import (
-	"encoding/json"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -61,9 +60,8 @@ type logMeasurementReq struct {
 }
 
 func (h *Handler) handleListLogs(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
-
-	fromDate := r.URL.Query().Get("from_date")
-	toDate := r.URL.Query().Get("to_date")
+	fromDate := httpx.QueryString(r, "from_date", "")
+	toDate := httpx.QueryString(r, "to_date", "")
 
 	logs, err := h.queries.ListLogs(r.Context(), userID, fromDate, toDate)
 	if err != nil {
@@ -80,10 +78,8 @@ func (h *Handler) handleListLogs(w http.ResponseWriter, r *http.Request, userID 
 }
 
 func (h *Handler) handleLogMeasurement(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
-
-	var req logMeasurementReq
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		httpx.WriteProblem(w, http.StatusBadRequest, "Bad Request", "Invalid JSON payload", "ERR_INVALID_BODY")
+	req, ok := httpx.DecodeJSON[logMeasurementReq](w, r)
+	if !ok {
 		return
 	}
 
@@ -109,8 +105,12 @@ func (h *Handler) handleLogMeasurement(w http.ResponseWriter, r *http.Request, u
 }
 
 func (h *Handler) handleDeleteLog(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
-
 	date := chi.URLParam(r, "date")
+	if date == "" {
+		httpx.WriteProblem(w, http.StatusBadRequest, "Bad Request", "Date parameter required", "ERR_MISSING_PARAM")
+		return
+	}
+
 	if err := h.deleteCmd.Handle(r.Context(), userID, date); err != nil {
 		httpx.WriteProblem(w, http.StatusInternalServerError, "Internal Server Error", err.Error(), "ERR_INTERNAL")
 		return
@@ -120,7 +120,6 @@ func (h *Handler) handleDeleteLog(w http.ResponseWriter, r *http.Request, userID
 }
 
 func (h *Handler) handleGetTrend(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
-
 	trend, err := h.queries.GetTrend(r.Context(), userID)
 	if err != nil {
 		httpx.WriteProblem(w, http.StatusInternalServerError, "Internal Server Error", err.Error(), "ERR_INTERNAL")

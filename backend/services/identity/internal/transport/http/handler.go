@@ -1,7 +1,6 @@
 package http
 
 import (
-	"encoding/json"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -81,9 +80,8 @@ type authResponse struct {
 }
 
 func (h *Handler) handleGoogleAuth(w http.ResponseWriter, r *http.Request) {
-	var req googleAuthReq
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		httpx.WriteProblem(w, http.StatusBadRequest, "Bad Request", "Invalid JSON body", "ERR_INVALID_BODY")
+	req, ok := httpx.DecodeJSON[googleAuthReq](w, r)
+	if !ok {
 		return
 	}
 
@@ -97,9 +95,8 @@ func (h *Handler) handleGoogleAuth(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) handleDevLogin(w http.ResponseWriter, r *http.Request) {
-	var req devLoginReq
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		httpx.WriteProblem(w, http.StatusBadRequest, "Bad Request", "Invalid JSON body", "ERR_INVALID_BODY")
+	req, ok := httpx.DecodeJSON[devLoginReq](w, r)
+	if !ok {
 		return
 	}
 
@@ -123,9 +120,8 @@ func (h *Handler) handleGetMe(w http.ResponseWriter, r *http.Request, userID uui
 }
 
 func (h *Handler) handleUpdateUnitPreference(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
-	var req updateUnitReq
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		httpx.WriteProblem(w, http.StatusBadRequest, "Bad Request", "Invalid JSON body", "ERR_INVALID_BODY")
+	req, ok := httpx.DecodeJSON[updateUnitReq](w, r)
+	if !ok {
 		return
 	}
 
