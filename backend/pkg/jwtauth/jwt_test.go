@@ -67,3 +67,43 @@ func TestTokenService_Verify_TamperedToken_ReturnsErrInvalid(t *testing.T) {
 		t.Errorf("expected ErrInvalidToken, got %v", err)
 	}
 }
+
+func TestTokenServiceFromEnv_ProductionEnforcement(t *testing.T) {
+	// Dev mode fallback
+	t.Setenv("APP_ENV", "development")
+	t.Setenv("JWT_SECRET", "")
+	svc, err := jwtauth.NewTokenServiceFromEnv()
+	if err != nil || svc == nil {
+		t.Fatalf("expected valid service in dev mode, got error: %v", err)
+	}
+
+	// Production with missing secret fails
+	t.Setenv("APP_ENV", "production")
+	t.Setenv("JWT_SECRET", "")
+	_, err = jwtauth.NewTokenServiceFromEnv()
+	if err == nil {
+		t.Fatal("expected error in production when JWT_SECRET is empty")
+	}
+
+	// Production with default dev secret fails
+	t.Setenv("JWT_SECRET", jwtauth.DefaultDevSecret)
+	_, err = jwtauth.NewTokenServiceFromEnv()
+	if err == nil {
+		t.Fatal("expected error in production when JWT_SECRET is default dev secret")
+	}
+
+	// Production with short secret fails
+	t.Setenv("JWT_SECRET", "short_secret")
+	_, err = jwtauth.NewTokenServiceFromEnv()
+	if err == nil {
+		t.Fatal("expected error in production when JWT_SECRET is too short")
+	}
+
+	// Production with valid strong secret succeeds
+	t.Setenv("JWT_SECRET", "super_strong_production_secret_key_32chars!!")
+	svc, err = jwtauth.NewTokenServiceFromEnv()
+	if err != nil || svc == nil {
+		t.Fatalf("expected success with valid secret, got: %v", err)
+	}
+}
+

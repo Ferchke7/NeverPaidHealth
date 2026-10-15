@@ -57,7 +57,24 @@ func (r *FakeExerciseRepo) List(_ context.Context, filter application.ExerciseFi
 			}
 		}
 
+		if filter.Category != nil && *filter.Category != "" && ex.Category() != *filter.Category {
+			continue
+		}
+
 		result = append(result, ex)
+	}
+
+	if filter.Offset > 0 {
+		if filter.Offset >= len(result) {
+			return []*exercise.Exercise{}, nil
+		}
+		result = result[filter.Offset:]
+	}
+	if filter.Limit > 0 && len(result) > filter.Limit {
+		result = result[:filter.Limit]
+	}
+	if result == nil {
+		result = make([]*exercise.Exercise, 0)
 	}
 
 	return result, nil

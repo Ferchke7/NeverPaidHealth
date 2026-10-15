@@ -5,6 +5,8 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
+	"os"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -27,19 +29,53 @@ type TokenService struct {
 	pubKey  ed25519.PublicKey
 }
 
+const DefaultDevSecret = "neverpaid_dev_jwt_secret_seed_32bytes_value_key!!"
+
 func NewTokenService(priv ed25519.PrivateKey, pub ed25519.PublicKey) *TokenService {
 	return &TokenService{privKey: priv, pubKey: pub}
 }
 
 // GenerateDevKeypair returns a deterministic dev keypair shared across services
 func GenerateDevKeypair() (ed25519.PrivateKey, ed25519.PublicKey, error) {
-	return NewKeypairFromSecret("neverpaid_dev_jwt_secret_seed_32bytes_value_key!!")
+	return NewKeypairFromSecret(DefaultDevSecret)
+}
+
+// NewTokenServiceFromEnv creates a TokenService using JWT_SECRET from environment.
+// In production (APP_ENV=production or ENVIRONMENT=production), it enforces that JWT_SECRET is set,
+// is not the default development secret, and is at least 32 characters.
+func NewTokenServiceFromEnv() (*TokenService, error) {
+	secret := os.Getenv("JWT_SECRET")
+	appEnv := strings.ToLower(os.Getenv("APP_ENV"))
+	if appEnv == "" {
+		appEnv = strings.ToLower(os.Getenv("ENVIRONMENT"))
+	}
+	isProd := appEnv == "production" || appEnv == "prod"
+
+	if isProd {
+		if secret == "" {
+			return nil, errors.New("JWT_SECRET environment variable is mandatory in production")
+		}
+		if secret == DefaultDevSecret {
+			return nil, errors.New("default development JWT secret cannot be used in production")
+		}
+		if len(secret) < 32 {
+			return nil, errors.New("JWT_SECRET must be at least 32 characters in production")
+		}
+	} else if secret == "" {
+		secret = DefaultDevSecret
+	}
+
+	priv, pub, err := NewKeypairFromSecret(secret)
+	if err != nil {
+		return nil, err
+	}
+	return NewTokenService(priv, pub), nil
 }
 
 // NewKeypairFromSecret derives an Ed25519 keypair deterministically from a shared secret
 func NewKeypairFromSecret(secret string) (ed25519.PrivateKey, ed25519.PublicKey, error) {
 	if secret == "" {
-		secret = "neverpaid_dev_jwt_secret_seed_32bytes_value_key!!"
+		secret = DefaultDevSecret
 	}
 	hash := sha256.Sum256([]byte(secret))
 	priv := ed25519.NewKeyFromSeed(hash[:])

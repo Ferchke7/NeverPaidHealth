@@ -149,6 +149,96 @@ func (r *TrainingRepository) ListWorkouts(ctx context.Context, userID uuid.UUID,
 	return list, nil
 }
 
+func (r *TrainingRepository) GetPreviousSets(ctx context.Context, userID uuid.UUID, exerciseIDs []uuid.UUID) (map[uuid.UUID][]*workout.WorkoutSet, error) {
+	res := make(map[uuid.UUID][]*workout.WorkoutSet)
+	if len(exerciseIDs) == 0 {
+		return res, nil
+	}
+
+	query := `
+		SELECT exercises, started_at
+		FROM workouts
+		WHERE user_id = $1 AND status = 'finished'
+		ORDER BY started_at DESC
+		LIMIT 100
+	`
+	rows, err := r.pool.Query(ctx, query, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	targetSet := make(map[uuid.UUID]bool, len(exerciseIDs))
+	for _, id := range exerciseIDs {
+		targetSet[id] = true
+	}
+
+	for rows.Next() {
+		var (
+			exJSON    []byte
+			startedAt time.Time
+		)
+		if err := rows.Scan(&exJSON, &startedAt); err != nil {
+			return nil, err
+		}
+
+		type SetJSONItem struct {
+			ID           uuid.UUID `json:"id"`
+			SetNumber    int       `json:"set_number"`
+			SetType      string    `json:"set_type"`
+			WeightGrams  int64     `json:"weight_grams"`
+			Reps         int       `json:"reps"`
+			RPE          *float64  `json:"rpe,omitempty"`
+			DurationSecs *int      `json:"duration_seconds,omitempty"`
+			Completed    bool      `json:"completed"`
+		}
+		type ExJSONItem struct {
+			ExerciseID uuid.UUID     `json:"exercise_id"`
+			Sets       []SetJSONItem `json:"sets"`
+		}
+
+		var items []ExJSONItem
+		_ = json.Unmarshal(exJSON, &items)
+
+		for _, item := range items {
+			if targetSet[item.ExerciseID] {
+				if _, exists := res[item.ExerciseID]; !exists {
+					var completedSets []*workout.WorkoutSet
+					for _, s := range item.Sets {
+						if s.Completed {
+							st, _ := measure.NewSetType(s.SetType)
+							wKg, _ := measure.NewWeightGrams(s.WeightGrams)
+							reps, _ := measure.NewReps(s.Reps)
+							var rpe *measure.RPE
+							if s.RPE != nil {
+								r, _ := measure.NewRPE(*s.RPE)
+								rpe = &r
+							}
+							var dur *measure.Duration
+							if s.DurationSecs != nil {
+								d := measure.NewDurationSeconds(*s.DurationSecs)
+								dur = &d
+							}
+							completedSets = append(completedSets, workout.ReconstituteSet(
+								s.ID, s.SetNumber, st, wKg, reps, rpe, dur, true, nil,
+							))
+						}
+					}
+					if len(completedSets) > 0 {
+						res[item.ExerciseID] = completedSets
+					}
+				}
+			}
+		}
+
+		if len(res) == len(targetSet) {
+			break
+		}
+	}
+
+	return res, nil
+}
+
 func (r *TrainingRepository) SaveWorkout(ctx context.Context, w *workout.Workout) error {
 	type SetDTO struct {
 		ID             uuid.UUID `json:"id"`

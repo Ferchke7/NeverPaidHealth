@@ -82,6 +82,39 @@ func (r *FakeTrainingRepo) List(_ context.Context, userID uuid.UUID, limit, offs
 	return res, nil
 }
 
+func (r *FakeTrainingRepo) GetPreviousSets(_ context.Context, userID uuid.UUID, exerciseIDs []uuid.UUID) (map[uuid.UUID][]*workout.WorkoutSet, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	targetSet := make(map[uuid.UUID]bool, len(exerciseIDs))
+	for _, id := range exerciseIDs {
+		targetSet[id] = true
+	}
+
+	res := make(map[uuid.UUID][]*workout.WorkoutSet)
+	for _, w := range r.workouts {
+		if w.UserID() != userID || w.Status() != workout.WorkoutStatusFinished {
+			continue
+		}
+		for _, ex := range w.Exercises() {
+			if targetSet[ex.ExerciseID()] {
+				if _, already := res[ex.ExerciseID()]; !already {
+					var completedSets []*workout.WorkoutSet
+					for _, s := range ex.Sets() {
+						if s.Completed() {
+							completedSets = append(completedSets, s)
+						}
+					}
+					if len(completedSets) > 0 {
+						res[ex.ExerciseID()] = completedSets
+					}
+				}
+			}
+		}
+	}
+	return res, nil
+}
+
 func (r *FakeTrainingRepo) Save(_ context.Context, w *workout.Workout) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()

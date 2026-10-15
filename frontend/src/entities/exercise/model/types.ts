@@ -10,6 +10,11 @@ export type MuscleGroup =
   | 'arms'
   | 'biceps'
   | 'triceps'
+  | 'forearms'
+  | 'traps'
+  | 'abductors'
+  | 'adductors'
+  | 'neck'
   | 'core'
   | 'full_body'
   | 'cardio';
@@ -22,7 +27,12 @@ export type Equipment =
   | 'bodyweight'
   | 'kettlebell'
   | 'smith_machine'
+  | 'bands'
   | 'band'
+  | 'ez_bar'
+  | 'exercise_ball'
+  | 'medicine_ball'
+  | 'foam_roller'
   | 'other';
 
 export type MeasurementType =
@@ -39,7 +49,10 @@ export interface Exercise {
   secondary_muscle_groups?: string[];
   equipment: Equipment | string;
   measurement_type: MeasurementType | string;
-  instructions?: string;
+  instructions?: string | string[];
   is_custom: boolean;
   created_by_user_id?: string;
+  source_id?: string;
+  category?: string;
+  level?: string;
 }

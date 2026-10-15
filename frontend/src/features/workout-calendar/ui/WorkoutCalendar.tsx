@@ -14,11 +14,12 @@ import {
 } from 'lucide-react';
 import { Card } from '../../../shared/ui/card.tsx';
 import { Button } from '../../../shared/ui/button.tsx';
-import { formatDuration } from '../../../shared/lib/dates.ts';
+import { formatDuration, toLocalDateKey } from '../../../shared/lib/dates.ts';
 import { formatWeight } from '../../../shared/lib/units.ts';
 import { useAuthStore } from '../../../entities/user/model/authStore.ts';
-import { WorkoutHistoryItem, ActiveExercise, ActiveSet } from '../../../entities/workout/model/types.ts';
+import { WorkoutHistoryItem } from '../../../entities/workout/model/types.ts';
 import { useActiveWorkoutStore } from '../../../entities/workout/model/activeWorkoutStore.ts';
+import { useStartWorkout } from '../../start-workout/model/useStartWorkout.ts';
 import { generateUUID } from '../../../shared/lib/uuid.ts';
 
 interface WorkoutCalendarProps {
@@ -51,24 +52,24 @@ function getSplitColor(name: string) {
 
 export const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workouts }) => {
   const unitPref = useAuthStore((s) => s.unitPreference);
-  const startWorkout = useActiveWorkoutStore((s) => s.startWorkout);
+  const startWorkout = useStartWorkout();
   const activeWorkout = useActiveWorkoutStore((s) => s.workout);
   const openSheet = useActiveWorkoutStore((s) => s.openSheet);
 
   const [currentDate, setCurrentDate] = useState(() => new Date());
   const [selectedDateStr, setSelectedDateStr] = useState<string>(() => {
-    return new Date().toISOString().slice(0, 10);
+    return toLocalDateKey(new Date());
   });
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
 
-  // Map workouts by YYYY-MM-DD
+  // Map workouts by YYYY-MM-DD in user's local timezone
   const workoutsByDate = useMemo(() => {
     const map: Record<string, WorkoutHistoryItem[]> = {};
     for (const w of workouts) {
       if (!w.started_at) continue;
-      const dateKey = new Date(w.started_at).toISOString().slice(0, 10);
+      const dateKey = toLocalDateKey(w.started_at);
       if (!map[dateKey]) map[dateKey] = [];
       map[dateKey].push(w);
     }
@@ -89,10 +90,10 @@ export const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workouts }) =>
     today.setHours(0, 0, 0, 0);
 
     // Check if trained today or yesterday to continue current streak
-    const todayKey = today.toISOString().slice(0, 10);
+    const todayKey = toLocalDateKey(today);
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayKey = yesterday.toISOString().slice(0, 10);
+    const yesterdayKey = toLocalDateKey(yesterday);
 
     let streakStartDate: Date | null = null;
     if (workoutsByDate[todayKey]) {
@@ -104,7 +105,7 @@ export const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workouts }) =>
     if (streakStartDate) {
       const runner = new Date(streakStartDate);
       while (true) {
-        const key = runner.toISOString().slice(0, 10);
+        const key = toLocalDateKey(runner);
         if (workoutsByDate[key]) {
           currentStreak++;
           runner.setDate(runner.getDate() - 1);
@@ -123,8 +124,23 @@ export const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workouts }) =>
       }
     }
 
-    // Estimate longest streak
-    longestStreak = Math.max(currentStreak, uniqueDates.length > 0 ? 1 : 0);
+    // Calculate actual longest streak across full training history
+    if (uniqueDates.length > 0) {
+      const ascDates = [...uniqueDates].sort();
+      let tempStreak = 1;
+      longestStreak = 1;
+      for (let i = 1; i < ascDates.length; i++) {
+        const prev = new Date(ascDates[i - 1] + 'T00:00:00');
+        const curr = new Date(ascDates[i] + 'T00:00:00');
+        const diffDays = Math.round((curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24));
+        if (diffDays === 1) {
+          tempStreak++;
+          if (tempStreak > longestStreak) longestStreak = tempStreak;
+        } else if (diffDays > 1) {
+          tempStreak = 1;
+        }
+      }
+    }
 
     return { currentStreak, longestStreak, thisMonthCount };
   }, [workoutsByDate, year, month]);
@@ -148,56 +164,27 @@ export const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workouts }) =>
   const handleToday = () => {
     const now = new Date();
     setCurrentDate(now);
-    setSelectedDateStr(now.toISOString().slice(0, 10));
+    setSelectedDateStr(toLocalDateKey(now));
   };
 
   const selectedWorkouts = workoutsByDate[selectedDateStr] || [];
 
-  const handleRepeatWorkout = (w: WorkoutHistoryItem) => {
-    if (activeWorkout) {
-      const hasCompletedSets = activeWorkout.exercises.some((e) =>
-        e.sets.some((s) => s.completed)
-      );
-      if (hasCompletedSets) {
-        const confirmed = window.confirm(
-          `You have an active workout in progress ("${activeWorkout.name}"). Discard it and start "${w.name}"?`
-        );
-        if (!confirmed) {
-          openSheet();
-          return;
-        }
-      }
-    }
-
-    const initialExercises: ActiveExercise[] = (w.exercises || []).map((ex: any, idx: number) => {
-      const exerciseId = ex.exercise_id || ex.exerciseId || `ex-${idx}-${generateUUID()}`;
-      const sets: ActiveSet[] = (ex.sets || []).map((s: any, sIdx: number) => ({
-        id: generateUUID(),
-        setNumber: s.set_number || s.setNumber || sIdx + 1,
-        setType: s.set_type || s.setType || 'normal',
-        weightKg: s.weight_kg || s.weightKg || 0,
-        reps: s.reps || 10,
-        completed: false,
-      }));
-
-      return {
-        exerciseId,
-        exerciseName: ex.exercise_name || ex.exerciseName || `Exercise ${idx + 1}`,
-        measurementType: 'weight_reps',
-        sets: sets.length > 0 ? sets : Array.from({ length: 3 }, (_, i) => ({
+  const handleRepeatWorkout = async (w: WorkoutHistoryItem) => {
+    await startWorkout({
+      name: w.name,
+      exercises: (w.exercises || []).map((ex) => ({
+        exerciseId: ex.exercise_id,
+        exerciseName: ex.exercise_name,
+        sets: (ex.sets || []).map((s, idx) => ({
           id: generateUUID(),
-          setNumber: i + 1,
-          setType: 'normal' as const,
-          weightKg: 0,
-          reps: 10,
+          setNumber: s.set_number || idx + 1,
+          setType: s.set_type || 'normal',
+          weightKg: s.weight_kg || 0,
+          reps: s.reps || 10,
           completed: false,
         })),
-      };
+      })),
     });
-
-    const newId = generateUUID();
-    startWorkout(newId, `${w.name}`, undefined, initialExercises);
-    openSheet();
   };
 
   // 52-Week Activity Heatmap Data
@@ -439,7 +426,7 @@ export const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workouts }) =>
                 if (activeWorkout) {
                   openSheet();
                 } else {
-                  startWorkout(generateUUID(), 'Quick Training Session');
+                  void startWorkout({ name: 'Quick Training Session' });
                 }
               }}
               className="gap-1.5 text-xs text-brand-400 border-dark-700 hover:bg-dark-700"

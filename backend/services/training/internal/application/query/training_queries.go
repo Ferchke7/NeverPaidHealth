@@ -37,3 +37,7 @@ func (h *TrainingQueriesHandler) ListRoutines(ctx context.Context, userID uuid.U
 func (h *TrainingQueriesHandler) GetRoutineByID(ctx context.Context, id uuid.UUID) (*routine.Routine, error) {
 	return h.routineRepo.GetByID(ctx, id)
 }
+
+func (h *TrainingQueriesHandler) GetPreviousSets(ctx context.Context, userID uuid.UUID, exerciseIDs []uuid.UUID) (map[uuid.UUID][]*workout.WorkoutSet, error) {
+	return h.workoutRepo.GetPreviousSets(ctx, userID, exerciseIDs)
+}

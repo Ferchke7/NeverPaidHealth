@@ -17,12 +17,10 @@ import { ExerciseThumbnail } from '../../../entities/exercise/ui/ExerciseThumbna
 import { ExerciseInfoModal } from '../../exercise-detail/ui/ExerciseInfoModal.tsx';
 import { getExerciseVisual } from '../../../shared/lib/exerciseImages.ts';
 import { useTranslation } from '../../../shared/lib/i18n/i18n.ts';
-import { Program, ProgramDay, ProgramDayExercise } from '../../../entities/program/model/types.ts';
+import { Program, ProgramDay } from '../../../entities/program/model/types.ts';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../../shared/api/client.ts';
-import { useActiveWorkoutStore } from '../../../entities/workout/model/activeWorkoutStore.ts';
-import { generateUUID } from '../../../shared/lib/uuid.ts';
-import { ActiveExercise, ActiveSet } from '../../../entities/workout/model/types.ts';
+import { useStartWorkout } from '../../start-workout/model/useStartWorkout.ts';
 
 interface ProgramDetailModalProps {
   isOpen: boolean;
@@ -51,9 +49,7 @@ export const ProgramDetailModal: React.FC<ProgramDetailModalProps> = ({
     muscle?: string;
   } | null>(null);
 
-  const startWorkout = useActiveWorkoutStore((s) => s.startWorkout);
-  const activeWorkout = useActiveWorkoutStore((s) => s.workout);
-  const openSheet = useActiveWorkoutStore((s) => s.openSheet);
+  const startWorkout = useStartWorkout();
 
   const installMutation = useMutation({
     mutationFn: async ({ setActive }: { setActive: boolean }) => {
@@ -79,65 +75,11 @@ export const ProgramDetailModal: React.FC<ProgramDetailModalProps> = ({
   const currentDay: ProgramDay | undefined = days[selectedDayIndex] || days[0];
 
   const handleStartDayWorkout = async (day: ProgramDay) => {
-    if (activeWorkout) {
-      const hasCompletedSets = activeWorkout.exercises.some((e) =>
-        e.sets.some((s) => s.completed)
-      );
-      if (hasCompletedSets) {
-        const confirmed = window.confirm(
-          `You have an active workout in progress ("${activeWorkout.name}"). Discard it and start "${day.name}"?`
-        );
-        if (!confirmed) {
-          openSheet();
-          return;
-        }
-      }
-    }
-
-    const initialExercises: ActiveExercise[] = (day.exercises || []).map((ex: ProgramDayExercise, idx: number) => {
-      const exerciseId =
-        ex.exercise_id && ex.exercise_id !== '00000000-0000-0000-0000-000000000000'
-          ? ex.exercise_id
-          : `ex-${idx}-${generateUUID()}`;
-      const setsCount = Math.max(1, ex.target_sets || 3);
-      const defaultReps = ex.target_reps_min || 10;
-      const sets: ActiveSet[] = Array.from({ length: setsCount }, (_, i) => ({
-        id: generateUUID(),
-        setNumber: i + 1,
-        setType: 'normal',
-        weightKg: 0,
-        reps: defaultReps,
-        completed: false,
-      }));
-
-      return {
-        exerciseId,
-        exerciseName: ex.exercise_name || `Exercise ${idx + 1}`,
-        measurementType: 'weight_reps',
-        sets,
-      };
-    });
-
-    const tempId = generateUUID();
-    const workoutTitle = `${program.name} - ${day.name}`;
-    startWorkout(tempId, workoutTitle, undefined, initialExercises);
     onClose();
-    openSheet();
-
-    try {
-      const res = await apiClient<{ id: string; name: string }>('/workouts', {
-        method: 'POST',
-        body: JSON.stringify({ name: workoutTitle }),
-      });
-      if (res && res.id && res.id !== tempId) {
-        const current = useActiveWorkoutStore.getState().workout;
-        if (current && current.id === tempId) {
-          useActiveWorkoutStore.setState({ workout: { ...current, id: res.id } });
-        }
-      }
-    } catch (err) {
-      console.warn('Backend start day workout sync:', err);
-    }
+    await startWorkout({
+      name: `${program.name} - ${day.name}`,
+      exercises: day.exercises,
+    });
   };
 
   const getSplitLabel = (type: string) => {

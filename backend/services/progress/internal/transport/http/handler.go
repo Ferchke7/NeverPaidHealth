@@ -56,7 +56,11 @@ func (h *Handler) handleRecordFinishedWorkout(w http.ResponseWriter, r *http.Req
 		evt.OccurredAt = time.Now()
 	}
 	if evt.EventID == uuid.Nil {
-		evt.EventID = uuid.New()
+		if evt.WorkoutID != uuid.Nil {
+			evt.EventID = uuid.NewSHA1(uuid.NameSpaceURL, []byte("workout-finished:"+evt.WorkoutID.String()))
+		} else {
+			evt.EventID = uuid.New()
+		}
 	}
 
 	if h.onFinishedHandler != nil {

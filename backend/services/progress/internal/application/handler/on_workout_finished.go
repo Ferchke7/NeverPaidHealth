@@ -55,8 +55,13 @@ func NewOnWorkoutFinishedHandler(
 }
 
 func (h *OnWorkoutFinishedHandler) Handle(ctx context.Context, event WorkoutFinishedEvent) error {
+	dedupID := event.EventID
+	if event.WorkoutID != uuid.Nil {
+		dedupID = uuid.NewSHA1(uuid.NameSpaceURL, []byte("workout-finished:"+event.WorkoutID.String()))
+	}
+
 	// Idempotency check
-	processed, err := h.idempotencyStore.IsProcessed(ctx, event.EventID)
+	processed, err := h.idempotencyStore.IsProcessed(ctx, dedupID)
 	if err != nil {
 		return err
 	}
@@ -118,5 +123,5 @@ func (h *OnWorkoutFinishedHandler) Handle(ctx context.Context, event WorkoutFini
 		}
 	}
 
-	return h.idempotencyStore.MarkProcessed(ctx, event.EventID)
+	return h.idempotencyStore.MarkProcessed(ctx, dedupID)
 }

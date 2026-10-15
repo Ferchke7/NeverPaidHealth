@@ -34,12 +34,11 @@ func main() {
 		logger.Warn("Database not reachable at startup (running in disconnected mode)", "error", err)
 	}
 
-	priv, pub, err := jwtauth.GenerateDevKeypair()
+	tokenSvc, err := jwtauth.NewTokenServiceFromEnv()
 	if err != nil {
-		logger.Error("Failed to initialize token keys", "error", err)
+		logger.Error("Failed to initialize token service", "error", err)
 		os.Exit(1)
 	}
-	tokenSvc := jwtauth.NewTokenService(priv, pub)
 
 	userRepo := postgres.NewUserRepository(pool)
 	googleVerifier := google.NewTokenVerifier(googleClientID)

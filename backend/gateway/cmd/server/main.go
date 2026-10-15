@@ -19,13 +19,11 @@ func main() {
 	logger := logx.NewLogger("gateway")
 	cfg := config.Load()
 
-	// In dev mode or standalone, generate or load keypair
-	priv, pub, err := jwtauth.GenerateDevKeypair()
+	tokenService, err := jwtauth.NewTokenServiceFromEnv()
 	if err != nil {
-		logger.Error("Failed to initialize JWT keys", "error", err)
+		logger.Error("Failed to initialize JWT service", "error", err)
 		os.Exit(1)
 	}
-	tokenService := jwtauth.NewTokenService(priv, pub)
 
 	handler := proxy.NewRouter(cfg, tokenService, logger)
 

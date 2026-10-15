@@ -12,7 +12,10 @@ type ListExercisesQuery struct {
 	UserID         uuid.UUID
 	MuscleGroupStr *string
 	EquipmentStr   *string
+	CategoryStr    *string
 	SearchQuery    string
+	Limit          int
+	Offset         int
 }
 
 type ListExercisesHandler struct {
@@ -27,6 +30,9 @@ func (h *ListExercisesHandler) Handle(ctx context.Context, q ListExercisesQuery)
 	filter := application.ExerciseFilter{
 		UserID:      q.UserID,
 		SearchQuery: q.SearchQuery,
+		Category:    q.CategoryStr,
+		Limit:       q.Limit,
+		Offset:      q.Offset,
 	}
 
 	if q.MuscleGroupStr != nil && *q.MuscleGroupStr != "" {

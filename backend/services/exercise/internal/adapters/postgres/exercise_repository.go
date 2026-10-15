@@ -23,7 +23,9 @@ func NewExerciseRepository(pool *pgxpool.Pool) *ExerciseRepository {
 
 func (r *ExerciseRepository) GetByID(ctx context.Context, id uuid.UUID) (*exercise.Exercise, error) {
 	query := `
-		SELECT id, name, primary_muscle_group, secondary_muscle_groups, equipment, measurement_type, is_custom, created_by_user_id
+		SELECT id, name, primary_muscle_group, secondary_muscle_groups, equipment, measurement_type, is_custom, created_by_user_id,
+		       COALESCE(source_id, ''), COALESCE(category, 'strength'), COALESCE(level, 'intermediate'),
+		       COALESCE(instructions, '{}'), COALESCE(source_muscles, '{}')
 		FROM exercises WHERE id = $1
 	`
 	row := r.pool.QueryRow(ctx, query, id)
@@ -32,7 +34,9 @@ func (r *ExerciseRepository) GetByID(ctx context.Context, id uuid.UUID) (*exerci
 
 func (r *ExerciseRepository) List(ctx context.Context, filter application.ExerciseFilter) ([]*exercise.Exercise, error) {
 	query := `
-		SELECT id, name, primary_muscle_group, secondary_muscle_groups, equipment, measurement_type, is_custom, created_by_user_id
+		SELECT id, name, primary_muscle_group, secondary_muscle_groups, equipment, measurement_type, is_custom, created_by_user_id,
+		       COALESCE(source_id, ''), COALESCE(category, 'strength'), COALESCE(level, 'intermediate'),
+		       COALESCE(instructions, '{}'), COALESCE(source_muscles, '{}')
 		FROM exercises
 		WHERE (is_custom = FALSE OR created_by_user_id = $1)
 	`
@@ -51,6 +55,12 @@ func (r *ExerciseRepository) List(ctx context.Context, filter application.Exerci
 		argIdx++
 	}
 
+	if filter.Category != nil && *filter.Category != "" {
+		query += fmt.Sprintf(" AND category = $%d", argIdx)
+		args = append(args, *filter.Category)
+		argIdx++
+	}
+
 	if filter.SearchQuery != "" {
 		query += fmt.Sprintf(" AND LOWER(name) LIKE $%d", argIdx)
 		args = append(args, "%"+strings.ToLower(filter.SearchQuery)+"%")
@@ -59,13 +69,25 @@ func (r *ExerciseRepository) List(ctx context.Context, filter application.Exerci
 
 	query += " ORDER BY is_custom ASC, name ASC"
 
+	if filter.Limit > 0 {
+		query += fmt.Sprintf(" LIMIT $%d", argIdx)
+		args = append(args, filter.Limit)
+		argIdx++
+	}
+
+	if filter.Offset > 0 {
+		query += fmt.Sprintf(" OFFSET $%d", argIdx)
+		args = append(args, filter.Offset)
+		argIdx++
+	}
+
 	rows, err := r.pool.Query(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var list []*exercise.Exercise
+	list := make([]*exercise.Exercise, 0)
 	for rows.Next() {
 		ex, err := scanExercise(rows)
 		if err != nil {
@@ -84,14 +106,21 @@ func (r *ExerciseRepository) Save(ctx context.Context, ex *exercise.Exercise) er
 	}
 
 	query := `
-		INSERT INTO exercises (id, name, primary_muscle_group, secondary_muscle_groups, equipment, measurement_type, is_custom, created_by_user_id)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		INSERT INTO exercises (
+			id, name, primary_muscle_group, secondary_muscle_groups, equipment, measurement_type,
+			is_custom, created_by_user_id, source_id, category, level, instructions, source_muscles
+		)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
 		ON CONFLICT (id) DO UPDATE SET
 			name = EXCLUDED.name,
 			primary_muscle_group = EXCLUDED.primary_muscle_group,
 			secondary_muscle_groups = EXCLUDED.secondary_muscle_groups,
 			equipment = EXCLUDED.equipment,
-			measurement_type = EXCLUDED.measurement_type
+			measurement_type = EXCLUDED.measurement_type,
+			category = EXCLUDED.category,
+			level = EXCLUDED.level,
+			instructions = EXCLUDED.instructions,
+			source_muscles = EXCLUDED.source_muscles
 	`
 	_, err := r.pool.Exec(ctx, query,
 		ex.ID(),
@@ -102,6 +131,11 @@ func (r *ExerciseRepository) Save(ctx context.Context, ex *exercise.Exercise) er
 		ex.MeasurementType().String(),
 		ex.IsCustom(),
 		ex.CreatedByUserID(),
+		ex.SourceID(),
+		ex.Category(),
+		ex.Level(),
+		ex.Instructions(),
+		ex.SourceMuscles(),
 	)
 	return err
 }
@@ -122,9 +156,17 @@ func scanExercise(row pgx.Row) (*exercise.Exercise, error) {
 		measurementStr  string
 		isCustom        bool
 		createdByUserID *uuid.UUID
+		sourceID        string
+		category        string
+		level           string
+		instructions    []string
+		sourceMuscles   []string
 	)
 
-	err := row.Scan(&id, &name, &primaryStr, &secondariesStr, &equipmentStr, &measurementStr, &isCustom, &createdByUserID)
+	err := row.Scan(
+		&id, &name, &primaryStr, &secondariesStr, &equipmentStr, &measurementStr, &isCustom, &createdByUserID,
+		&sourceID, &category, &level, &instructions, &sourceMuscles,
+	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, exercise.ErrExerciseNotFound
@@ -155,5 +197,8 @@ func scanExercise(row pgx.Row) (*exercise.Exercise, error) {
 		return nil, err
 	}
 
-	return exercise.Reconstitute(id, name, primary, secondaries, equip, measure, isCustom, createdByUserID), nil
+	return exercise.ReconstituteFull(
+		id, name, primary, secondaries, equip, measure, isCustom, createdByUserID,
+		sourceID, category, level, instructions, sourceMuscles,
+	), nil
 }

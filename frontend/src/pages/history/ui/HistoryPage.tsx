@@ -17,10 +17,10 @@ import { Button } from '../../../shared/ui/button.tsx';
 import { formatDate, formatDuration } from '../../../shared/lib/dates.ts';
 import { formatWeight } from '../../../shared/lib/units.ts';
 import { useAuthStore } from '../../../entities/user/model/authStore.ts';
-import { useActiveWorkoutStore } from '../../../entities/workout/model/activeWorkoutStore.ts';
-import { WorkoutHistoryItem, ActiveExercise, ActiveSet } from '../../../entities/workout/model/types.ts';
-import { generateUUID } from '../../../shared/lib/uuid.ts';
+import { useStartWorkout } from '../../../features/start-workout/model/useStartWorkout.ts';
+import { WorkoutHistoryItem } from '../../../entities/workout/model/types.ts';
 import { WorkoutCalendar } from '../../../features/workout-calendar/ui/WorkoutCalendar.tsx';
+import { generateUUID } from '../../../shared/lib/uuid.ts';
 
 interface HistoryResponse {
   items: WorkoutHistoryItem[];
@@ -34,9 +34,7 @@ export const HistoryPage: React.FC = () => {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  const startWorkout = useActiveWorkoutStore((s) => s.startWorkout);
-  const activeWorkout = useActiveWorkoutStore((s) => s.workout);
-  const openSheet = useActiveWorkoutStore((s) => s.openSheet);
+  const startWorkout = useStartWorkout();
 
   const { data, isLoading } = useQuery<HistoryResponse>({
     queryKey: ['workouts'],
@@ -63,51 +61,22 @@ export const HistoryPage: React.FC = () => {
     setExpandedId((prev) => (prev === id ? null : id));
   };
 
-  const handleRepeatWorkout = (w: WorkoutHistoryItem) => {
-    if (activeWorkout) {
-      const hasCompletedSets = activeWorkout.exercises.some((e) =>
-        e.sets.some((s) => s.completed)
-      );
-      if (hasCompletedSets) {
-        const confirmed = window.confirm(
-          `You have an active workout in progress ("${activeWorkout.name}"). Discard it and start "${w.name}"?`
-        );
-        if (!confirmed) {
-          openSheet();
-          return;
-        }
-      }
-    }
-
-    const initialExercises: ActiveExercise[] = (w.exercises || []).map((ex: any, idx: number) => {
-      const exerciseId = ex.exercise_id || ex.exerciseId || `ex-${idx}-${generateUUID()}`;
-      const sets: ActiveSet[] = (ex.sets || []).map((s: any, sIdx: number) => ({
-        id: generateUUID(),
-        setNumber: s.set_number || s.setNumber || sIdx + 1,
-        setType: s.set_type || s.setType || 'normal',
-        weightKg: s.weight_kg || s.weightKg || 0,
-        reps: s.reps || 10,
-        completed: false,
-      }));
-
-      return {
-        exerciseId,
-        exerciseName: ex.exercise_name || ex.exerciseName || `Exercise ${idx + 1}`,
-        measurementType: 'weight_reps',
-        sets: sets.length > 0 ? sets : Array.from({ length: 3 }, (_, i) => ({
+  const handleRepeatWorkout = async (w: WorkoutHistoryItem) => {
+    await startWorkout({
+      name: w.name,
+      exercises: (w.exercises || []).map((ex) => ({
+        exerciseId: ex.exercise_id,
+        exerciseName: ex.exercise_name,
+        sets: (ex.sets || []).map((s, idx) => ({
           id: generateUUID(),
-          setNumber: i + 1,
-          setType: 'normal' as const,
-          weightKg: 0,
-          reps: 10,
+          setNumber: s.set_number || idx + 1,
+          setType: s.set_type || 'normal',
+          weightKg: s.weight_kg || 0,
+          reps: s.reps || 10,
           completed: false,
         })),
-      };
+      })),
     });
-
-    const newId = generateUUID();
-    startWorkout(newId, `${w.name}`, undefined, initialExercises);
-    openSheet();
   };
 
   // High-level statistics

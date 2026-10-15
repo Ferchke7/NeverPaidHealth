@@ -7,6 +7,15 @@ export function formatDate(dateString: string): string {
   });
 }
 
+export function toLocalDateKey(date: Date | string | number): string {
+  const d = typeof date === 'object' && date instanceof Date ? date : new Date(date);
+  if (isNaN(d.getTime())) return '';
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 export function formatTimeAgo(dateString: string): string {
   const now = new Date().getTime();
   const past = new Date(dateString).getTime();

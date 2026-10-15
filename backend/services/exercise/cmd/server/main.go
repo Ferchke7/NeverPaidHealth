@@ -15,6 +15,7 @@ import (
 	"github.com/neverpaidhealth/backend/services/exercise/internal/application/command"
 	"github.com/neverpaidhealth/backend/services/exercise/internal/application/query"
 	transport "github.com/neverpaidhealth/backend/services/exercise/internal/transport/http"
+	"github.com/neverpaidhealth/backend/services/exercise/migrations"
 )
 
 func main() {
@@ -27,6 +28,12 @@ func main() {
 	pool, err := pgxutil.NewPool(ctx, dbURL)
 	if err != nil {
 		logger.Warn("Database not reachable at startup (running in disconnected mode)", "error", err)
+	} else {
+		if err := postgres.RunMigrations(ctx, pool, migrations.FS); err != nil {
+			logger.Error("Failed to apply exercise migrations", "error", err)
+		} else {
+			logger.Info("Exercise database migrations verified and up to date")
+		}
 	}
 
 	repo := postgres.NewExerciseRepository(pool)

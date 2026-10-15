@@ -2,7 +2,9 @@ package http
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -95,6 +97,7 @@ func (h *Handler) Routes() http.Handler {
 	r.Get("/workouts", httpx.RequireAuth(h.handleListWorkouts))
 	r.Post("/workouts", httpx.RequireAuth(h.handleStartWorkout))
 	r.Get("/workouts/active", httpx.RequireAuth(h.handleGetActiveWorkout))
+	r.Get("/workouts/previous", httpx.RequireAuth(h.handleGetPreviousSets))
 	r.Get("/workouts/{id}", httpx.RequireAuth(h.handleGetWorkoutByID))
 	r.Delete("/workouts/{id}", httpx.RequireAuth(h.handleCancelWorkout))
 	r.Post("/workouts/{id}/cancel", httpx.RequireAuth(h.handleCancelWorkout))
@@ -319,8 +322,10 @@ func (h *Handler) handleListInstalledPrograms(w http.ResponseWriter, r *http.Req
 // -------------------------------------------------------------
 
 type startWorkoutReq struct {
-	RoutineID *string `json:"routine_id,omitempty"`
-	Name      string  `json:"name,omitempty"`
+	ID            *string `json:"id,omitempty"`
+	RoutineID     *string `json:"routine_id,omitempty"`
+	Name          string  `json:"name,omitempty"`
+	ReplaceActive bool    `json:"replace_active,omitempty"`
 }
 
 type addExerciseReq struct {
@@ -351,8 +356,20 @@ type createRoutineReq struct {
 }
 
 func (h *Handler) handleStartWorkout(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
-	var req startWorkoutReq
-	_ = json.NewDecoder(r.Body).Decode(&req)
+	req, ok := httpx.DecodeJSON[startWorkoutReq](w, r)
+	if !ok {
+		return
+	}
+
+	var clientID *uuid.UUID
+	if req.ID != nil && *req.ID != "" {
+		parsed, err := uuid.Parse(*req.ID)
+		if err != nil {
+			httpx.WriteProblem(w, http.StatusBadRequest, "Bad Request", "Invalid workout ID", "ERR_INVALID_UUID")
+			return
+		}
+		clientID = &parsed
+	}
 
 	var rotID *uuid.UUID
 	if req.RoutineID != nil && *req.RoutineID != "" {
@@ -362,11 +379,26 @@ func (h *Handler) handleStartWorkout(w http.ResponseWriter, r *http.Request, use
 	}
 
 	workoutRes, err := h.startWorkoutCmd.Handle(r.Context(), command.StartWorkoutInput{
-		UserID:    userID,
-		RoutineID: rotID,
-		Name:      req.Name,
+		ID:            clientID,
+		UserID:        userID,
+		RoutineID:     rotID,
+		Name:          req.Name,
+		ReplaceActive: req.ReplaceActive,
 	})
 	if err != nil {
+		var activeErr *command.ActiveWorkoutExistsError
+		if errors.As(err, &activeErr) {
+			httpx.WriteJSON(w, http.StatusConflict, map[string]any{
+				"code":  "ERR_ACTIVE_WORKOUT_EXISTS",
+				"error": "Active workout already exists",
+				"active": map[string]any{
+					"id":         activeErr.Active.ID().String(),
+					"name":       activeErr.Active.Name(),
+					"started_at": activeErr.Active.StartedAt().Format("2006-01-02T15:04:05Z07:00"),
+				},
+			})
+			return
+		}
 		httpx.WriteProblem(w, http.StatusBadRequest, "Bad Request", err.Error(), "ERR_START_WORKOUT")
 		return
 	}
@@ -377,6 +409,14 @@ func (h *Handler) handleStartWorkout(w http.ResponseWriter, r *http.Request, use
 func (h *Handler) handleGetActiveWorkout(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
 	active, err := h.queries.GetActiveWorkout(r.Context(), userID)
 	if err != nil {
+		if errors.Is(err, workout.ErrWorkoutNotFound) {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+		httpx.WriteProblem(w, http.StatusInternalServerError, "Internal Server Error", err.Error(), "ERR_INTERNAL")
+		return
+	}
+	if active == nil {
 		w.WriteHeader(http.StatusNoContent)
 		return
 	}
@@ -417,9 +457,16 @@ func (h *Handler) handleListWorkouts(w http.ResponseWriter, r *http.Request, use
 	httpx.WriteJSON(w, http.StatusOK, map[string]any{"items": dtos})
 }
 
+type finishExerciseReq struct {
+	ExerciseID      string                  `json:"exercise_id"`
+	ExerciseName    string                  `json:"exercise_name"`
+	MeasurementType string                  `json:"measurement_type"`
+	Sets            []command.FinishSetInput `json:"sets"`
+}
+
 type finishWorkoutReq struct {
-	DurationSeconds *int                          `json:"duration_seconds,omitempty"`
-	Exercises       []command.FinishExerciseInput `json:"exercises,omitempty"`
+	DurationSeconds *int                `json:"duration_seconds,omitempty"`
+	Exercises       []finishExerciseReq `json:"exercises,omitempty"`
 }
 
 func (h *Handler) handleFinishWorkout(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
@@ -428,15 +475,37 @@ func (h *Handler) handleFinishWorkout(w http.ResponseWriter, r *http.Request, us
 		return
 	}
 
-	var req finishWorkoutReq
-	_ = json.NewDecoder(r.Body).Decode(&req)
+	req, ok := httpx.DecodeJSON[finishWorkoutReq](w, r)
+	if !ok {
+		return
+	}
+
+	cmdExercises := make([]command.FinishExerciseInput, 0, len(req.Exercises))
+	for _, ex := range req.Exercises {
+		exUUID, err := uuid.Parse(ex.ExerciseID)
+		if err != nil {
+			httpx.WriteProblem(w, http.StatusUnprocessableEntity, "Unprocessable Entity", "Invalid exercise_id format", "ERR_INVALID_EXERCISE_ID")
+			return
+		}
+		cmdExercises = append(cmdExercises, command.FinishExerciseInput{
+			ExerciseID:      exUUID,
+			ExerciseName:    ex.ExerciseName,
+			MeasurementType: ex.MeasurementType,
+			Sets:            ex.Sets,
+		})
+	}
 
 	finished, err := h.finishWorkoutCmd.Handle(r.Context(), command.FinishWorkoutInput{
 		WorkoutID:       id,
+		UserID:          userID,
 		DurationSeconds: req.DurationSeconds,
-		Exercises:       req.Exercises,
+		Exercises:       cmdExercises,
 	})
 	if err != nil {
+		if errors.Is(err, workout.ErrWorkoutNotFound) {
+			httpx.WriteProblem(w, http.StatusNotFound, "Not Found", "Workout not found", "ERR_NOT_FOUND")
+			return
+		}
 		httpx.WriteProblem(w, http.StatusBadRequest, "Bad Request", err.Error(), "ERR_FINISH_WORKOUT")
 		return
 	}
@@ -519,6 +588,7 @@ func (h *Handler) handleUpdateSet(w http.ResponseWriter, r *http.Request, userID
 
 	err := h.updateSetCmd.Handle(r.Context(), command.UpdateSetInput{
 		WorkoutID:       workoutID,
+		UserID:          userID,
 		SetID:           setID,
 		WeightKg:        req.WeightKg,
 		Reps:            req.Reps,
@@ -528,6 +598,10 @@ func (h *Handler) handleUpdateSet(w http.ResponseWriter, r *http.Request, userID
 		DurationSeconds: req.DurationSeconds,
 	})
 	if err != nil {
+		if errors.Is(err, workout.ErrWorkoutNotFound) {
+			httpx.WriteProblem(w, http.StatusNotFound, "Not Found", "Workout not found", "ERR_NOT_FOUND")
+			return
+		}
 		httpx.WriteProblem(w, http.StatusBadRequest, "Bad Request", err.Error(), "ERR_UPDATE_SET")
 		return
 	}
@@ -590,8 +664,12 @@ func (h *Handler) handleDeleteRoutine(w http.ResponseWriter, r *http.Request, us
 		return
 	}
 
-	if err := h.deleteRoutineCmd.Handle(r.Context(), id); err != nil {
-		httpx.WriteProblem(w, http.StatusInternalServerError, "Internal Server Error", err.Error(), "ERR_DELETE_ROUTINE")
+	if err := h.deleteRoutineCmd.Handle(r.Context(), userID, id); err != nil {
+		if errors.Is(err, routine.ErrRoutineNotFound) {
+			httpx.WriteProblem(w, http.StatusNotFound, "Not Found", "Routine not found", "ERR_NOT_FOUND")
+			return
+		}
+		httpx.WriteProblem(w, http.StatusBadRequest, "Bad Request", err.Error(), "ERR_DELETE_ROUTINE")
 		return
 	}
 
@@ -604,12 +682,50 @@ func (h *Handler) handleCancelWorkout(w http.ResponseWriter, r *http.Request, us
 		return
 	}
 
-	if err := h.deleteWorkoutCmd.Handle(r.Context(), id); err != nil {
+	if err := h.deleteWorkoutCmd.Handle(r.Context(), userID, id); err != nil {
+		if errors.Is(err, workout.ErrWorkoutNotFound) {
+			httpx.WriteProblem(w, http.StatusNotFound, "Not Found", "Workout not found", "ERR_NOT_FOUND")
+			return
+		}
 		httpx.WriteProblem(w, http.StatusInternalServerError, "Internal Server Error", err.Error(), "ERR_CANCEL_WORKOUT")
 		return
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *Handler) handleGetPreviousSets(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
+	exParam := httpx.QueryString(r, "exercise_ids", "")
+	if exParam == "" {
+		httpx.WriteJSON(w, http.StatusOK, map[string]any{"items": map[string]any{}})
+		return
+	}
+
+	parts := strings.Split(exParam, ",")
+	var exIDs []uuid.UUID
+	for _, p := range parts {
+		trimmed := strings.TrimSpace(p)
+		if id, err := uuid.Parse(trimmed); err == nil {
+			exIDs = append(exIDs, id)
+		}
+	}
+
+	previous, err := h.queries.GetPreviousSets(r.Context(), userID, exIDs)
+	if err != nil {
+		httpx.WriteProblem(w, http.StatusInternalServerError, "Internal Server Error", err.Error(), "ERR_INTERNAL")
+		return
+	}
+
+	items := make(map[string]any)
+	for exID, sets := range previous {
+		var setDTOs []any
+		for _, s := range sets {
+			setDTOs = append(setDTOs, mapSetDTO(s))
+		}
+		items[exID.String()] = setDTOs
+	}
+
+	httpx.WriteJSON(w, http.StatusOK, map[string]any{"items": items})
 }
 
 func mapProgramDTO(p *program.Program) map[string]any {

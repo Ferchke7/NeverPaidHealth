@@ -12,6 +12,7 @@ export interface ActiveSet {
 }
 
 export interface ActiveExercise {
+  instanceId: string;
   exerciseId: string;
   exerciseName: string;
   measurementType: string;

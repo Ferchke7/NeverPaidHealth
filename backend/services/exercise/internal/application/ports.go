@@ -12,6 +12,9 @@ type ExerciseFilter struct {
 	MuscleGroup *exercise.MuscleGroup
 	Equipment   *exercise.Equipment
 	SearchQuery string
+	Category    *string
+	Limit       int
+	Offset      int
 }
 
 type ExerciseRepo interface {

@@ -18,7 +18,6 @@ import { useRestTimerStore } from '../../../entities/workout/model/restTimerStor
 import { SetRow, PreviousSetData } from '../../../entities/workout/ui/SetRow.tsx';
 import { ExercisePickerModal } from '../../../features/exercise-picker/ui/ExercisePickerModal.tsx';
 import { Exercise } from '../../../entities/exercise/model/types.ts';
-import { WorkoutHistoryItem } from '../../../entities/workout/model/types.ts';
 import { Button } from '../../../shared/ui/button.tsx';
 import { Modal } from '../../../shared/ui/modal.tsx';
 import { formatDuration } from '../../../shared/lib/dates.ts';
@@ -59,86 +58,60 @@ export const ActiveWorkoutSheet: React.FC = () => {
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [restRemaining, setRestRemaining] = useState(0);
   const [isPickerOpen, setIsPickerOpen] = useState(false);
-  const [replacingExerciseId, setReplacingExerciseId] = useState<string | null>(null);
+  const [replacingInstanceId, setReplacingInstanceId] = useState<string | null>(null);
   const [isDiscardConfirmOpen, setIsDiscardConfirmOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [summary, setSummary] = useState<FinishedWorkoutSummary | null>(null);
   const [inspectingExerciseName, setInspectingExerciseName] = useState<string | null>(null);
 
-  // Fetch previous workout history for accurate previous set benchmarks & PR lookup
-  const { data: historyData } = useQuery<{ items: WorkoutHistoryItem[] }>({
-    queryKey: ['workouts'],
-    queryFn: () => apiClient<{ items: WorkoutHistoryItem[] }>('/workouts?limit=50'),
+  // Exercise IDs in active workout
+  const exerciseIds = useMemo(() => {
+    if (!workout) return [];
+    return Array.from(new Set(workout.exercises.map((e) => e.exerciseId).filter(Boolean)));
+  }, [workout]);
+
+  // Fetch previous completed sets directly from training service
+  const { data: previousData } = useQuery<{ items: Record<string, PreviousSetData[]> }>({
+    queryKey: ['workouts', 'previous', exerciseIds.sort().join(',')],
+    queryFn: () =>
+      apiClient<{ items: Record<string, PreviousSetData[]> }>(
+        `/workouts/previous?exercise_ids=${exerciseIds.join(',')}`
+      ),
+    enabled: exerciseIds.length > 0 && isOpen,
   });
 
-  // Build lookup maps for previous completed exercise sets and all-time PRs
-  const { previousExerciseMap, prMap } = useMemo(() => {
-    const prevMap = new Map<string, PreviousSetData[]>();
-    const personalRecordMap = new Map<string, PreviousSetData>();
+  const previousExerciseMap = useMemo(() => {
+    const map = new Map<string, PreviousSetData[]>();
+    if (previousData?.items) {
+      for (const [id, sets] of Object.entries(previousData.items)) {
+        map.set(id.toLowerCase(), sets);
+      }
+    }
+    return map;
+  }, [previousData]);
 
-    const items: WorkoutHistoryItem[] = Array.isArray(historyData)
-      ? historyData
-      : (historyData?.items || []);
+  // Fetch all-time personal records from progress records
+  const { data: recordsData } = useQuery<any[]>({
+    queryKey: ['records'],
+    queryFn: () => apiClient<any[]>('/progress/records'),
+    enabled: isOpen,
+  });
 
-    if (!items.length) return { previousExerciseMap: prevMap, prMap: personalRecordMap };
-
-    // Sort finished workouts newest first
-    const sorted = [...items].sort(
-      (a, b) =>
-        new Date(b.started_at || (b as any).startedAt || 0).getTime() -
-        new Date(a.started_at || (a as any).startedAt || 0).getTime()
-    );
-
-    for (const w of sorted) {
-      if (!w.exercises) continue;
-      for (const ex of w.exercises) {
-        const rawId = (ex as any).exercise_id || (ex as any).exerciseId || (ex as any).id;
-        const keyId = rawId ? String(rawId).toLowerCase() : null;
-        const rawName = (ex as any).exercise_name || (ex as any).exerciseName || (ex as any).name || '';
-        const keyName = rawName.toLowerCase().trim();
-        const cleanKeyName = keyName.replace(/[^a-z0-9]/g, '');
-
-        const setsArray = (ex as any).sets || [];
-        const validSets: PreviousSetData[] = setsArray
-          .filter(
-            (s: any) =>
-              s.completed ||
-              Number(s.weight_kg ?? s.weightKg ?? s.weight ?? 0) > 0 ||
-              Number(s.reps ?? s.target_reps ?? s.targetReps ?? 0) > 0
-          )
-          .map((s: any) => ({
-            weightKg: Number(s.weight_kg ?? s.weightKg ?? s.weight ?? 0) || 0,
-            reps: Number(s.reps ?? s.target_reps ?? s.targetReps ?? 0) || 0,
-          }));
-
-        if (validSets.length > 0) {
-          // Record most recent session's sets for the previous column
-          if (keyId && !prevMap.has(keyId)) prevMap.set(keyId, validSets);
-          if (keyName && !prevMap.has(keyName)) prevMap.set(keyName, validSets);
-          if (cleanKeyName && !prevMap.has(cleanKeyName)) prevMap.set(cleanKeyName, validSets);
-
-          // Update all-time max PR for this exercise
-          for (const s of validSets) {
-            const currentPR =
-              (keyId && personalRecordMap.get(keyId)) ||
-              (keyName && personalRecordMap.get(keyName)) ||
-              (cleanKeyName && personalRecordMap.get(cleanKeyName));
-            if (
-              !currentPR ||
-              s.weightKg > currentPR.weightKg ||
-              (s.weightKg === currentPR.weightKg && s.reps > currentPR.reps)
-            ) {
-              if (keyId) personalRecordMap.set(keyId, s);
-              if (keyName) personalRecordMap.set(keyName, s);
-              if (cleanKeyName) personalRecordMap.set(cleanKeyName, s);
-            }
-          }
+  const prMap = useMemo(() => {
+    const map = new Map<string, { weightKg: number; reps: number }>();
+    if (Array.isArray(recordsData)) {
+      for (const rec of recordsData) {
+        const id = rec.exercise_id ? String(rec.exercise_id).toLowerCase() : null;
+        if (id && (rec.best_weight_kg || rec.max_reps)) {
+          map.set(id, {
+            weightKg: rec.best_weight_kg || 0,
+            reps: rec.max_reps || 0,
+          });
         }
       }
     }
-
-    return { previousExerciseMap: prevMap, prMap: personalRecordMap };
-  }, [historyData]);
+    return map;
+  }, [recordsData]);
 
   // Elapsed workout stopwatch
   useEffect(() => {
@@ -178,67 +151,64 @@ export const ActiveWorkoutSheet: React.FC = () => {
 
   const handleFinishWorkout = async () => {
     if (!workout) return;
+
+    const totalSets = workout.exercises.reduce((sum, e) => sum + e.sets.length, 0);
+    const completedSets = workout.exercises.reduce(
+      (sum, e) => sum + e.sets.filter((s) => s.completed).length,
+      0
+    );
+
+    if (completedSets === 0) {
+      alert(t('activeWorkout.atLeastOneCompletedSet') || 'Please complete at least one set before finishing.');
+      return;
+    }
+
+    if (completedSets < totalSets) {
+      const confirmFinish = window.confirm(
+        t('activeWorkout.uncompletedSetsWarning') ||
+          'Some sets are not marked completed. Finishing now will save only completed sets. Continue?'
+      );
+      if (!confirmFinish) return;
+    }
+
     setIsSubmitting(true);
     try {
-      let completedSetsCount = 0;
-      for (const ex of workout.exercises) {
-        for (const s of ex.sets) {
-          if (s.completed || Number(s.reps) > 0) completedSetsCount++;
-        }
-      }
-
-      const payloadExercises = workout.exercises.map((ex) => ({
-        exercise_id: ex.exerciseId,
-        exercise_name: ex.exerciseName,
-        measurement_type: ex.measurementType,
-        sets: ex.sets.map((s) => ({
-          id: s.id,
-          set_number: s.setNumber,
-          set_type: s.setType,
-          weight_kg: Number(s.weightKg) || 0,
-          reps: Number(s.reps) || 0,
-          rpe: s.rpe ? Number(s.rpe) : undefined,
-          duration_seconds: s.durationSeconds,
-          completed: s.completed || Number(s.reps) > 0,
-        })),
-      }));
+      const payloadExercises = workout.exercises
+        .map((ex) => ({
+          exercise_id: ex.exerciseId,
+          exercise_name: ex.exerciseName,
+          measurement_type: ex.measurementType,
+          sets: ex.sets
+            .filter((s) => s.completed)
+            .map((s) => ({
+              id: s.id,
+              set_number: s.setNumber,
+              set_type: s.setType,
+              weight_kg: Number(s.weightKg) || 0,
+              reps: Number(s.reps) || 0,
+              rpe: s.rpe ? Number(s.rpe) : undefined,
+              duration_seconds: s.durationSeconds,
+              completed: true,
+            })),
+        }))
+        .filter((ex) => ex.sets.length > 0);
 
       // 1. Sync finished workout to training service
-      try {
-        await apiClient(`/workouts/${workout.id}/finish`, {
-          method: 'POST',
-          body: JSON.stringify({
-            duration_seconds: elapsedSeconds,
-            exercises: payloadExercises,
-          }),
-        });
-      } catch (err) {
-        console.warn('Finish workout API call:', err);
-      }
-
-      // 2. Sync to progress analytics service
-      try {
-        await apiClient('/progress/workouts', {
-          method: 'POST',
-          body: JSON.stringify({
-            workout_id: workout.id,
-            duration_seconds: elapsedSeconds,
-            total_volume_kg: liveVolume,
-            completed_sets_count: completedSetsCount,
-            exercises: payloadExercises,
-          }),
-        });
-      } catch (err) {
-        console.warn('Progress service sync:', err);
-      }
+      await apiClient(`/workouts/${workout.id}/finish`, {
+        method: 'POST',
+        body: JSON.stringify({
+          duration_seconds: elapsedSeconds,
+          exercises: payloadExercises,
+        }),
+      });
 
       setSummary({
         id: workout.id,
         name: workout.name,
         durationSeconds: elapsedSeconds,
         totalVolumeKg: liveVolume,
-        completedSetsCount,
-        exerciseCount: workout.exercises.length,
+        completedSetsCount: completedSets,
+        exerciseCount: payloadExercises.length,
       });
 
       stopRestTimer();
@@ -249,6 +219,9 @@ export const ActiveWorkoutSheet: React.FC = () => {
         queryClient.invalidateQueries({ queryKey: ['history'] }),
         queryClient.invalidateQueries({ queryKey: ['dashboard'] }),
       ]);
+    } catch (err: any) {
+      console.error('Finish workout API error:', err);
+      alert('Network error while saving workout. Your workout remains safe locally. Please retry.');
     } finally {
       setIsSubmitting(false);
     }
@@ -272,9 +245,13 @@ export const ActiveWorkoutSheet: React.FC = () => {
         ? exercise.measurement_type
         : 'weight_reps';
 
-    if (replacingExerciseId) {
-      replaceExercise(replacingExerciseId, exercise.id, exercise.name, measType);
-      setReplacingExerciseId(null);
+    if (replacingInstanceId) {
+      replaceExercise(replacingInstanceId, {
+        id: exercise.id,
+        name: exercise.name,
+        measurementType: measType,
+      });
+      setReplacingInstanceId(null);
     } else {
       addExercise(exercise.id, exercise.name, measType);
     }
@@ -415,7 +392,7 @@ export const ActiveWorkoutSheet: React.FC = () => {
 
                 return (
                   <div
-                    key={exercise.exerciseId || exIndex}
+                    key={exercise.instanceId || exercise.exerciseId || exIndex}
                     className="bg-dark-900/90 border border-dark-800/90 rounded-2xl p-3 sm:p-4 space-y-3 shadow-xl backdrop-blur-sm"
                   >
                     {/* Exercise Card Header */}
@@ -457,7 +434,7 @@ export const ActiveWorkoutSheet: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => {
-                            setReplacingExerciseId(exercise.exerciseId);
+                            setReplacingInstanceId(exercise.instanceId);
                             setIsPickerOpen(true);
                           }}
                           className="text-zinc-500 hover:text-brand-400 p-1.5 rounded-xl hover:bg-dark-800 transition-colors"
@@ -474,7 +451,7 @@ export const ActiveWorkoutSheet: React.FC = () => {
                           <HelpCircle className="w-4 h-4" />
                         </button>
                         <button
-                          onClick={() => removeExercise(exercise.exerciseId)}
+                          onClick={() => removeExercise(exercise.instanceId)}
                           className="text-zinc-500 hover:text-red-400 p-1.5 rounded-xl hover:bg-dark-800 transition-colors"
                           title="Remove Exercise"
                         >
@@ -506,13 +483,15 @@ export const ActiveWorkoutSheet: React.FC = () => {
                             key={set.id || sIdx}
                             set={set}
                             previousSet={prevSet}
-                            onUpdate={(updates) => updateSet(exercise.exerciseId, set.id, updates)}
-                            onDelete={() => removeSet(exercise.exerciseId, set.id)}
+                            measurementType={exercise.measurementType}
+                            onUpdate={(updates) => updateSet(exercise.instanceId, set.id, updates)}
+                            onDelete={() => removeSet(exercise.instanceId, set.id)}
                             onCompleteToggle={() => {
                               const willBeCompleted = !set.completed;
-                              updateSet(exercise.exerciseId, set.id, { completed: willBeCompleted });
+                              updateSet(exercise.instanceId, set.id, { completed: willBeCompleted });
                               if (willBeCompleted) {
-                                useRestTimerStore.getState().startTimer(90);
+                                const defaultRestSecs = Number(localStorage.getItem('np_default_rest_secs')) || 90;
+                                useRestTimerStore.getState().startTimer(defaultRestSecs);
                               }
                             }}
                           />
@@ -523,7 +502,7 @@ export const ActiveWorkoutSheet: React.FC = () => {
                     {/* Add Set & Warmup Buttons */}
                     <div className="flex items-center gap-2 pt-2">
                       <button
-                        onClick={() => addSet(exercise.exerciseId, 'normal')}
+                        onClick={() => addSet(exercise.instanceId, 'normal')}
                         className="flex-1 py-2 bg-dark-800/80 hover:bg-dark-700 text-zinc-200 hover:text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all border border-dark-700/80 active:scale-[0.98]"
                       >
                         <Plus className="w-3.5 h-3.5 text-brand-400" />
@@ -531,7 +510,7 @@ export const ActiveWorkoutSheet: React.FC = () => {
                       </button>
 
                       <button
-                        onClick={() => addSet(exercise.exerciseId, 'warmup')}
+                        onClick={() => addSet(exercise.instanceId, 'warmup')}
                         className="py-2 px-3.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 rounded-xl text-xs font-semibold flex items-center justify-center gap-1 transition-all border border-amber-500/25 active:scale-[0.98]"
                         title="Add Warmup Set"
                       >

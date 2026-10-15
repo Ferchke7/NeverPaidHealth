@@ -2,6 +2,7 @@ package command
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/google/uuid"
@@ -15,6 +16,7 @@ import (
 
 type UpdateSetInput struct {
 	WorkoutID       uuid.UUID
+	UserID          uuid.UUID
 	SetID           uuid.UUID
 	WeightKg        float64
 	Reps            int
@@ -36,6 +38,9 @@ func (h *UpdateSetHandler) Handle(ctx context.Context, in UpdateSetInput) error 
 	w, err := h.workoutRepo.GetByID(ctx, in.WorkoutID)
 	if err != nil {
 		return err
+	}
+	if in.UserID != uuid.Nil && w.UserID() != in.UserID {
+		return workout.ErrWorkoutNotFound
 	}
 
 	st, err := measure.NewSetType(in.SetType)
@@ -87,6 +92,7 @@ type FinishExerciseInput struct {
 
 type FinishWorkoutInput struct {
 	WorkoutID       uuid.UUID             `json:"workout_id"`
+	UserID          uuid.UUID             `json:"user_id,omitempty"`
 	DurationSeconds *int                  `json:"duration_seconds,omitempty"`
 	Exercises       []FinishExerciseInput `json:"exercises,omitempty"`
 }
@@ -106,6 +112,9 @@ func (h *FinishWorkoutHandler) Handle(ctx context.Context, in FinishWorkoutInput
 	if err != nil {
 		return nil, err
 	}
+	if in.UserID != uuid.Nil && w.UserID() != in.UserID {
+		return nil, workout.ErrWorkoutNotFound
+	}
 
 	if len(in.Exercises) > 0 {
 		var exList []*workout.WorkoutExercise
@@ -120,13 +129,23 @@ func (h *FinishWorkoutHandler) Handle(ctx context.Context, in FinishWorkoutInput
 			}
 			we := workout.NewWorkoutExercise(exIn.ExerciseID, name, measType, idx)
 			for sIdx, sIn := range exIn.Sets {
-				st, _ := measure.NewSetType(sIn.SetType)
-				wKg, _ := measure.NewWeightKg(sIn.WeightKg)
-				reps, _ := measure.NewReps(sIn.Reps)
+				st, err := measure.NewSetType(sIn.SetType)
+				if err != nil {
+					st = measure.SetTypeNormal
+				}
+				wKg, err := measure.NewWeightKg(sIn.WeightKg)
+				if err != nil {
+					wKg = measure.ZeroWeight()
+				}
+				reps, err := measure.NewReps(sIn.Reps)
+				if err != nil {
+					reps, _ = measure.NewReps(0)
+				}
 				var rpe *measure.RPE
 				if sIn.RPE != nil {
-					r, _ := measure.NewRPE(*sIn.RPE)
-					rpe = &r
+					if r, err := measure.NewRPE(*sIn.RPE); err == nil {
+						rpe = &r
+					}
 				}
 				var dur *measure.Duration
 				if sIn.DurationSeconds != nil {
@@ -141,7 +160,7 @@ func (h *FinishWorkoutHandler) Handle(ctx context.Context, in FinishWorkoutInput
 				if sID == uuid.Nil {
 					sID = uuid.New()
 				}
-				completed := sIn.Completed || (sIn.WeightKg > 0 || sIn.Reps > 0)
+				completed := sIn.Completed
 				e1rm := calc.CalculateE1RM(wKg, reps)
 				we.AppendSet(workout.ReconstituteSet(sID, setNum, st, wKg, reps, rpe, dur, completed, e1rm))
 			}
@@ -229,7 +248,17 @@ func NewDeleteRoutineHandler(repo application.RoutineRepo) *DeleteRoutineHandler
 	return &DeleteRoutineHandler{routineRepo: repo}
 }
 
-func (h *DeleteRoutineHandler) Handle(ctx context.Context, id uuid.UUID) error {
+func (h *DeleteRoutineHandler) Handle(ctx context.Context, userID uuid.UUID, id uuid.UUID) error {
+	r, err := h.routineRepo.GetByID(ctx, id)
+	if err != nil {
+		return err
+	}
+	if r.UserID() == uuid.Nil {
+		return errors.New("cannot delete system routine")
+	}
+	if userID != uuid.Nil && r.UserID() != userID {
+		return routine.ErrRoutineNotFound
+	}
 	return h.routineRepo.Delete(ctx, id)
 }
 
@@ -241,7 +270,14 @@ func NewDeleteWorkoutHandler(repo application.WorkoutRepo) *DeleteWorkoutHandler
 	return &DeleteWorkoutHandler{workoutRepo: repo}
 }
 
-func (h *DeleteWorkoutHandler) Handle(ctx context.Context, id uuid.UUID) error {
+func (h *DeleteWorkoutHandler) Handle(ctx context.Context, userID uuid.UUID, id uuid.UUID) error {
+	w, err := h.workoutRepo.GetByID(ctx, id)
+	if err != nil {
+		return err
+	}
+	if userID != uuid.Nil && w.UserID() != userID {
+		return workout.ErrWorkoutNotFound
+	}
 	return h.workoutRepo.Delete(ctx, id)
 }
 

@@ -24,13 +24,20 @@ type Workout struct {
 }
 
 func StartWorkout(userID uuid.UUID, name string, routineID *uuid.UUID, now time.Time) *Workout {
+	return StartWorkoutWithID(uuid.New(), userID, name, routineID, now)
+}
+
+func StartWorkoutWithID(id uuid.UUID, userID uuid.UUID, name string, routineID *uuid.UUID, now time.Time) *Workout {
 	trimmedName := strings.TrimSpace(name)
 	if trimmedName == "" {
-		trimmedName = "Workout on " + now.Format("Monday Afternoon")
+		trimmedName = "Workout on " + now.Format("Monday, Jan 2")
+	}
+	if id == uuid.Nil {
+		id = uuid.New()
 	}
 
 	return &Workout{
-		id:        uuid.New(),
+		id:        id,
 		userID:    userID,
 		name:      trimmedName,
 		routineID: routineID,
@@ -42,7 +49,11 @@ func StartWorkout(userID uuid.UUID, name string, routineID *uuid.UUID, now time.
 }
 
 func StartFromRoutine(userID uuid.UUID, r *routine.Routine, now time.Time) *Workout {
-	w := StartWorkout(userID, r.Name(), &[]uuid.UUID{r.ID()}[0], now)
+	return StartFromRoutineWithID(uuid.New(), userID, r, now)
+}
+
+func StartFromRoutineWithID(id uuid.UUID, userID uuid.UUID, r *routine.Routine, now time.Time) *Workout {
+	w := StartWorkoutWithID(id, userID, r.Name(), &[]uuid.UUID{r.ID()}[0], now)
 	for idx, re := range r.Exercises() {
 		we := NewWorkoutExercise(re.ExerciseID(), re.ExerciseName(), "weight_reps", idx)
 		targetReps := 10

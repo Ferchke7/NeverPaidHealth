@@ -23,10 +23,19 @@ func NewRouter(cfg *config.Config, tokenService *jwtauth.TokenService, logger *s
 	r.Use(httpx.RequestLogger(logger))
 	r.Use(middleware.Recoverer)
 
+	// Sanitize incoming headers: prevent external clients from spoofing internal identity headers
+	r.Use(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			r.Header.Del("X-User-Id")
+			r.Header.Del("X-User-Email")
+			next.ServeHTTP(w, r)
+		})
+	})
+
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   []string{"*"},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token", "If-None-Match", "X-User-Id"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token", "If-None-Match"},
 		ExposedHeaders:   []string{"Link", "ETag"},
 		AllowCredentials: false,
 		MaxAge:           300,

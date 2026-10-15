@@ -12,6 +12,7 @@ export interface PreviousSetData {
 interface SetRowProps {
   set: ActiveSet;
   previousSet?: PreviousSetData | null;
+  measurementType?: string;
   onUpdate: (updates: Partial<ActiveSet>) => void;
   onDelete: () => void;
   onCompleteToggle: () => void;
@@ -20,6 +21,7 @@ interface SetRowProps {
 export const SetRow: React.FC<SetRowProps> = ({
   set,
   previousSet,
+  measurementType = 'weight_reps',
   onUpdate,
   onDelete,
   onCompleteToggle,
@@ -110,7 +112,15 @@ export const SetRow: React.FC<SetRowProps> = ({
             step="0.5"
             min="0"
             value={set.weightKg === 0 ? '' : set.weightKg}
-            placeholder={previousSet && previousSet.weightKg > 0 ? `${previousSet.weightKg}` : '0'}
+            placeholder={
+              previousSet && previousSet.weightKg > 0
+                ? `${previousSet.weightKg}`
+                : measurementType === 'distance_duration'
+                ? 'km'
+                : measurementType === 'bodyweight_reps'
+                ? '+0'
+                : '0'
+            }
             onChange={(e) => onUpdate({ weightKg: parseFloat(e.target.value) || 0 })}
             className={`w-full bg-dark-900 border rounded-xl py-1.5 px-1 sm:px-2 text-center text-xs sm:text-sm font-mono font-bold transition-all focus:outline-none focus:ring-1 focus:ring-brand-500 ${
               set.completed
@@ -119,7 +129,7 @@ export const SetRow: React.FC<SetRowProps> = ({
             }`}
           />
         </div>
-        {e1rm !== null && e1rm > 0 && (
+        {e1rm !== null && e1rm > 0 && measurementType === 'weight_reps' && (
           <div className="text-[8px] sm:text-[9px] text-zinc-500 text-center mt-0.5 font-mono leading-none truncate">
             1RM: {formatWeight(e1rm, unit)}
           </div>
@@ -131,9 +141,15 @@ export const SetRow: React.FC<SetRowProps> = ({
         <input
           type="number"
           min="1"
-          max="200"
+          max={measurementType === 'duration' ? 3600 : 200}
           value={set.reps === 0 ? '' : set.reps}
-          placeholder={previousSet && previousSet.reps > 0 ? `${previousSet.reps}` : '10'}
+          placeholder={
+            previousSet && previousSet.reps > 0
+              ? `${previousSet.reps}`
+              : measurementType === 'duration' || measurementType === 'distance_duration'
+              ? '60s'
+              : '10'
+          }
           onChange={(e) => onUpdate({ reps: parseInt(e.target.value, 10) || 0 })}
           className={`w-full bg-dark-900 border rounded-xl py-1.5 px-1 text-center text-xs sm:text-sm font-mono font-bold transition-all focus:outline-none focus:ring-1 focus:ring-brand-500 ${
             set.completed

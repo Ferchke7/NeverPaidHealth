@@ -35,6 +35,12 @@ CREATE TABLE IF NOT EXISTS exercises (
     measurement_type VARCHAR(50) NOT NULL,
     is_custom BOOLEAN NOT NULL DEFAULT FALSE,
     created_by_user_id UUID,
+    source_id TEXT,
+    category VARCHAR(50) DEFAULT 'strength',
+    level VARCHAR(30) DEFAULT 'intermediate',
+    instructions TEXT[] DEFAULT '{}',
+    source_muscles TEXT[] DEFAULT '{}',
+    name_i18n JSONB DEFAULT '{}',
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 

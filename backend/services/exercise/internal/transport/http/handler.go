@@ -68,6 +68,10 @@ type exerciseResponse struct {
 	MeasurementType       string   `json:"measurement_type"`
 	IsCustom              bool     `json:"is_custom"`
 	CreatedByUserID       *string  `json:"created_by_user_id,omitempty"`
+	SourceID              string   `json:"source_id,omitempty"`
+	Category              string   `json:"category,omitempty"`
+	Level                 string   `json:"level,omitempty"`
+	Instructions          []string `json:"instructions,omitempty"`
 }
 
 type createExerciseReq struct {
@@ -81,20 +85,26 @@ type createExerciseReq struct {
 func (h *Handler) handleList(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
 	muscleGroup := httpx.QueryOptionalString(r, "muscle_group")
 	equipment := httpx.QueryOptionalString(r, "equipment")
+	category := httpx.QueryOptionalString(r, "category")
 	search := httpx.QueryString(r, "search", "")
+	limit := httpx.QueryInt(r, "limit", 0)
+	offset := httpx.QueryInt(r, "offset", 0)
 
 	exercises, err := h.listHandler.Handle(r.Context(), query.ListExercisesQuery{
 		UserID:         userID,
 		MuscleGroupStr: muscleGroup,
 		EquipmentStr:   equipment,
+		CategoryStr:    category,
 		SearchQuery:    search,
+		Limit:          limit,
+		Offset:         offset,
 	})
 	if err != nil {
 		httpx.WriteProblem(w, http.StatusInternalServerError, "Internal Server Error", err.Error(), "ERR_INTERNAL")
 		return
 	}
 
-	var dtos []exerciseResponse
+	dtos := make([]exerciseResponse, 0)
 	for _, ex := range exercises {
 		dtos = append(dtos, mapExerciseResponse(ex))
 	}
@@ -220,6 +230,11 @@ func mapExerciseResponse(ex *exercise.Exercise) exerciseResponse {
 		creatorStr = &s
 	}
 
+	inst := ex.Instructions()
+	if inst == nil {
+		inst = []string{}
+	}
+
 	return exerciseResponse{
 		ID:                    ex.ID().String(),
 		Name:                  ex.Name(),
@@ -229,5 +244,9 @@ func mapExerciseResponse(ex *exercise.Exercise) exerciseResponse {
 		MeasurementType:       ex.MeasurementType().String(),
 		IsCustom:              ex.IsCustom(),
 		CreatedByUserID:       creatorStr,
+		SourceID:              ex.SourceID(),
+		Category:              ex.Category(),
+		Level:                 ex.Level(),
+		Instructions:          inst,
 	}
 }

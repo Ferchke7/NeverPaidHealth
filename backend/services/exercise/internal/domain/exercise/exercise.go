@@ -13,8 +13,13 @@ type Exercise struct {
 	secondaryMuscleGroups   []MuscleGroup
 	equipment              Equipment
 	measurementType        MeasurementType
-	isCustom               bool
-	createdByUserID        *uuid.UUID
+	isCustom              bool
+	createdByUserID       *uuid.UUID
+	sourceID              string
+	category              string
+	level                 string
+	instructions          []string
+	sourceMuscles         []string
 }
 
 func NewSeededExercise(
@@ -31,14 +36,16 @@ func NewSeededExercise(
 	}
 
 	return &Exercise{
-		id:                     id,
-		name:                   trimmedName,
-		primaryMuscleGroup:     primary,
-		secondaryMuscleGroups:   secondaries,
-		equipment:              equipment,
-		measurementType:        measurement,
-		isCustom:               false,
-		createdByUserID:        nil,
+		id:                    id,
+		name:                  trimmedName,
+		primaryMuscleGroup:    primary,
+		secondaryMuscleGroups: secondaries,
+		equipment:             equipment,
+		measurementType:       measurement,
+		isCustom:              false,
+		createdByUserID:       nil,
+		category:              "strength",
+		level:                 "intermediate",
 	}, nil
 }
 
@@ -56,15 +63,49 @@ func NewCustomExercise(
 	}
 
 	return &Exercise{
-		id:                     uuid.New(),
-		name:                   trimmedName,
-		primaryMuscleGroup:     primary,
-		secondaryMuscleGroups:   secondaries,
-		equipment:              equipment,
-		measurementType:        measurement,
-		isCustom:               true,
-		createdByUserID:        &userID,
+		id:                    uuid.New(),
+		name:                  trimmedName,
+		primaryMuscleGroup:    primary,
+		secondaryMuscleGroups: secondaries,
+		equipment:             equipment,
+		measurementType:       measurement,
+		isCustom:              true,
+		createdByUserID:       &userID,
+		category:              "strength",
+		level:                 "intermediate",
 	}, nil
+}
+
+func ReconstituteFull(
+	id uuid.UUID,
+	name string,
+	primary MuscleGroup,
+	secondaries []MuscleGroup,
+	equipment Equipment,
+	measurement MeasurementType,
+	isCustom bool,
+	createdByUserID *uuid.UUID,
+	sourceID string,
+	category string,
+	level string,
+	instructions []string,
+	sourceMuscles []string,
+) *Exercise {
+	return &Exercise{
+		id:                    id,
+		name:                  name,
+		primaryMuscleGroup:    primary,
+		secondaryMuscleGroups: secondaries,
+		equipment:             equipment,
+		measurementType:       measurement,
+		isCustom:              isCustom,
+		createdByUserID:       createdByUserID,
+		sourceID:              sourceID,
+		category:              category,
+		level:                 level,
+		instructions:          instructions,
+		sourceMuscles:         sourceMuscles,
+	}
 }
 
 func Reconstitute(
@@ -77,26 +118,25 @@ func Reconstitute(
 	isCustom bool,
 	createdByUserID *uuid.UUID,
 ) *Exercise {
-	return &Exercise{
-		id:                     id,
-		name:                   name,
-		primaryMuscleGroup:     primary,
-		secondaryMuscleGroups:   secondaries,
-		equipment:              equipment,
-		measurementType:        measurement,
-		isCustom:               isCustom,
-		createdByUserID:        createdByUserID,
-	}
+	return ReconstituteFull(
+		id, name, primary, secondaries, equipment, measurement, isCustom, createdByUserID,
+		"", "strength", "intermediate", nil, nil,
+	)
 }
 
-func (e *Exercise) ID() uuid.UUID { return e.id }
-func (e *Exercise) Name() string { return e.name }
-func (e *Exercise) PrimaryMuscleGroup() MuscleGroup { return e.primaryMuscleGroup }
+func (e *Exercise) ID() uuid.UUID                        { return e.id }
+func (e *Exercise) Name() string                         { return e.name }
+func (e *Exercise) PrimaryMuscleGroup() MuscleGroup      { return e.primaryMuscleGroup }
 func (e *Exercise) SecondaryMuscleGroups() []MuscleGroup { return e.secondaryMuscleGroups }
-func (e *Exercise) Equipment() Equipment { return e.equipment }
-func (e *Exercise) MeasurementType() MeasurementType { return e.measurementType }
-func (e *Exercise) IsCustom() bool { return e.isCustom }
-func (e *Exercise) CreatedByUserID() *uuid.UUID { return e.createdByUserID }
+func (e *Exercise) Equipment() Equipment                 { return e.equipment }
+func (e *Exercise) MeasurementType() MeasurementType     { return e.measurementType }
+func (e *Exercise) IsCustom() bool                       { return e.isCustom }
+func (e *Exercise) CreatedByUserID() *uuid.UUID          { return e.createdByUserID }
+func (e *Exercise) SourceID() string                     { return e.sourceID }
+func (e *Exercise) Category() string                     { return e.category }
+func (e *Exercise) Level() string                        { return e.level }
+func (e *Exercise) Instructions() []string               { return e.instructions }
+func (e *Exercise) SourceMuscles() []string              { return e.sourceMuscles }
 
 func (e *Exercise) CanDelete(requestingUserID uuid.UUID) error {
 	if !e.isCustom {
