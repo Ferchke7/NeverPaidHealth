@@ -2,6 +2,7 @@ package memory
 
 import (
 	"context"
+	"strings"
 	"sync"
 
 	"github.com/google/uuid"
@@ -37,6 +38,21 @@ func (r *FakeProgressRepo) Get(_ context.Context, userID, exerciseID uuid.UUID) 
 		return nil, nil
 	}
 	return rb, nil
+}
+
+func (r *FakeProgressRepo) GetByName(_ context.Context, userID uuid.UUID, exerciseName string) (*record.ExerciseRecordBook, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	target := strings.ToLower(strings.TrimSpace(exerciseName))
+	for _, rb := range r.records {
+		if rb.UserID() == userID {
+			if strings.EqualFold(strings.TrimSpace(rb.ExerciseName()), target) {
+				return rb, nil
+			}
+		}
+	}
+	return nil, nil
 }
 
 func (r *FakeProgressRepo) ListByUser(_ context.Context, userID uuid.UUID) ([]*record.ExerciseRecordBook, error) {

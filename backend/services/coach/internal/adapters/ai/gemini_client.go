@@ -80,6 +80,10 @@ func (p *CompositeAIProvider) getCandidateModels(ctx context.Context, key string
 	p.modelsMutex.RUnlock()
 
 	var discovered []string
+	if envModel := os.Getenv("GEMINI_MODEL"); envModel != "" {
+		discovered = append(discovered, strings.TrimPrefix(envModel, "models/"))
+	}
+
 	p.discoveredOnce.Do(func() {
 		if key == "" {
 			return
@@ -117,13 +121,14 @@ func (p *CompositeAIProvider) getCandidateModels(ctx context.Context, key string
 			return
 		}
 
-		// Preferred order: High-speed reasoning & multimodal models
+		// Preferred order: Verified high-speed reasoning models
 		priorityKeywords := []string{
-			"gemini-2.0-flash",
-			"gemini-2.0-flash-lite",
-			"gemini-1.5-flash",
-			"gemini-1.5-pro",
+			"gemini-3.8-flash",
+			"gemini-3.5-flash",
 			"gemini-flash-latest",
+			"gemini-3.1-flash-lite",
+			"gemini-2.0-flash",
+			"gemini-1.5-flash",
 		}
 
 		var rawValid []string
@@ -138,7 +143,11 @@ func (p *CompositeAIProvider) getCandidateModels(ctx context.Context, key string
 				strings.Contains(name, "banana") ||
 				strings.Contains(name, "deep-research") ||
 				strings.Contains(name, "antigravity") ||
-				strings.Contains(name, "customtools") {
+				strings.Contains(name, "customtools") ||
+				strings.HasPrefix(name, "gemma-") ||
+				name == "gemini-2.5-flash" ||
+				name == "gemini-2.5-pro" ||
+				name == "gemini-2.5-flash-lite" {
 				continue
 			}
 			if slices.Contains(m.SupportedGenerationMethods, "generateContent") {
@@ -176,9 +185,10 @@ func (p *CompositeAIProvider) getCandidateModels(ctx context.Context, key string
 	}
 
 	return []string{
-		"gemini-2.0-flash",
-		"gemini-2.0-flash-lite",
-		"gemini-1.5-flash",
+		"gemini-3.8-flash",
+		"gemini-3.5-flash",
+		"gemini-flash-latest",
+		"gemini-3.1-flash-lite",
 	}
 }
 
@@ -264,24 +274,58 @@ func formatAthleteProfile(telemetry coach.CoachInsights, userName string) string
 
 	sb.WriteString(fmt.Sprintf("=== ДОСЬЕ АТЛЕТА (%s) ===\n", userName))
 
-	sb.WriteString(fmt.Sprintf("• Готовность ЦНС: %d/100 (%s)\n", telemetry.ReadinessScore, telemetry.RecoveryStatus))
+	sb.WriteString(fmt.Sprintf("• Готовность ЦНС и восстановление: %d/100 (%s)\n", telemetry.ReadinessScore, telemetry.RecoveryStatus))
 	if telemetry.CurrentWeightKg > 0 {
 		sb.WriteString(fmt.Sprintf("• Вес тела: %.1f кг", telemetry.CurrentWeightKg))
 		if telemetry.BodyFatPercentage > 0 {
-			sb.WriteString(fmt.Sprintf(", Процент жира: %.1f%%", telemetry.BodyFatPercentage))
+			sb.WriteString(fmt.Sprintf(" | Процент жира: %.1f%%", telemetry.BodyFatPercentage))
 		}
 		if telemetry.BMI > 0 {
-			sb.WriteString(fmt.Sprintf(", ИМТ: %.1f", telemetry.BMI))
+			sb.WriteString(fmt.Sprintf(" | ИМТ: %.1f", telemetry.BMI))
 		}
-		sb.WriteString("\n")
+		proteinMin := telemetry.CurrentWeightKg * 1.8
+		proteinMax := telemetry.CurrentWeightKg * 2.2
+		sb.WriteString(fmt.Sprintf(" | Суточная норма белка: %.0f–%.0f г\n", proteinMin, proteinMax))
 	} else {
 		sb.WriteString("• Вес тела: еще не записан в профиле\n")
 	}
 	sb.WriteString(fmt.Sprintf("• Активность за 7 дней: %d тренировок, суммарный тоннаж: %.0f кг\n", telemetry.WeeklyWorkoutsCount, telemetry.WeeklyVolumeKg))
 	sb.WriteString(fmt.Sprintf("• Дней с последней тренировки: %d дн.\n", telemetry.DaysSinceLastTrain))
-	sb.WriteString(fmt.Sprintf("• Рекомендуемый сплит: %s\n", telemetry.SuggestedSplit))
+	sb.WriteString(fmt.Sprintf("• Рекомендуемый сплит на сегодня: %s\n", telemetry.SuggestedSplit))
 
-	sb.WriteString("\n=== СОХРАНЕННЫЕ ПРОГРАММЫ / ЗАНЯТИЯ АТЛЕТА ===\n")
+	sb.WriteString("\n=== ЛИЧНЫЕ РЕКОРДЫ АТЛЕТА (ALL-TIME PRs & 1RM) ===\n")
+	prs := telemetry.AllTimePRs
+	if len(prs) == 0 {
+		prs = telemetry.RecentTopPRs
+	}
+	if len(prs) > 0 {
+		for _, pr := range prs {
+			oneRMStr := ""
+			if pr.Estimated1RM > 0 {
+				oneRMStr = fmt.Sprintf(" [расчетный 1RM: %.1f кг]", pr.Estimated1RM)
+			}
+			dateStr := ""
+			if !pr.AchievedAt.IsZero() {
+				dateStr = fmt.Sprintf(" (%s)", pr.AchievedAt.Format("02.01.2006"))
+			}
+			sb.WriteString(fmt.Sprintf("• %s: %.1f кг %s%s%s\n", pr.ExerciseName, pr.Value, pr.PRType, oneRMStr, dateStr))
+		}
+	} else {
+		sb.WriteString("Зафиксированных личных рекордов в базе пока нет.\n")
+	}
+
+	sb.WriteString("\n=== ПОСЛЕДНИЕ ЗАВЕРШЕННЫЕ ТРЕНИРОВКИ АТЛЕТА ===\n")
+	if len(telemetry.RecentWorkouts) > 0 {
+		for i, w := range telemetry.RecentWorkouts {
+			dateStr := w.StartedAt.Format("02.01 15:04")
+			sb.WriteString(fmt.Sprintf("%d. «%s» (%s) - Тоннаж: %.0f кг, %d подходов, %d мин.\n   Выполненные упражнения: %s\n",
+				i+1, w.Name, dateStr, w.TotalVolumeKg, w.CompletedSets, w.DurationMinutes, w.ExerciseSummary))
+		}
+	} else {
+		sb.WriteString("Завершенных тренировок в базе пока нет.\n")
+	}
+
+	sb.WriteString("\n=== СОХРАНЕННЫЕ ПРОГРАММЫ И ШАБЛОНЫ АТЛЕТА ===\n")
 	if len(telemetry.UserRoutines) > 0 {
 		for i, r := range telemetry.UserRoutines {
 			exList := "без упражнений"
@@ -292,42 +336,10 @@ func formatAthleteProfile(telemetry coach.CoachInsights, userName string) string
 			if r.Notes != "" {
 				notes = fmt.Sprintf(" (%s)", r.Notes)
 			}
-			sb.WriteString(fmt.Sprintf("%d. Программа: «%s»%s -> Упражнения: [%s]\n", i+1, r.Name, notes, exList))
+			sb.WriteString(fmt.Sprintf("%d. «%s»%s -> [%s]\n", i+1, r.Name, notes, exList))
 		}
 	} else {
-		sb.WriteString("Сохраненных шаблонов программ пока нет.\n")
-	}
-
-	sb.WriteString("\n=== ЛИЧНЫЕ РЕКОРДЫ АТЛЕТА (PRs & 1RM) ===\n")
-	prs := telemetry.AllTimePRs
-	if len(prs) == 0 {
-		prs = telemetry.RecentTopPRs
-	}
-	if len(prs) > 0 {
-		for _, pr := range prs {
-			oneRMStr := ""
-			if pr.Estimated1RM > 0 {
-				oneRMStr = fmt.Sprintf(" (расчетный 1RM: %.1f кг)", pr.Estimated1RM)
-			}
-			dateStr := ""
-			if !pr.AchievedAt.IsZero() {
-				dateStr = fmt.Sprintf(" [%s]", pr.AchievedAt.Format("02.01.2006"))
-			}
-			sb.WriteString(fmt.Sprintf("• %s: %.1f кг %s%s%s\n", pr.ExerciseName, pr.Value, pr.PRType, oneRMStr, dateStr))
-		}
-	} else {
-		sb.WriteString("Зафиксированных личных рекордов пока нет.\n")
-	}
-
-	sb.WriteString("\n=== ПОСЛЕДНИЕ ЗАВЕРШЕННЫЕ ТРЕНИРОВКИ ===\n")
-	if len(telemetry.RecentWorkouts) > 0 {
-		for i, w := range telemetry.RecentWorkouts {
-			dateStr := w.StartedAt.Format("02.01 15:04")
-			sb.WriteString(fmt.Sprintf("%d. «%s» (%s) - Тоннаж: %.0f кг, %d подходов, %d мин. Выполнено: %s\n",
-				i+1, w.Name, dateStr, w.TotalVolumeKg, w.CompletedSets, w.DurationMinutes, w.ExerciseSummary))
-		}
-	} else {
-		sb.WriteString("Завершенных тренировок в базе пока нет.\n")
+		sb.WriteString("Шаблонов программ пока нет.\n")
 	}
 
 	sb.WriteString("\n=== СЕГОДНЯШНЕЕ ПИТАНИЕ ===\n")
@@ -377,31 +389,36 @@ func (p *CompositeAIProvider) callGemini(ctx context.Context, req coach.ChatRequ
 
 	profileDossier := formatAthleteProfile(telemetry, userName)
 
-	langInstruction := "Отвечай на чистом русском языке."
+	langInstruction := "Отвечай на чистом, естественном русском языке."
 	if lang == "uz" {
 		langInstruction = "Javobni FAQAT O'zbek tilida (Lotin alifbosida), professional va motivatsion sport murabbiyi sifatida yoz."
 	} else if lang == "en" {
 		langInstruction = "Answer strictly in English as a high-performance strength and nutrition coach."
 	}
 
-	systemPrompt := fmt.Sprintf(`Ты — элитный персональный ИИ-тренер и спортивный нутрициолог атлета на платформе duda.uz.
-Твоя главная миссия — непрерывно улучшать спортивные результаты атлета, преодолевать плато, грамотно дозировать прогрессивную перегрузку (progressive overload), контролировать питание и восстановление.
+	systemPrompt := fmt.Sprintf(`Ты — элитный главный тренер по силовой подготовке и спортивный физиолог атлета (%s) на платформе duda.uz.
+Твой уровень экспертизы: доказательный научный бодибилдинг и пауэрлифтинг (уровень Jeff Nippard, Dr. Mike Israetel, Eric Helms).
 
 %s
 
-КЛЮЧЕВЫЕ ПРАВИЛА И СТИЛЬ ОТВЕТА (SOTA AI PRODUCT GUIDELINES):
-1. КРАТКОСТЬ И ВЫСОКАЯ ПЛОТНОСТЬ ИНФОРМАЦИИ:
-   - Объем ответа: 50–90 слов.
-   - Сразу отвечай по существу без банальных водянистых вступлений («Привет! Как твой день?», «Я твой ИИ-тренер»).
-2. ИСПОЛЬЗУЙ РЕАЛЬНЫЕ ДАННЫЕ ИЗ ДОСЬЕ АТЛЕТА:
-   - Называй точные цифры, упражнения, веса и даты из ДОСЬЕ выше.
-   - Если данных еще нет в базе, прямо скажи об этом и порекомендуй зафиксировать.
-3. ЯЗЫК:
+КЛЮЧЕВЫЕ ПРАВИЛА И СТИЛЬ ОТВЕТА:
+1. НИКАКОЙ ВОДЫ, БАНАЛЬЩИНЫ И ПУСТЫХ ПРИВЕТСТВИЙ:
+   - Запрещено писать банальные клише («Привет! Как твои дела?», «Я твой виртуальный тренер», «Спорт — это здорово!»).
+   - Сразу давай конкретный, профессиональный, содержательный ответ по сути вопроса.
+2. ОБЯЗАТЕЛЬНО ИСПОЛЬЗУЙ РЕАЛЬНЫЕ ЦИФРЫ ИЗ ДОСЬЕ АТЛЕТА:
+   - Всегда ссылайся на точные веса, 1RM, подходы и повторения атлета из досье выше (например: «Твой текущий рекорд в жиме — 55 кг, становая тяга — 105 кг, приседания — 80 кг...», «При твоем весе 106 кг...»).
+   - При вопросах о прогрессии задавай точные целевые веса (например, «На следующей тренировке увеличь рабочий вес с 55 кг до 57.5 кг на 8–10 повторений с RIR 1-2»).
+3. СТРУКТУРА И ФОРМАТИРОВАНИЕ:
+   - Пиши структурированно, используй списки, жирный шрифт для ключевых терминов и цифр.
+   - Оптимальный объем: содержательный и исчерпывающий ответ (100–220 слов) с четкими шагами к действию.
+4. ПИТАНИЕ И ВОССТАНОВЛЕНИЕ:
+   - Опирайся на вес атлета и процент жира. Рассчитывай суточную норму белка (1.8–2.2 г/кг) и конкретную калорийность под цель.
+5. ЯЗЫК:
    %s
-4. ЕСЛИ ПРИКРЕПЛЕНО ФОТО:
-   - Еда: четко назови блюдо, порцию, КБЖУ и спортивный совет.
-   - Форма/техника: 1-2 конкретных замечания по биомеханике/пропорциям.`,
-		profileDossier, langInstruction)
+6. ЕСЛИ ПРИКРЕПЛЕНО ФОТО:
+   - Фото еды: определи блюда, массу, калории и БЖУ, сравни с нормой атлета.
+   - Фото формы/техники: оцени симметрию, мышечные объемы или биомеханические углы в фазах движения.`,
+		userName, profileDossier, langInstruction)
 
 	contents := make([]geminiContent, 0)
 	history := req.History

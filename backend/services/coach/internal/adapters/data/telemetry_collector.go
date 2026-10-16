@@ -3,6 +3,8 @@ package data
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -11,11 +13,23 @@ import (
 )
 
 type TelemetryCollector struct {
-	pool *pgxpool.Pool
+	trainingPool *pgxpool.Pool
+	progressPool *pgxpool.Pool
+	bodyPool     *pgxpool.Pool
 }
 
-func NewTelemetryCollector(pool *pgxpool.Pool) *TelemetryCollector {
-	return &TelemetryCollector{pool: pool}
+func NewTelemetryCollector(trainingPool, progressPool, bodyPool *pgxpool.Pool) *TelemetryCollector {
+	if progressPool == nil {
+		progressPool = trainingPool
+	}
+	if bodyPool == nil {
+		bodyPool = trainingPool
+	}
+	return &TelemetryCollector{
+		trainingPool: trainingPool,
+		progressPool: progressPool,
+		bodyPool:     bodyPool,
+	}
 }
 
 func (c *TelemetryCollector) CollectUserData(ctx context.Context, userID uuid.UUID) ([]coach.WorkoutData, []coach.PRData, []coach.BodyData, []coach.RoutineSummary, error) {
@@ -43,7 +57,7 @@ func (c *TelemetryCollector) CollectUserData(ctx context.Context, userID uuid.UU
 }
 
 func (c *TelemetryCollector) fetchRoutines(ctx context.Context, userID uuid.UUID) ([]coach.RoutineSummary, error) {
-	if c.pool == nil {
+	if c.trainingPool == nil {
 		return nil, nil
 	}
 	query := `
@@ -53,7 +67,7 @@ func (c *TelemetryCollector) fetchRoutines(ctx context.Context, userID uuid.UUID
 		ORDER BY updated_at DESC
 		LIMIT 10
 	`
-	rows, err := c.pool.Query(ctx, query, userID)
+	rows, err := c.trainingPool.Query(ctx, query, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -99,7 +113,7 @@ func (c *TelemetryCollector) fetchRoutines(ctx context.Context, userID uuid.UUID
 }
 
 func (c *TelemetryCollector) fetchWorkouts(ctx context.Context, userID uuid.UUID) ([]coach.WorkoutData, error) {
-	if c.pool == nil {
+	if c.trainingPool == nil {
 		return nil, nil
 	}
 
@@ -110,17 +124,18 @@ func (c *TelemetryCollector) fetchWorkouts(ctx context.Context, userID uuid.UUID
 		ORDER BY started_at DESC
 		LIMIT 20
 	`
-	rows, err := c.pool.Query(ctx, query, userID)
+	rows, err := c.trainingPool.Query(ctx, query, userID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
 	type SetJSON struct {
-		SetNumber int     `json:"set_number"`
-		WeightKg  float64 `json:"weight_kg"`
-		Reps      int     `json:"reps"`
-		Completed bool    `json:"completed"`
+		SetNumber   int      `json:"set_number"`
+		WeightGrams *int64   `json:"weight_grams"`
+		WeightKg    *float64 `json:"weight_kg"`
+		Reps        int      `json:"reps"`
+		Completed   bool     `json:"completed"`
 	}
 
 	type ExJSON struct {
@@ -151,9 +166,15 @@ func (c *TelemetryCollector) fetchWorkouts(ctx context.Context, userID uuid.UUID
 		for _, e := range exItems {
 			var setLogs []coach.SetLog
 			for _, s := range e.Sets {
+				var wKg float64
+				if s.WeightGrams != nil {
+					wKg = float64(*s.WeightGrams) / 1000.0
+				} else if s.WeightKg != nil {
+					wKg = *s.WeightKg
+				}
 				setLogs = append(setLogs, coach.SetLog{
 					SetNumber: s.SetNumber,
-					WeightKg:  s.WeightKg,
+					WeightKg:  wKg,
 					Reps:      s.Reps,
 					Completed: s.Completed,
 				})
@@ -180,18 +201,59 @@ func (c *TelemetryCollector) fetchWorkouts(ctx context.Context, userID uuid.UUID
 }
 
 func (c *TelemetryCollector) fetchPRs(ctx context.Context, userID uuid.UUID, workouts []coach.WorkoutData) ([]coach.PRData, error) {
-	// 1. Calculate PRs from workouts
+	var res []coach.PRData
+	seen := make(map[string]bool)
+
+	// 1. Direct query from progressPool (progress_db.record_books)
+	if c.progressPool != nil {
+		query := `
+			SELECT exercise_id, exercise_name, best_weight_kg, best_e1rm_kg, max_reps, updated_at
+			FROM record_books
+			WHERE user_id = $1 AND (best_weight_kg > 0 OR max_reps > 0)
+			ORDER BY best_weight_kg DESC
+			LIMIT 50
+		`
+		if rows, err := c.progressPool.Query(ctx, query, userID); err == nil {
+			defer rows.Close()
+			for rows.Next() {
+				var (
+					exID       uuid.UUID
+					exName     string
+					bestWeight float64
+					bestE1RM   float64
+					maxReps    int
+					updatedAt  time.Time
+				)
+				if err := rows.Scan(&exID, &exName, &bestWeight, &bestE1RM, &maxReps, &updatedAt); err == nil {
+					norm := strings.ToLower(strings.TrimSpace(exName))
+					if !seen[norm] {
+						seen[norm] = true
+						res = append(res, coach.PRData{
+							ExerciseID:   exID,
+							ExerciseName: exName,
+							PRType:       fmt.Sprintf("%.1f кг × %d", bestWeight, maxReps),
+							Value:        bestWeight,
+							AchievedAt:   updatedAt,
+						})
+					}
+				}
+			}
+		}
+	}
+
+	// 2. Also calculate from workouts to catch any PRs not yet in record_books
 	prMap := make(map[string]coach.PRData)
 	for _, w := range workouts {
 		for _, ex := range w.Exercises {
 			for _, s := range ex.Sets {
 				if s.Completed && s.WeightKg > 0 {
-					existing, exists := prMap[ex.ExerciseName]
+					norm := strings.ToLower(strings.TrimSpace(ex.ExerciseName))
+					existing, exists := prMap[norm]
 					if !exists || s.WeightKg > existing.Value {
-						prMap[ex.ExerciseName] = coach.PRData{
+						prMap[norm] = coach.PRData{
 							ExerciseID:   ex.ExerciseID,
 							ExerciseName: ex.ExerciseName,
-							PRType:       "max_weight",
+							PRType:       fmt.Sprintf("%.1f кг × %d", s.WeightKg, s.Reps),
 							Value:        s.WeightKg,
 							AchievedAt:   w.StartedAt,
 						}
@@ -201,40 +263,10 @@ func (c *TelemetryCollector) fetchPRs(ctx context.Context, userID uuid.UUID, wor
 		}
 	}
 
-	var res []coach.PRData
-	for _, pr := range prMap {
-		res = append(res, pr)
-	}
-
-	// 2. Also try reading from personal_records if available
-	if c.pool != nil {
-		query := `
-			SELECT exercise_id, exercise_name, pr_type, value, achieved_at
-			FROM personal_records
-			WHERE user_id = $1
-			ORDER BY achieved_at DESC
-			LIMIT 30
-		`
-		if rows, err := c.pool.Query(ctx, query, userID); err == nil {
-			defer rows.Close()
-			for rows.Next() {
-				var (
-					exID       uuid.UUID
-					exName     string
-					prType     string
-					val        float64
-					achievedAt time.Time
-				)
-				if err := rows.Scan(&exID, &exName, &prType, &val, &achievedAt); err == nil {
-					res = append(res, coach.PRData{
-						ExerciseID:   exID,
-						ExerciseName: exName,
-						PRType:       prType,
-						Value:        val,
-						AchievedAt:   achievedAt,
-					})
-				}
-			}
+	for norm, pr := range prMap {
+		if !seen[norm] {
+			seen[norm] = true
+			res = append(res, pr)
 		}
 	}
 
@@ -242,11 +274,10 @@ func (c *TelemetryCollector) fetchPRs(ctx context.Context, userID uuid.UUID, wor
 }
 
 func (c *TelemetryCollector) fetchBodyLogs(ctx context.Context, userID uuid.UUID) ([]coach.BodyData, error) {
-	if c.pool == nil {
+	if c.bodyPool == nil {
 		return nil, nil
 	}
 
-	// Try reading from body_logs supporting both weight_grams and weight_kg schema
 	query := `
 		SELECT COALESCE(weight_grams::float8 / 1000.0, 0), COALESCE(body_fat_percentage, 0), COALESCE(calculated_bmi, 0), created_at
 		FROM body_logs
@@ -254,17 +285,16 @@ func (c *TelemetryCollector) fetchBodyLogs(ctx context.Context, userID uuid.UUID
 		ORDER BY created_at DESC
 		LIMIT 10
 	`
-	rows, err := c.pool.Query(ctx, query, userID)
+	rows, err := c.bodyPool.Query(ctx, query, userID)
 	if err != nil {
-		// Fallback query if table schema has weight_kg directly
 		altQuery := `
-			SELECT COALESCE(weight_kg, 0), 0, 0, recorded_at
+			SELECT COALESCE(weight_kg, 0), COALESCE(body_fat_percentage, 0), COALESCE(calculated_bmi, 0), recorded_at
 			FROM body_logs
 			WHERE user_id = $1
 			ORDER BY recorded_at DESC
 			LIMIT 10
 		`
-		altRows, altErr := c.pool.Query(ctx, altQuery, userID)
+		altRows, altErr := c.bodyPool.Query(ctx, altQuery, userID)
 		if altErr != nil {
 			return nil, err
 		}

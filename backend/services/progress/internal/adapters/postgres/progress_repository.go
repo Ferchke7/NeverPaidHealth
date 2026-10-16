@@ -30,6 +30,21 @@ func (r *ProgressRepository) Get(ctx context.Context, userID, exerciseID uuid.UU
 	return scanRecordBook(row)
 }
 
+func (r *ProgressRepository) GetByName(ctx context.Context, userID uuid.UUID, exerciseName string) (*record.ExerciseRecordBook, error) {
+	query := `
+		SELECT id, user_id, exercise_id, exercise_name, best_weight_kg, best_e1rm_kg, max_volume_set_kg, max_reps, records, updated_at
+		FROM record_books
+		WHERE user_id = $1 AND (
+			LOWER(TRIM(exercise_name)) = LOWER(TRIM($2)) OR
+			exercise_name ILIKE $2
+		)
+		ORDER BY best_weight_kg DESC
+		LIMIT 1
+	`
+	row := r.pool.QueryRow(ctx, query, userID, exerciseName)
+	return scanRecordBook(row)
+}
+
 func (r *ProgressRepository) ListByUser(ctx context.Context, userID uuid.UUID) ([]*record.ExerciseRecordBook, error) {
 	query := `
 		SELECT id, user_id, exercise_id, exercise_name, best_weight_kg, best_e1rm_kg, max_volume_set_kg, max_reps, records, updated_at

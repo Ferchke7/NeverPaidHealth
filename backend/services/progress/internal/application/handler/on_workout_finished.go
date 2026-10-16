@@ -72,7 +72,22 @@ func (h *OnWorkoutFinishedHandler) Handle(ctx context.Context, event WorkoutFini
 	for _, ex := range event.Exercises {
 		rb, err := h.recordBookRepo.Get(ctx, event.UserID, ex.ExerciseID)
 		if err != nil || rb == nil {
-			rb = record.NewExerciseRecordBook(event.UserID, ex.ExerciseID, ex.ExerciseName)
+			if existingByName, _ := h.recordBookRepo.GetByName(ctx, event.UserID, ex.ExerciseName); existingByName != nil {
+				rb = record.Reconstitute(
+					uuid.New(),
+					event.UserID,
+					ex.ExerciseID,
+					ex.ExerciseName,
+					existingByName.BestWeightKg(),
+					existingByName.BestE1RMKg(),
+					existingByName.MaxVolumeSetKg(),
+					existingByName.MaxReps(),
+					existingByName.Records(),
+					time.Now(),
+				)
+			} else {
+				rb = record.NewExerciseRecordBook(event.UserID, ex.ExerciseID, ex.ExerciseName)
+			}
 		}
 
 		var bestWeight float64

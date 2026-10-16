@@ -25,7 +25,7 @@ type WorkoutRepo interface {
 	GetByID(ctx context.Context, id uuid.UUID) (*workout.Workout, error)
 	GetActive(ctx context.Context, userID uuid.UUID) (*workout.Workout, error)
 	List(ctx context.Context, userID uuid.UUID, limit int, offset int) ([]*workout.Workout, error)
-	GetPreviousSets(ctx context.Context, userID uuid.UUID, exerciseIDs []uuid.UUID) (map[uuid.UUID][]*workout.WorkoutSet, error)
+	GetPreviousSets(ctx context.Context, userID uuid.UUID, exerciseIDs []uuid.UUID, exerciseNames []string) (map[string][]*workout.WorkoutSet, error)
 	Save(ctx context.Context, w *workout.Workout) error
 	Delete(ctx context.Context, id uuid.UUID) error
 }

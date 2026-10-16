@@ -82,7 +82,7 @@ func (r *FakeTrainingRepo) List(_ context.Context, userID uuid.UUID, limit, offs
 	return res, nil
 }
 
-func (r *FakeTrainingRepo) GetPreviousSets(_ context.Context, userID uuid.UUID, exerciseIDs []uuid.UUID) (map[uuid.UUID][]*workout.WorkoutSet, error) {
+func (r *FakeTrainingRepo) GetPreviousSets(_ context.Context, userID uuid.UUID, exerciseIDs []uuid.UUID, exerciseNames []string) (map[string][]*workout.WorkoutSet, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -91,14 +91,21 @@ func (r *FakeTrainingRepo) GetPreviousSets(_ context.Context, userID uuid.UUID, 
 		targetSet[id] = true
 	}
 
-	res := make(map[uuid.UUID][]*workout.WorkoutSet)
+	targetNames := make(map[string]bool, len(exerciseNames))
+	for _, n := range exerciseNames {
+		targetNames[n] = true
+	}
+
+	res := make(map[string][]*workout.WorkoutSet)
 	for _, w := range r.workouts {
 		if w.UserID() != userID || w.Status() != workout.WorkoutStatusFinished {
 			continue
 		}
 		for _, ex := range w.Exercises() {
-			if targetSet[ex.ExerciseID()] {
-				if _, already := res[ex.ExerciseID()]; !already {
+			matched := targetSet[ex.ExerciseID()] || targetNames[ex.ExerciseName()]
+			if matched {
+				key := ex.ExerciseID().String()
+				if _, already := res[key]; !already {
 					var completedSets []*workout.WorkoutSet
 					for _, s := range ex.Sets() {
 						if s.Completed() {
@@ -106,7 +113,8 @@ func (r *FakeTrainingRepo) GetPreviousSets(_ context.Context, userID uuid.UUID, 
 						}
 					}
 					if len(completedSets) > 0 {
-						res[ex.ExerciseID()] = completedSets
+						res[key] = completedSets
+						res[ex.ExerciseName()] = completedSets
 					}
 				}
 			}

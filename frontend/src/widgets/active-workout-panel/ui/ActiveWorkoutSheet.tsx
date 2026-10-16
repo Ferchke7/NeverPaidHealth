@@ -64,27 +64,42 @@ export const ActiveWorkoutSheet: React.FC = () => {
   const [summary, setSummary] = useState<FinishedWorkoutSummary | null>(null);
   const [inspectingExerciseName, setInspectingExerciseName] = useState<string | null>(null);
 
-  // Exercise IDs in active workout
+  // Exercise IDs and names in active workout
   const exerciseIds = useMemo(() => {
     if (!workout) return [];
     return Array.from(new Set(workout.exercises.map((e) => e.exerciseId).filter(Boolean)));
   }, [workout]);
 
+  const exerciseNames = useMemo(() => {
+    if (!workout) return [];
+    return Array.from(new Set(workout.exercises.map((e) => e.exerciseName?.trim()).filter(Boolean)));
+  }, [workout]);
+
   // Fetch previous completed sets directly from training service
   const { data: previousData } = useQuery<{ items: Record<string, PreviousSetData[]> }>({
-    queryKey: ['workouts', 'previous', exerciseIds.sort().join(',')],
-    queryFn: () =>
-      apiClient<{ items: Record<string, PreviousSetData[]> }>(
-        `/workouts/previous?exercise_ids=${exerciseIds.join(',')}`
-      ),
-    enabled: exerciseIds.length > 0 && isOpen,
+    queryKey: ['workouts', 'previous', exerciseIds.sort().join(','), exerciseNames.sort().join(',')],
+    queryFn: () => {
+      const params = new URLSearchParams();
+      if (exerciseIds.length > 0) params.set('exercise_ids', exerciseIds.join(','));
+      if (exerciseNames.length > 0) params.set('exercise_names', exerciseNames.join(','));
+      return apiClient<{ items: Record<string, PreviousSetData[]> }>(
+        `/workouts/previous?${params.toString()}`
+      );
+    },
+    enabled: (exerciseIds.length > 0 || exerciseNames.length > 0) && isOpen,
   });
 
   const previousExerciseMap = useMemo(() => {
     const map = new Map<string, PreviousSetData[]>();
     if (previousData?.items) {
-      for (const [id, sets] of Object.entries(previousData.items)) {
-        map.set(id.toLowerCase(), sets);
+      for (const [key, sets] of Object.entries(previousData.items)) {
+        if (!sets || sets.length === 0) continue;
+        const lowerKey = key.toLowerCase().trim();
+        map.set(lowerKey, sets);
+        const cleanKey = lowerKey.replace(/[^a-z0-9]/g, '');
+        if (cleanKey) map.set(cleanKey, sets);
+        const baseKey = lowerKey.replace(/\s*\([^)]*\)/g, '').replace(/[^a-z0-9]/g, '').trim();
+        if (baseKey && !map.has(baseKey)) map.set(baseKey, sets);
       }
     }
     return map;
@@ -101,12 +116,41 @@ export const ActiveWorkoutSheet: React.FC = () => {
     const map = new Map<string, { weightKg: number; reps: number }>();
     if (Array.isArray(recordsData)) {
       for (const rec of recordsData) {
+        const w = Number(rec.best_weight_kg) || 0;
+        const r = Number(rec.max_reps) || 0;
+        if (w <= 0 && r <= 0) continue;
+
+        const val = { weightKg: w, reps: r };
         const id = rec.exercise_id ? String(rec.exercise_id).toLowerCase() : null;
-        if (id && (rec.best_weight_kg || rec.max_reps)) {
-          map.set(id, {
-            weightKg: rec.best_weight_kg || 0,
-            reps: rec.max_reps || 0,
-          });
+        if (id) {
+          const existing = map.get(id);
+          if (!existing || w > existing.weightKg || (w === existing.weightKg && r > existing.reps)) {
+            map.set(id, val);
+          }
+        }
+
+        const name = rec.exercise_name ? String(rec.exercise_name).toLowerCase().trim() : null;
+        if (name) {
+          const existing = map.get(name);
+          if (!existing || w > existing.weightKg || (w === existing.weightKg && r > existing.reps)) {
+            map.set(name, val);
+          }
+
+          const clean = name.replace(/[^a-z0-9]/g, '');
+          if (clean) {
+            const exClean = map.get(clean);
+            if (!exClean || w > exClean.weightKg || (w === exClean.weightKg && r > exClean.reps)) {
+              map.set(clean, val);
+            }
+          }
+
+          const base = name.replace(/\s*\([^)]*\)/g, '').replace(/[^a-z0-9]/g, '').trim();
+          if (base) {
+            const exBase = map.get(base);
+            if (!exBase || w > exBase.weightKg || (w === exBase.weightKg && r > exBase.reps)) {
+              map.set(base, val);
+            }
+          }
         }
       }
     }
@@ -381,14 +425,17 @@ export const ActiveWorkoutSheet: React.FC = () => {
                 const keyId = exercise.exerciseId?.toLowerCase();
                 const keyName = exercise.exerciseName?.toLowerCase().trim();
                 const cleanKeyName = keyName ? keyName.replace(/[^a-z0-9]/g, '') : null;
+                const baseKeyName = keyName ? keyName.replace(/\s*\([^)]*\)/g, '').replace(/[^a-z0-9]/g, '').trim() : null;
                 const prevList =
                   (keyId && previousExerciseMap.get(keyId)) ||
                   (keyName && previousExerciseMap.get(keyName)) ||
-                  (cleanKeyName && previousExerciseMap.get(cleanKeyName));
+                  (cleanKeyName && previousExerciseMap.get(cleanKeyName)) ||
+                  (baseKeyName && previousExerciseMap.get(baseKeyName));
                 const prRecord =
                   (keyId && prMap.get(keyId)) ||
                   (keyName && prMap.get(keyName)) ||
-                  (cleanKeyName && prMap.get(cleanKeyName));
+                  (cleanKeyName && prMap.get(cleanKeyName)) ||
+                  (baseKeyName && prMap.get(baseKeyName));
 
                 return (
                   <div

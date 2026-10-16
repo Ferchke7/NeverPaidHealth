@@ -5,8 +5,9 @@ import { calculateE1RM, formatWeight } from '../../../shared/lib/units.ts';
 import { useAuthStore } from '../../user/model/authStore.ts';
 
 export interface PreviousSetData {
-  weightKg: number;
-  reps: number;
+  weightKg?: number;
+  weight_kg?: number;
+  reps?: number;
 }
 
 interface SetRowProps {
@@ -42,19 +43,22 @@ export const SetRow: React.FC<SetRowProps> = ({
     onUpdate({ setType: sequence[nextIdx] });
   };
 
+  const prevWeight = Number(previousSet?.weightKg ?? previousSet?.weight_kg ?? 0);
+  const prevReps = Number(previousSet?.reps ?? 0);
+
   const handleCopyPrevious = () => {
     if (!previousSet) return;
     onUpdate({
-      weightKg: Number(previousSet.weightKg) || 0,
-      reps: Number(previousSet.reps) || 10,
+      weightKg: prevWeight,
+      reps: prevReps > 0 ? prevReps : 10,
     });
   };
 
-  const hasPrevious = Boolean(
-    previousSet && (Number(previousSet.weightKg) > 0 || Number(previousSet.reps) > 0)
-  );
-  const previousText = hasPrevious && previousSet
-    ? `${formatWeight(Number(previousSet.weightKg) || 0, unit)} × ${Number(previousSet.reps) || 0}`
+  const hasPrevious = Boolean(previousSet && (prevWeight > 0 || prevReps > 0));
+  const previousText = hasPrevious
+    ? prevWeight > 0
+      ? `${formatWeight(prevWeight, unit)} × ${prevReps}`
+      : `${prevReps} reps`
     : '—';
 
   return (
@@ -113,8 +117,8 @@ export const SetRow: React.FC<SetRowProps> = ({
             min="0"
             value={set.weightKg === 0 ? '' : set.weightKg}
             placeholder={
-              previousSet && previousSet.weightKg > 0
-                ? `${previousSet.weightKg}`
+              prevWeight > 0
+                ? `${prevWeight}`
                 : measurementType === 'distance_duration'
                 ? 'km'
                 : measurementType === 'bodyweight_reps'
@@ -144,8 +148,8 @@ export const SetRow: React.FC<SetRowProps> = ({
           max={measurementType === 'duration' ? 3600 : 200}
           value={set.reps === 0 ? '' : set.reps}
           placeholder={
-            previousSet && previousSet.reps > 0
-              ? `${previousSet.reps}`
+            prevReps > 0
+              ? `${prevReps}`
               : measurementType === 'duration' || measurementType === 'distance_duration'
               ? '60s'
               : '10'

@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -36,7 +37,7 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	// Connect to Postgres
+	// Connect to Postgres training_db
 	var pool *pgxpool.Pool
 	poolConfig, err := pgxpool.ParseConfig(dbURL)
 	if err != nil {
@@ -55,7 +56,39 @@ func main() {
 		}
 	}
 
-	telemetryCollector := data.NewTelemetryCollector(pool)
+	progressURL := os.Getenv("PROGRESS_DATABASE_URL")
+	if progressURL == "" {
+		progressURL = strings.Replace(dbURL, "/training_db", "/progress_db", 1)
+	}
+
+	bodyURL := os.Getenv("BODY_DATABASE_URL")
+	if bodyURL == "" {
+		bodyURL = strings.Replace(dbURL, "/training_db", "/body_db", 1)
+	}
+
+	var progressPool *pgxpool.Pool
+	if pConfig, err := pgxpool.ParseConfig(progressURL); err == nil {
+		pConfig.MaxConns = 5
+		pConfig.MinConns = 1
+		pConfig.MaxConnLifetime = time.Hour
+		if p, err := pgxpool.NewWithConfig(ctx, pConfig); err == nil {
+			progressPool = p
+			slog.Info("Connected to progress_db for PR telemetry")
+		}
+	}
+
+	var bodyPool *pgxpool.Pool
+	if bConfig, err := pgxpool.ParseConfig(bodyURL); err == nil {
+		bConfig.MaxConns = 5
+		bConfig.MinConns = 1
+		bConfig.MaxConnLifetime = time.Hour
+		if b, err := pgxpool.NewWithConfig(ctx, bConfig); err == nil {
+			bodyPool = b
+			slog.Info("Connected to body_db for measurement telemetry")
+		}
+	}
+
+	telemetryCollector := data.NewTelemetryCollector(pool, progressPool, bodyPool)
 	mealRepo := data.NewMealRepository(pool)
 	aiProvider := ai.NewCompositeAIProvider()
 	coachService := application.NewCoachService(telemetryCollector, mealRepo, aiProvider)
@@ -88,6 +121,12 @@ func main() {
 	}
 	if pool != nil {
 		pool.Close()
+	}
+	if progressPool != nil {
+		progressPool.Close()
+	}
+	if bodyPool != nil {
+		bodyPool.Close()
 	}
 	slog.Info("AI Coach Service gracefully stopped.")
 }

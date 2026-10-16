@@ -696,33 +696,44 @@ func (h *Handler) handleCancelWorkout(w http.ResponseWriter, r *http.Request, us
 
 func (h *Handler) handleGetPreviousSets(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
 	exParam := httpx.QueryString(r, "exercise_ids", "")
-	if exParam == "" {
+	nameParam := httpx.QueryString(r, "exercise_names", "")
+	if exParam == "" && nameParam == "" {
 		httpx.WriteJSON(w, http.StatusOK, map[string]any{"items": map[string]any{}})
 		return
 	}
 
-	parts := strings.Split(exParam, ",")
 	var exIDs []uuid.UUID
-	for _, p := range parts {
-		trimmed := strings.TrimSpace(p)
-		if id, err := uuid.Parse(trimmed); err == nil {
-			exIDs = append(exIDs, id)
+	if exParam != "" {
+		for _, p := range strings.Split(exParam, ",") {
+			trimmed := strings.TrimSpace(p)
+			if id, err := uuid.Parse(trimmed); err == nil {
+				exIDs = append(exIDs, id)
+			}
 		}
 	}
 
-	previous, err := h.queries.GetPreviousSets(r.Context(), userID, exIDs)
+	var exNames []string
+	if nameParam != "" {
+		for _, p := range strings.Split(nameParam, ",") {
+			if trimmed := strings.TrimSpace(p); trimmed != "" {
+				exNames = append(exNames, trimmed)
+			}
+		}
+	}
+
+	previous, err := h.queries.GetPreviousSets(r.Context(), userID, exIDs, exNames)
 	if err != nil {
 		httpx.WriteProblem(w, http.StatusInternalServerError, "Internal Server Error", err.Error(), "ERR_INTERNAL")
 		return
 	}
 
 	items := make(map[string]any)
-	for exID, sets := range previous {
+	for key, sets := range previous {
 		var setDTOs []any
 		for _, s := range sets {
 			setDTOs = append(setDTOs, mapSetDTO(s))
 		}
-		items[exID.String()] = setDTOs
+		items[key] = setDTOs
 	}
 
 	httpx.WriteJSON(w, http.StatusOK, map[string]any{"items": items})

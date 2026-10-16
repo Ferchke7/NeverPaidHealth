@@ -49,8 +49,8 @@ func (a workoutAdapter) GetActive(ctx context.Context, userID uuid.UUID) (*worko
 func (a workoutAdapter) List(ctx context.Context, userID uuid.UUID, limit, offset int) ([]*workout.Workout, error) {
 	return a.repo.ListWorkouts(ctx, userID, limit, offset)
 }
-func (a workoutAdapter) GetPreviousSets(ctx context.Context, userID uuid.UUID, exerciseIDs []uuid.UUID) (map[uuid.UUID][]*workout.WorkoutSet, error) {
-	return a.repo.GetPreviousSets(ctx, userID, exerciseIDs)
+func (a workoutAdapter) GetPreviousSets(ctx context.Context, userID uuid.UUID, exerciseIDs []uuid.UUID, exerciseNames []string) (map[string][]*workout.WorkoutSet, error) {
+	return a.repo.GetPreviousSets(ctx, userID, exerciseIDs, exerciseNames)
 }
 func (a workoutAdapter) Save(ctx context.Context, w *workout.Workout) error {
 	return a.repo.SaveWorkout(ctx, w)

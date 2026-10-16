@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -149,9 +150,44 @@ func (r *TrainingRepository) ListWorkouts(ctx context.Context, userID uuid.UUID,
 	return list, nil
 }
 
-func (r *TrainingRepository) GetPreviousSets(ctx context.Context, userID uuid.UUID, exerciseIDs []uuid.UUID) (map[uuid.UUID][]*workout.WorkoutSet, error) {
-	res := make(map[uuid.UUID][]*workout.WorkoutSet)
-	if len(exerciseIDs) == 0 {
+func normalizeExerciseName(s string) string {
+	s = strings.ToLower(strings.TrimSpace(s))
+	for {
+		start := strings.Index(s, "(")
+		if start == -1 {
+			break
+		}
+		end := strings.Index(s, ")")
+		if end > start {
+			s = strings.TrimSpace(s[:start] + " " + s[end+1:])
+		} else {
+			s = strings.TrimSpace(s[:start])
+			break
+		}
+	}
+	var sb strings.Builder
+	for _, r := range s {
+		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || (r >= 'а' && r <= 'я') {
+			sb.WriteRune(r)
+		}
+	}
+	return sb.String()
+}
+
+func cleanStringAlphanumeric(s string) string {
+	s = strings.ToLower(strings.TrimSpace(s))
+	var sb strings.Builder
+	for _, r := range s {
+		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || (r >= 'а' && r <= 'я') {
+			sb.WriteRune(r)
+		}
+	}
+	return sb.String()
+}
+
+func (r *TrainingRepository) GetPreviousSets(ctx context.Context, userID uuid.UUID, exerciseIDs []uuid.UUID, exerciseNames []string) (map[string][]*workout.WorkoutSet, error) {
+	res := make(map[string][]*workout.WorkoutSet)
+	if len(exerciseIDs) == 0 && len(exerciseNames) == 0 {
 		return res, nil
 	}
 
@@ -168,9 +204,23 @@ func (r *TrainingRepository) GetPreviousSets(ctx context.Context, userID uuid.UU
 	}
 	defer rows.Close()
 
-	targetSet := make(map[uuid.UUID]bool, len(exerciseIDs))
+	targetIDMap := make(map[uuid.UUID]bool, len(exerciseIDs))
 	for _, id := range exerciseIDs {
-		targetSet[id] = true
+		targetIDMap[id] = true
+	}
+
+	targetNameMap := make(map[string]bool)
+	for _, n := range exerciseNames {
+		raw := strings.ToLower(strings.TrimSpace(n))
+		if raw != "" {
+			targetNameMap[raw] = true
+			if cl := cleanStringAlphanumeric(raw); cl != "" {
+				targetNameMap[cl] = true
+			}
+			if norm := normalizeExerciseName(raw); norm != "" {
+				targetNameMap[norm] = true
+			}
+		}
 	}
 
 	for rows.Next() {
@@ -186,53 +236,95 @@ func (r *TrainingRepository) GetPreviousSets(ctx context.Context, userID uuid.UU
 			ID           uuid.UUID `json:"id"`
 			SetNumber    int       `json:"set_number"`
 			SetType      string    `json:"set_type"`
-			WeightGrams  int64     `json:"weight_grams"`
+			WeightGrams  *int64    `json:"weight_grams"`
+			WeightKg     *float64  `json:"weight_kg"`
 			Reps         int       `json:"reps"`
 			RPE          *float64  `json:"rpe,omitempty"`
 			DurationSecs *int      `json:"duration_seconds,omitempty"`
 			Completed    bool      `json:"completed"`
 		}
 		type ExJSONItem struct {
-			ExerciseID uuid.UUID     `json:"exercise_id"`
-			Sets       []SetJSONItem `json:"sets"`
+			ExerciseID   uuid.UUID     `json:"exercise_id"`
+			ExerciseName string        `json:"exercise_name"`
+			Sets         []SetJSONItem `json:"sets"`
 		}
 
 		var items []ExJSONItem
 		_ = json.Unmarshal(exJSON, &items)
 
 		for _, item := range items {
-			if targetSet[item.ExerciseID] {
-				if _, exists := res[item.ExerciseID]; !exists {
-					var completedSets []*workout.WorkoutSet
-					for _, s := range item.Sets {
-						if s.Completed {
-							st, _ := measure.NewSetType(s.SetType)
-							wKg, _ := measure.NewWeightGrams(s.WeightGrams)
-							reps, _ := measure.NewReps(s.Reps)
-							var rpe *measure.RPE
-							if s.RPE != nil {
-								r, _ := measure.NewRPE(*s.RPE)
-								rpe = &r
-							}
-							var dur *measure.Duration
-							if s.DurationSecs != nil {
-								d := measure.NewDurationSeconds(*s.DurationSecs)
-								dur = &d
-							}
-							completedSets = append(completedSets, workout.ReconstituteSet(
-								s.ID, s.SetNumber, st, wKg, reps, rpe, dur, true, nil,
-							))
-						}
+			itemRaw := strings.ToLower(strings.TrimSpace(item.ExerciseName))
+			itemClean := cleanStringAlphanumeric(itemRaw)
+			itemNorm := normalizeExerciseName(itemRaw)
+
+			matched := targetIDMap[item.ExerciseID] ||
+				targetNameMap[itemRaw] ||
+				(itemClean != "" && targetNameMap[itemClean]) ||
+				(itemNorm != "" && targetNameMap[itemNorm])
+
+			if !matched {
+				continue
+			}
+
+			// Check if already populated under all keys
+			idKey := item.ExerciseID.String()
+			if _, exists := res[idKey]; exists {
+				continue
+			}
+
+			var completedSets []*workout.WorkoutSet
+			for _, s := range item.Sets {
+				if s.Completed {
+					st, _ := measure.NewSetType(s.SetType)
+					var wKg measure.Weight
+					if s.WeightGrams != nil {
+						wKg, _ = measure.NewWeightGrams(*s.WeightGrams)
+					} else if s.WeightKg != nil {
+						wKg, _ = measure.NewWeightKg(*s.WeightKg)
+					} else {
+						wKg = measure.ZeroWeight()
 					}
-					if len(completedSets) > 0 {
-						res[item.ExerciseID] = completedSets
+					reps, _ := measure.NewReps(s.Reps)
+					var rpe *measure.RPE
+					if s.RPE != nil {
+						r, _ := measure.NewRPE(*s.RPE)
+						rpe = &r
+					}
+					var dur *measure.Duration
+					if s.DurationSecs != nil {
+						d := measure.NewDurationSeconds(*s.DurationSecs)
+						dur = &d
+					}
+					completedSets = append(completedSets, workout.ReconstituteSet(
+						s.ID, s.SetNumber, st, wKg, reps, rpe, dur, true, nil,
+					))
+				}
+			}
+
+			if len(completedSets) > 0 {
+				res[idKey] = completedSets
+				if itemRaw != "" && res[itemRaw] == nil {
+					res[itemRaw] = completedSets
+				}
+				if itemClean != "" && res[itemClean] == nil {
+					res[itemClean] = completedSets
+				}
+				if itemNorm != "" && res[itemNorm] == nil {
+					res[itemNorm] = completedSets
+				}
+
+				// Also map to any target exercise name that matched
+				for _, reqName := range exerciseNames {
+					reqRaw := strings.ToLower(strings.TrimSpace(reqName))
+					if reqRaw == itemRaw ||
+						(itemClean != "" && cleanStringAlphanumeric(reqRaw) == itemClean) ||
+						(itemNorm != "" && normalizeExerciseName(reqRaw) == itemNorm) {
+						if res[reqRaw] == nil {
+							res[reqRaw] = completedSets
+						}
 					}
 				}
 			}
-		}
-
-		if len(res) == len(targetSet) {
-			break
 		}
 	}
 

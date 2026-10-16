@@ -10,6 +10,7 @@ import (
 
 type RecordBookRepo interface {
 	Get(ctx context.Context, userID, exerciseID uuid.UUID) (*record.ExerciseRecordBook, error)
+	GetByName(ctx context.Context, userID uuid.UUID, exerciseName string) (*record.ExerciseRecordBook, error)
 	ListByUser(ctx context.Context, userID uuid.UUID) ([]*record.ExerciseRecordBook, error)
 	Save(ctx context.Context, rb *record.ExerciseRecordBook) error
 }
