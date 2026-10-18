@@ -41,13 +41,13 @@ export const FormattedChatMessage: React.FC<FormattedChatMessageProps> = ({ cont
     if (currentListItems.length > 0) {
       if (isOrderedList) {
         renderedElements.push(
-          <ol key={`list-${keyPrefix}`} className="my-2 space-y-1.5">
+          <ol key={`list-${keyPrefix}`} className="my-1.5 space-y-1">
             {currentListItems}
           </ol>
         );
       } else {
         renderedElements.push(
-          <ul key={`list-${keyPrefix}`} className="my-2 space-y-1.5">
+          <ul key={`list-${keyPrefix}`} className="my-1.5 space-y-1">
             {currentListItems}
           </ul>
         );
@@ -61,7 +61,7 @@ export const FormattedChatMessage: React.FC<FormattedChatMessageProps> = ({ cont
 
     if (!line) {
       flushList(index);
-      renderedElements.push(<div key={`empty-${index}`} className="h-1.5" />);
+      renderedElements.push(<div key={`empty-${index}`} className="h-1" />);
       return;
     }
 
@@ -72,7 +72,7 @@ export const FormattedChatMessage: React.FC<FormattedChatMessageProps> = ({ cont
       renderedElements.push(
         <h4
           key={`header-${index}`}
-          className="font-bold text-white text-xs sm:text-sm mt-3 mb-1.5 flex items-center gap-1.5 text-brand-400 first:mt-0 tracking-tight"
+          className="font-bold text-xs sm:text-sm mt-2 mb-1 flex items-center gap-1.5 text-brand-400 first:mt-0 tracking-tight"
         >
           {parseInlineFormatting(headerText)}
         </h4>
@@ -87,7 +87,7 @@ export const FormattedChatMessage: React.FC<FormattedChatMessageProps> = ({ cont
       renderedElements.push(
         <div
           key={`quote-${index}`}
-          className="border-l-2 border-brand-500 bg-brand-500/10 px-3 py-1.5 rounded-r-xl my-2 text-zinc-300 text-xs sm:text-sm leading-relaxed"
+          className="border-l-2 border-brand-500 bg-brand-500/10 px-2.5 py-1 rounded-r-xl my-1.5 text-zinc-300 text-xs sm:text-sm leading-snug"
         >
           {parseInlineFormatting(quoteText)}
         </div>
@@ -106,10 +106,10 @@ export const FormattedChatMessage: React.FC<FormattedChatMessageProps> = ({ cont
       const text = numberedMatch[2];
       currentListItems.push(
         <li key={`num-item-${index}`} className="flex items-start gap-2 text-zinc-200">
-          <span className="w-5 h-5 rounded-md bg-dark-750 text-brand-400 text-[10px] font-mono font-bold flex items-center justify-center shrink-0 mt-0.5 border border-dark-700 shadow-sm">
+          <span className="w-4 h-4 rounded bg-dark-750 text-brand-400 text-[10px] font-mono font-bold flex items-center justify-center shrink-0 mt-0.5 border border-dark-700">
             {num}
           </span>
-          <div className="flex-1 leading-relaxed break-words">{parseInlineFormatting(text)}</div>
+          <div className="flex-1 leading-snug break-words">{parseInlineFormatting(text)}</div>
         </li>
       );
       return;
@@ -124,8 +124,8 @@ export const FormattedChatMessage: React.FC<FormattedChatMessageProps> = ({ cont
       const text = line.replace(/^[-*•]\s+/, '');
       currentListItems.push(
         <li key={`bullet-item-${index}`} className="flex items-start gap-2 text-zinc-200">
-          <span className="w-1.5 h-1.5 rounded-full bg-brand-400 shrink-0 mt-2 ring-2 ring-brand-500/30" />
-          <div className="flex-1 leading-relaxed break-words">{parseInlineFormatting(text)}</div>
+          <span className="w-1.5 h-1.5 rounded-full bg-brand-400 shrink-0 mt-1.5 ring-2 ring-brand-500/25" />
+          <div className="flex-1 leading-snug break-words">{parseInlineFormatting(text)}</div>
         </li>
       );
       return;
@@ -134,7 +134,7 @@ export const FormattedChatMessage: React.FC<FormattedChatMessageProps> = ({ cont
     // Regular Paragraph Line
     flushList(index);
     renderedElements.push(
-      <p key={`p-${index}`} className="leading-relaxed text-zinc-200 my-0.5 break-words">
+      <p key={`p-${index}`} className="leading-snug text-zinc-200 my-0.5 break-words">
         {parseInlineFormatting(line)}
       </p>
     );
@@ -142,5 +142,6 @@ export const FormattedChatMessage: React.FC<FormattedChatMessageProps> = ({ cont
 
   flushList(lines.length);
 
-  return <div className="space-y-0.5 select-text text-xs sm:text-sm break-words leading-relaxed">{renderedElements}</div>;
+  return <div className="space-y-0.5 select-text text-xs sm:text-sm break-words leading-snug">{renderedElements}</div>;
 };
+

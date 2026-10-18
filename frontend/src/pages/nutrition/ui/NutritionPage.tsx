@@ -152,7 +152,7 @@ export const NutritionPage: React.FC = () => {
       apiClient.post<MealLog>('/nutrition/meals', mealData),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['nutrition', 'today'] });
-      void queryClient.invalidateQueries({ queryKey: ['coach', 'insights'] });
+      void queryClient.invalidateQueries({ queryKey: ['coach-insights'] });
       setIsScanModalOpen(false);
       setIsTextModalOpen(false);
       setIsManualModalOpen(false);
@@ -170,7 +170,7 @@ export const NutritionPage: React.FC = () => {
     mutationFn: (mealId: string) => apiClient.delete(`/nutrition/meals/${mealId}`),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['nutrition', 'today'] });
-      void queryClient.invalidateQueries({ queryKey: ['coach', 'insights'] });
+      void queryClient.invalidateQueries({ queryKey: ['coach-insights'] });
     },
   });
 
@@ -288,20 +288,15 @@ export const NutritionPage: React.FC = () => {
   return (
     <div className="space-y-5 animate-fade-in pb-12">
       {/* 1. Header with Actions */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-extrabold tracking-tight text-white flex items-center gap-2">
-            <Utensils className="w-5 h-5 text-brand-400" />
-            <span>{t('nutrition.title')}</span>
-            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-brand-500/20 text-brand-400 border border-brand-500/30 flex items-center gap-1">
-              <Sparkles className="w-3 h-3 text-brand-400" />
-              Gemini AI
-            </span>
-          </h1>
-          <p className="text-xs text-zinc-400 mt-0.5">
-            {t('nutrition.subtitle')}
-          </p>
-        </div>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+        <h1 className="text-xl font-extrabold tracking-tight text-white flex items-center gap-2">
+          <Utensils className="w-5 h-5 text-brand-400" />
+          <span>{t('nutrition.title')}</span>
+          <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-brand-500/20 text-brand-400 border border-brand-500/30 flex items-center gap-1">
+            <Sparkles className="w-3 h-3 text-brand-400" />
+            AI
+          </span>
+        </h1>
 
         <div className="flex items-center gap-2 flex-wrap">
           <Button

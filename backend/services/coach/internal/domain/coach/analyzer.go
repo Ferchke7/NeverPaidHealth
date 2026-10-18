@@ -354,6 +354,16 @@ func AnalyzeUserDataWithProgram(
 	appendMonth("30–60 дней назад", m30to60)
 	appendMonth("60–90 дней назад", m60to90)
 
+	recommendedWorkout := BuildRecommendedWorkout(
+		activeProgram,
+		routines,
+		workouts,
+		muscleRecovery,
+		overloads,
+		allPRList,
+		cnsMetrics,
+	)
+
 	return CoachInsights{
 		ReadinessScore:       cnsMetrics.ReadinessScore,
 		RecoveryStatus:       cnsMetrics.RecoveryStatus,
@@ -382,6 +392,7 @@ func AnalyzeUserDataWithProgram(
 		BodyComposition:      bodyComp,
 		MonthlyVolumeHistory: monthlyHistory,
 		ExerciseTimeline:     exerciseTimeline,
+		RecommendedWorkout:   recommendedWorkout,
 		GeneratedAt:          now,
 	}
 }

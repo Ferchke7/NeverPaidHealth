@@ -442,3 +442,270 @@ func RecommendNextSplit(
 
 	return "Push Day (Грудь, плечи, трицепс) или Верх тела"
 }
+
+// BuildRecommendedWorkout constructs an executable workout prescription with auto-populated progressive overload weights.
+func BuildRecommendedWorkout(
+	activeProgram *ActiveSplitInfo,
+	routines []RoutineSummary,
+	workouts []WorkoutData,
+	muscleRecovery []MuscleRecoveryStatus,
+	overloads []ProgressiveOverloadTarget,
+	prs []PersonalRecordItem,
+	cns CNSMetrics,
+) *SuggestedWorkoutAction {
+	type targetLookup struct {
+		exID   string
+		weight float64
+		reps   int
+		note   string
+	}
+	lookup := make(map[string]targetLookup)
+
+	for _, ov := range overloads {
+		key := strings.ToLower(strings.TrimSpace(ov.ExerciseName))
+		lookup[key] = targetLookup{
+			exID:   ov.ExerciseID.String(),
+			weight: ov.TargetWeightKg,
+			reps:   ov.TargetReps,
+			note:   fmt.Sprintf("Прошлый: %.1fкг×%d", ov.LastBestWeight, ov.LastBestReps),
+		}
+	}
+	for _, pr := range prs {
+		key := strings.ToLower(strings.TrimSpace(pr.ExerciseName))
+		if _, exists := lookup[key]; !exists && pr.Value > 0 {
+			workWeight := math.Round((pr.Value*0.85)/2.5) * 2.5
+			if pr.Reps >= 6 {
+				workWeight = pr.Value
+			}
+			lookup[key] = targetLookup{
+				exID:   pr.ExerciseID.String(),
+				weight: workWeight,
+				reps:   8,
+				note:   fmt.Sprintf("1RM: %.0fкг", pr.Estimated1RM),
+			}
+		}
+	}
+
+	targetRIR := "RIR 1–2"
+	if cns.ReadinessScore >= 86 {
+		targetRIR = "RIR 1 (Пик ЦНС)"
+	} else if cns.ReadinessScore < 65 {
+		targetRIR = "RIR 2–3 (Щадящий режим)"
+	}
+
+	buildExList := func(names []string) []SuggestedExercise {
+		out := make([]SuggestedExercise, 0, len(names))
+		for idx, rawName := range names {
+			if idx >= 6 {
+				break
+			}
+			cleanName := strings.TrimSpace(rawName)
+			if cleanName == "" {
+				continue
+			}
+			key := strings.ToLower(cleanName)
+			mg := detectMuscleGroup(cleanName)
+			kCNS, _ := ClassifyExerciseCNSLoad(cleanName)
+
+			sets := 3
+			reps := 10
+			rest := 90
+			if kCNS >= 1.3 {
+				sets = 4
+				reps = 8
+				rest = 150
+			} else if kCNS >= 1.0 {
+				sets = 3
+				reps = 10
+				rest = 120
+			}
+
+			var weight float64
+			var exID, note string
+			if tl, ok := lookup[key]; ok {
+				weight = tl.weight
+				if tl.reps > 0 {
+					reps = tl.reps
+				}
+				exID = tl.exID
+				note = tl.note
+			} else {
+				// Partial match against lookup
+				for lKey, tl := range lookup {
+					if strings.Contains(key, lKey) || strings.Contains(lKey, key) {
+						weight = tl.weight
+						if tl.reps > 0 {
+							reps = tl.reps
+						}
+						exID = tl.exID
+						note = tl.note
+						break
+					}
+				}
+			}
+
+			out = append(out, SuggestedExercise{
+				ExerciseID:     exID,
+				ExerciseName:   cleanName,
+				MuscleGroup:    mg,
+				TargetSets:     sets,
+				TargetReps:     reps,
+				TargetWeightKg: weight,
+				RestSeconds:    rest,
+				Note:           note,
+			})
+		}
+		return out
+	}
+
+	// 1. Active Installed Program
+	if activeProgram != nil && len(activeProgram.NextDayExercises) > 0 {
+		exList := buildExList(activeProgram.NextDayExercises)
+		if len(exList) > 0 {
+			return &SuggestedWorkoutAction{
+				Title:        fmt.Sprintf("%s — %s", activeProgram.ProgramName, activeProgram.NextDayName),
+				Subtitle:     fmt.Sprintf("День %d/%d • Готовность ЦНС %d%%", activeProgram.CurrentDayIndex+1, activeProgram.DaysPerWeek, cns.ReadinessScore),
+				EstimatedMin: len(exList) * 9,
+				TargetRIR:    targetRIR,
+				Exercises:    exList,
+			}
+		}
+	}
+
+	// 2. Best Recovered Custom Routine
+	if len(routines) > 0 {
+		recMap := make(map[string]int)
+		for _, m := range muscleRecovery {
+			recMap[m.MuscleGroup] = m.RecoveryPercent
+		}
+		var lastW string
+		if len(workouts) > 0 {
+			lastW = strings.ToLower(strings.TrimSpace(workouts[0].Name))
+		}
+		bestRoutine := routines[0]
+		bestScore := -1000
+		for _, r := range routines {
+			if len(r.Exercises) == 0 {
+				continue
+			}
+			score := 0
+			if strings.ToLower(strings.TrimSpace(r.Name)) == lastW {
+				score -= 50
+			}
+			totalRec := 0
+			for _, exName := range r.Exercises {
+				mg := detectMuscleGroup(exName)
+				if rec, ok := recMap[mg]; ok {
+					totalRec += rec
+				} else {
+					totalRec += 85
+				}
+			}
+			score += totalRec / len(r.Exercises)
+			if score > bestScore {
+				bestScore = score
+				bestRoutine = r
+			}
+		}
+		if len(bestRoutine.Exercises) > 0 {
+			exList := buildExList(bestRoutine.Exercises)
+			return &SuggestedWorkoutAction{
+				Title:        bestRoutine.Name,
+				Subtitle:     fmt.Sprintf("Из твоих шаблонов • ЦНС %d%%", cns.ReadinessScore),
+				EstimatedMin: len(exList) * 9,
+				TargetRIR:    targetRIR,
+				Exercises:    exList,
+			}
+		}
+	}
+
+	// 3. Smart Physiological Split Fallback
+	splitText := RecommendNextSplit(activeProgram, routines, workouts, muscleRecovery)
+	lowerSplit := strings.ToLower(splitText)
+	var defaultNames []string
+	var title string
+
+	switch {
+	case strings.Contains(lowerSplit, "pull") || strings.Contains(lowerSplit, "спин") || strings.Contains(lowerSplit, "тягов"):
+		title = "Pull Day — Спина и Бицепс"
+		defaultNames = []string{"Подтягивания широким хватом", "Тяга штанги в наклоне", "Тяга горизонтального блока", "Махи гантелями в наклоне", "Подъем штанги на бицепс"}
+	case strings.Contains(lowerSplit, "leg") || strings.Contains(lowerSplit, "ног"):
+		title = "Legs Day — Ноги и Ягодицы"
+		defaultNames = []string{"Приседания со штангой", "Румынская тяга", "Жим ногами в тренажере", "Сгибание ног лежа", "Подъем на носки стоя"}
+	default:
+		title = "Push Day — Грудь, Плечи и Трицепс"
+		defaultNames = []string{"Жим штанги лежа", "Жим гантелей на наклонной скамье", "Армейский жим стоя", "Махи гантелями в стороны", "Разгибание рук на блоке"}
+	}
+
+	exList := buildExList(defaultNames)
+	return &SuggestedWorkoutAction{
+		Title:        title,
+		Subtitle:     fmt.Sprintf("По матрице восстановления • ЦНС %d%%", cns.ReadinessScore),
+		EstimatedMin: 45,
+		TargetRIR:    targetRIR,
+		Exercises:    exList,
+	}
+}
+
+// BuildWorkoutForChatQuery returns a contextual SuggestedWorkoutAction when the user's chat message
+// asks for a workout plan, today's session, or a specific muscle group routine.
+func BuildWorkoutForChatQuery(message string, telemetry CoachInsights) *SuggestedWorkoutAction {
+	lower := strings.ToLower(message)
+
+	isWorkoutQuery := strings.Contains(lower, "сегодня") ||
+		strings.Contains(lower, "трениров") ||
+		strings.Contains(lower, "план") ||
+		strings.Contains(lower, "сплит") ||
+		strings.Contains(lower, "программ") ||
+		strings.Contains(lower, "составь") ||
+		strings.Contains(lower, "прогресс") ||
+		strings.Contains(lower, "качать") ||
+		strings.Contains(lower, "груд") ||
+		strings.Contains(lower, "спин") ||
+		strings.Contains(lower, "ног") ||
+		strings.Contains(lower, "плеч") ||
+		strings.Contains(lower, "рук") ||
+		strings.Contains(lower, "бицепс") ||
+		strings.Contains(lower, "трицепс") ||
+		strings.Contains(lower, "жимов") ||
+		strings.Contains(lower, "тягов") ||
+		strings.Contains(lower, "today") ||
+		strings.Contains(lower, "workout") ||
+		strings.Contains(lower, "train") ||
+		strings.Contains(lower, "routine") ||
+		strings.Contains(lower, "split") ||
+		strings.Contains(lower, "bugun") ||
+		strings.Contains(lower, "mashq") ||
+		strings.Contains(lower, "reja")
+
+	if !isWorkoutQuery {
+		return nil
+	}
+
+	// Check if user requested a specific muscle group session
+	var customTitle string
+	var customNames []string
+
+	switch {
+	case strings.Contains(lower, "спин") || strings.Contains(lower, "тягов") || strings.Contains(lower, "back") || strings.Contains(lower, "pull"):
+		customTitle = "Pull Session — Спина, Задняя дельта, Бицепс"
+		customNames = []string{"Подтягивания", "Тяга штанги в наклоне", "Тяга верхнего блока", "Тяга горизонтального блока", "Подъем гантелей на бицепс"}
+	case strings.Contains(lower, "ног") || strings.Contains(lower, "ягодиц") || strings.Contains(lower, "leg") || strings.Contains(lower, "squat"):
+		customTitle = "Legs Session — Квадрицепс, Бицепс бедра, Икры"
+		customNames = []string{"Приседания со штангой", "Румынская тяга", "Жим ногами", "Сгибание ног в тренажере", "Подъем на носки"}
+	case strings.Contains(lower, "груд") || strings.Contains(lower, "жимов") || strings.Contains(lower, "chest") || strings.Contains(lower, "push"):
+		customTitle = "Push Session — Грудь, Плечи, Трицепс"
+		customNames = []string{"Жим штанги лежа", "Жим гантелей на наклонной", "Отжимания на брусьях", "Махи гантелями в стороны", "Разгибание на трицепс в блоке"}
+	case strings.Contains(lower, "плеч") || strings.Contains(lower, "рук") || strings.Contains(lower, "бицепс") || strings.Contains(lower, "трицепс") || strings.Contains(lower, "arm") || strings.Contains(lower, "shoulder"):
+		customTitle = "Дельты и Руки — Гипертрофия"
+		customNames = []string{"Армейский жим", "Махи гантелями в стороны", "Подъем штанги на бицепс", "Французский жим", "Молотки с гантелями"}
+	}
+
+	if len(customNames) > 0 {
+		customRoutine := []RoutineSummary{{Name: customTitle, Exercises: customNames}}
+		return BuildRecommendedWorkout(nil, customRoutine, nil, telemetry.MuscleRecovery, telemetry.OverloadTargets, telemetry.AllTimePRs, telemetry.CNS)
+	}
+
+	return telemetry.RecommendedWorkout
+}
+

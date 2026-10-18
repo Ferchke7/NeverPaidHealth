@@ -74,6 +74,16 @@ func TestAnalyzeUserData_CalculatesReadinessAndOverload(t *testing.T) {
 	if len(ragCtx.ScientificReferences) == 0 {
 		t.Errorf("expected Scientific KB RAG to retrieve relevant sports science chunks")
 	}
+
+	// Verify RecommendedWorkout prescription generation
+	if insights.RecommendedWorkout == nil || len(insights.RecommendedWorkout.Exercises) == 0 {
+		t.Errorf("expected RecommendedWorkout to be generated with exercises")
+	}
+
+	chatWorkout := coach.BuildWorkoutForChatQuery("Что тренировать сегодня?", insights)
+	if chatWorkout == nil || len(chatWorkout.Exercises) == 0 {
+		t.Errorf("expected BuildWorkoutForChatQuery to return workout prescription for training query")
+	}
 }
 
 func TestInsightCategoriesAndSeverities(t *testing.T) {

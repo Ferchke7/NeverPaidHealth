@@ -249,7 +249,27 @@ type CoachInsights struct {
 	NutritionTrend        *NutritionTrendSummary      `json:"nutrition_trend,omitempty"`
 	MonthlyVolumeHistory  []MonthlyVolumeSummary      `json:"monthly_volume_history,omitempty"`
 	ExerciseTimeline      map[string][]ExerciseSessionEntry `json:"-"`
-	GeneratedAt           time.Time                   `json:"generated_at"`
+	RecommendedWorkout    *SuggestedWorkoutAction           `json:"recommended_workout,omitempty"`
+	GeneratedAt           time.Time                         `json:"generated_at"`
+}
+
+type SuggestedExercise struct {
+	ExerciseID     string  `json:"exercise_id,omitempty"`
+	ExerciseName   string  `json:"exercise_name"`
+	MuscleGroup    string  `json:"muscle_group,omitempty"`
+	TargetSets     int     `json:"target_sets"`
+	TargetReps     int     `json:"target_reps"`
+	TargetWeightKg float64 `json:"target_weight_kg,omitempty"`
+	RestSeconds    int     `json:"rest_seconds,omitempty"`
+	Note           string  `json:"note,omitempty"`
+}
+
+type SuggestedWorkoutAction struct {
+	Title        string              `json:"title"`
+	Subtitle     string              `json:"subtitle,omitempty"`
+	EstimatedMin int                 `json:"estimated_minutes"`
+	TargetRIR    string              `json:"target_rir"`
+	Exercises    []SuggestedExercise `json:"exercises"`
 }
 
 type ChatMessage struct {
@@ -268,6 +288,8 @@ type ChatRequest struct {
 }
 
 type ChatResponse struct {
-	Reply       string   `json:"reply"`
-	Suggestions []string `json:"suggestions,omitempty"`
+	Reply            string                  `json:"reply"`
+	Suggestions      []string                `json:"suggestions,omitempty"`
+	SuggestedWorkout *SuggestedWorkoutAction `json:"suggested_workout,omitempty"`
 }
+

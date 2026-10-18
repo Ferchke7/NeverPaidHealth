@@ -15,8 +15,12 @@ export interface ExerciseDraft {
   measurementType?: string;
   target_sets?: number;
   targetSets?: number;
+  target_reps?: number;
+  targetReps?: number;
   target_reps_min?: number;
   targetRepsMin?: number;
+  target_weight_kg?: number;
+  targetWeightKg?: number;
   sets?: ActiveSet[];
 }
 
@@ -52,7 +56,8 @@ export function useStartWorkout() {
           ? ex.exercise_id
           : ex.exerciseId || ex.id || generateUUID();
       const setsCount = Math.max(1, ex.target_sets || ex.targetSets || (ex.sets ? ex.sets.length : 3));
-      const defaultReps = ex.target_reps_min || ex.targetRepsMin || 10;
+      const defaultReps = ex.target_reps || ex.targetReps || ex.target_reps_min || ex.targetRepsMin || 10;
+      const defaultWeight = ex.target_weight_kg || ex.targetWeightKg || 0;
 
       const sets: ActiveSet[] = ex.sets && ex.sets.length > 0
         ? ex.sets.map((s, i) => ({
@@ -65,7 +70,7 @@ export function useStartWorkout() {
             id: generateUUID(),
             setNumber: i + 1,
             setType: 'normal',
-            weightKg: 0,
+            weightKg: defaultWeight,
             reps: defaultReps,
             completed: false,
           }));

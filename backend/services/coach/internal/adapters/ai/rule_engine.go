@@ -40,160 +40,144 @@ func (r *RuleEngineProvider) GenerateChatResponse(
 	switch lang {
 	case "uz":
 		switch {
-		case strings.Contains(msg, "salom") || strings.Contains(msg, "assalom") || strings.Contains(msg, "qalaysiz"):
-			reply.WriteString(fmt.Sprintf("Salom, %s! 🦾 Men sizning shaxsiy AI murabbiyingizman. Mashg'ulotlar, to'g'ri ovqatlanish yoki progress bo'yicha savollaringizni bering!", userName))
-			suggestions = []string{
-				"Bugun nima mashq qilamiz?",
-				"Kunlik oqsil me'yori qancha?",
-				"Jim yotib bosishda qanday o'sish mumkin?",
-			}
-
-		case strings.Contains(msg, "bugun") || strings.Contains(msg, "mashq") || strings.Contains(msg, "reja"):
-			reply.WriteString(fmt.Sprintf("🏋️‍♂️ **Bugungi reja:** `%s`\n\n", telemetry.SuggestedSplit))
-			reply.WriteString(fmt.Sprintf("Markaziy asab tizimi tayyorligi: **%d/100** (%s). 7 kunlik hajm: **%.0f kg**.\n", telemetry.ReadinessScore, telemetry.RecoveryStatus, telemetry.WeeklyVolumeKg))
-			if len(telemetry.OverloadTargets) > 0 {
-				top := telemetry.OverloadTargets[0]
-				reply.WriteString(fmt.Sprintf("🎯 **Maqsad:** %s — **%.1f kg × %d marta** bajarishga harakat qiling.", top.ExerciseName, top.TargetWeightKg, top.TargetReps))
+		case strings.Contains(msg, "rekord") || strings.Contains(msg, "1rm"):
+			reply.WriteString("🏆 **Shaxsiy rekordlar (Brzycki 1RM):**\n")
+			if len(telemetry.AllTimePRs) > 0 {
+				for i, pr := range telemetry.AllTimePRs {
+					if i >= 4 {
+						break
+					}
+					reply.WriteString(fmt.Sprintf("• **%s:** %.1f kg × %d (1RM: **%.0f kg**)\n", pr.ExerciseName, pr.Value, pr.Reps, pr.Estimated1RM))
+				}
 			} else {
-				reply.WriteString("💡 Asosiy yondashuvlarda 1–2 takror zaxira (RPE 8) saqlang.")
+				reply.WriteString("• Hali rekordlar qayd etilmagan — birinchi mashg'ulotni yakunlang.")
 			}
-			suggestions = []string{
-				"Oqsil me'yori qancha?",
-				"Yondashuvlar orasida qancha dam olish kerak?",
-				"Mening natijalarimni tahlil qil",
-			}
+			suggestions = []string{"Bugun nima mashq qilamiz?", "Kunlik oqsil me'yori", "Tiklanish tahlili"}
 
-		case strings.Contains(msg, "oqsil") || strings.Contains(msg, "ovqat") || strings.Contains(msg, "kaloriya") || strings.Contains(msg, "protein"):
-			reply.WriteString("🥩 **Sport ovqatlanish me'yorlari:**\n\n")
-			reply.WriteString("• **Oqsil:** tana vaznining 1 kg uchun 1.6–2.2 g (bir martada 30–40 g).\n")
-			reply.WriteString("• **Uglevodlar:** energiya uchun 3–5 g/kg.\n")
-			reply.WriteString("• **Suv:** har kuni 1 kg vaznga 35–40 ml toza suv.\n")
-			reply.WriteString("• **Kreatin:** har kuni yuklamasiz 3–5 g.")
-			suggestions = []string{
-				"Bugun nima mashq qilamiz?",
-				"Tiklanish bo'yicha maslahat",
-				"Platoni qanday yengish mumkin?",
+		case strings.Contains(msg, "oqsil") || strings.Contains(msg, "ovqat") || strings.Contains(msg, "kaloriya") || strings.Contains(msg, "protein") || strings.Contains(msg, "bju"):
+			if bc := telemetry.BodyComposition; bc != nil && bc.CurrentWeightKg > 0 {
+				reply.WriteString(fmt.Sprintf("🥩 **Ratsion (%s — %.1f kg, LBM %.1f kg):**\n", bc.NutritionalGoal, bc.CurrentWeightKg, bc.LeanBodyMassKg))
+				reply.WriteString(fmt.Sprintf("• **Kaloriya:** **%d kkal/kun** (TDEE: %d kkal)\n", bc.RecommendedKcal, bc.EstimatedTDEE))
+				reply.WriteString(fmt.Sprintf("• **Oqsil (LBM bo'yicha):** **%.0f–%.0f g/kun** (bugun: %.0fg)\n", bc.ProteinTargetMinG, bc.ProteinTargetMaxG, telemetry.TodayProteinG))
+				reply.WriteString("• **Suv va Kreatin:** 3.5 L suv + 5 g kreatin monohidrat.")
+			} else {
+				reply.WriteString("🥩 **Sport ovqatlanish me'yorlari:**\n• **Oqsil:** LBM ning 1 kg uchun **2.0–2.2 g**\n• **Uglevodlar:** **3–4 g/kg**\n• **Kreatin:** **5 g/kun**")
 			}
+			suggestions = []string{"Bugungi mashg'ulot rejasi", "Mening 1RM rekordlarim", "Asab tizimi (CNS) holati"}
 
 		default:
-			reply.WriteString(fmt.Sprintf("Salom, %s! 🦾 Tayyorgarlik darajasi: **%d/100** (%s).\n\n", userName, telemetry.ReadinessScore, telemetry.RecoveryStatus))
-			reply.WriteString("Men sizning barcha mashg'ulotlaringiz, rekordlaringiz va ovqatlanishingizni kuzatib boraman. Har qanday savolingizga aniq va amaliy javob berishga tayyorman!")
-			suggestions = []string{
-				"Bugun nima mashq qilamiz?",
-				"Mening rekordlarim qanday?",
-				"Ovqatlanish rejamni tekshir",
+			reply.WriteString(fmt.Sprintf("⚡ **CNS Tayyorligi:** **%d/100** (ACWR **%.2f**)\n", telemetry.ReadinessScore, telemetry.CNS.ACWR))
+			reply.WriteString(fmt.Sprintf("• **Tavsiya:** `%s`\n", telemetry.SuggestedSplit))
+			if len(telemetry.OverloadTargets) > 0 {
+				for i, t := range telemetry.OverloadTargets {
+					if i >= 3 {
+						break
+					}
+					reply.WriteString(fmt.Sprintf("• **%s:** bugungi maqsad **%.1f kg × %d**\n", t.ExerciseName, t.TargetWeightKg, t.TargetReps))
+				}
 			}
+			suggestions = []string{"Mening 1RM rekordlarim", "Kunlik oqsil va kaloriya", "Tiklanish tahlili"}
 		}
 
 	case "en":
 		switch {
-		case strings.Contains(msg, "hi") || strings.Contains(msg, "hello") || strings.Contains(msg, "hey"):
-			reply.WriteString(fmt.Sprintf("Hey %s! 🦾 I'm your AI strength and performance coach. Ask me anything about your training split, progressive overload, or nutrition!", userName))
-			suggestions = []string{
-				"What should I train today?",
-				"How much protein do I need?",
-				"Analyze my progress",
-			}
-
-		case strings.Contains(msg, "today") || strings.Contains(msg, "plan") || strings.Contains(msg, "workout") || strings.Contains(msg, "train"):
-			reply.WriteString(fmt.Sprintf("🏋️‍♂️ **Today's Session:** `%s`\n\n", telemetry.SuggestedSplit))
-			reply.WriteString(fmt.Sprintf("CNS Readiness: **%d/100** (%s). 7-day volume: **%.0f kg**.\n", telemetry.ReadinessScore, telemetry.RecoveryStatus, telemetry.WeeklyVolumeKg))
-			if len(telemetry.OverloadTargets) > 0 {
-				top := telemetry.OverloadTargets[0]
-				reply.WriteString(fmt.Sprintf("🎯 **Target:** %s — aim for **%.1f kg × %d reps**.", top.ExerciseName, top.TargetWeightKg, top.TargetReps))
+		case strings.Contains(msg, "pr") || strings.Contains(msg, "record") || strings.Contains(msg, "1rm"):
+			reply.WriteString("🏆 **Top Personal Records (Brzycki e1RM):**\n")
+			if len(telemetry.AllTimePRs) > 0 {
+				for i, pr := range telemetry.AllTimePRs {
+					if i >= 4 {
+						break
+					}
+					reply.WriteString(fmt.Sprintf("• **%s:** %.1f kg × %d (e1RM: **%.0f kg**)\n", pr.ExerciseName, pr.Value, pr.Reps, pr.Estimated1RM))
+				}
 			} else {
-				reply.WriteString("💡 Keep 1–2 reps in reserve (RPE 8) on your working compound sets.")
+				reply.WriteString("• No PRs logged yet — complete a workout to unlock e1RM tracking.")
 			}
-			suggestions = []string{
-				"How to break bench press plateau?",
-				"Analyze my progress",
-				"Optimal rest between sets",
-			}
+			suggestions = []string{"Today's workout plan", "My LBM macro targets", "CNS & volume status"}
 
-		case strings.Contains(msg, "protein") || strings.Contains(msg, "diet") || strings.Contains(msg, "calorie") || strings.Contains(msg, "nutrition"):
-			reply.WriteString("🥩 **Evidence-Based Nutrition Guidelines:**\n\n")
-			reply.WriteString("• **Protein:** 1.6–2.2g per kg body weight (30–40g per meal for muscle protein synthesis).\n")
-			reply.WriteString("• **Carbohydrates:** 3–5g/kg for optimal glycogen and training power.\n")
-			reply.WriteString("• **Hydration:** 35–40ml per kg body weight daily.\n")
-			reply.WriteString("• **Creatine Monohydrate:** 3–5g daily without loading phase.")
-			suggestions = []string{
-				"What should I train today?",
-				"Analyze my weekly volume",
-				"Recovery advice",
+		case strings.Contains(msg, "protein") || strings.Contains(msg, "diet") || strings.Contains(msg, "calorie") || strings.Contains(msg, "nutrition") || strings.Contains(msg, "macro"):
+			if bc := telemetry.BodyComposition; bc != nil && bc.CurrentWeightKg > 0 {
+				reply.WriteString(fmt.Sprintf("🥩 **Nutrition Targets (%.1f kg, LBM %.1f kg):**\n", bc.CurrentWeightKg, bc.LeanBodyMassKg))
+				reply.WriteString(fmt.Sprintf("• **Target Intake:** **%d kcal/day** (TDEE: %d kcal)\n", bc.RecommendedKcal, bc.EstimatedTDEE))
+				reply.WriteString(fmt.Sprintf("• **Protein (LBM-scaled):** **%.0f–%.0f g/day** (logged today: %.0fg)\n", bc.ProteinTargetMinG, bc.ProteinTargetMaxG, telemetry.TodayProteinG))
+				reply.WriteString("• **Supplements:** 5g Creatine Monohydrate daily.")
+			} else {
+				reply.WriteString("🥩 **Macro Targets:**\n• **Protein:** **2.0–2.2g/kg LBM**\n• **Carbs:** **3–4g/kg**\n• **Creatine:** **5g/day**")
 			}
+			suggestions = []string{"What should I train today?", "My top PRs & e1RM", "CNS recovery analysis"}
 
 		default:
-			reply.WriteString(fmt.Sprintf("Hey %s! 🦾 Readiness is **%d/100** (%s).\n\n", userName, telemetry.ReadinessScore, telemetry.RecoveryStatus))
-			reply.WriteString("I track all your routines, personal records, and recovery metrics. Ask any specific question about your training or nutrition!")
-			suggestions = []string{
-				"What should I train today?",
-				"What are my top PRs?",
-				"How to break plateaus?",
+			reply.WriteString(fmt.Sprintf("⚡ **CNS Readiness:** **%d/100** • ACWR **%.2f** (%s)\n", telemetry.ReadinessScore, telemetry.CNS.ACWR, telemetry.RecoveryStatus))
+			reply.WriteString(fmt.Sprintf("• **Next Split:** `%s`\n", telemetry.SuggestedSplit))
+			if len(telemetry.OverloadTargets) > 0 {
+				for i, t := range telemetry.OverloadTargets {
+					if i >= 3 {
+						break
+					}
+					reply.WriteString(fmt.Sprintf("• **%s:** aim for **%.1f kg × %d reps** (prev %.1fkg×%d)\n", t.ExerciseName, t.TargetWeightKg, t.TargetReps, t.LastBestWeight, t.LastBestReps))
+				}
 			}
+			suggestions = []string{"My top PRs & e1RM", "Daily protein & calories", "Muscle recovery status"}
 		}
 
 	default: // Russian
 		switch {
-		case strings.Contains(msg, "привет") || strings.Contains(msg, "салам") || strings.Contains(msg, "здравствуй"):
-			reply.WriteString(fmt.Sprintf("Привет, %s! 🦾 Я на связи. Задавай любой вопрос по тренировкам, питанию или прикрепляй фото блюда/формы — отвечу коротко и по делу!", userName))
-			suggestions = []string{
-				"Что тренировать сегодня?",
-				"Сколько белка нужно в день?",
-				"Как прогрессировать в жиме?",
-			}
-
-		case strings.Contains(msg, "восстановлен") || strings.Contains(msg, "объем") || strings.Contains(msg, "отдых") || strings.Contains(msg, "перетрен"):
-			reply.WriteString(fmt.Sprintf("🔋 **Восстановление (ЦНС: %d%%, %s):**\n\n", telemetry.ReadinessScore, telemetry.RecoveryStatus))
-			reply.WriteString("• **Объем:** 10–18 тяжелых подходов на группу в неделю (RPE 7-8.5).\n")
-			reply.WriteString("• **Сон:** 7.5–8.5 часов для синтеза белка и гормона роста.\n")
-			reply.WriteString("• **Отдых между сетами:** 2.5–3 мин в базе (жим/присед), 1.5–2 мин в изоляции.")
-			suggestions = []string{
-				"Что тренировать сегодня?",
-				"Сколько белка нужно в день?",
-				"Как преодолеть плато?",
-			}
-
-		case strings.Contains(msg, "сегодня") || strings.Contains(msg, "план") || strings.Contains(msg, "что тренировать") || strings.Contains(msg, "тренировк"):
-			reply.WriteString(fmt.Sprintf("🏋️‍♂️ **План на сегодня:** `%s`\n\n", telemetry.SuggestedSplit))
-			reply.WriteString(fmt.Sprintf("Готовность ЦНС: **%d/100** (%s). Тоннаж 7д: **%.0f кг**.\n", telemetry.ReadinessScore, telemetry.RecoveryStatus, telemetry.WeeklyVolumeKg))
-			if len(telemetry.OverloadTargets) > 0 {
-				top := telemetry.OverloadTargets[0]
-				reply.WriteString(fmt.Sprintf("🎯 **Цель:** %s — попробуй **%.1f кг × %d повт.**", top.ExerciseName, top.TargetWeightKg, top.TargetReps))
+		case strings.Contains(msg, "рекорд") || strings.Contains(msg, "1rm") || strings.Contains(msg, "1пм") || strings.Contains(msg, "силов"):
+			reply.WriteString("🏆 **Твои рекорды и расчетный 1RM (Бжицки):**\n")
+			if len(telemetry.AllTimePRs) > 0 {
+				for i, pr := range telemetry.AllTimePRs {
+					if i >= 5 {
+						break
+					}
+					reply.WriteString(fmt.Sprintf("• **%s:** **%.1f кг × %d** → 1RM **%.1f кг**\n", pr.ExerciseName, pr.Value, pr.Reps, pr.Estimated1RM))
+				}
 			} else {
-				reply.WriteString("💡 Держи запас 1–2 повтора (RPE 8) в основных рабочих сетах.")
+				reply.WriteString("• Рекорды еще не зафиксированы — заверши тренировку для расчета 1RM.")
 			}
-			suggestions = []string{
-				"Как прогрессировать в жиме?",
-				"Сколько отдыхать между подходами?",
-				"Норма белка на сегодня",
-			}
+			suggestions = []string{"План на сегодня с весами", "Разбор восстановления ЦНС", "Мои КБЖУ по сухой массе"}
 
-		case strings.Contains(msg, "белок") || strings.Contains(msg, "питан") || strings.Contains(msg, "калор") || strings.Contains(msg, "диета"):
-			reply.WriteString("🥩 **Нормы спортивного питания:**\n\n")
-			reply.WriteString("• **Белок:** 1.6–2.2 г на 1 кг веса (30–40 г на порцию).\n")
-			reply.WriteString("• **Углеводы:** 3–5 г/кг для энергии и гликогена.\n")
-			reply.WriteString("• **Вода:** 35–40 мл на 1 кг веса тела ежедневно.\n")
-			reply.WriteString("• **Креатин:** 3–5 г ежедневно без фазы загрузки.")
-			suggestions = []string{
-				"Что тренировать сегодня?",
-				"Оптимальное восстановление",
-				"Как преодолеть плато?",
+		case strings.Contains(msg, "восстановлен") || strings.Contains(msg, "цнс") || strings.Contains(msg, "объем") || strings.Contains(msg, "мышц"):
+			reply.WriteString(fmt.Sprintf("🧬 **ЦНС Банистера:** **%d/100** • ACWR **%.2f** (7д: **%.0f кг** / 28д ср: **%.0f кг**)\n",
+				telemetry.ReadinessScore, telemetry.CNS.ACWR, telemetry.CNS.AcuteLoad7dKg, telemetry.CNS.ChronicLoad28dAvgKg))
+			for _, m := range telemetry.MuscleRecovery {
+				if m.MuscleGroup == "Core" {
+					continue
+				}
+				reply.WriteString(fmt.Sprintf("• **%s:** восст. **%d%%** | **%d сетов/нед** (норма MAV %d)\n", m.MuscleGroup, m.RecoveryPercent, m.WeeklySets7d, m.MAV))
 			}
+			suggestions = []string{"Что тренировать сегодня?", "Мои рекорды 1RM", "Точные КБЖУ для рекомпозиции"}
+
+		case strings.Contains(msg, "белок") || strings.Contains(msg, "питан") || strings.Contains(msg, "калор") || strings.Contains(msg, "кбжу") || strings.Contains(msg, "вес"):
+			if bc := telemetry.BodyComposition; bc != nil && bc.CurrentWeightKg > 0 {
+				reply.WriteString(fmt.Sprintf("🥩 **Питание по сухой массе (Вес %.1f кг, LBM %.1f кг, ИМТ %.1f):**\n", bc.CurrentWeightKg, bc.LeanBodyMassKg, bc.BMI))
+				reply.WriteString(fmt.Sprintf("• **Цель:** %s\n", bc.NutritionalGoal))
+				reply.WriteString(fmt.Sprintf("• **Калории:** **%d ккал/день** (TDEE поддержки: %d ккал)\n", bc.RecommendedKcal, bc.EstimatedTDEE))
+				reply.WriteString(fmt.Sprintf("• **Белок (на LBM):** **%.0f–%.0f г/день** (сегодня: **%.0f г** | %d ккал)", bc.ProteinTargetMinG, bc.ProteinTargetMaxG, telemetry.TodayProteinG, telemetry.TodayCalories))
+			} else {
+				reply.WriteString("🥩 **Цели по питанию:**\n• **Белок:** **2.0–2.2 г** на 1 кг сухой массы (LBM)\n• **Дефицит при сушке:** **-15..20%** от TDEE\n• Запиши вес в разделе «Тело» для точного расчета LBM.")
+			}
+			suggestions = []string{"Что тренировать сегодня?", "Разбор восстановления ЦНС", "Мои рекорды 1RM"}
 
 		default:
-			reply.WriteString(fmt.Sprintf("Привет, %s! 🦾 Готовность ЦНС: **%d/100** (%s).\n\n", userName, telemetry.ReadinessScore, telemetry.RecoveryStatus))
-			reply.WriteString("Я знаю все твои программы, рекорды и историю тренировок. Задавай любой вопрос по тренингу, питанию или прогрессии — отвечу коротко и по фактам!")
-			suggestions = []string{
-				"Какие у меня рекорды?",
-				"Какие у меня программы?",
-				"Что тренировать сегодня?",
+			reply.WriteString(fmt.Sprintf("⚡ **Готовность ЦНС:** **%d/100** (ACWR **%.2f**) • Сплит: `%s`\n", telemetry.ReadinessScore, telemetry.CNS.ACWR, telemetry.SuggestedSplit))
+			if len(telemetry.OverloadTargets) > 0 {
+				for i, t := range telemetry.OverloadTargets {
+					if i >= 3 {
+						break
+					}
+					reply.WriteString(fmt.Sprintf("• **%s:** цель **%.1f кг × %d** (было %.1fкг×%d)\n", t.ExerciseName, t.TargetWeightKg, t.TargetReps, t.LastBestWeight, t.LastBestReps))
+				}
+			} else {
+				reply.WriteString("• Работай в диапазоне **RIR 1–2** в базовых движениях.")
 			}
+			suggestions = []string{"Мои рекорды и 1RM", "Разбор ЦНС и объема мышц", "Мои КБЖУ для рекомпозиции"}
 		}
 	}
 
 	return coach.ChatResponse{
-		Reply:       reply.String(),
-		Suggestions: suggestions,
+		Reply:            strings.TrimSpace(reply.String()),
+		Suggestions:      suggestions,
+		SuggestedWorkout: coach.BuildWorkoutForChatQuery(req.Message, telemetry),
 	}, nil
 }
 
