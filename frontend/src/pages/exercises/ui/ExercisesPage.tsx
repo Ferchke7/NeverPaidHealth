@@ -45,7 +45,7 @@ const EQUIPMENT_LIST: { value: Equipment | 'all'; key: string }[] = [
   { value: 'smith_machine', key: 'exercises.smithMachine' },
 ];
 
-export const ExercisesPage: React.FC = () => {
+export const ExercisesPage: React.FC<{ embedded?: boolean }> = ({ embedded = false }) => {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
@@ -193,20 +193,49 @@ export const ExercisesPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-extrabold tracking-tight text-white flex items-center gap-2">
-            <span>{t('exercises.title')}</span>
-            <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-brand-500/20 text-brand-400 border border-brand-500/30">
-              {t('exercises.movements', { count: exercises.length })}
-            </span>
-          </h1>
-          <p className="text-xs text-zinc-400 mt-0.5">
-            {t('exercises.catalogDesc')}
-          </p>
-        </div>
+        {!embedded ? (
+          <div>
+            <h1 className="text-xl font-extrabold tracking-tight text-white flex items-center gap-2">
+              <span>{t('exercises.title')}</span>
+              <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-brand-500/20 text-brand-400 border border-brand-500/30">
+                {t('exercises.movements', { count: exercises.length })}
+              </span>
+            </h1>
+            <p className="text-xs text-zinc-400 mt-0.5">
+              {t('exercises.catalogDesc')}
+            </p>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setOnlyCustom(false)}
+              className={`text-xs px-3 py-1.5 rounded-xl font-semibold transition-all cursor-pointer ${
+                !onlyCustom
+                  ? 'bg-brand-500 text-dark-950 font-bold shadow-md shadow-brand-500/20'
+                  : 'bg-dark-800 text-zinc-400 hover:text-white border border-dark-700'
+              }`}
+            >
+              {t('exercises.allExercises', { count: exercises.length })}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setOnlyCustom(true)}
+              className={`text-xs px-3 py-1.5 rounded-xl font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
+                onlyCustom
+                  ? 'bg-amber-500 text-dark-950 font-bold shadow-md shadow-amber-500/20'
+                  : 'bg-dark-800 text-amber-400/90 hover:text-amber-300 border border-dark-700'
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>{t('exercises.myExercises', { count: customCount })}</span>
+            </button>
+          </div>
+        )}
 
         <Button
           variant="primary"
@@ -231,33 +260,35 @@ export const ExercisesPage: React.FC = () => {
           />
         </div>
 
-        {/* Top Type / Filter Switcher */}
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setOnlyCustom(false)}
-            className={`text-xs px-3 py-1.5 rounded-xl font-semibold transition-all ${
-              !onlyCustom
-                ? 'bg-brand-500 text-dark-950 font-bold shadow-md shadow-brand-500/20'
-                : 'bg-dark-800 text-zinc-400 hover:text-white border border-dark-700'
-            }`}
-          >
-            {t('exercises.allExercises', { count: exercises.length })}
-          </button>
+        {/* Top Type / Filter Switcher when standalone */}
+        {!embedded && (
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setOnlyCustom(false)}
+              className={`text-xs px-3 py-1.5 rounded-xl font-semibold transition-all cursor-pointer ${
+                !onlyCustom
+                  ? 'bg-brand-500 text-dark-950 font-bold shadow-md shadow-brand-500/20'
+                  : 'bg-dark-800 text-zinc-400 hover:text-white border border-dark-700'
+              }`}
+            >
+              {t('exercises.allExercises', { count: exercises.length })}
+            </button>
 
-          <button
-            type="button"
-            onClick={() => setOnlyCustom(true)}
-            className={`text-xs px-3 py-1.5 rounded-xl font-semibold transition-all flex items-center gap-1.5 ${
-              onlyCustom
-                ? 'bg-amber-500 text-dark-950 font-bold shadow-md shadow-amber-500/20'
-                : 'bg-dark-800 text-amber-400/90 hover:text-amber-300 border border-dark-700'
-            }`}
-          >
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>{t('exercises.myExercises', { count: customCount })}</span>
-          </button>
-        </div>
+            <button
+              type="button"
+              onClick={() => setOnlyCustom(true)}
+              className={`text-xs px-3 py-1.5 rounded-xl font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
+                onlyCustom
+                  ? 'bg-amber-500 text-dark-950 font-bold shadow-md shadow-amber-500/20'
+                  : 'bg-dark-800 text-amber-400/90 hover:text-amber-300 border border-dark-700'
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>{t('exercises.myExercises', { count: customCount })}</span>
+            </button>
+          </div>
+        )}
 
         {/* Muscle group filter chips */}
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">

@@ -1,4 +1,9 @@
 import React from 'react';
+import {
+  Card as HeroCard,
+  Chip as HeroChip,
+} from '@heroui/react';
+import { X } from 'lucide-react';
 
 export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   variant?: 'default' | 'flat' | 'bordered' | 'glow';
@@ -12,24 +17,29 @@ export const Card: React.FC<CardProps> = ({
   children,
   ...props
 }) => {
-  const variantStyles = {
-    default: 'bg-dark-800/90 border border-dark-700/80 shadow-lg shadow-black/40',
-    flat: 'bg-dark-900/70 border border-dark-800/80 shadow-none',
-    bordered: 'bg-transparent border border-dark-700/90',
-    glow: 'bg-gradient-to-br from-dark-850 via-dark-900 to-dark-850 border border-brand-500/30 shadow-xl shadow-brand-500/5',
-  }[variant];
+  const heroVariantMap: Record<
+    NonNullable<CardProps['variant']>,
+    'default' | 'secondary' | 'tertiary' | 'transparent'
+  > = {
+    default: 'default',
+    flat: 'secondary',
+    bordered: 'transparent',
+    glow: 'default',
+  };
 
-  const hoverStyles = isHoverable
-    ? 'hover:border-dark-600 hover:shadow-xl transition-all duration-200 cursor-pointer'
-    : '';
+  const extraStyles = [
+    'border border-dark-700/80',
+    variant === 'glow' ? 'border-brand-500/30 shadow-lg shadow-brand-500/5' : '',
+    isHoverable ? 'hover:border-dark-600 transition-colors cursor-pointer' : '',
+    className,
+  ]
+    .filter(Boolean)
+    .join(' ');
 
   return (
-    <div
-      className={`rounded-2xl p-5 ${variantStyles} ${hoverStyles} ${className}`}
-      {...props}
-    >
+    <HeroCard.Root variant={heroVariantMap[variant]} className={extraStyles} {...props}>
       {children}
-    </div>
+    </HeroCard.Root>
   );
 };
 
@@ -38,9 +48,12 @@ export const CardHeader: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({
   children,
   ...props
 }) => (
-  <div className={`flex items-center justify-between pb-3 border-b border-dark-700/70 gap-2 ${className}`} {...props}>
+  <HeroCard.Header
+    className={`flex-row items-center justify-between pb-3 border-b border-dark-700/70 gap-2 ${className}`}
+    {...props}
+  >
     {children}
-  </div>
+  </HeroCard.Header>
 );
 
 export const CardTitle: React.FC<React.HTMLAttributes<HTMLHeadingElement>> = ({
@@ -48,9 +61,9 @@ export const CardTitle: React.FC<React.HTMLAttributes<HTMLHeadingElement>> = ({
   children,
   ...props
 }) => (
-  <h3 className={`text-base font-extrabold text-white tracking-tight flex items-center gap-2 ${className}`} {...props}>
+  <HeroCard.Title className={`font-extrabold text-white flex items-center gap-2 ${className}`} {...props}>
     {children}
-  </h3>
+  </HeroCard.Title>
 );
 
 export const CardDescription: React.FC<React.HTMLAttributes<HTMLParagraphElement>> = ({
@@ -58,9 +71,9 @@ export const CardDescription: React.FC<React.HTMLAttributes<HTMLParagraphElement
   children,
   ...props
 }) => (
-  <p className={`text-xs text-zinc-400 mt-0.5 leading-relaxed ${className}`} {...props}>
+  <HeroCard.Description className={`text-xs text-zinc-400 mt-0.5 ${className}`} {...props}>
     {children}
-  </p>
+  </HeroCard.Description>
 );
 
 export const CardContent: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({
@@ -68,9 +81,9 @@ export const CardContent: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({
   children,
   ...props
 }) => (
-  <div className={`py-2 ${className}`} {...props}>
+  <HeroCard.Content className={`py-2 ${className}`} {...props}>
     {children}
-  </div>
+  </HeroCard.Content>
 );
 
 export const CardFooter: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({
@@ -78,9 +91,12 @@ export const CardFooter: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({
   children,
   ...props
 }) => (
-  <div className={`flex items-center justify-between pt-3 border-t border-dark-700/70 gap-2 ${className}`} {...props}>
+  <HeroCard.Footer
+    className={`justify-between pt-3 border-t border-dark-700/70 gap-2 ${className}`}
+    {...props}
+  >
     {children}
-  </div>
+  </HeroCard.Footer>
 );
 
 export interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
@@ -95,33 +111,33 @@ export const Badge: React.FC<BadgeProps> = ({
   children,
   ...props
 }) => {
-  const variants = {
-    brand: 'bg-brand-500/15 text-brand-400 border-brand-500/30',
-    neutral: 'bg-dark-700/60 text-zinc-300 border-dark-600/80',
-    accent: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
-    warning: 'bg-orange-500/15 text-orange-400 border-orange-500/30',
-    danger: 'bg-red-500/15 text-red-400 border-red-500/30',
-    success: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
-    info: 'bg-sky-500/15 text-sky-400 border-sky-500/30',
-  }[variant];
-
-  const sizes = {
-    sm: 'px-1.5 py-0.5 text-[10px]',
-    md: 'px-2.5 py-0.5 text-xs',
-    lg: 'px-3 py-1 text-sm',
-  }[size];
+  const colorMap: Record<
+    NonNullable<BadgeProps['variant']>,
+    'accent' | 'default' | 'warning' | 'danger' | 'success'
+  > = {
+    brand: 'accent',
+    neutral: 'default',
+    accent: 'warning',
+    warning: 'warning',
+    danger: 'danger',
+    success: 'success',
+    info: 'accent',
+  };
 
   return (
-    <span
-      className={`inline-flex items-center font-bold rounded-full border whitespace-nowrap ${variants} ${sizes} ${className}`}
+    <HeroChip.Root
       {...props}
+      variant="soft"
+      color={colorMap[variant]}
+      size={size}
+      className={`font-bold whitespace-nowrap ${className}`}
     >
-      {children}
-    </span>
+      <HeroChip.Label>{children}</HeroChip.Label>
+    </HeroChip.Root>
   );
 };
 
-export interface ChipProps extends React.HTMLAttributes<HTMLDivElement> {
+export interface ChipProps extends Omit<React.HTMLAttributes<HTMLSpanElement>, 'color'> {
   variant?: 'solid' | 'bordered' | 'flat' | 'dot';
   color?: 'default' | 'primary' | 'success' | 'warning' | 'danger' | 'secondary';
   onClose?: () => void;
@@ -135,31 +151,49 @@ export const Chip: React.FC<ChipProps> = ({
   children,
   ...props
 }) => {
-  const colorStyles = {
-    primary: 'bg-brand-500/15 text-brand-400 border-brand-500/30',
-    success: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
-    warning: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
-    danger: 'bg-red-500/15 text-red-400 border-red-500/30',
-    secondary: 'bg-purple-500/15 text-purple-400 border-purple-500/30',
-    default: 'bg-dark-700/70 text-zinc-300 border-dark-600',
-  }[color];
+  const heroColorMap: Record<
+    NonNullable<ChipProps['color']>,
+    'default' | 'accent' | 'success' | 'warning' | 'danger'
+  > = {
+    default: 'default',
+    primary: 'accent',
+    success: 'success',
+    warning: 'warning',
+    danger: 'danger',
+    secondary: 'accent',
+  };
+
+  const heroVariantMap: Record<
+    NonNullable<ChipProps['variant']>,
+    'primary' | 'secondary' | 'soft' | 'tertiary'
+  > = {
+    solid: 'primary',
+    bordered: 'tertiary',
+    flat: 'soft',
+    dot: 'secondary',
+  };
 
   return (
-    <div
-      className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold border ${colorStyles} ${className}`}
+    <HeroChip.Root
       {...props}
+      variant={heroVariantMap[variant]}
+      color={heroColorMap[color]}
+      size="sm"
+      className={`gap-1 ${className}`}
     >
-      {variant === 'dot' && <span className="w-1.5 h-1.5 rounded-full bg-current" />}
-      <span>{children}</span>
+      <HeroChip.Label>{children}</HeroChip.Label>
       {onClose && (
         <button
           type="button"
-          onClick={onClose}
-          className="ml-1 hover:opacity-75 focus:outline-none"
+          onClick={(e) => {
+            e.stopPropagation();
+            onClose();
+          }}
+          className="ml-1 hover:opacity-75 transition-opacity cursor-pointer"
         >
-          ×
+          <X className="w-3 h-3" />
         </button>
       )}
-    </div>
+    </HeroChip.Root>
   );
 };

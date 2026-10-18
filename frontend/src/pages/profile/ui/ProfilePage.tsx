@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   User,
   Mail,
@@ -21,23 +21,21 @@ import { Button } from '@/shared/ui';
 import { Input } from '@/shared/ui';
 import { Switch } from '@/shared/ui';
 import { UserAvatar } from '@/entities/user/ui/UserAvatar.tsx';
-import { BMICalculatorCard } from '@/features/bmi-calculator/ui/BMICalculatorCard.tsx';
 import { LanguageSwitchToggle } from '@/features/switch-language/ui/LanguageSwitchToggle.tsx';
 import { PWAInstallButton } from '@/features/pwa-install/ui/PWAInstallButton.tsx';
-import { BodyTargetProgressCard } from '@/features/body-target-progress/ui/BodyTargetProgressCard.tsx';
 import { useTranslation } from '@/shared/lib/i18n/i18n.ts';
 
 interface ProfilePageProps {
   onNavigateToBody?: () => void;
 }
 
-export const ProfilePage: React.FC<ProfilePageProps> = ({ onNavigateToBody }) => {
+export const ProfilePage: React.FC<ProfilePageProps> = () => {
   const queryClient = useQueryClient();
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
   const setUnitPreference = useAuthStore((s) => s.setUnitPreference);
   const updateUserStats = useAuthStore((s) => s.updateUserStats);
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
 
   const [displayName, setDisplayName] = useState(user?.display_name || '');
   const [unitPref, setUnitPref] = useState<'kg' | 'lb'>(user?.unit_preference || 'kg');
@@ -60,6 +58,73 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onNavigateToBody }) =>
     return String(user?.target_fat_g || localStorage.getItem('np_nutrition_target_fat_g') || '70');
   });
   const [saveSuccess, setSaveSuccess] = useState(false);
+
+  const labels = useMemo(() => {
+    if (language === 'ru') {
+      return {
+        joined: 'С нами с',
+        signOut: 'Выйти',
+        completedWorkouts: 'Тренировки',
+        totalVolume: 'Общий тоннаж',
+        personalRecords: 'Рекорды (PR)',
+        settingsTitle: 'Настройки профиля и тренировок',
+        settingsDesc: 'Имя профиля, язык интерфейса, таймер отдыха и целевые КБЖУ.',
+        displayNameLabel: 'Отображаемое имя',
+        displayNamePlaceholder: 'Ваше имя или никнейм',
+        metricKg: 'Метрическая (КГ)',
+        imperialLb: 'Имперская (LB)',
+        soundLabel: 'Звук и вибрация таймера отдыха',
+        soundDesc: 'Звуковой сигнал по окончании отдыха между подходами',
+        saveBtn: 'Сохранить настройки',
+        savedMsg: 'Сохранено!',
+        exportTitle: 'Резервная копия данных (JSON)',
+        exportDesc: 'Скачать полную историю тренировок, подходов и личных рекордов.',
+        exportBtn: 'Скачать JSON',
+      };
+    }
+    if (language === 'uz') {
+      return {
+        joined: 'Ro‘yxatdan o‘tgan:',
+        signOut: 'Chiqish',
+        completedWorkouts: 'Mashg‘ulotlar',
+        totalVolume: 'Umumiy tonnaj',
+        personalRecords: 'Rekordlar (PR)',
+        settingsTitle: 'Profil va mashg‘ulot sozlamalari',
+        settingsDesc: 'Ism, interfeys tili, dam olish taymeri va kunlik KBJU maqsadlari.',
+        displayNameLabel: 'Ismingiz',
+        displayNamePlaceholder: 'Ism yoki taxallus',
+        metricKg: 'Metrik (KG)',
+        imperialLb: 'Imperial (LB)',
+        soundLabel: 'Dam olish taymeri ovozi',
+        soundDesc: 'Taymer tugaganda ovozli signal chalish',
+        saveBtn: 'Saqlash',
+        savedMsg: 'Saqlandi!',
+        exportTitle: 'Ma’lumotlarni eksport qilish (JSON)',
+        exportDesc: 'Barcha mashg‘ulotlar va shaxsiy rekordlarni JSON formatda yuklab olish.',
+        exportBtn: 'JSON yuklab olish',
+      };
+    }
+    return {
+      joined: 'Joined',
+      signOut: 'Sign Out',
+      completedWorkouts: 'Completed Workouts',
+      totalVolume: 'Total Volume',
+      personalRecords: 'Personal Records',
+      settingsTitle: 'Athlete Profile & Preferences',
+      settingsDesc: 'Configure display name, default rest timers, language, and nutrition targets.',
+      displayNameLabel: 'Display Name',
+      displayNamePlaceholder: 'Your athlete name',
+      metricKg: 'Metric (KG)',
+      imperialLb: 'Imperial (LB)',
+      soundLabel: 'Rest Timer Sound & Vibrate',
+      soundDesc: 'Play audio chime when rest countdown reaches zero',
+      saveBtn: 'Save Preferences',
+      savedMsg: 'Settings Saved!',
+      exportTitle: 'Data Export & Backup',
+      exportDesc: 'Export all your workout logs, sets, and personal records in JSON format.',
+      exportBtn: 'Export JSON',
+    };
+  }, [language]);
 
   // Fetch summary stats
   const { data: workoutsData } = useQuery<{ items: any[] }>({
@@ -142,32 +207,33 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onNavigateToBody }) =>
   };
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-5 animate-fade-in">
       {/* Profile Header Hero */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-dark-850 via-dark-800 to-brand-950/40 border border-dark-700/80 p-6 sm:p-8 shadow-2xl">
-        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-dark-850 via-dark-800 to-brand-950/40 border border-dark-700/80 p-5 sm:p-7 shadow-2xl">
+        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5">
           <div className="relative">
-            <UserAvatar user={user} size="lg" className="w-20 h-20 text-2xl ring-4 ring-brand-500/20 shadow-xl" />
+            <UserAvatar user={user} size="lg" className="w-16 h-16 sm:w-20 sm:h-20 text-2xl ring-4 ring-brand-500/20 shadow-xl" />
             <div className="absolute -bottom-1 -right-1 bg-brand-500 text-dark-950 rounded-full p-1.5 shadow-md">
-              <Shield className="w-4 h-4 fill-current" />
+              <Shield className="w-3.5 h-3.5 fill-current" />
             </div>
           </div>
 
-          <div className="flex-1 text-center sm:text-left space-y-2">
-            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2.5">
-              <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-                {user?.display_name || 'Athlete'}
-              </h1>
-            </div>
-            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-4 text-xs text-zinc-400">
+          <div className="flex-1 text-center sm:text-left space-y-1.5">
+            <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+              {user?.display_name || 'Athlete'}
+            </h1>
+            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-3 text-xs text-zinc-400">
               <span className="flex items-center gap-1.5">
-                <Mail className="w-4 h-4 text-zinc-500" />
+                <Mail className="w-3.5 h-3.5 text-zinc-500" />
                 {user?.email}
               </span>
-              <span className="flex items-center gap-1.5">
-                <Calendar className="w-4 h-4 text-zinc-500" />
-                Joined {user?.created_at ? new Date(user.created_at).toLocaleDateString('ru-RU', { month: 'short', year: 'numeric' }) : 'Recently'}
-              </span>
+              {user?.created_at && (
+                <span className="flex items-center gap-1.5">
+                  <Calendar className="w-3.5 h-3.5 text-zinc-500" />
+                  {labels.joined}{' '}
+                  {new Date(user.created_at).toLocaleDateString('ru-RU', { month: 'short', year: 'numeric' })}
+                </span>
+              )}
             </div>
           </div>
 
@@ -179,7 +245,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onNavigateToBody }) =>
               className="text-xs gap-1.5"
             >
               <LogOut className="w-3.5 h-3.5" />
-              Sign Out
+              {labels.signOut}
             </Button>
           </div>
         </div>
@@ -187,44 +253,38 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onNavigateToBody }) =>
 
       {/* Athletics Summary KPIs */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <Card className="flex items-center gap-3.5 p-4.5 bg-dark-800/80 border-dark-700/70">
-          <div className="w-12 h-12 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 shrink-0">
-            <Dumbbell className="w-6 h-6" />
+        <Card className="flex items-center gap-3.5 p-4 bg-dark-800/80 border-dark-700/70">
+          <div className="w-11 h-11 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 shrink-0">
+            <Dumbbell className="w-5 h-5" />
           </div>
           <div>
-            <div className="text-2xl font-black text-white tracking-tight font-mono">{totalWorkouts}</div>
-            <div className="text-xs text-zinc-400 font-medium">Completed Workouts</div>
+            <div className="text-xl font-black text-white tracking-tight font-mono">{totalWorkouts}</div>
+            <div className="text-xs text-zinc-400 font-medium">{labels.completedWorkouts}</div>
           </div>
         </Card>
 
-        <Card className="flex items-center gap-3.5 p-4.5 bg-dark-800/80 border-dark-700/70">
-          <div className="w-12 h-12 rounded-2xl bg-brand-500/10 border border-brand-500/20 flex items-center justify-center text-brand-400 shrink-0">
-            <Flame className="w-6 h-6" />
+        <Card className="flex items-center gap-3.5 p-4 bg-dark-800/80 border-dark-700/70">
+          <div className="w-11 h-11 rounded-2xl bg-brand-500/10 border border-brand-500/20 flex items-center justify-center text-brand-400 shrink-0">
+            <Flame className="w-5 h-5" />
           </div>
           <div>
-            <div className="text-2xl font-black text-brand-400 tracking-tight font-mono">
+            <div className="text-xl font-black text-brand-400 tracking-tight font-mono">
               {totalVolumeKg > 1000 ? `${(totalVolumeKg / 1000).toFixed(1)} T` : `${totalVolumeKg.toFixed(0)} kg`}
             </div>
-            <div className="text-xs text-zinc-400 font-medium">Total Volume Lifted</div>
+            <div className="text-xs text-zinc-400 font-medium">{labels.totalVolume}</div>
           </div>
         </Card>
 
-        <Card className="flex items-center gap-3.5 p-4.5 bg-dark-800/80 border-dark-700/70">
-          <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 shrink-0">
-            <Trophy className="w-6 h-6" />
+        <Card className="flex items-center gap-3.5 p-4 bg-dark-800/80 border-dark-700/70">
+          <div className="w-11 h-11 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 shrink-0">
+            <Trophy className="w-5 h-5" />
           </div>
           <div>
-            <div className="text-2xl font-black text-amber-400 tracking-tight font-mono">{totalPRs}</div>
-            <div className="text-xs text-zinc-400 font-medium">Personal Records</div>
+            <div className="text-xl font-black text-amber-400 tracking-tight font-mono">{totalPRs}</div>
+            <div className="text-xs text-zinc-400 font-medium">{labels.personalRecords}</div>
           </div>
         </Card>
       </div>
-
-      {/* Body Target & Weight Progress Tracker Card */}
-      <BodyTargetProgressCard onNavigateToBody={onNavigateToBody} />
-
-      {/* Body Stats & BMI Calculator Card */}
-      <BMICalculatorCard />
 
       {/* Settings Form */}
       <Card className="space-y-6">
@@ -232,11 +292,9 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onNavigateToBody }) =>
           <div>
             <CardTitle>
               <User className="w-5 h-5 text-brand-400" />
-              Athlete Profile & Preferences
+              {labels.settingsTitle}
             </CardTitle>
-            <CardDescription>
-              Configure display name, default rest timers, language, and nutrition targets.
-            </CardDescription>
+            <CardDescription>{labels.settingsDesc}</CardDescription>
           </div>
         </CardHeader>
 
@@ -245,10 +303,10 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onNavigateToBody }) =>
             {/* Display Name */}
             <div className="max-w-md">
               <Input
-                label="Display Name"
+                label={labels.displayNameLabel}
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
-                placeholder="Your athlete name or moniker"
+                placeholder={labels.displayNamePlaceholder}
               />
             </div>
 
@@ -269,24 +327,24 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onNavigateToBody }) =>
                 <button
                   type="button"
                   onClick={() => setUnitPref('kg')}
-                  className={`py-2.5 px-4 rounded-xl border text-sm font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                  className={`py-2.5 px-4 rounded-xl border text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${
                     unitPref === 'kg'
                       ? 'bg-brand-500/15 border-brand-500 text-brand-400 shadow-md shadow-brand-500/10'
                       : 'bg-dark-900 border-dark-700 text-zinc-400 hover:text-zinc-200'
                   }`}
                 >
-                  Metric (KG / Kilograms)
+                  {labels.metricKg}
                 </button>
                 <button
                   type="button"
                   onClick={() => setUnitPref('lb')}
-                  className={`py-2.5 px-4 rounded-xl border text-sm font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                  className={`py-2.5 px-4 rounded-xl border text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${
                     unitPref === 'lb'
                       ? 'bg-brand-500/15 border-brand-500 text-brand-400 shadow-md shadow-brand-500/10'
                       : 'bg-dark-900 border-dark-700 text-zinc-400 hover:text-zinc-200'
                   }`}
                 >
-                  Imperial (LB / Pounds)
+                  {labels.imperialLb}
                 </button>
               </div>
             </div>
@@ -380,8 +438,8 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onNavigateToBody }) =>
               <Switch
                 isSelected={soundEnabled}
                 onValueChange={setSoundEnabled}
-                label="Rest Timer Sound & Vibrate"
-                description="Play audio chime when rest countdown reaches zero"
+                label={labels.soundLabel}
+                description={labels.soundDesc}
                 color="primary"
               />
             </div>
@@ -396,11 +454,11 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onNavigateToBody }) =>
                 isLoading={updateUnitMutation.isPending}
               >
                 <Save className="w-4 h-4" />
-                Save Preferences
+                {labels.saveBtn}
               </Button>
               {saveSuccess && (
                 <span className="flex items-center gap-1.5 text-xs text-emerald-400 font-bold animate-fade-in">
-                  <CheckCircle2 className="w-4 h-4" /> Settings Saved!
+                  <CheckCircle2 className="w-4 h-4" /> {labels.savedMsg}
                 </span>
               )}
             </div>
@@ -416,11 +474,9 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onNavigateToBody }) =>
         <div>
           <h3 className="text-base font-bold text-zinc-100 flex items-center gap-2">
             <Download className="w-4 h-4 text-zinc-400" />
-            Data Export & Backup
+            {labels.exportTitle}
           </h3>
-          <p className="text-xs text-zinc-400 mt-0.5">
-            Export all your workout logs, sets, and personal records in standard JSON format.
-          </p>
+          <p className="text-xs text-zinc-400 mt-0.5">{labels.exportDesc}</p>
         </div>
         <Button
           variant="secondary"
@@ -429,10 +485,11 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onNavigateToBody }) =>
           className="gap-1.5 shrink-0 text-xs"
         >
           <Download className="w-3.5 h-3.5" />
-          Export My Data (JSON)
+          {labels.exportBtn}
         </Button>
       </Card>
     </div>
   );
 };
-export default ProfilePage
+export default ProfilePage;
+

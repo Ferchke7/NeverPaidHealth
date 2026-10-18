@@ -1,7 +1,8 @@
 import React from 'react';
+import { ProgressBar as HeroProgressBar } from '@heroui/react';
 
 export interface ProgressBarProps extends React.HTMLAttributes<HTMLDivElement> {
-  value: number; // 0 to 100
+  value: number;
   minValue?: number;
   maxValue?: number;
   label?: string;
@@ -21,48 +22,39 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
   variant,
   size = 'md',
   className = '',
-  ...props
 }) => {
-  const percentage = Math.min(100, Math.max(0, ((value - minValue) / (maxValue - minValue)) * 100));
-
-  const heightStyles = {
-    sm: 'h-1.5',
-    md: 'h-2.5',
-    lg: 'h-4',
-  }[size];
-
   const activeColor = variant || color || 'primary';
-
-  const colorStyles = {
-    primary: 'bg-brand-500',
-    brand: 'bg-brand-500',
-    success: 'bg-emerald-400',
-    warning: 'bg-amber-400',
-    danger: 'bg-red-500',
-    gradient: 'bg-gradient-to-r from-brand-500 via-emerald-400 to-teal-300',
-  }[activeColor];
+  const heroColorMap: Record<
+    NonNullable<ProgressBarProps['color']>,
+    'accent' | 'default' | 'success' | 'warning' | 'danger'
+  > = {
+    primary: 'accent',
+    brand: 'accent',
+    success: 'success',
+    warning: 'warning',
+    danger: 'danger',
+    gradient: 'accent',
+  };
 
   return (
-    <div className={`w-full space-y-1.5 ${className}`} {...props}>
+    <HeroProgressBar.Root
+      value={value}
+      minValue={minValue}
+      maxValue={maxValue}
+      color={heroColorMap[activeColor]}
+      size={size}
+      aria-label={label || 'Progress'}
+      className={`w-full ${className}`}
+    >
       {(label || showValueLabel) && (
-        <div className="flex items-center justify-between text-xs">
+        <div className="flex items-center justify-between text-xs mb-1">
           {label && <span className="font-semibold text-zinc-300">{label}</span>}
-          {showValueLabel && (
-            <span className="font-mono font-bold text-zinc-200">{Math.round(percentage)}%</span>
-          )}
+          {showValueLabel && <HeroProgressBar.Output className="font-mono font-bold text-zinc-200" />}
         </div>
       )}
-
-      <div className={`w-full bg-dark-800 rounded-full overflow-hidden p-0.5 border border-dark-700/80 ${heightStyles}`}>
-        <div
-          className={`h-full rounded-full transition-all duration-500 ease-out shadow-sm ${colorStyles}`}
-          style={{ width: `${percentage}%` }}
-          role="progressbar"
-          aria-valuenow={value}
-          aria-valuemin={minValue}
-          aria-valuemax={maxValue}
-        />
-      </div>
-    </div>
+      <HeroProgressBar.Track className="bg-dark-800 border border-dark-700/80">
+        <HeroProgressBar.Fill />
+      </HeroProgressBar.Track>
+    </HeroProgressBar.Root>
   );
 };

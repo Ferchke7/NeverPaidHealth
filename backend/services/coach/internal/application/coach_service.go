@@ -2,6 +2,7 @@ package application
 
 import (
 	"context"
+	"math"
 	"time"
 
 	"github.com/google/uuid"
@@ -25,12 +26,13 @@ func NewCoachService(telemetry *data.TelemetryCollector, meals *data.MealReposit
 }
 
 func (s *CoachService) GetInsights(ctx context.Context, userID uuid.UUID) (coach.CoachInsights, error) {
-	workouts, records, bodyLogs, routines, err := s.telemetry.CollectUserData(ctx, userID)
+	workouts, records, bodyLogs, routines, activeProgram, nutritionTrend, err := s.telemetry.CollectFullUserData(ctx, userID)
 	if err != nil {
 		workouts = make([]coach.WorkoutData, 0)
 	}
 
-	insights := coach.AnalyzeUserData(workouts, records, bodyLogs, routines, time.Now())
+	insights := coach.AnalyzeUserDataWithProgram(workouts, records, bodyLogs, routines, activeProgram, time.Now())
+	insights.NutritionTrend = nutritionTrend
 
 	// Attach today's logged nutrition if available
 	if s.meals != nil {
@@ -53,7 +55,9 @@ func (s *CoachService) GetInsights(ctx context.Context, userID uuid.UUID) (coach
 				})
 			}
 			insights.TodayCalories = totCals
-			insights.TodayProteinG = totProtein
+			insights.TodayProteinG = math.Round(totProtein*10) / 10
+			insights.TodayCarbsG = math.Round(totCarbs*10) / 10
+			insights.TodayFatG = math.Round(totFat*10) / 10
 			insights.TodayMeals = mealSummaries
 		}
 	}

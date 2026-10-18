@@ -69,12 +69,12 @@ export const SetRow: React.FC<SetRowProps> = ({
           : 'bg-dark-800/60 border-dark-700/60 hover:border-dark-600 hover:bg-dark-800/90'
       }`}
     >
-      {/* 1. SET Type Badge (col-span-2) */}
-      <div className="col-span-2 flex items-center justify-center">
+      {/* 1. SET Type Badge (col-span-1) */}
+      <div className="col-span-1 flex items-center justify-center">
         <button
           type="button"
           onClick={cycleSetType}
-          className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg font-mono font-bold text-xs flex items-center justify-center transition-all active:scale-90 shadow-sm shrink-0 ${
+          className={`w-6 h-6 sm:w-7 sm:h-7 rounded-lg font-mono font-bold text-xs flex items-center justify-center transition-all active:scale-90 shadow-sm shrink-0 cursor-pointer ${
             set.setType === 'warmup'
               ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40'
               : set.setType === 'drop'
@@ -97,7 +97,7 @@ export const SetRow: React.FC<SetRowProps> = ({
           <button
             type="button"
             onClick={handleCopyPrevious}
-            className="w-full text-center px-1.5 py-1 rounded-lg text-[11px] sm:text-xs font-mono font-semibold text-zinc-400 hover:text-brand-300 hover:bg-dark-700/70 transition-all flex items-center justify-center gap-1 group/prev border border-transparent hover:border-brand-500/30 truncate"
+            className="w-full text-center px-1 py-1 rounded-lg text-[10px] sm:text-xs font-mono font-semibold text-zinc-400 hover:text-brand-300 hover:bg-dark-700/70 transition-all flex items-center justify-center gap-0.5 group/prev border border-transparent hover:border-brand-500/30 truncate cursor-pointer"
             title="Click to auto-fill previous weight and reps"
           >
             <span className="truncate">{previousText}</span>
@@ -140,8 +140,8 @@ export const SetRow: React.FC<SetRowProps> = ({
         )}
       </div>
 
-      {/* 4. REPS Input (col-span-2) */}
-      <div className="col-span-2">
+      {/* 4. REPS Input (col-span-3) */}
+      <div className="col-span-3">
         <input
           type="number"
           min="1"
@@ -155,7 +155,7 @@ export const SetRow: React.FC<SetRowProps> = ({
               : '10'
           }
           onChange={(e) => onUpdate({ reps: parseInt(e.target.value, 10) || 0 })}
-          className={`w-full bg-dark-900 border rounded-xl py-1.5 px-1 text-center text-xs sm:text-sm font-mono font-bold transition-all focus:outline-none focus:ring-1 focus:ring-brand-500 ${
+          className={`w-full bg-dark-900 border rounded-xl py-1.5 px-1 sm:px-2 text-center text-xs sm:text-sm font-mono font-bold transition-all focus:outline-none focus:ring-1 focus:ring-brand-500 ${
             set.completed
               ? 'border-emerald-500/40 text-emerald-200'
               : 'border-dark-700 text-white focus:border-brand-500'
@@ -168,7 +168,7 @@ export const SetRow: React.FC<SetRowProps> = ({
         <button
           type="button"
           onClick={onCompleteToggle}
-          className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center transition-all duration-200 active:scale-90 shrink-0 ${
+          className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center transition-all duration-200 active:scale-90 shrink-0 cursor-pointer ${
             set.completed
               ? 'bg-emerald-500 text-dark-950 shadow-md shadow-emerald-500/30'
               : 'bg-dark-700 text-zinc-500 hover:text-white hover:bg-dark-600 border border-dark-600/70'
@@ -178,11 +178,10 @@ export const SetRow: React.FC<SetRowProps> = ({
           <Check className="w-4 h-4 stroke-[3]" />
         </button>
 
-        {/* Delete button (clean, never overlaps checkmark) */}
         <button
           type="button"
           onClick={onDelete}
-          className="p-1 rounded-lg text-zinc-600 hover:text-red-400 hover:bg-dark-700 transition-colors shrink-0"
+          className="p-1 rounded-lg text-zinc-600 hover:text-red-400 hover:bg-dark-700 transition-colors shrink-0 cursor-pointer"
           title="Delete set"
         >
           <Trash2 className="w-3.5 h-3.5" />
@@ -191,3 +190,4 @@ export const SetRow: React.FC<SetRowProps> = ({
     </div>
   );
 };
+

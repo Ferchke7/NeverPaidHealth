@@ -1,4 +1,5 @@
 import React from 'react';
+import { Skeleton as HeroSkeleton } from '@heroui/react';
 
 export interface SkeletonProps extends React.HTMLAttributes<HTMLDivElement> {
   variant?: 'rectangular' | 'circular' | 'rounded';
@@ -21,8 +22,8 @@ export const Skeleton: React.FC<SkeletonProps> = ({
   }[variant];
 
   return (
-    <div
-      className={`animate-pulse bg-dark-800 border border-dark-750/50 ${variantStyles} ${className}`}
+    <HeroSkeleton.Root
+      className={`${variantStyles} ${className}`}
       {...props}
     />
   );

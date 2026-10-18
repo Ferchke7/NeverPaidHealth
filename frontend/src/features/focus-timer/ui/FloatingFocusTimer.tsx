@@ -15,14 +15,16 @@ import {
   Layers,
 } from 'lucide-react';
 import { useFocusTimerStore, SplitStrategy } from '../model/focusTimerStore.ts';
-import { Badge } from '../../../shared/ui/badge.tsx';
-import { ProgressBar } from '../../../shared/ui/progress-bar.tsx';
+import { useActiveWorkoutStore } from '../../../entities/workout/model/activeWorkoutStore.ts';
+import { Badge } from '../../../shared/ui/card.tsx';
+import { ProgressBar } from '../../../shared/ui/progress.tsx';
 import { useTranslation } from '../../../shared/lib/i18n/i18n.ts';
 
 const BREAK_PRESET_MINUTES = [3, 5, 10, 15];
 
 export const FloatingFocusTimer: React.FC = () => {
   const { t } = useTranslation();
+  const hasFloatingWorkoutPill = useActiveWorkoutStore((s) => Boolean(s.workout && !s.isOpen));
   const {
     isActive,
     isRunning,
@@ -135,10 +137,14 @@ export const FloatingFocusTimer: React.FC = () => {
     }
   };
 
-  // 1. Minimized Floating Pill Widget (bottom right corner)
+  // 1. Minimized Floating Pill Widget (bottom right corner, stacked above active workout pill if present)
   if (!isModalOpen) {
     return (
-      <div className="fixed bottom-20 md:bottom-6 right-4 md:right-6 z-50 animate-in slide-in-from-bottom-5">
+      <div
+        className={`fixed ${
+          hasFloatingWorkoutPill ? 'bottom-36 md:bottom-24' : 'bottom-20 md:bottom-6'
+        } right-3 sm:right-4 md:right-6 z-50 animate-in slide-in-from-bottom-5 transition-all`}
+      >
         <div
           onClick={openModal}
           className="cursor-pointer bg-dark-900/95 backdrop-blur-md border border-brand-500/40 shadow-2xl hover:border-brand-400 rounded-2xl p-2.5 sm:p-3 flex items-center gap-3 transition-all hover:scale-105 active:scale-95"

@@ -22,7 +22,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../../shared/api/client.ts';
 import { Button } from '../../../shared/ui/button.tsx';
 import { Card } from '../../../shared/ui/card.tsx';
-import { ProgressBar } from '../../../shared/ui/progress-bar.tsx';
+import { ProgressBar } from '../../../shared/ui/progress.tsx';
 import {
   TodoItem,
   DailyScheduleResponse,
@@ -168,42 +168,35 @@ export const TodoCalendarPage: React.FC = () => {
   return (
     <div className="space-y-4 max-w-5xl mx-auto pb-12 animate-fade-in">
       {/* 1. Header & Quick Actions Bar */}
-      <div className="bg-dark-900 border border-dark-800 rounded-3xl p-4 sm:p-5 shadow-xl space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div>
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-xl bg-brand-500/20 border border-brand-500/30 flex items-center justify-center text-brand-400 font-bold">
-                <ListTodo className="w-4 h-4" />
-              </div>
-              <h1 className="text-lg sm:text-xl font-black text-white tracking-tight">
-                {t('todo.title')}
-              </h1>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-brand-500/15 text-brand-400 border border-brand-500/30">
-                {t('todo.badge')}
-              </span>
+      <div className="bg-dark-900 border border-dark-800 rounded-3xl p-3.5 sm:p-5 shadow-xl space-y-3">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="w-8 h-8 rounded-xl bg-brand-500/20 border border-brand-500/30 flex items-center justify-center text-brand-400 font-bold shrink-0">
+              <ListTodo className="w-4 h-4" />
             </div>
-            <p className="text-xs text-zinc-400 mt-1">
-              {t('todo.subtitle')}
-            </p>
+            <h1 className="text-base sm:text-xl font-black text-white tracking-tight truncate">
+              {t('todo.title')}
+            </h1>
           </div>
 
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             <button
               onClick={() => startQuickSession(t('focusTimer.session'), 'work', 25, '25m', 'pomodoro')}
-              className="px-3 py-2 rounded-xl bg-dark-800 hover:bg-dark-750 border border-dark-700 text-brand-400 font-bold text-xs flex items-center gap-1.5 transition-all active:scale-95 shadow-sm"
+              className="px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl bg-dark-800 hover:bg-dark-750 border border-dark-700 text-brand-400 font-bold text-xs flex items-center gap-1 transition-all active:scale-95 shadow-sm cursor-pointer"
               title={t('focusTimer.quick25Title')}
             >
-              <Flame className="w-4 h-4 text-brand-400" />
+              <Flame className="w-3.5 h-3.5 text-brand-400" />
               <span>{t('focusTimer.quick25')}</span>
             </button>
 
             <Button
               variant="primary"
+              size="sm"
               onClick={() => {
                 setEditingTodo(null);
                 setIsCreateModalOpen(true);
               }}
-              className="rounded-xl px-3.5 py-2 font-bold text-xs flex items-center gap-1.5 shadow-lg shadow-brand-500/20"
+              className="rounded-xl px-3 py-1.5 sm:py-2 font-bold text-xs flex items-center gap-1 shadow-lg shadow-brand-500/20"
             >
               <Plus className="w-4 h-4" />
               <span>{t('todo.add')}</span>

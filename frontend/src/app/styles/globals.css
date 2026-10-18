@@ -19,12 +19,33 @@
   --color-dark-600: #3f3f46;
 }
 
-:root {
+:root,
+.dark,
+[data-theme="dark"] {
   color-scheme: dark;
-  --background: oklch(12% 0.005 285.823);
-  --foreground: var(--snow);
+  --background: #09090b;
+  --foreground: #f4f4f5;
   --accent: #22c55e;
   --accent-foreground: #050507;
+  --surface: #18181b;
+  --surface-foreground: #f4f4f5;
+  --surface-secondary: #202024;
+  --surface-secondary-foreground: #f4f4f5;
+  --surface-tertiary: #27272a;
+  --surface-tertiary-foreground: #f4f4f5;
+  --overlay: #18181b;
+  --overlay-foreground: #f4f4f5;
+  --default: #27272a;
+  --default-foreground: #f4f4f5;
+  --muted: #a1a1aa;
+  --field-background: #121215;
+  --field-foreground: #f4f4f5;
+  --field-placeholder: #71717a;
+  --border: #27272a;
+  --separator: #27272a;
+  --segment: #27272a;
+  --segment-foreground: #f4f4f5;
+  --radius: 0.75rem;
 }
 
 body {
@@ -51,11 +72,12 @@ body {
   background: rgba(34, 197, 94, 0.4);
 }
 
-.scrollbar-none::-webkit-scrollbar {
+.scrollbar-none::-webkit-scrollbar,
+.no-scrollbar::-webkit-scrollbar {
   display: none;
 }
-.scrollbar-none {
+.scrollbar-none,
+.no-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
-

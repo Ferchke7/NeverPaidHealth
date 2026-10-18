@@ -13,7 +13,6 @@ import {
   Edit3,
   Award,
   Users,
-  Sparkles,
   Share2,
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -21,6 +20,7 @@ import { apiClient } from '../../../shared/api/client.ts';
 import { Button } from '../../../shared/ui/button.tsx';
 import { Card, Badge } from '../../../shared/ui/card.tsx';
 import { Input } from '../../../shared/ui/input.tsx';
+import { Tabs } from '../../../shared/ui/tabs.tsx';
 import { ExerciseThumbnail } from '../../../entities/exercise/ui/ExerciseThumbnail.tsx';
 import { useTranslation } from '../../../shared/lib/i18n/i18n.ts';
 import {
@@ -34,9 +34,10 @@ import { ProgramDetailModal } from '../../../features/program-preview/ui/Program
 
 interface ProgramsPageProps {
   onNavigateToWorkouts?: () => void;
+  embedded?: boolean;
 }
 
-export const ProgramsPage: React.FC<ProgramsPageProps> = ({ onNavigateToWorkouts }) => {
+export const ProgramsPage: React.FC<ProgramsPageProps> = ({ onNavigateToWorkouts, embedded = false }) => {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
 
@@ -162,24 +163,38 @@ export const ProgramsPage: React.FC<ProgramsPageProps> = ({ onNavigateToWorkouts
     }
   };
 
+  const programTabs = useMemo(
+    () => [
+      { id: 'library', label: t('programs.tabLibrary'), icon: <Award className="w-3.5 h-3.5" /> },
+      { id: 'community', label: t('programs.tabCommunity'), icon: <Users className="w-3.5 h-3.5" /> },
+      { id: 'my_splits', label: t('programs.tabMySplits'), icon: <Layers className="w-3.5 h-3.5" /> },
+    ],
+    [t]
+  );
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-extrabold tracking-tight text-white flex items-center gap-2">
-            <BookOpen className="w-5 h-5 text-brand-400" />
-            <span>{t('programs.title')}</span>
-            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-brand-500/20 text-brand-400 border border-brand-500/30 flex items-center gap-1">
-              <Sparkles className="w-3 h-3" />
-              {t('programs.badge')}
-            </span>
-          </h1>
-          <p className="text-xs text-zinc-400 mt-0.5">{t('programs.subtitle')}</p>
-        </div>
+        {!embedded ? (
+          <div>
+            <h1 className="text-xl font-extrabold tracking-tight text-white flex items-center gap-2">
+              <BookOpen className="w-5 h-5 text-brand-400" />
+              <span>{t('programs.title')}</span>
+            </h1>
+            <p className="text-xs text-zinc-400 mt-0.5">{t('programs.subtitle')}</p>
+          </div>
+        ) : (
+          <Tabs
+            tabs={programTabs}
+            selectedKey={activeTab}
+            onSelectionChange={(k) => setActiveTab(k as 'library' | 'community' | 'my_splits')}
+            size="sm"
+          />
+        )}
 
         <div className="flex items-center gap-2">
-          {onNavigateToWorkouts && (
+          {!embedded && onNavigateToWorkouts && (
             <Button
               variant="outline"
               size="sm"
@@ -206,44 +221,15 @@ export const ProgramsPage: React.FC<ProgramsPageProps> = ({ onNavigateToWorkouts
         </div>
       </div>
 
-      {/* Main Tabs (Library / Community / My Splits) */}
-      <div className="flex items-center gap-2 border-b border-dark-800 pb-2 overflow-x-auto scrollbar-none">
-        <button
-          onClick={() => setActiveTab('library')}
-          className={`text-xs px-4 py-2 rounded-xl font-bold transition-all flex items-center gap-2 ${
-            activeTab === 'library'
-              ? 'bg-brand-500/20 text-brand-400 border border-brand-500/40 shadow-sm'
-              : 'bg-dark-900/80 text-zinc-400 hover:text-zinc-200 hover:bg-dark-800'
-          }`}
-        >
-          <Award className="w-3.5 h-3.5" />
-          <span>{t('programs.tabLibrary')}</span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab('community')}
-          className={`text-xs px-4 py-2 rounded-xl font-bold transition-all flex items-center gap-2 ${
-            activeTab === 'community'
-              ? 'bg-brand-500/20 text-brand-400 border border-brand-500/40 shadow-sm'
-              : 'bg-dark-900/80 text-zinc-400 hover:text-zinc-200 hover:bg-dark-800'
-          }`}
-        >
-          <Users className="w-3.5 h-3.5" />
-          <span>{t('programs.tabCommunity')}</span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab('my_splits')}
-          className={`text-xs px-4 py-2 rounded-xl font-bold transition-all flex items-center gap-2 ${
-            activeTab === 'my_splits'
-              ? 'bg-brand-500/20 text-brand-400 border border-brand-500/40 shadow-sm'
-              : 'bg-dark-900/80 text-zinc-400 hover:text-zinc-200 hover:bg-dark-800'
-          }`}
-        >
-          <Layers className="w-3.5 h-3.5" />
-          <span>{t('programs.tabMySplits')}</span>
-        </button>
-      </div>
+      {/* Main Tabs (Library / Community / My Splits) when standalone */}
+      {!embedded && (
+        <Tabs
+          tabs={programTabs}
+          selectedKey={activeTab}
+          onSelectionChange={(k) => setActiveTab(k as 'library' | 'community' | 'my_splits')}
+          size="sm"
+        />
+      )}
 
       {/* Search & Category Filter Pills */}
       <div className="space-y-2.5">

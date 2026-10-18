@@ -443,8 +443,8 @@ export const ActiveWorkoutSheet: React.FC = () => {
                     className="bg-dark-900/90 border border-dark-800/90 rounded-2xl p-3 sm:p-4 space-y-3 shadow-xl backdrop-blur-sm"
                   >
                     {/* Exercise Card Header */}
-                    <div className="flex items-start justify-between gap-2 border-b border-dark-800/80 pb-3">
-                      <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
+                    <div className="flex items-start justify-between gap-2 border-b border-dark-800/80 pb-2.5">
+                      <div className="flex items-center gap-2.5 min-w-0 flex-1">
                         <ExerciseThumbnail
                           exerciseName={exercise.exerciseName}
                           size="sm"
@@ -452,67 +452,63 @@ export const ActiveWorkoutSheet: React.FC = () => {
                           className="cursor-pointer hover:border-brand-500/50 shrink-0"
                         />
                         <div className="space-y-0.5 min-w-0 flex-1">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <h3
-                              onClick={() => setInspectingExerciseName(exercise.exerciseName)}
-                              className="text-sm font-extrabold text-white tracking-tight hover:text-brand-400 cursor-pointer transition-colors truncate"
-                            >
-                              {exercise.exerciseName}
-                            </h3>
+                          <h3
+                            onClick={() => setInspectingExerciseName(exercise.exerciseName)}
+                            className="text-xs sm:text-sm font-extrabold text-white tracking-tight hover:text-brand-400 cursor-pointer transition-colors line-clamp-1"
+                          >
+                            {exercise.exerciseName}
+                          </h3>
+
+                          <div className="flex items-center gap-1.5 flex-wrap text-[10px] font-semibold text-zinc-500">
                             {prRecord && (
                               <span className="inline-flex items-center gap-1 text-[9px] font-semibold text-amber-300 bg-amber-500/15 border border-amber-500/30 px-1.5 py-0.2 rounded-full font-mono shrink-0">
                                 <Trophy className="w-2.5 h-2.5 text-amber-400" />
                                 <span>PR: {formatWeight(prRecord.weightKg, unitPref)} × {prRecord.reps}</span>
                               </span>
                             )}
-                          </div>
-
-                          <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
-                            <span className="px-1.5 py-0.2 rounded bg-dark-800 text-zinc-400 border border-dark-700/60">
-                              {exercise.measurementType.replace('_', ' ')}
+                            <span className="uppercase tracking-wider">
+                              {exercise.sets.length} {t('activeWorkout.set').toLowerCase()}
                             </span>
-                            <span>•</span>
-                            <span>{exercise.sets.length} sets</span>
                           </div>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-1 shrink-0">
+                      <div className="flex items-center gap-0.5 sm:gap-1 shrink-0">
                         <button
                           type="button"
                           onClick={() => {
                             setReplacingInstanceId(exercise.instanceId);
                             setIsPickerOpen(true);
                           }}
-                          className="text-zinc-500 hover:text-brand-400 p-1.5 rounded-xl hover:bg-dark-800 transition-colors"
+                          className="text-zinc-500 hover:text-brand-400 p-1.5 rounded-xl hover:bg-dark-800 transition-colors cursor-pointer"
                           title="Replace Exercise / Swap Movement"
                         >
-                          <ArrowLeftRight className="w-4 h-4" />
+                          <ArrowLeftRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                         </button>
                         <button
                           type="button"
                           onClick={() => setInspectingExerciseName(exercise.exerciseName)}
-                          className="text-zinc-500 hover:text-zinc-300 p-1.5 rounded-xl hover:bg-dark-800 transition-colors"
+                          className="text-zinc-500 hover:text-zinc-300 p-1.5 rounded-xl hover:bg-dark-800 transition-colors cursor-pointer"
                           title="Exercise Form Guide & Visual"
                         >
-                          <HelpCircle className="w-4 h-4" />
+                          <HelpCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                         </button>
                         <button
                           onClick={() => removeExercise(exercise.instanceId)}
-                          className="text-zinc-500 hover:text-red-400 p-1.5 rounded-xl hover:bg-dark-800 transition-colors"
+                          className="text-zinc-500 hover:text-red-400 p-1.5 rounded-xl hover:bg-dark-800 transition-colors cursor-pointer"
                           title="Remove Exercise"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                         </button>
                       </div>
                     </div>
 
                     {/* Table Column Headers: SET | PREVIOUS | +KG | REPS | ✓ */}
                     <div className="grid grid-cols-12 gap-1.5 sm:gap-2 text-[10px] font-extrabold uppercase tracking-wider text-zinc-400 px-2 sm:px-2.5 pb-1 border-b border-dark-800/60 items-center">
-                      <span className="col-span-2 text-center">{t('activeWorkout.set')}</span>
-                      <span className="col-span-3 text-center">{t('activeWorkout.previous')}</span>
+                      <span className="col-span-1 text-center">#</span>
+                      <span className="col-span-3 text-center truncate">{t('activeWorkout.previous')}</span>
                       <span className="col-span-3 text-center">{unitPref === 'lb' ? '+LBS' : '+KG'}</span>
-                      <span className="col-span-2 text-center">{t('activeWorkout.reps')}</span>
+                      <span className="col-span-3 text-center truncate">{t('activeWorkout.reps')}</span>
                       <span className="col-span-2 text-center">✓</span>
                     </div>
 

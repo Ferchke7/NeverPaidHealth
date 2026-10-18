@@ -34,6 +34,7 @@ export const Modal: React.FC<ModalProps> = ({
   const { t } = useTranslation();
   const effectiveSubtitle = subtitle || description;
   const effectiveIcon = icon || headerIcon;
+
   useEffect(() => {
     if (isOpen) {
       const handleKeyDown = (e: KeyboardEvent) => {
@@ -60,22 +61,19 @@ export const Modal: React.FC<ModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200">
-      {/* Backdrop */}
       <div
         className="fixed inset-0 bg-black/80 backdrop-blur-sm transition-opacity cursor-pointer"
         onClick={onClose}
         aria-hidden="true"
       />
 
-      {/* Modal Container */}
       <div
-        className={`relative w-full ${sizeStyles} bg-dark-850 border border-dark-700/80 rounded-t-3xl sm:rounded-2xl shadow-2xl z-10 flex flex-col max-h-[90vh] sm:max-h-[85vh] overflow-hidden ${className}`}
+        className={`relative w-full ${sizeStyles} bg-dark-850 border border-dark-700/80 rounded-t-3xl sm:rounded-2xl shadow-2xl z-10 flex flex-col max-h-[90dvh] sm:max-h-[85dvh] pb-[env(safe-area-inset-bottom)] sm:pb-0 overflow-hidden ${className}`}
         role="dialog"
         aria-modal="true"
       >
-        {/* Header */}
         {(title || effectiveIcon) && (
-          <div className="px-4 sm:px-6 py-4 border-b border-dark-700/70 flex items-center justify-between gap-3 shrink-0 bg-dark-900/40">
+          <div className="px-4 sm:px-6 py-3.5 border-b border-dark-700/70 flex items-center justify-between gap-3 shrink-0 bg-dark-900/40">
             <div className="flex items-center gap-3 min-w-0">
               {effectiveIcon && <div className="shrink-0">{effectiveIcon}</div>}
               <div className="min-w-0">
@@ -102,14 +100,12 @@ export const Modal: React.FC<ModalProps> = ({
           </div>
         )}
 
-        {/* Body Content */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 overscroll-contain">
           {children}
         </div>
 
-        {/* Footer */}
         {footer && (
-          <div className="px-4 sm:px-6 py-3.5 bg-dark-900/80 border-t border-dark-700/70 flex items-center justify-end gap-2.5 shrink-0">
+          <div className="px-4 sm:px-6 py-3 bg-dark-900/80 border-t border-dark-700/70 flex items-center justify-end gap-2.5 shrink-0">
             {footer}
           </div>
         )}
