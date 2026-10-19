@@ -208,4 +208,45 @@ describe('ActiveWorkoutStore', () => {
     expect(result).toBeNull();
     expect(localStorage.getItem('neverpaid_active_workout_v2')).toBeNull();
   });
+
+  it('saves exercise notes for next workout as unread and marks them read upon reveal', async () => {
+    const { useExerciseNotesStore } = await import('./exerciseNotesStore.ts');
+    const store = useActiveWorkoutStore.getState();
+    store.startWorkout('w-1', 'Push Day');
+    store.addExercise('bench-1', 'Bench Press', 'weight_reps');
+
+    const instId = useActiveWorkoutStore.getState().workout!.exercises[0].instanceId;
+    store.updateExerciseNotes(instId, 'Узкий хват, локти 45 градусов, в следующий раз 85 кг');
+
+    expect(useActiveWorkoutStore.getState().workout!.exercises[0].notes).toBe(
+      'Узкий хват, локти 45 градусов, в следующий раз 85 кг'
+    );
+
+    const notesStore = useExerciseNotesStore.getState();
+    notesStore.saveNoteForNextWorkout(
+      ['bench-1', 'bench press'],
+      'Узкий хват, локти 45 градусов, в следующий раз 85 кг',
+      'w-1',
+      'Push Day'
+    );
+
+    // Must be unread initially on the next workout
+    expect(
+      useExerciseNotesStore
+        .getState()
+        .isNoteUnread(['bench-1', 'bench press'], 'Узкий хват, локти 45 градусов, в следующий раз 85 кг')
+    ).toBe(true);
+
+    // Once user expands the note, markNoteAsRead clears unread glow
+    useExerciseNotesStore
+      .getState()
+      .markNoteAsRead(['bench-1', 'bench press'], 'Узкий хват, локти 45 градусов, в следующий раз 85 кг');
+
+    expect(
+      useExerciseNotesStore
+        .getState()
+        .isNoteUnread(['bench-1', 'bench press'], 'Узкий хват, локти 45 градусов, в следующий раз 85 кг')
+    ).toBe(false);
+  });
 });
+

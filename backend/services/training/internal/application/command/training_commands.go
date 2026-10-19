@@ -87,6 +87,7 @@ type FinishExerciseInput struct {
 	ExerciseID      uuid.UUID        `json:"exercise_id"`
 	ExerciseName    string           `json:"exercise_name"`
 	MeasurementType string           `json:"measurement_type"`
+	Notes           string           `json:"notes,omitempty"`
 	Sets            []FinishSetInput `json:"sets"`
 }
 
@@ -128,6 +129,7 @@ func (h *FinishWorkoutHandler) Handle(ctx context.Context, in FinishWorkoutInput
 				name = "Exercise"
 			}
 			we := workout.NewWorkoutExercise(exIn.ExerciseID, name, measType, idx)
+			we.SetNotes(exIn.Notes)
 			for sIdx, sIn := range exIn.Sets {
 				st, err := measure.NewSetType(sIn.SetType)
 				if err != nil {

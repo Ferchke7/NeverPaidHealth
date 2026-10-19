@@ -200,6 +200,126 @@ func (r *TrainingRepository) GetPreviousSets(ctx context.Context, userID uuid.UU
 	return res, nil
 }
 
+func (r *TrainingRepository) GetPreviousNotes(ctx context.Context, userID uuid.UUID, exerciseIDs []uuid.UUID, exerciseNames []string) (map[string]workout.PreviousExerciseNote, error) {
+	res := make(map[string]workout.PreviousExerciseNote)
+	if len(exerciseIDs) == 0 && len(exerciseNames) == 0 {
+		return res, nil
+	}
+
+	query := `
+		SELECT id, name, exercises, started_at
+		FROM workouts
+		WHERE user_id = $1 AND status = 'finished'
+		ORDER BY started_at DESC
+		LIMIT 100
+	`
+	rows, err := r.pool.Query(ctx, query, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	targetIDMap := make(map[uuid.UUID]bool, len(exerciseIDs))
+	for _, id := range exerciseIDs {
+		targetIDMap[id] = true
+	}
+
+	targetNameMap := make(map[string]bool)
+	for _, n := range exerciseNames {
+		raw := strings.ToLower(strings.TrimSpace(n))
+		if raw != "" {
+			targetNameMap[raw] = true
+			if cl := cleanStringAlphanumeric(raw); cl != "" {
+				targetNameMap[cl] = true
+			}
+			if norm := normalizeExerciseName(raw); norm != "" {
+				targetNameMap[norm] = true
+			}
+		}
+	}
+
+	for rows.Next() {
+		var (
+			workoutID   uuid.UUID
+			workoutName string
+			exJSON      []byte
+			startedAt   time.Time
+		)
+		if err := rows.Scan(&workoutID, &workoutName, &exJSON, &startedAt); err != nil {
+			return nil, err
+		}
+
+		type ExJSONItem struct {
+			ExerciseID   uuid.UUID `json:"exercise_id"`
+			ExerciseName string    `json:"exercise_name"`
+			Notes        string    `json:"notes,omitempty"`
+		}
+
+		var items []ExJSONItem
+		_ = json.Unmarshal(exJSON, &items)
+
+		for _, item := range items {
+			noteText := strings.TrimSpace(item.Notes)
+			if noteText == "" {
+				continue
+			}
+
+			itemRaw := strings.ToLower(strings.TrimSpace(item.ExerciseName))
+			itemClean := cleanStringAlphanumeric(itemRaw)
+			itemNorm := normalizeExerciseName(itemRaw)
+
+			matched := targetIDMap[item.ExerciseID] ||
+				targetNameMap[itemRaw] ||
+				(itemClean != "" && targetNameMap[itemClean]) ||
+				(itemNorm != "" && targetNameMap[itemNorm])
+
+			if !matched {
+				continue
+			}
+
+			idKey := item.ExerciseID.String()
+			noteEntry := workout.PreviousExerciseNote{
+				Note:        noteText,
+				WorkoutID:   workoutID.String(),
+				WorkoutName: workoutName,
+				StartedAt:   startedAt.Format("2006-01-02T15:04:05Z07:00"),
+			}
+
+			if _, exists := res[idKey]; !exists {
+				res[idKey] = noteEntry
+			}
+			if itemRaw != "" {
+				if _, exists := res[itemRaw]; !exists {
+					res[itemRaw] = noteEntry
+				}
+			}
+			if itemClean != "" {
+				if _, exists := res[itemClean]; !exists {
+					res[itemClean] = noteEntry
+				}
+			}
+			if itemNorm != "" {
+				if _, exists := res[itemNorm]; !exists {
+					res[itemNorm] = noteEntry
+				}
+			}
+
+			for _, reqName := range exerciseNames {
+				reqRaw := strings.ToLower(strings.TrimSpace(reqName))
+				if reqRaw == itemRaw ||
+					(itemClean != "" && cleanStringAlphanumeric(reqRaw) == itemClean) ||
+					(itemNorm != "" && normalizeExerciseName(reqRaw) == itemNorm) {
+					if _, exists := res[reqRaw]; !exists {
+						res[reqRaw] = noteEntry
+					}
+				}
+			}
+		}
+	}
+
+	return res, nil
+}
+
 func (r *TrainingRepository) SaveWorkout(ctx context.Context, w *workout.Workout) error {
 	type SetDTO struct {
 		ID             uuid.UUID `json:"id"`
@@ -218,6 +338,7 @@ func (r *TrainingRepository) SaveWorkout(ctx context.Context, w *workout.Workout
 		ExerciseName    string    `json:"exercise_name"`
 		MeasurementType string    `json:"measurement_type"`
 		OrderIndex      int       `json:"order_index"`
+		Notes           string    `json:"notes,omitempty"`
 		Sets            []SetDTO  `json:"sets"`
 	}
 
@@ -245,6 +366,7 @@ func (r *TrainingRepository) SaveWorkout(ctx context.Context, w *workout.Workout
 			ExerciseName:    ex.ExerciseName(),
 			MeasurementType: ex.MeasurementType(),
 			OrderIndex:      ex.OrderIndex(),
+			Notes:           ex.Notes(),
 			Sets:            setDTOs,
 		})
 	}
@@ -341,6 +463,7 @@ func scanWorkout(row pgx.Row) (*workout.Workout, error) {
 		ExerciseName    string        `json:"exercise_name"`
 		MeasurementType string        `json:"measurement_type"`
 		OrderIndex      int           `json:"order_index"`
+		Notes           string        `json:"notes,omitempty"`
 		Sets            []SetJSONItem `json:"sets"`
 	}
 
@@ -359,7 +482,9 @@ func scanWorkout(row pgx.Row) (*workout.Workout, error) {
 			sets = append(sets, workout.ReconstituteSet(s.ID, s.SetNumber, st, w, r, rpe, dur, s.Completed, e1rm))
 		}
 
-		exercises = append(exercises, workout.ReconstituteExercise(it.ExerciseID, it.ExerciseName, it.MeasurementType, it.OrderIndex, sets))
+		we := workout.ReconstituteExercise(it.ExerciseID, it.ExerciseName, it.MeasurementType, it.OrderIndex, sets)
+		we.SetNotes(it.Notes)
+		exercises = append(exercises, we)
 	}
 
 	var summary *calc.WorkoutSummary

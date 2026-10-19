@@ -10,6 +10,7 @@ type WorkoutExercise struct {
 	exerciseName    string
 	measurementType string
 	orderIndex      int
+	notes           string
 	sets            []*WorkoutSet
 }
 
@@ -44,11 +45,13 @@ func ReconstituteExercise(
 	}
 }
 
-func (we *WorkoutExercise) ExerciseID() uuid.UUID { return we.exerciseID }
-func (we *WorkoutExercise) ExerciseName() string { return we.exerciseName }
+func (we *WorkoutExercise) ExerciseID() uuid.UUID  { return we.exerciseID }
+func (we *WorkoutExercise) ExerciseName() string   { return we.exerciseName }
 func (we *WorkoutExercise) MeasurementType() string { return we.measurementType }
-func (we *WorkoutExercise) OrderIndex() int { return we.orderIndex }
-func (we *WorkoutExercise) Sets() []*WorkoutSet { return we.sets }
+func (we *WorkoutExercise) OrderIndex() int        { return we.orderIndex }
+func (we *WorkoutExercise) Notes() string          { return we.notes }
+func (we *WorkoutExercise) SetNotes(n string)      { we.notes = n }
+func (we *WorkoutExercise) Sets() []*WorkoutSet    { return we.sets }
 
 func (we *WorkoutExercise) AddSet(setType measure.SetType, weight measure.Weight, reps measure.Reps, rpe *measure.RPE, duration *measure.Duration) *WorkoutSet {
 	setNumber := len(we.sets) + 1
@@ -60,3 +63,11 @@ func (we *WorkoutExercise) AddSet(setType measure.SetType, weight measure.Weight
 func (we *WorkoutExercise) AppendSet(s *WorkoutSet) {
 	we.sets = append(we.sets, s)
 }
+
+type PreviousExerciseNote struct {
+	Note        string `json:"note"`
+	WorkoutID   string `json:"workout_id"`
+	WorkoutName string `json:"workout_name"`
+	StartedAt   string `json:"started_at"`
+}
+

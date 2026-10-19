@@ -307,6 +307,12 @@ export const HistoryPage: React.FC = () => {
                                   </span>
                                 </div>
 
+                                {ex.notes && ex.notes.trim() && (
+                                  <div className="px-2.5 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-[11px] text-amber-200/90 leading-snug">
+                                    💬 {ex.notes}
+                                  </div>
+                                )}
+
                                 <div className="flex flex-wrap gap-1.5">
                                   {ex.sets?.map((set, sIdx) => (
                                     <div

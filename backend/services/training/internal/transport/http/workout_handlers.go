@@ -135,6 +135,7 @@ func (h *Handler) handleFinishWorkout(w http.ResponseWriter, r *http.Request, us
 			ExerciseID:      exUUID,
 			ExerciseName:    ex.ExerciseName,
 			MeasurementType: ex.MeasurementType,
+			Notes:           ex.Notes,
 			Sets:            ex.Sets,
 		})
 	}
@@ -275,7 +276,7 @@ func (h *Handler) handleGetPreviousSets(w http.ResponseWriter, r *http.Request, 
 	exParam := httpx.QueryString(r, "exercise_ids", "")
 	nameParam := httpx.QueryString(r, "exercise_names", "")
 	if exParam == "" && nameParam == "" {
-		httpx.WriteJSON(w, http.StatusOK, map[string]any{"items": map[string]any{}})
+		httpx.WriteJSON(w, http.StatusOK, map[string]any{"items": map[string]any{}, "notes": map[string]any{}})
 		return
 	}
 
@@ -304,6 +305,11 @@ func (h *Handler) handleGetPreviousSets(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 
+	previousNotes, _ := h.queries.GetPreviousNotes(r.Context(), userID, exIDs, exNames)
+	if previousNotes == nil {
+		previousNotes = make(map[string]workout.PreviousExerciseNote)
+	}
+
 	items := make(map[string]any)
 	for key, sets := range previous {
 		var setDTOs []any
@@ -313,5 +319,8 @@ func (h *Handler) handleGetPreviousSets(w http.ResponseWriter, r *http.Request, 
 		items[key] = setDTOs
 	}
 
-	httpx.WriteJSON(w, http.StatusOK, map[string]any{"items": items})
+	httpx.WriteJSON(w, http.StatusOK, map[string]any{
+		"items": items,
+		"notes": previousNotes,
+	})
 }

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   ChevronDown,
+  ChevronUp,
   Clock,
   Plus,
   Trash2,
@@ -11,16 +12,20 @@ import {
   CheckCircle2,
   Flame,
   ArrowLeftRight,
+  MessageSquare,
+  Sparkles,
 } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useActiveWorkoutStore } from '../../../entities/workout/model/activeWorkoutStore.ts';
 import { useRestTimerStore } from '../../../entities/workout/model/restTimerStore.ts';
+import { useExerciseNotesStore } from '../../../entities/workout/model/exerciseNotesStore.ts';
+import { PreviousExerciseNote } from '../../../entities/workout/model/types.ts';
 import { SetRow, PreviousSetData } from '../../../entities/workout/ui/SetRow.tsx';
 import { ExercisePickerModal } from '../../../features/exercise-picker/ui/ExercisePickerModal.tsx';
 import { Exercise } from '../../../entities/exercise/model/types.ts';
 import { Button } from '../../../shared/ui/button.tsx';
 import { Modal } from '../../../shared/ui/modal.tsx';
-import { formatDuration } from '../../../shared/lib/dates.ts';
+import { formatDate, formatDuration } from '../../../shared/lib/dates.ts';
 import { formatWeight } from '../../../shared/lib/units.ts';
 import { useAuthStore } from '../../../entities/user/model/authStore.ts';
 import { apiClient } from '../../../shared/api/client.ts';
@@ -32,7 +37,7 @@ import { useTranslation } from '../../../shared/lib/i18n/i18n.ts';
 import { FloatingActiveWorkoutPill } from './FloatingActiveWorkoutPill.tsx';
 
 export const ActiveWorkoutSheet: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const queryClient = useQueryClient();
   const workout = useActiveWorkoutStore((s) => s.workout);
   const isOpen = useActiveWorkoutStore((s) => s.isOpen);
@@ -44,9 +49,16 @@ export const ActiveWorkoutSheet: React.FC = () => {
   const addSet = useActiveWorkoutStore((s) => s.addSet);
   const updateSet = useActiveWorkoutStore((s) => s.updateSet);
   const removeSet = useActiveWorkoutStore((s) => s.removeSet);
+  const updateExerciseNotes = useActiveWorkoutStore((s) => s.updateExerciseNotes);
+  const updateWorkoutNotes = useActiveWorkoutStore((s) => s.updateWorkoutNotes);
   const finishWorkoutLocal = useActiveWorkoutStore((s) => s.finishWorkoutLocal);
   const discardWorkout = useActiveWorkoutStore((s) => s.discardWorkout);
   const liveVolume = useActiveWorkoutStore((s) => s.calculateLiveVolume());
+
+  const savedLocalNotes = useExerciseNotesStore((s) => s.savedNotes);
+  const readSignatures = useExerciseNotesStore((s) => s.readSignatures);
+  const saveNoteForNextWorkout = useExerciseNotesStore((s) => s.saveNoteForNextWorkout);
+  const markNoteAsRead = useExerciseNotesStore((s) => s.markNoteAsRead);
 
   const unitPref = useAuthStore((s) => s.unitPreference);
 
@@ -63,6 +75,50 @@ export const ActiveWorkoutSheet: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [summary, setSummary] = useState<FinishedWorkoutSummary | null>(null);
   const [inspectingExerciseName, setInspectingExerciseName] = useState<string | null>(null);
+  const [expandedNoteIds, setExpandedNoteIds] = useState<Record<string, boolean>>({});
+  const [isWorkoutNoteOpen, setIsWorkoutNoteOpen] = useState(false);
+
+  const noteLabels = {
+    unreadBanner:
+      language === 'uz'
+        ? 'O‘tgan mashg‘ulotdan o‘qilmagan izoh'
+        : language === 'en'
+        ? 'Unread note from previous workout'
+        : 'Непрочитанный комментарий с прошлой тренировки',
+    expand: language === 'uz' ? 'Ochish' : language === 'en' ? 'Reveal' : 'Раскрыть',
+    hide: language === 'uz' ? 'Yopish' : language === 'en' ? 'Hide' : 'Скрыть',
+    fromPrevWorkout:
+      language === 'uz'
+        ? 'O‘tgan mashg‘ulotdagi eslatma'
+        : language === 'en'
+        ? 'Note from last session'
+        : 'Заметка с прошлой тренировки',
+    readBadge: language === 'uz' ? 'O‘qildi ✓' : language === 'en' ? 'Read ✓' : 'Прочитано ✓',
+    leaveForNext:
+      language === 'uz'
+        ? 'Keyingi mashg‘ulot uchun o‘zingizga izoh qoldiring:'
+        : language === 'en'
+        ? 'Leave a comment for your next workout:'
+        : 'Оставить комментарий себе на следующую тренировку:',
+    placeholder:
+      language === 'uz'
+        ? 'Masalan: tor ushladim, tirsaklar 45°, keyingi safar +2.5 kg qo‘shaman...'
+        : language === 'en'
+        ? 'E.g. used narrow grip, elbows at 45°, bump weight by +2.5 kg next time...'
+        : 'Например: брал узким хватом, локти под 45°, шло легко — в следующий раз ставь +2.5 кг...',
+    workoutNoteBtn:
+      language === 'uz'
+        ? 'Mashg‘ulot izohi'
+        : language === 'en'
+        ? 'Workout Note'
+        : 'Заметка к тренировке',
+    workoutNotePlaceholder:
+      language === 'uz'
+        ? 'Keyingi shu mashg‘ulot uchun umumiy eslatma (uyqu, energiya, tartib)...'
+        : language === 'en'
+        ? 'General note for the next time you run this workout...'
+        : 'Общий комментарий на следующую такую тренировку (самочувствие, порядок тренажеров, темп)...',
+  };
 
   // Exercise IDs and names in active workout
   const exerciseIds = useMemo(() => {
@@ -75,16 +131,20 @@ export const ActiveWorkoutSheet: React.FC = () => {
     return Array.from(new Set(workout.exercises.map((e) => e.exerciseName?.trim()).filter(Boolean)));
   }, [workout]);
 
-  // Fetch previous completed sets directly from training service
-  const { data: previousData } = useQuery<{ items: Record<string, PreviousSetData[]> }>({
+  // Fetch previous completed sets and notes directly from training service
+  const { data: previousData } = useQuery<{
+    items: Record<string, PreviousSetData[]>;
+    notes?: Record<string, PreviousExerciseNote>;
+  }>({
     queryKey: ['workouts', 'previous', exerciseIds.sort().join(','), exerciseNames.sort().join(',')],
     queryFn: () => {
       const params = new URLSearchParams();
       if (exerciseIds.length > 0) params.set('exercise_ids', exerciseIds.join(','));
       if (exerciseNames.length > 0) params.set('exercise_names', exerciseNames.join(','));
-      return apiClient<{ items: Record<string, PreviousSetData[]> }>(
-        `/workouts/previous?${params.toString()}`
-      );
+      return apiClient<{
+        items: Record<string, PreviousSetData[]>;
+        notes?: Record<string, PreviousExerciseNote>;
+      }>(`/workouts/previous?${params.toString()}`);
     },
     enabled: (exerciseIds.length > 0 || exerciseNames.length > 0) && isOpen,
   });
@@ -96,14 +156,76 @@ export const ActiveWorkoutSheet: React.FC = () => {
         if (!sets || sets.length === 0) continue;
         const lowerKey = key.toLowerCase().trim();
         map.set(lowerKey, sets);
-        const cleanKey = lowerKey.replace(/[^a-z0-9]/g, '');
+        const cleanKey = lowerKey.replace(/[^a-z0-9а-яё]/gi, '');
         if (cleanKey) map.set(cleanKey, sets);
-        const baseKey = lowerKey.replace(/\s*\([^)]*\)/g, '').replace(/[^a-z0-9]/g, '').trim();
+        const baseKey = lowerKey.replace(/\s*\([^)]*\)/g, '').replace(/[^a-z0-9а-яё]/gi, '').trim();
         if (baseKey && !map.has(baseKey)) map.set(baseKey, sets);
       }
     }
     return map;
   }, [previousData]);
+
+  // Merge previous notes from backend + local storage cache
+  const previousNotesMap = useMemo(() => {
+    const map = new Map<string, PreviousExerciseNote>();
+
+    // 1. Local saved notes first
+    for (const [key, noteObj] of Object.entries(savedLocalNotes)) {
+      if (!noteObj?.note?.trim()) continue;
+      const lowerKey = key.toLowerCase().trim();
+      map.set(lowerKey, noteObj);
+    }
+
+    // 2. Backend notes override or enrich
+    if (previousData?.notes) {
+      for (const [key, noteObj] of Object.entries(previousData.notes)) {
+        if (!noteObj?.note?.trim()) continue;
+        const lowerKey = key.toLowerCase().trim();
+        map.set(lowerKey, noteObj);
+        const cleanKey = lowerKey.replace(/[^a-z0-9а-яё]/gi, '');
+        if (cleanKey && !map.has(cleanKey)) map.set(cleanKey, noteObj);
+        const baseKey = lowerKey.replace(/\s*\([^)]*\)/g, '').replace(/[^a-z0-9а-яё]/gi, '').trim();
+        if (baseKey && !map.has(baseKey)) map.set(baseKey, noteObj);
+      }
+    }
+    return map;
+  }, [previousData, savedLocalNotes]);
+
+  const checkIsUnread = (keys: (string | null | undefined)[], noteText?: string): boolean => {
+    const trimmed = noteText?.trim();
+    if (!trimmed) return false;
+    const validKeys = keys.filter((k): k is string => Boolean(k && k.trim()));
+    if (validKeys.length === 0) return false;
+    for (const k of validKeys) {
+      const sig = `${k.toLowerCase().trim()}::${trimmed}`;
+      if (readSignatures[sig]) {
+        return false;
+      }
+    }
+    return true;
+  };
+
+  // Workout-level previous note lookup
+  const workoutNoteKeys = useMemo(() => {
+    if (!workout) return [];
+    const keys: string[] = [];
+    if (workout.routineId) keys.push(`__routine__:${workout.routineId.toLowerCase().trim()}`);
+    if (workout.name) keys.push(`__workout__:${workout.name.toLowerCase().trim()}`);
+    return keys;
+  }, [workout?.routineId, workout?.name]);
+
+  const prevWorkoutNote = useMemo(() => {
+    for (const k of workoutNoteKeys) {
+      const found = previousNotesMap.get(k);
+      if (found?.note?.trim()) return found;
+    }
+    return null;
+  }, [workoutNoteKeys, previousNotesMap]);
+
+  const isWorkoutNoteUnread = useMemo(
+    () => checkIsUnread(workoutNoteKeys, prevWorkoutNote?.note),
+    [workoutNoteKeys, prevWorkoutNote, readSignatures]
+  );
 
   // Fetch all-time personal records from progress records
   const { data: recordsData } = useQuery<any[]>({
@@ -193,6 +315,27 @@ export const ActiveWorkoutSheet: React.FC = () => {
 
   if (!workout && !summary) return null;
 
+  const handleToggleWorkoutNote = () => {
+    const nextOpen = !isWorkoutNoteOpen;
+    setIsWorkoutNoteOpen(nextOpen);
+    if (nextOpen && prevWorkoutNote?.note) {
+      markNoteAsRead(workoutNoteKeys, prevWorkoutNote.note);
+    }
+  };
+
+  const handleToggleExerciseNote = (
+    instanceId: string,
+    keys: (string | null | undefined)[],
+    prevNoteText?: string
+  ) => {
+    const nextOpen = !expandedNoteIds[instanceId];
+    setExpandedNoteIds((prev) => ({ ...prev, [instanceId]: nextOpen }));
+    if (nextOpen && prevNoteText?.trim()) {
+      const validKeys = keys.filter((k): k is string => Boolean(k && k.trim()));
+      markNoteAsRead(validKeys, prevNoteText);
+    }
+  };
+
   const handleFinishWorkout = async () => {
     if (!workout) return;
 
@@ -217,11 +360,39 @@ export const ActiveWorkoutSheet: React.FC = () => {
 
     setIsSubmitting(true);
     try {
+      // Save any newly written exercise or workout notes for the next workout (marked unread!)
+      for (const ex of workout.exercises) {
+        if (ex.notes && ex.notes.trim()) {
+          const kId = ex.exerciseId?.toLowerCase().trim();
+          const kName = ex.exerciseName?.toLowerCase().trim();
+          const kClean = kName ? kName.replace(/[^a-z0-9а-яё]/gi, '') : '';
+          const kBase = kName ? kName.replace(/\s*\([^)]*\)/g, '').replace(/[^a-z0-9а-яё]/gi, '').trim() : '';
+          saveNoteForNextWorkout(
+            [kId, kName, kClean, kBase].filter(Boolean) as string[],
+            ex.notes.trim(),
+            workout.id,
+            workout.name,
+            workout.startedAt
+          );
+        }
+      }
+
+      if (workout.workoutNotes && workout.workoutNotes.trim() && workoutNoteKeys.length > 0) {
+        saveNoteForNextWorkout(
+          workoutNoteKeys,
+          workout.workoutNotes.trim(),
+          workout.id,
+          workout.name,
+          workout.startedAt
+        );
+      }
+
       const payloadExercises = workout.exercises
         .map((ex) => ({
           exercise_id: ex.exerciseId,
           exercise_name: ex.exerciseName,
           measurement_type: ex.measurementType,
+          notes: ex.notes?.trim() || undefined,
           sets: ex.sets
             .filter((s) => s.completed)
             .map((s) => ({
@@ -365,17 +536,73 @@ export const ActiveWorkoutSheet: React.FC = () => {
               </div>
             </div>
 
-            {/* Stats Sub-Bar */}
-            <div className="flex items-center gap-2.5 text-[11px] sm:text-xs text-zinc-400 font-mono mt-1.5 pl-10 max-w-3xl mx-auto overflow-x-auto scrollbar-none whitespace-nowrap">
-              <span className="flex items-center gap-1 text-emerald-400 font-bold shrink-0">
-                <Clock className="w-3 h-3" />
-                {formatDuration(elapsedSeconds)}
-              </span>
-              <span className="text-zinc-600">•</span>
-              <span className="text-zinc-300 shrink-0">{formatWeight(liveVolume, unitPref)} volume</span>
-              <span className="text-zinc-600">•</span>
-              <span className="text-zinc-400 shrink-0">{workout.exercises.length} exercises</span>
+            {/* Stats Sub-Bar + Workout Note Trigger */}
+            <div className="flex items-center justify-between gap-2 mt-1.5 pl-10 max-w-3xl mx-auto">
+              <div className="flex items-center gap-2.5 text-[11px] sm:text-xs text-zinc-400 font-mono overflow-x-auto scrollbar-none whitespace-nowrap">
+                <span className="flex items-center gap-1 text-emerald-400 font-bold shrink-0">
+                  <Clock className="w-3 h-3" />
+                  {formatDuration(elapsedSeconds)}
+                </span>
+                <span className="text-zinc-600">•</span>
+                <span className="text-zinc-300 shrink-0">{formatWeight(liveVolume, unitPref)} volume</span>
+                <span className="text-zinc-600">•</span>
+                <span className="text-zinc-400 shrink-0">{workout.exercises.length} exercises</span>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleToggleWorkoutNote}
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[11px] font-bold transition-all cursor-pointer shrink-0 ${
+                  isWorkoutNoteUnread
+                    ? 'bg-amber-500/20 text-amber-300 border border-amber-400/60 shadow-[0_0_14px_rgba(245,158,11,0.35)] animate-pulse'
+                    : prevWorkoutNote?.note || workout.workoutNotes?.trim()
+                    ? 'bg-brand-500/15 text-brand-300 border border-brand-500/35'
+                    : 'bg-dark-800/90 text-zinc-400 hover:text-zinc-200 border border-dark-700'
+                }`}
+              >
+                <MessageSquare className="w-3 h-3" />
+                <span className="hidden sm:inline">{noteLabels.workoutNoteBtn}</span>
+                {isWorkoutNoteUnread && (
+                  <span className="px-1.5 py-0.2 rounded-full bg-amber-400 text-dark-950 text-[9px] font-extrabold">
+                    1
+                  </span>
+                )}
+              </button>
             </div>
+
+            {/* Collapsible Workout-Level Note Drawer */}
+            {isWorkoutNoteOpen && (
+              <div className="max-w-3xl mx-auto mt-2.5 p-3 rounded-2xl bg-dark-850/95 border border-dark-700 space-y-2.5 animate-in fade-in duration-150">
+                {prevWorkoutNote?.note && (
+                  <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/25 space-y-1">
+                    <div className="flex items-center justify-between gap-2 text-[10px] font-bold text-amber-300">
+                      <span className="flex items-center gap-1">
+                        <Sparkles className="w-3 h-3 text-amber-400" />
+                        {noteLabels.fromPrevWorkout}
+                        {prevWorkoutNote.started_at ? ` • ${formatDate(prevWorkoutNote.started_at)}` : ''}
+                      </span>
+                      <span className="text-emerald-400 font-mono">{noteLabels.readBadge}</span>
+                    </div>
+                    <p className="text-xs text-zinc-100 leading-relaxed whitespace-pre-wrap">
+                      {prevWorkoutNote.note}
+                    </p>
+                  </div>
+                )}
+
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold text-zinc-300 block">
+                    {noteLabels.leaveForNext}
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={workout.workoutNotes || ''}
+                    onChange={(e) => updateWorkoutNotes(e.target.value)}
+                    placeholder={noteLabels.workoutNotePlaceholder}
+                    className="w-full rounded-xl bg-dark-900 border border-dark-700 focus:border-brand-500/60 focus:outline-none px-3 py-2 text-xs text-white placeholder:text-zinc-500 resize-none"
+                  />
+                </div>
+              </div>
+            )}
           </header>
 
           {/* Active Rest Timer Banner */}
@@ -422,25 +649,45 @@ export const ActiveWorkoutSheet: React.FC = () => {
               </div>
             ) : (
               workout.exercises.map((exercise, exIndex) => {
-                const keyId = exercise.exerciseId?.toLowerCase();
+                const keyId = exercise.exerciseId?.toLowerCase().trim();
                 const keyName = exercise.exerciseName?.toLowerCase().trim();
-                const cleanKeyName = keyName ? keyName.replace(/[^a-z0-9]/g, '') : null;
-                const baseKeyName = keyName ? keyName.replace(/\s*\([^)]*\)/g, '').replace(/[^a-z0-9]/g, '').trim() : null;
+                const cleanKeyName = keyName ? keyName.replace(/[^a-z0-9а-яё]/gi, '') : null;
+                const baseKeyName = keyName
+                  ? keyName.replace(/\s*\([^)]*\)/g, '').replace(/[^a-z0-9а-яё]/gi, '').trim()
+                  : null;
+
                 const prevList =
                   (keyId && previousExerciseMap.get(keyId)) ||
                   (keyName && previousExerciseMap.get(keyName)) ||
                   (cleanKeyName && previousExerciseMap.get(cleanKeyName)) ||
                   (baseKeyName && previousExerciseMap.get(baseKeyName));
+
                 const prRecord =
                   (keyId && prMap.get(keyId)) ||
                   (keyName && prMap.get(keyName)) ||
                   (cleanKeyName && prMap.get(cleanKeyName)) ||
                   (baseKeyName && prMap.get(baseKeyName));
 
+                const prevNote =
+                  (keyId && previousNotesMap.get(keyId)) ||
+                  (keyName && previousNotesMap.get(keyName)) ||
+                  (cleanKeyName && previousNotesMap.get(cleanKeyName)) ||
+                  (baseKeyName && previousNotesMap.get(baseKeyName)) ||
+                  null;
+
+                const noteLookupKeys = [keyId, keyName, cleanKeyName, baseKeyName];
+                const hasUnreadNote = checkIsUnread(noteLookupKeys, prevNote?.note);
+                const isNoteExpanded = Boolean(expandedNoteIds[exercise.instanceId]);
+                const hasAnyNote = Boolean(prevNote?.note || exercise.notes?.trim());
+
                 return (
                   <div
                     key={exercise.instanceId || exercise.exerciseId || exIndex}
-                    className="bg-dark-900/90 border border-dark-800/90 rounded-2xl p-3 sm:p-4 space-y-3 shadow-xl backdrop-blur-sm"
+                    className={`bg-dark-900/90 border rounded-2xl p-3 sm:p-4 space-y-3 shadow-xl backdrop-blur-sm transition-all ${
+                      hasUnreadNote
+                        ? 'border-amber-500/45 shadow-[0_0_20px_rgba(245,158,11,0.12)]'
+                        : 'border-dark-800/90'
+                    }`}
                   >
                     {/* Exercise Card Header */}
                     <div className="flex items-start justify-between gap-2 border-b border-dark-800/80 pb-2.5">
@@ -474,6 +721,30 @@ export const ActiveWorkoutSheet: React.FC = () => {
                       </div>
 
                       <div className="flex items-center gap-0.5 sm:gap-1 shrink-0">
+                        {/* Comment / Note Toggle Button with Unread Glow */}
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleToggleExerciseNote(exercise.instanceId, noteLookupKeys, prevNote?.note)
+                          }
+                          className={`relative p-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1 ${
+                            hasUnreadNote
+                              ? 'bg-amber-500/20 text-amber-300 border border-amber-400/60 shadow-[0_0_12px_rgba(245,158,11,0.4)] px-2'
+                              : isNoteExpanded || hasAnyNote
+                              ? 'bg-brand-500/15 text-brand-400 border border-brand-500/30'
+                              : 'text-zinc-500 hover:text-brand-400 hover:bg-dark-800'
+                          }`}
+                          title={noteLabels.fromPrevWorkout}
+                        >
+                          <MessageSquare className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                          {hasUnreadNote && (
+                            <>
+                              <span className="text-[10px] font-extrabold font-mono">1</span>
+                              <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping absolute -top-0.5 -right-0.5" />
+                            </>
+                          )}
+                        </button>
+
                         <button
                           type="button"
                           onClick={() => {
@@ -502,6 +773,88 @@ export const ActiveWorkoutSheet: React.FC = () => {
                         </button>
                       </div>
                     </div>
+
+                    {/* Glowing Unread Comment Pill (Collapsed State) */}
+                    {hasUnreadNote && !isNoteExpanded && prevNote && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          handleToggleExerciseNote(exercise.instanceId, noteLookupKeys, prevNote.note)
+                        }
+                        className="w-full text-left px-3 py-2 rounded-xl bg-gradient-to-r from-amber-500/20 via-amber-500/10 to-transparent border border-amber-400/50 shadow-[0_0_15px_rgba(245,158,11,0.2)] flex items-center justify-between gap-2 cursor-pointer hover:border-amber-400 transition-all group"
+                      >
+                        <div className="flex items-center gap-2 min-w-0 flex-1">
+                          <span className="relative flex h-2.5 w-2.5 shrink-0">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
+                            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-400" />
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <div className="text-[10px] font-extrabold uppercase tracking-wider text-amber-300">
+                              {noteLabels.unreadBanner}
+                            </div>
+                            <p className="text-xs text-zinc-200 truncate font-medium">
+                              «{prevNote.note}»
+                            </p>
+                          </div>
+                        </div>
+                        <span className="inline-flex items-center gap-1 text-[10px] font-extrabold text-amber-300 bg-amber-500/20 px-2 py-1 rounded-lg border border-amber-400/30 shrink-0 group-hover:bg-amber-500/30">
+                          {noteLabels.expand}
+                          <ChevronDown className="w-3 h-3" />
+                        </span>
+                      </button>
+                    )}
+
+                    {/* Expandable Exercise Note Drawer (Previous Comment + Next Workout Comment Input) */}
+                    {isNoteExpanded && (
+                      <div className="p-3 rounded-xl bg-dark-850/90 border border-dark-700/90 space-y-2.5 animate-in fade-in duration-150">
+                        {prevNote?.note && (
+                          <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/25 space-y-1">
+                            <div className="flex items-center justify-between gap-2 text-[10px] font-bold text-amber-300">
+                              <span className="flex items-center gap-1 truncate">
+                                <MessageSquare className="w-3 h-3 text-amber-400 shrink-0" />
+                                <span>{noteLabels.fromPrevWorkout}</span>
+                                {prevNote.workout_name ? (
+                                  <span className="text-zinc-400 font-normal truncate">
+                                    ({prevNote.workout_name})
+                                  </span>
+                                ) : null}
+                              </span>
+                              <span className="text-emerald-400 font-mono shrink-0">
+                                {noteLabels.readBadge}
+                              </span>
+                            </div>
+                            <p className="text-xs text-zinc-100 leading-relaxed whitespace-pre-wrap">
+                              {prevNote.note}
+                            </p>
+                          </div>
+                        )}
+
+                        <div className="space-y-1.5">
+                          <div className="flex items-center justify-between">
+                            <label className="text-[11px] font-bold text-zinc-300">
+                              {noteLabels.leaveForNext}
+                            </label>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handleToggleExerciseNote(exercise.instanceId, noteLookupKeys, prevNote?.note)
+                              }
+                              className="text-[10px] font-semibold text-zinc-400 hover:text-zinc-200 inline-flex items-center gap-0.5 cursor-pointer"
+                            >
+                              <span>{noteLabels.hide}</span>
+                              <ChevronUp className="w-3 h-3" />
+                            </button>
+                          </div>
+                          <textarea
+                            rows={2}
+                            value={exercise.notes || ''}
+                            onChange={(e) => updateExerciseNotes(exercise.instanceId, e.target.value)}
+                            placeholder={noteLabels.placeholder}
+                            className="w-full rounded-xl bg-dark-900 border border-dark-700 focus:border-brand-500/60 focus:outline-none px-3 py-2 text-xs text-white placeholder:text-zinc-500 resize-none"
+                          />
+                        </div>
+                      </div>
+                    )}
 
                     {/* Table Column Headers: SET | PREVIOUS | +KG | REPS | ✓ */}
                     <div className="grid grid-cols-12 gap-1.5 sm:gap-2 text-[10px] font-extrabold uppercase tracking-wider text-zinc-400 px-2 sm:px-2.5 pb-1 border-b border-dark-800/60 items-center">
@@ -636,3 +989,4 @@ export const ActiveWorkoutSheet: React.FC = () => {
     </>
   );
 };
+

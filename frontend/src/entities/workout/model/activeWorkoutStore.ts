@@ -29,6 +29,8 @@ interface ActiveWorkoutState {
   addSet: (identifier: string, setType?: SetType) => void;
   updateSet: (identifier: string, setId: string, updates: Partial<ActiveSet>) => void;
   removeSet: (identifier: string, setId: string) => void;
+  updateExerciseNotes: (identifier: string, notes: string) => void;
+  updateWorkoutNotes: (notes: string) => void;
   finishWorkoutLocal: () => void;
   discardWorkout: () => void;
   calculateLiveVolume: () => number;
@@ -294,6 +296,30 @@ export const useActiveWorkoutStore = create<ActiveWorkoutState>((set, get) => ({
       });
 
       const updated = { ...state.workout, exercises: updatedExercises };
+      persistState(updated);
+      return { workout: updated };
+    });
+  },
+
+  updateExerciseNotes: (identifier, notes) => {
+    set((state) => {
+      if (!state.workout) return state;
+
+      const updatedExercises = state.workout.exercises.map((ex) => {
+        if (ex.instanceId !== identifier && ex.exerciseId !== identifier) return ex;
+        return { ...ex, notes };
+      });
+
+      const updated = { ...state.workout, exercises: updatedExercises };
+      persistState(updated);
+      return { workout: updated };
+    });
+  },
+
+  updateWorkoutNotes: (notes) => {
+    set((state) => {
+      if (!state.workout) return state;
+      const updated = { ...state.workout, workoutNotes: notes };
       persistState(updated);
       return { workout: updated };
     });

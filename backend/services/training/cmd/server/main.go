@@ -52,6 +52,9 @@ func (a workoutAdapter) List(ctx context.Context, userID uuid.UUID, limit, offse
 func (a workoutAdapter) GetPreviousSets(ctx context.Context, userID uuid.UUID, exerciseIDs []uuid.UUID, exerciseNames []string) (map[string][]*workout.WorkoutSet, error) {
 	return a.repo.GetPreviousSets(ctx, userID, exerciseIDs, exerciseNames)
 }
+func (a workoutAdapter) GetPreviousNotes(ctx context.Context, userID uuid.UUID, exerciseIDs []uuid.UUID, exerciseNames []string) (map[string]workout.PreviousExerciseNote, error) {
+	return a.repo.GetPreviousNotes(ctx, userID, exerciseIDs, exerciseNames)
+}
 func (a workoutAdapter) Save(ctx context.Context, w *workout.Workout) error {
 	return a.repo.SaveWorkout(ctx, w)
 }

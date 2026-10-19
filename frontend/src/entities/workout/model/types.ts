@@ -11,11 +11,19 @@ export interface ActiveSet {
   completed: boolean;
 }
 
+export interface PreviousExerciseNote {
+  note: string;
+  workout_id?: string;
+  workout_name?: string;
+  started_at?: string;
+}
+
 export interface ActiveExercise {
   instanceId: string;
   exerciseId: string;
   exerciseName: string;
   measurementType: string;
+  notes?: string;
   sets: ActiveSet[];
 }
 
@@ -24,6 +32,7 @@ export interface ActiveWorkout {
   name: string;
   routineId?: string;
   startedAt: string;
+  workoutNotes?: string;
   exercises: ActiveExercise[];
 }
 
@@ -39,6 +48,7 @@ export interface WorkoutHistoryItem {
   exercises: {
     exercise_id: string;
     exercise_name: string;
+    notes?: string;
     sets: {
       id: string;
       set_number: number;
@@ -49,3 +59,4 @@ export interface WorkoutHistoryItem {
     }[];
   }[];
 }
+

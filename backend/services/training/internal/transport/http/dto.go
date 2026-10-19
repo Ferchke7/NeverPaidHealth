@@ -57,6 +57,7 @@ type finishExerciseReq struct {
 	ExerciseID      string                   `json:"exercise_id"`
 	ExerciseName    string                   `json:"exercise_name"`
 	MeasurementType string                   `json:"measurement_type"`
+	Notes           string                   `json:"notes,omitempty"`
 	Sets            []command.FinishSetInput `json:"sets"`
 }
 
@@ -167,6 +168,7 @@ func mapExerciseDTO(ex *workout.WorkoutExercise) map[string]any {
 		"exercise_name":    ex.ExerciseName(),
 		"measurement_type": ex.MeasurementType(),
 		"order_index":      ex.OrderIndex(),
+		"notes":            ex.Notes(),
 		"sets":             setsList,
 	}
 }

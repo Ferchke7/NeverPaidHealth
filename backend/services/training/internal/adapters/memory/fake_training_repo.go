@@ -123,6 +123,48 @@ func (r *FakeTrainingRepo) GetPreviousSets(_ context.Context, userID uuid.UUID, 
 	return res, nil
 }
 
+func (r *FakeTrainingRepo) GetPreviousNotes(_ context.Context, userID uuid.UUID, exerciseIDs []uuid.UUID, exerciseNames []string) (map[string]workout.PreviousExerciseNote, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	targetSet := make(map[uuid.UUID]bool, len(exerciseIDs))
+	for _, id := range exerciseIDs {
+		targetSet[id] = true
+	}
+
+	targetNames := make(map[string]bool, len(exerciseNames))
+	for _, n := range exerciseNames {
+		targetNames[n] = true
+	}
+
+	res := make(map[string]workout.PreviousExerciseNote)
+	for _, w := range r.workouts {
+		if w.UserID() != userID || w.Status() != workout.WorkoutStatusFinished {
+			continue
+		}
+		for _, ex := range w.Exercises() {
+			if ex.Notes() == "" {
+				continue
+			}
+			matched := targetSet[ex.ExerciseID()] || targetNames[ex.ExerciseName()]
+			if matched {
+				note := workout.PreviousExerciseNote{
+					Note:        ex.Notes(),
+					WorkoutID:   w.ID().String(),
+					WorkoutName: w.Name(),
+					StartedAt:   w.StartedAt().Format("2006-01-02T15:04:05Z07:00"),
+				}
+				key := ex.ExerciseID().String()
+				if _, already := res[key]; !already {
+					res[key] = note
+					res[ex.ExerciseName()] = note
+				}
+			}
+		}
+	}
+	return res, nil
+}
+
 func (r *FakeTrainingRepo) Save(_ context.Context, w *workout.Workout) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
