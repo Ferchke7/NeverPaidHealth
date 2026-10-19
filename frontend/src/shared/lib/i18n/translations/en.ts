@@ -1,7 +1,7 @@
 export const en = {
   // Navigation
   'nav.workouts': 'Workouts',
-  'nav.todo': 'Todo & Schedule',
+  'nav.todo': 'Todo',
   'nav.programs': 'Programs',
   'nav.exercises': 'Exercises',
   'nav.history': 'History',
@@ -90,8 +90,8 @@ export const en = {
   'focusTimer.quick25': 'Pomodoro 25m',
   'focusTimer.quick25Title': 'Start free 25-minute Pomodoro session',
 
-  // Todo & Schedule
-  'todo.title': 'Todo & Schedule',
+  // Todo
+  'todo.title': 'Todo',
   'todo.subtitle': 'Plan your day with timing, target durations, and activity history.',
   'todo.badge': 'Calendar + Pomodoro',
   'todo.add': 'Add Task',
@@ -99,6 +99,12 @@ export const en = {
   'todo.edit': 'Edit Task',
   'todo.deleteConfirm': 'Delete task "{title}"?',
   'todo.today': 'Today',
+  'todo.calendar': 'Calendar',
+  'todo.monthTasks': 'Month Tasks',
+  'todo.activeDays': 'Active Days',
+  'todo.focusTimeMonth': 'Month Focus',
+  'todo.clickDayHint': 'Select a date on the calendar to view and manage tasks',
+  'todo.taskCompleted': 'Completed',
   'todo.tasksForDay': 'Tasks for Day ({count})',
   'todo.activityLog': 'What I Did (Activity Log)',
   'todo.weekStats': 'Weekly Stats',

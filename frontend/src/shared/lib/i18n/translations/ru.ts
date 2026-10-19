@@ -1,7 +1,7 @@
 export const ru = {
   // Навигация
   'nav.workouts': 'Тренировки',
-  'nav.todo': 'Todo & План',
+  'nav.todo': 'Todo',
   'nav.programs': 'Программы',
   'nav.exercises': 'Упражнения',
   'nav.history': 'История',
@@ -90,8 +90,8 @@ export const ru = {
   'focusTimer.quick25': 'Помодоро 25м',
   'focusTimer.quick25Title': 'Запустить свободный 25-минутный Помодоро',
 
-  // Todo & Расписание
-  'todo.title': 'Todo & Расписание',
+  // Todo
+  'todo.title': 'Todo',
   'todo.subtitle': 'Планирование дня со временем, длительностью и историей выполнения.',
   'todo.badge': 'Календарь + Помодоро',
   'todo.add': 'Добавить задачу',
@@ -99,6 +99,12 @@ export const ru = {
   'todo.edit': 'Редактировать задачу',
   'todo.deleteConfirm': 'Удалить задачу «{title}»?',
   'todo.today': 'Сегодня',
+  'todo.calendar': 'Календарь',
+  'todo.monthTasks': 'Задач в месяце',
+  'todo.activeDays': 'Активных дней',
+  'todo.focusTimeMonth': 'Фокус за месяц',
+  'todo.clickDayHint': 'Выберите дату в календаре для просмотра и управления задачами',
+  'todo.taskCompleted': 'Завершено',
   'todo.tasksForDay': 'Задачи на день ({count})',
   'todo.activityLog': 'Что я делал (Лог)',
   'todo.weekStats': 'Статистика недели',

@@ -12,29 +12,27 @@ import {
   TrendingUp,
   ChevronLeft,
   ChevronRight,
-  BarChart3,
   Flame,
   ListTodo,
   History,
   AlertTriangle,
+  Trophy,
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../../shared/api/client.ts';
 import { Button } from '../../../shared/ui/button.tsx';
 import { Card } from '../../../shared/ui/card.tsx';
-import { ProgressBar } from '../../../shared/ui/progress.tsx';
 import {
   TodoItem,
   DailyScheduleResponse,
   ActivityLogItem,
-  ProductivityStatsResponse,
   TodoCategory,
 } from '../../../entities/todo/model/types.ts';
 import { useFocusTimerStore } from '../../../features/focus-timer/model/focusTimerStore.ts';
 import { useTranslation } from '../../../shared/lib/i18n/i18n.ts';
 import { CreateTodoModal } from './CreateTodoModal.tsx';
 
-type ViewTab = 'schedule' | 'history' | 'stats';
+type ViewTab = 'schedule' | 'calendar' | 'history';
 
 export const TodoCalendarPage: React.FC = () => {
   const { t } = useTranslation();
@@ -43,6 +41,7 @@ export const TodoCalendarPage: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState(() => {
     return new Date().toISOString().split('T')[0];
   });
+  const [calendarDate, setCalendarDate] = useState(() => new Date());
   const [activeTab, setActiveTab] = useState<ViewTab>('schedule');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingTodo, setEditingTodo] = useState<TodoItem | null>(null);
@@ -63,11 +62,21 @@ export const TodoCalendarPage: React.FC = () => {
     enabled: activeTab === 'history',
   });
 
-  // 3. Fetch Productivity Stats
-  const { data: stats } = useQuery<ProductivityStatsResponse>({
-    queryKey: ['productivity-stats', 7],
-    queryFn: () => apiClient<ProductivityStatsResponse>('/todos/stats?days=7'),
-    enabled: activeTab === 'stats',
+  // 3. Calendar Month query (todos for the whole month)
+  const calYear = calendarDate.getFullYear();
+  const calMonth = calendarDate.getMonth();
+  const monthKey = `${calYear}-${String(calMonth + 1).padStart(2, '0')}`;
+
+  const { data: monthSchedule } = useQuery<DailyScheduleResponse>({
+    queryKey: ['todos-month', monthKey],
+    queryFn: () => apiClient<DailyScheduleResponse>(`/todos?date=${monthKey}`),
+    enabled: activeTab === 'calendar',
+  });
+
+  const { data: monthLogs = [] } = useQuery<ActivityLogItem[]>({
+    queryKey: ['activity-logs-month', monthKey],
+    queryFn: () => apiClient<ActivityLogItem[]>(`/todos/activity-logs?date=${monthKey}`),
+    enabled: activeTab === 'calendar',
   });
 
   // 4. Mutations
@@ -75,6 +84,7 @@ export const TodoCalendarPage: React.FC = () => {
     mutationFn: (newTodo: any) => apiClient.post('/todos', newTodo),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['todos-daily'] });
+      void queryClient.invalidateQueries({ queryKey: ['todos-month'] });
     },
   });
 
@@ -83,6 +93,7 @@ export const TodoCalendarPage: React.FC = () => {
       apiClient.put(`/todos/${id}`, data),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['todos-daily'] });
+      void queryClient.invalidateQueries({ queryKey: ['todos-month'] });
     },
   });
 
@@ -90,8 +101,9 @@ export const TodoCalendarPage: React.FC = () => {
     mutationFn: (id: string) => apiClient.post(`/todos/${id}/toggle`),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['todos-daily'] });
+      void queryClient.invalidateQueries({ queryKey: ['todos-month'] });
       void queryClient.invalidateQueries({ queryKey: ['activity-logs'] });
-      void queryClient.invalidateQueries({ queryKey: ['productivity-stats'] });
+      void queryClient.invalidateQueries({ queryKey: ['activity-logs-month'] });
     },
   });
 
@@ -99,8 +111,9 @@ export const TodoCalendarPage: React.FC = () => {
     mutationFn: (id: string) => apiClient.delete(`/todos/${id}`),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['todos-daily'] });
+      void queryClient.invalidateQueries({ queryKey: ['todos-month'] });
       void queryClient.invalidateQueries({ queryKey: ['activity-logs'] });
-      void queryClient.invalidateQueries({ queryKey: ['productivity-stats'] });
+      void queryClient.invalidateQueries({ queryKey: ['activity-logs-month'] });
     },
   });
 
@@ -108,12 +121,13 @@ export const TodoCalendarPage: React.FC = () => {
     mutationFn: (id: string) => apiClient.delete(`/todos/activity-logs/${id}`),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['activity-logs'] });
-      void queryClient.invalidateQueries({ queryKey: ['productivity-stats'] });
+      void queryClient.invalidateQueries({ queryKey: ['activity-logs-month'] });
       void queryClient.invalidateQueries({ queryKey: ['todos-daily'] });
+      void queryClient.invalidateQueries({ queryKey: ['todos-month'] });
     },
   });
 
-  // Date Navigation helpers
+  // Date Navigation helpers for Daily view
   const handleShiftDate = (days: number) => {
     const current = new Date(selectedDate);
     current.setDate(current.getDate() + days);
@@ -121,7 +135,23 @@ export const TodoCalendarPage: React.FC = () => {
   };
 
   const handleSetToday = () => {
-    setSelectedDate(new Date().toISOString().split('T')[0]);
+    const todayIso = new Date().toISOString().split('T')[0];
+    setSelectedDate(todayIso);
+  };
+
+  // Month navigation helpers for Calendar view
+  const handlePrevMonth = () => {
+    setCalendarDate(new Date(calYear, calMonth - 1, 1));
+  };
+
+  const handleNextMonth = () => {
+    setCalendarDate(new Date(calYear, calMonth + 1, 1));
+  };
+
+  const handleCalendarToday = () => {
+    const now = new Date();
+    setCalendarDate(now);
+    setSelectedDate(now.toISOString().split('T')[0]);
   };
 
   // Generate 7-day week strip around selectedDate
@@ -154,6 +184,75 @@ export const TodoCalendarPage: React.FC = () => {
     });
   }, [selectedDate, t]);
 
+  // Tasks by day in the current month
+  const tasksByDay = useMemo(() => {
+    const map: Record<string, { total: number; completed: number; items: TodoItem[] }> = {};
+    for (const tItem of monthSchedule?.todos || []) {
+      const d = tItem.start_date || (tItem.created_at ? tItem.created_at.slice(0, 10) : '');
+      if (!d) continue;
+      if (!map[d]) {
+        map[d] = { total: 0, completed: 0, items: [] };
+      }
+      map[d].total += 1;
+      if (tItem.status === 'completed') {
+        map[d].completed += 1;
+      }
+      map[d].items.push(tItem);
+    }
+    return map;
+  }, [monthSchedule]);
+
+  // Activity logs by day in the current month
+  const logsByDay = useMemo(() => {
+    const map: Record<string, { count: number; minutes: number }> = {};
+    for (const l of monthLogs) {
+      const d = l.started_at ? l.started_at.slice(0, 10) : '';
+      if (!d) continue;
+      if (!map[d]) {
+        map[d] = { count: 0, minutes: 0 };
+      }
+      map[d].count += 1;
+      map[d].minutes += l.duration_minutes || 0;
+    }
+    return map;
+  }, [monthLogs]);
+
+  // Month Statistics Summary
+  const monthStats = useMemo(() => {
+    const monthTodos = monthSchedule?.todos || [];
+    let completedCount = 0;
+    const activeDaysSet = new Set<string>();
+
+    for (const tItem of monthTodos) {
+      const d = tItem.start_date || (tItem.created_at ? tItem.created_at.slice(0, 10) : '');
+      if (d) activeDaysSet.add(d);
+      if (tItem.status === 'completed') {
+        completedCount++;
+      }
+    }
+
+    let totalFocusMins = 0;
+    for (const l of monthLogs) {
+      if (l.started_at) {
+        activeDaysSet.add(l.started_at.slice(0, 10));
+      }
+      totalFocusMins += l.duration_minutes || 0;
+    }
+
+    return {
+      totalTasks: monthTodos.length,
+      completedCount,
+      totalFocusMins,
+      activeDays: activeDaysSet.size,
+    };
+  }, [monthSchedule, monthLogs]);
+
+  // Calendar matrix calculations
+  const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+  const firstDayIndex = new Date(calYear, calMonth, 1).getDay(); // 0 = Sunday
+  const startOffset = (firstDayIndex + 6) % 7; // Convert to Monday-start (0 = Mon, 6 = Sun)
+  const prevMonthDays = new Date(calYear, calMonth, 0).getDate();
+
   const getCategoryBadge = (cat: TodoCategory) => {
     switch (cat) {
       case 'workout':
@@ -180,7 +279,7 @@ export const TodoCalendarPage: React.FC = () => {
 
   return (
     <div className="space-y-4 max-w-5xl mx-auto pb-12 animate-fade-in">
-      {/* 1. Header & Quick Actions Bar */}
+      {/* 1. Header & Navigation Bar */}
       <div className="bg-dark-900 border border-dark-800 rounded-3xl p-3.5 sm:p-5 shadow-xl space-y-3">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 min-w-0">
@@ -217,64 +316,8 @@ export const TodoCalendarPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Date Selector & Week Strip */}
-        <div className="pt-2 border-t border-dark-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => handleShiftDate(-1)}
-              className="p-1.5 rounded-xl bg-dark-800 hover:bg-dark-700 text-zinc-300 transition-colors"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-
-            <div className="flex items-center gap-2">
-              <CalendarIcon className="w-4 h-4 text-brand-400" />
-              <input
-                type="date"
-                value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-                className="bg-dark-800 border border-dark-700 rounded-xl px-2.5 py-1 text-xs text-zinc-100 font-semibold focus:outline-none focus:border-brand-500 cursor-pointer"
-              />
-            </div>
-
-            <button
-              onClick={() => handleShiftDate(1)}
-              className="p-1.5 rounded-xl bg-dark-800 hover:bg-dark-700 text-zinc-300 transition-colors"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
-
-            <button
-              onClick={handleSetToday}
-              className="px-2.5 py-1 rounded-xl bg-dark-800 hover:bg-dark-700 text-zinc-300 font-semibold text-xs border border-dark-700 transition-colors"
-            >
-              {t('todo.today')}
-            </button>
-          </div>
-
-          {/* 7-Day Week Buttons Strip */}
-          <div className="grid grid-cols-7 gap-1 sm:gap-1.5">
-            {weekDays.map((wd) => (
-              <button
-                key={wd.iso}
-                onClick={() => setSelectedDate(wd.iso)}
-                className={`flex flex-col items-center py-1.5 px-1 sm:px-2 rounded-xl transition-all ${
-                  wd.isSelected
-                    ? 'bg-brand-500 text-dark-950 font-extrabold shadow-md'
-                    : wd.isToday
-                    ? 'bg-brand-500/15 border border-brand-500/40 text-brand-400 font-bold'
-                    : 'bg-dark-800/80 hover:bg-dark-700 text-zinc-400 hover:text-white border border-dark-700/60'
-                }`}
-              >
-                <span className="text-[9px] uppercase tracking-wider">{wd.dayName}</span>
-                <span className="text-xs sm:text-sm">{wd.dayNumber}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* View Mode Tabs (Schedule / History / Stats) */}
-        <div className="flex items-center gap-1.5 pt-1 border-t border-dark-800 text-xs">
+        {/* View Mode Tabs (Tasks / Calendar / Activity Log) */}
+        <div className="flex items-center gap-1.5 pt-2 border-t border-dark-800 text-xs">
           <button
             onClick={() => setActiveTab('schedule')}
             className={`px-3 py-1.5 rounded-xl font-bold transition-all flex items-center gap-1.5 ${
@@ -288,6 +331,18 @@ export const TodoCalendarPage: React.FC = () => {
           </button>
 
           <button
+            onClick={() => setActiveTab('calendar')}
+            className={`px-3 py-1.5 rounded-xl font-bold transition-all flex items-center gap-1.5 ${
+              activeTab === 'calendar'
+                ? 'bg-brand-500/20 text-brand-400 border border-brand-500/40'
+                : 'text-zinc-400 hover:text-zinc-200 hover:bg-dark-800'
+            }`}
+          >
+            <CalendarIcon className="w-3.5 h-3.5" />
+            <span>{t('todo.calendar')}</span>
+          </button>
+
+          <button
             onClick={() => setActiveTab('history')}
             className={`px-3 py-1.5 rounded-xl font-bold transition-all flex items-center gap-1.5 ${
               activeTab === 'history'
@@ -298,71 +353,119 @@ export const TodoCalendarPage: React.FC = () => {
             <History className="w-3.5 h-3.5" />
             <span>{t('todo.activityLog')}</span>
           </button>
-
-          <button
-            onClick={() => setActiveTab('stats')}
-            className={`px-3 py-1.5 rounded-xl font-bold transition-all flex items-center gap-1.5 ${
-              activeTab === 'stats'
-                ? 'bg-brand-500/20 text-brand-400 border border-brand-500/40'
-                : 'text-zinc-400 hover:text-zinc-200 hover:bg-dark-800'
-            }`}
-          >
-            <BarChart3 className="w-3.5 h-3.5" />
-            <span>{t('todo.weekStats')}</span>
-          </button>
         </div>
+
+        {/* Date Selector & Week Strip (Visible when in Daily or History tab) */}
+        {activeTab !== 'calendar' && (
+          <div className="pt-2 border-t border-dark-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => handleShiftDate(-1)}
+                className="p-1.5 rounded-xl bg-dark-800 hover:bg-dark-700 text-zinc-300 transition-colors"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+
+              <div className="flex items-center gap-2">
+                <CalendarIcon className="w-4 h-4 text-brand-400" />
+                <input
+                  type="date"
+                  value={selectedDate}
+                  onChange={(e) => setSelectedDate(e.target.value)}
+                  className="bg-dark-800 border border-dark-700 rounded-xl px-2.5 py-1 text-xs text-zinc-100 font-semibold focus:outline-none focus:border-brand-500 cursor-pointer"
+                />
+              </div>
+
+              <button
+                onClick={() => handleShiftDate(1)}
+                className="p-1.5 rounded-xl bg-dark-800 hover:bg-dark-700 text-zinc-300 transition-colors"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+
+              <button
+                onClick={handleSetToday}
+                className="px-2.5 py-1 rounded-xl bg-dark-800 hover:bg-dark-700 text-zinc-300 font-semibold text-xs border border-dark-700 transition-colors"
+              >
+                {t('todo.today')}
+              </button>
+            </div>
+
+            {/* 7-Day Week Buttons Strip */}
+            <div className="grid grid-cols-7 gap-1 sm:gap-1.5">
+              {weekDays.map((wd) => (
+                <button
+                  key={wd.iso}
+                  onClick={() => setSelectedDate(wd.iso)}
+                  className={`flex flex-col items-center py-1.5 px-1 sm:px-2 rounded-xl transition-all ${
+                    wd.isSelected
+                      ? 'bg-brand-500 text-dark-950 font-extrabold shadow-md'
+                      : wd.isToday
+                      ? 'bg-brand-500/15 border border-brand-500/40 text-brand-400 font-bold'
+                      : 'bg-dark-800/80 hover:bg-dark-700 text-zinc-400 hover:text-white border border-dark-700/60'
+                  }`}
+                >
+                  <span className="text-[9px] uppercase tracking-wider">{wd.dayName}</span>
+                  <span className="text-xs sm:text-sm">{wd.dayNumber}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* 2. Daily Summary Stats Strip */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <Card className="p-3.5 bg-dark-900 border-dark-800 flex items-center justify-between">
-          <div>
-            <div className="text-[10px] uppercase font-bold text-zinc-500">{t('todo.planned')}</div>
-            <div className="text-base sm:text-lg font-black text-white mt-0.5">
-              {Math.floor(totalPlannedMins / 60)}{t('common.hours')} {totalPlannedMins % 60}{t('common.minutes')}
+      {/* 2. Daily Summary Stats Strip (Visible in Daily view) */}
+      {activeTab === 'schedule' && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <Card className="p-3.5 bg-dark-900 border-dark-800 flex items-center justify-between">
+            <div>
+              <div className="text-[10px] uppercase font-bold text-zinc-500">{t('todo.planned')}</div>
+              <div className="text-base sm:text-lg font-black text-white mt-0.5">
+                {Math.floor(totalPlannedMins / 60)}{t('common.hours')} {totalPlannedMins % 60}{t('common.minutes')}
+              </div>
             </div>
-          </div>
-          <div className="w-8 h-8 rounded-xl bg-blue-500/15 border border-blue-500/30 flex items-center justify-center text-blue-400">
-            <Clock className="w-4 h-4" />
-          </div>
-        </Card>
+            <div className="w-8 h-8 rounded-xl bg-blue-500/15 border border-blue-500/30 flex items-center justify-center text-blue-400">
+              <Clock className="w-4 h-4" />
+            </div>
+          </Card>
 
-        <Card className="p-3.5 bg-dark-900 border-dark-800 flex items-center justify-between">
-          <div>
-            <div className="text-[10px] uppercase font-bold text-zinc-500">{t('todo.spent')}</div>
-            <div className="text-base sm:text-lg font-black text-emerald-400 mt-0.5">
-              {Math.floor(totalSpentMins / 60)}{t('common.hours')} {totalSpentMins % 60}{t('common.minutes')}
+          <Card className="p-3.5 bg-dark-900 border-dark-800 flex items-center justify-between">
+            <div>
+              <div className="text-[10px] uppercase font-bold text-zinc-500">{t('todo.spent')}</div>
+              <div className="text-base sm:text-lg font-black text-emerald-400 mt-0.5">
+                {Math.floor(totalSpentMins / 60)}{t('common.hours')} {totalSpentMins % 60}{t('common.minutes')}
+              </div>
             </div>
-          </div>
-          <div className="w-8 h-8 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
-            <Flame className="w-4 h-4" />
-          </div>
-        </Card>
+            <div className="w-8 h-8 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+              <Flame className="w-4 h-4" />
+            </div>
+          </Card>
 
-        <Card className="p-3.5 bg-dark-900 border-dark-800 flex items-center justify-between">
-          <div>
-            <div className="text-[10px] uppercase font-bold text-zinc-500">{t('todo.completedCount')}</div>
-            <div className="text-base sm:text-lg font-black text-brand-400 mt-0.5">
-              {completedTasks} / {totalTasks}
+          <Card className="p-3.5 bg-dark-900 border-dark-800 flex items-center justify-between">
+            <div>
+              <div className="text-[10px] uppercase font-bold text-zinc-500">{t('todo.completedCount')}</div>
+              <div className="text-base sm:text-lg font-black text-brand-400 mt-0.5">
+                {completedTasks} / {totalTasks}
+              </div>
             </div>
-          </div>
-          <div className="w-8 h-8 rounded-xl bg-brand-500/15 border border-brand-500/30 flex items-center justify-center text-brand-400">
-            <CheckCircle2 className="w-4 h-4" />
-          </div>
-        </Card>
+            <div className="w-8 h-8 rounded-xl bg-brand-500/15 border border-brand-500/30 flex items-center justify-center text-brand-400">
+              <CheckCircle2 className="w-4 h-4" />
+            </div>
+          </Card>
 
-        <Card className="p-3.5 bg-dark-900 border-dark-800 flex items-center justify-between">
-          <div>
-            <div className="text-[10px] uppercase font-bold text-zinc-500">{t('todo.dayProgress')}</div>
-            <div className="text-base sm:text-lg font-black text-white mt-0.5">
-              {progressPercent}%
+          <Card className="p-3.5 bg-dark-900 border-dark-800 flex items-center justify-between">
+            <div>
+              <div className="text-[10px] uppercase font-bold text-zinc-500">{t('todo.dayProgress')}</div>
+              <div className="text-base sm:text-lg font-black text-white mt-0.5">
+                {progressPercent}%
+              </div>
             </div>
-          </div>
-          <div className="w-8 h-8 rounded-xl bg-purple-500/15 border border-purple-500/30 flex items-center justify-center text-purple-400">
-            <TrendingUp className="w-4 h-4" />
-          </div>
-        </Card>
-      </div>
+            <div className="w-8 h-8 rounded-xl bg-purple-500/15 border border-purple-500/30 flex items-center justify-center text-purple-400">
+              <TrendingUp className="w-4 h-4" />
+            </div>
+          </Card>
+        </div>
+      )}
 
       {/* 3. Main Content: Daily Schedule View */}
       {activeTab === 'schedule' && (
@@ -493,7 +596,6 @@ export const TodoCalendarPage: React.FC = () => {
 
                     {/* Right: Actions */}
                     <div className="flex items-center gap-1.5 self-end sm:self-center shrink-0">
-                      {/* Start Focus / Pomodoro Timer Button */}
                       {!isDone && (
                         <button
                           onClick={() =>
@@ -544,7 +646,311 @@ export const TodoCalendarPage: React.FC = () => {
         </div>
       )}
 
-      {/* 4. Activity History View */}
+      {/* 4. Interactive Monthly Calendar Grid View */}
+      {activeTab === 'calendar' && (
+        <div className="space-y-4">
+          {/* Monthly Stats Summary Ribbon */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <Card className="p-4 bg-gradient-to-br from-dark-900 to-brand-950/30 border-brand-500/30 flex items-center gap-3.5 shadow-lg">
+              <div className="w-12 h-12 rounded-2xl bg-brand-500/15 border border-brand-500/30 flex items-center justify-center text-brand-400 shrink-0">
+                <CheckCircle2 className="w-6 h-6" />
+              </div>
+              <div>
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-2xl font-black text-brand-400 font-mono">
+                    {monthStats.completedCount} / {monthStats.totalTasks}
+                  </span>
+                  <span className="text-xs font-semibold text-zinc-400">{t('todo.completed')}</span>
+                </div>
+                <div className="text-[11px] text-zinc-400 font-medium">
+                  {t('todo.monthTasks')}
+                </div>
+              </div>
+            </Card>
+
+            <Card className="p-4 bg-gradient-to-br from-dark-900 to-emerald-950/30 border-emerald-500/30 flex items-center gap-3.5 shadow-lg">
+              <div className="w-12 h-12 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
+                <Flame className="w-6 h-6" />
+              </div>
+              <div>
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-2xl font-black text-emerald-400 font-mono">
+                    {Math.floor(monthStats.totalFocusMins / 60)}{t('common.hours')} {monthStats.totalFocusMins % 60}{t('common.minutes')}
+                  </span>
+                </div>
+                <div className="text-[11px] text-zinc-400 font-medium">
+                  {t('todo.focusTimeMonth')}
+                </div>
+              </div>
+            </Card>
+
+            <Card className="p-4 bg-gradient-to-br from-dark-900 to-blue-950/30 border-blue-500/30 flex items-center gap-3.5 shadow-lg">
+              <div className="w-12 h-12 rounded-2xl bg-blue-500/15 border border-blue-500/30 flex items-center justify-center text-blue-400 shrink-0">
+                <Trophy className="w-6 h-6" />
+              </div>
+              <div>
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-2xl font-black text-blue-400 font-mono">
+                    {monthStats.activeDays}
+                  </span>
+                  <span className="text-xs font-semibold text-zinc-400">{t('days.fri')}</span>
+                </div>
+                <div className="text-[11px] text-zinc-400 font-medium">
+                  {t('todo.activeDays')}
+                </div>
+              </div>
+            </Card>
+          </div>
+
+          {/* Monthly Calendar Card */}
+          <Card className="p-4 sm:p-5 bg-dark-900 border-dark-800 shadow-xl rounded-2xl space-y-4">
+            {/* Calendar Navigation Bar */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-brand-500/15 border border-brand-500/30 flex items-center justify-center text-brand-400 font-bold">
+                  <CalendarIcon className="w-4 h-4" />
+                </div>
+                <h2 className="text-base sm:text-lg font-extrabold text-white tracking-tight">
+                  {calendarDate.toLocaleString('default', { month: 'long', year: 'numeric' })}
+                </h2>
+              </div>
+
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={handleCalendarToday}
+                  className="px-2.5 py-1 text-xs font-bold rounded-xl bg-dark-800 hover:bg-dark-700 text-zinc-200 transition-colors border border-dark-700"
+                >
+                  {t('todo.today')}
+                </button>
+                <button
+                  onClick={handlePrevMonth}
+                  className="p-1.5 rounded-xl bg-dark-800 hover:bg-dark-700 text-zinc-300 transition-colors border border-dark-700"
+                  title="Previous Month"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={handleNextMonth}
+                  className="p-1.5 rounded-xl bg-dark-800 hover:bg-dark-700 text-zinc-300 transition-colors border border-dark-700"
+                  title="Next Month"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Days of Week Header */}
+            <div className="grid grid-cols-7 gap-1 text-center text-[10px] sm:text-xs font-extrabold text-zinc-400 uppercase tracking-wider py-1 border-b border-dark-800">
+              {[t('days.mon'), t('days.tue'), t('days.wed'), t('days.thu'), t('days.fri'), t('days.sat'), t('days.sun')].map((day, idx) => (
+                <div key={idx} className="py-1">
+                  {day}
+                </div>
+              ))}
+            </div>
+
+            {/* Calendar Days Matrix */}
+            <div className="grid grid-cols-7 gap-1 sm:gap-2">
+              {/* Previous Month Inactive Days */}
+              {Array.from({ length: startOffset }).map((_, i) => {
+                const dayNum = prevMonthDays - startOffset + i + 1;
+                return (
+                  <div
+                    key={`prev-${i}`}
+                    className="min-h-[58px] sm:min-h-[76px] p-1.5 rounded-xl bg-dark-950/40 border border-dark-800/40 text-zinc-600 select-none opacity-40 text-xs"
+                  >
+                    <span>{dayNum}</span>
+                  </div>
+                );
+              })}
+
+              {/* Current Month Days */}
+              {Array.from({ length: daysInMonth }).map((_, i) => {
+                const dayNum = i + 1;
+                const dateKey = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`;
+                const dayData = tasksByDay[dateKey];
+                const dayLog = logsByDay[dateKey];
+                const isSelected = selectedDate === dateKey;
+                const isToday = new Date().toISOString().slice(0, 10) === dateKey;
+
+                const hasTasks = dayData && dayData.total > 0;
+                const allDone = hasTasks && dayData.completed === dayData.total;
+                const hasFocus = dayLog && dayLog.minutes > 0;
+
+                return (
+                  <div
+                    key={dateKey}
+                    onClick={() => setSelectedDate(dateKey)}
+                    className={`min-h-[58px] sm:min-h-[76px] p-1.5 sm:p-2 rounded-xl border transition-all cursor-pointer flex flex-col justify-between select-none ${
+                      isSelected
+                        ? 'bg-brand-500/15 border-brand-500 shadow-md ring-2 ring-brand-500/30'
+                        : isToday
+                        ? 'bg-dark-800 border-brand-500/50 hover:border-brand-400'
+                        : 'bg-dark-950/60 border-dark-800 hover:border-dark-700 hover:bg-dark-800/70'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span
+                        className={`text-xs font-black ${
+                          isToday
+                            ? 'w-5 h-5 rounded-full bg-brand-500 text-dark-950 flex items-center justify-center font-black'
+                            : isSelected
+                            ? 'text-brand-400 font-black'
+                            : 'text-zinc-300'
+                        }`}
+                      >
+                        {dayNum}
+                      </span>
+
+                      {/* Small visual dot for activity */}
+                      {allDone ? (
+                        <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-sm shadow-emerald-500/50" />
+                      ) : hasTasks ? (
+                        <span className="w-2 h-2 rounded-full bg-brand-400" />
+                      ) : hasFocus ? (
+                        <span className="w-2 h-2 rounded-full bg-blue-400" />
+                      ) : null}
+                    </div>
+
+                    {/* Task and Focus pills inside day */}
+                    <div className="mt-1 space-y-0.5">
+                      {hasTasks && (
+                        <div
+                          className={`text-[9px] sm:text-[10px] font-bold px-1 py-0.2 rounded truncate flex items-center gap-0.5 ${
+                            allDone
+                              ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                              : 'bg-dark-800 text-zinc-300 border border-dark-700'
+                          }`}
+                        >
+                          <CheckCircle2 className="w-2.5 h-2.5 shrink-0" />
+                          <span>
+                            {dayData.completed}/{dayData.total}
+                          </span>
+                        </div>
+                      )}
+
+                      {hasFocus && (
+                        <div className="text-[9px] sm:text-[10px] font-bold px-1 py-0.2 rounded bg-amber-500/15 text-amber-400 border border-amber-500/30 truncate flex items-center gap-0.5">
+                          <Flame className="w-2.5 h-2.5 shrink-0" />
+                          <span>{dayLog.minutes}m</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </Card>
+
+          {/* Selected Date Detail View Below Calendar */}
+          <div className="bg-dark-900 border border-dark-800 rounded-2xl p-4 sm:p-5 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <CalendarIcon className="w-4 h-4 text-brand-400" />
+                <h3 className="text-sm sm:text-base font-extrabold text-white">
+                  {selectedDate}
+                </h3>
+                <span className="text-xs text-zinc-400">
+                  ({todos.length} {t('todo.tasksForDay', { count: todos.length })})
+                </span>
+              </div>
+
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => {
+                  setEditingTodo(null);
+                  setIsCreateModalOpen(true);
+                }}
+                className="rounded-xl px-2.5 py-1 text-xs font-bold flex items-center gap-1"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>{t('todo.add')}</span>
+              </Button>
+            </div>
+
+            {todos.length === 0 ? (
+              <p className="text-xs text-zinc-400 py-3 text-center">
+                {t('todo.noTasks', { date: selectedDate })}
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {todos.map((item) => {
+                  const badge = getCategoryBadge(item.category);
+                  const isDone = item.status === 'completed';
+
+                  return (
+                    <div
+                      key={item.id}
+                      className={`p-3 rounded-xl border flex items-center justify-between gap-3 ${
+                        isDone
+                          ? 'bg-dark-950/60 border-dark-800/80 opacity-75'
+                          : 'bg-dark-800/70 border-dark-700/80'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                        <button
+                          onClick={() => toggleTodoMutation.mutate(item.id)}
+                          className={`w-5 h-5 rounded-md flex items-center justify-center transition-all shrink-0 ${
+                            isDone
+                              ? 'bg-emerald-500 text-dark-950'
+                              : 'border-2 border-zinc-600 hover:border-brand-500 text-transparent'
+                          }`}
+                        >
+                          <CheckCircle2 className="w-3.5 h-3.5 fill-current" />
+                        </button>
+                        <span
+                          className={`text-xs sm:text-sm font-bold truncate ${
+                            isDone ? 'line-through text-zinc-500' : 'text-white'
+                          }`}
+                        >
+                          {item.title}
+                        </span>
+                        <span
+                          className={`px-1.5 py-0.2 rounded text-[9px] font-bold border shrink-0 ${badge.color}`}
+                        >
+                          {badge.label}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {!isDone && (
+                          <button
+                            onClick={() =>
+                              startForTodo({
+                                todoId: item.id,
+                                title: item.title,
+                                category: item.category,
+                                targetDurationMinutes: item.target_duration_minutes,
+                                mode: 'pomodoro',
+                              })
+                            }
+                            className="px-2 py-1 rounded-lg bg-brand-500 text-dark-950 font-black text-[11px] flex items-center gap-1"
+                          >
+                            <Play className="w-3 h-3 fill-current" />
+                            <span>{t('focusTimer.quick25')}</span>
+                          </button>
+                        )}
+                        <button
+                          onClick={() => {
+                            if (window.confirm(t('todo.deleteConfirm', { title: item.title }))) {
+                              deleteTodoMutation.mutate(item.id);
+                            }
+                          }}
+                          className="p-1 rounded-lg hover:bg-red-950/40 text-zinc-400 hover:text-red-400 transition-colors"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* 5. Activity History View */}
       {activeTab === 'history' && (
         <div className="space-y-3">
           <div className="flex items-center justify-between px-1">
@@ -636,63 +1042,6 @@ export const TodoCalendarPage: React.FC = () => {
               })}
             </div>
           )}
-        </div>
-      )}
-
-      {/* 5. Productivity Stats View */}
-      {activeTab === 'stats' && stats && (
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <Card className="p-4 bg-dark-900 border-dark-800 space-y-2">
-              <span className="text-xs font-bold text-zinc-400 uppercase">
-                {t('todo.total7dFocus')}
-              </span>
-              <div className="text-2xl font-black text-brand-400 font-mono">
-                {Math.floor(stats.total_focus_minutes / 60)} {t('common.hours')} {stats.total_focus_minutes % 60} {t('common.minutes')}
-              </div>
-              <p className="text-xs text-zinc-400">
-                {t('todo.total7dDesc')}
-              </p>
-            </Card>
-
-            <Card className="p-4 bg-dark-900 border-dark-800 space-y-2">
-              <span className="text-xs font-bold text-zinc-400 uppercase">
-                {t('todo.completedSessions')}
-              </span>
-              <div className="text-2xl font-black text-emerald-400 font-mono">
-                {stats.total_tasks_done}
-              </div>
-              <p className="text-xs text-zinc-400">
-                {t('todo.completedSessionsDesc')}
-              </p>
-            </Card>
-          </div>
-
-          {/* Category Breakdown */}
-          <Card className="p-4 bg-dark-900 border-dark-800 space-y-3">
-            <h3 className="text-sm font-extrabold text-white">{t('todo.categoryBreakdown')}</h3>
-            <div className="space-y-2.5">
-              {stats.category_breakdown.map((cb) => {
-                const badge = getCategoryBadge(cb.category);
-                const percent =
-                  stats.total_focus_minutes > 0
-                    ? Math.round((cb.total_minutes / stats.total_focus_minutes) * 100)
-                    : 0;
-
-                return (
-                  <div key={cb.category} className="space-y-1">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="font-semibold text-zinc-200">{badge.label}</span>
-                      <span className="font-mono text-zinc-400">
-                        {cb.total_minutes} {t('common.minutes')} ({percent}%)
-                      </span>
-                    </div>
-                    <ProgressBar value={percent} variant="brand" size="sm" />
-                  </div>
-                );
-              })}
-            </div>
-          </Card>
         </div>
       )}
 

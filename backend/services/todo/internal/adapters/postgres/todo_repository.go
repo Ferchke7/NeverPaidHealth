@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -20,20 +21,42 @@ func NewTodoRepository(pool *pgxpool.Pool) *TodoRepository {
 }
 
 func (r *TodoRepository) GetByDate(ctx context.Context, userID uuid.UUID, dateStr string) ([]todo.Todo, error) {
-	query := `
-		SELECT id, user_id, title, description, category, priority, event_type,
-		       start_date::text, end_date::text, start_time, end_time,
-		       target_duration_minutes, total_spent_minutes, status, completed_at,
-		       meeting_url, external_calendar_id, created_at, updated_at
-		FROM todos
-		WHERE user_id = $1
-		  AND (start_date <= $2::date AND end_date >= $2::date)
-		ORDER BY
-		  CASE WHEN start_time IS NOT NULL THEN start_time ELSE '99:99' END ASC,
-		  created_at ASC
-	`
+	var query string
+	var rows pgx.Rows
+	var err error
 
-	rows, err := r.pool.Query(ctx, query, userID, dateStr)
+	// If dateStr is in YYYY-MM format (length 7), query all tasks overlapping that month
+	if len(dateStr) == 7 && strings.Contains(dateStr, "-") {
+		query = `
+			SELECT id, user_id, title, description, category, priority, event_type,
+			       start_date::text, end_date::text, start_time, end_time,
+			       target_duration_minutes, total_spent_minutes, status, completed_at,
+			       meeting_url, external_calendar_id, created_at, updated_at
+			FROM todos
+			WHERE user_id = $1
+			  AND (to_char(start_date, 'YYYY-MM') = $2 OR to_char(end_date, 'YYYY-MM') = $2
+			       OR (start_date <= ($2 || '-01')::date AND end_date >= ($2 || '-01')::date))
+			ORDER BY
+			  start_date ASC,
+			  CASE WHEN start_time IS NOT NULL THEN start_time ELSE '99:99' END ASC,
+			  created_at ASC
+		`
+		rows, err = r.pool.Query(ctx, query, userID, dateStr)
+	} else {
+		query = `
+			SELECT id, user_id, title, description, category, priority, event_type,
+			       start_date::text, end_date::text, start_time, end_time,
+			       target_duration_minutes, total_spent_minutes, status, completed_at,
+			       meeting_url, external_calendar_id, created_at, updated_at
+			FROM todos
+			WHERE user_id = $1
+			  AND (start_date <= $2::date AND end_date >= $2::date)
+			ORDER BY
+			  CASE WHEN start_time IS NOT NULL THEN start_time ELSE '99:99' END ASC,
+			  created_at ASC
+		`
+		rows, err = r.pool.Query(ctx, query, userID, dateStr)
+	}
 	if err != nil {
 		return nil, fmt.Errorf("failed to query todos by date: %w", err)
 	}
@@ -188,7 +211,17 @@ func (r *TodoRepository) GetActivityLogs(ctx context.Context, userID uuid.UUID, 
 	var rows pgx.Rows
 	var err error
 
-	if dateStr != "" {
+	if len(dateStr) == 7 {
+		query = `
+			SELECT id, user_id, todo_id, task_title, category,
+			       started_at, ended_at, duration_minutes, session_type, notes, created_at
+			FROM todo_activity_logs
+			WHERE user_id = $1 
+			  AND (to_char(started_at, 'YYYY-MM') = $2 OR to_char(ended_at, 'YYYY-MM') = $2)
+			ORDER BY started_at DESC
+		`
+		rows, err = r.pool.Query(ctx, query, userID, dateStr)
+	} else if dateStr != "" {
 		// Timezone-safe match: match if started_at falls on dateStr OR within selected day in user local / UTC
 		query = `
 			SELECT id, user_id, todo_id, task_title, category,

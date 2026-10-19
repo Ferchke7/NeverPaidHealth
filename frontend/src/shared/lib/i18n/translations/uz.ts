@@ -1,7 +1,7 @@
 export const uz = {
   // Navigatsiya
   'nav.workouts': 'Mashg‘ulotlar',
-  'nav.todo': 'Todo va Reja',
+  'nav.todo': 'Todo',
   'nav.programs': 'Dasturlar',
   'nav.exercises': 'Mashqlar',
   'nav.history': 'Tarix',
@@ -90,8 +90,8 @@ export const uz = {
   'focusTimer.quick25': 'Pomodoro 25daq',
   'focusTimer.quick25Title': 'Erkin 25 daqiqalik Pomodoroni ishga tushirish',
 
-  // Todo va Reja
-  'todo.title': 'Todo va Jadval',
+  // Todo
+  'todo.title': 'Todo',
   'todo.subtitle': 'Kunni vaqt, muddat va bajarish tarixi bilan rejalashtirish.',
   'todo.badge': 'Taqvim + Pomodoro',
   'todo.add': 'Vazifa qo‘shish',
@@ -99,6 +99,12 @@ export const uz = {
   'todo.edit': 'Vazifani tahrirlash',
   'todo.deleteConfirm': '«{title}» vazifasi o‘chirilsinmi?',
   'todo.today': 'Bugun',
+  'todo.calendar': 'Taqvim',
+  'todo.monthTasks': 'Oylik vazifalar',
+  'todo.activeDays': 'Faol kunlar',
+  'todo.focusTimeMonth': 'Oylik fokus',
+  'todo.clickDayHint': 'Vazifalarni ko‘rish va boshqarish uchun taqvimdan sanani tanlang',
+  'todo.taskCompleted': 'Bajarildi',
   'todo.tasksForDay': 'Kunlik vazifalar ({count})',
   'todo.activityLog': 'Nimalar qildim (Log)',
   'todo.weekStats': 'Haftalik statistika',
