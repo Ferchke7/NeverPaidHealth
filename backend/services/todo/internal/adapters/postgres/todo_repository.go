@@ -189,11 +189,13 @@ func (r *TodoRepository) GetActivityLogs(ctx context.Context, userID uuid.UUID, 
 	var err error
 
 	if dateStr != "" {
+		// Timezone-safe match: match if started_at falls on dateStr OR within selected day in user local / UTC
 		query = `
 			SELECT id, user_id, todo_id, task_title, category,
 			       started_at, ended_at, duration_minutes, session_type, notes, created_at
 			FROM todo_activity_logs
-			WHERE user_id = $1 AND started_at::date = $2::date
+			WHERE user_id = $1 
+			  AND (started_at::date = $2::date OR ended_at::date = $2::date OR created_at::date = $2::date)
 			ORDER BY started_at DESC
 		`
 		rows, err = r.pool.Query(ctx, query, userID, dateStr)
@@ -204,7 +206,7 @@ func (r *TodoRepository) GetActivityLogs(ctx context.Context, userID uuid.UUID, 
 			FROM todo_activity_logs
 			WHERE user_id = $1
 			ORDER BY started_at DESC
-			LIMIT 50
+			LIMIT 100
 		`
 		rows, err = r.pool.Query(ctx, query, userID)
 	}
@@ -232,6 +234,15 @@ func (r *TodoRepository) GetActivityLogs(ctx context.Context, userID uuid.UUID, 
 	}
 
 	return result, nil
+}
+
+func (r *TodoRepository) DeleteActivityLog(ctx context.Context, userID, logID uuid.UUID) error {
+	query := `DELETE FROM todo_activity_logs WHERE user_id = $1 AND id = $2`
+	_, err := r.pool.Exec(ctx, query, userID, logID)
+	if err != nil {
+		return fmt.Errorf("failed to delete activity log: %w", err)
+	}
+	return nil
 }
 
 func (r *TodoRepository) GetStats(ctx context.Context, userID uuid.UUID, days int) (*todo.ProductivityStats, error) {

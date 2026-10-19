@@ -19,6 +19,7 @@ type TodoRepository interface {
 	Delete(ctx context.Context, userID, todoID uuid.UUID) error
 	CreateActivityLog(ctx context.Context, log *todo.ActivityLog) error
 	GetActivityLogs(ctx context.Context, userID uuid.UUID, dateStr string) ([]todo.ActivityLog, error)
+	DeleteActivityLog(ctx context.Context, userID, logID uuid.UUID) error
 	GetStats(ctx context.Context, userID uuid.UUID, days int) (*todo.ProductivityStats, error)
 }
 
@@ -192,6 +193,31 @@ func (s *TodoService) ToggleTodo(ctx context.Context, userID, todoID uuid.UUID) 
 		existing.Status = todo.StatusCompleted
 		now := time.Now()
 		existing.CompletedAt = &now
+
+		// Smart tracking: Automatically log an activity log entry when task is marked done!
+		dur := existing.TargetDurationMinutes
+		if dur <= 0 {
+			dur = 25
+		}
+		if existing.TotalSpentMinutes > 0 {
+			dur = existing.TotalSpentMinutes
+		}
+
+		startedAt := now.Add(-time.Duration(dur) * time.Minute)
+		actLog := &todo.ActivityLog{
+			ID:              uuid.New(),
+			UserID:          userID,
+			TodoID:          &existing.ID,
+			TaskTitle:       existing.Title,
+			Category:        existing.Category,
+			StartedAt:       startedAt,
+			EndedAt:         now,
+			DurationMinutes: dur,
+			SessionType:     "task_completed",
+			Notes:           existing.Description,
+			CreatedAt:       now,
+		}
+		_ = s.repo.CreateActivityLog(ctx, actLog)
 	}
 
 	if err := s.repo.Update(ctx, existing); err != nil {
@@ -203,6 +229,10 @@ func (s *TodoService) ToggleTodo(ctx context.Context, userID, todoID uuid.UUID) 
 
 func (s *TodoService) DeleteTodo(ctx context.Context, userID, todoID uuid.UUID) error {
 	return s.repo.Delete(ctx, userID, todoID)
+}
+
+func (s *TodoService) DeleteActivityLog(ctx context.Context, userID, logID uuid.UUID) error {
+	return s.repo.DeleteActivityLog(ctx, userID, logID)
 }
 
 func parseTimeToMinutes(tStr *string) (int, bool) {

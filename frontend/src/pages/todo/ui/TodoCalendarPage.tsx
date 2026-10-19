@@ -90,12 +90,25 @@ export const TodoCalendarPage: React.FC = () => {
     mutationFn: (id: string) => apiClient.post(`/todos/${id}/toggle`),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['todos-daily'] });
+      void queryClient.invalidateQueries({ queryKey: ['activity-logs'] });
+      void queryClient.invalidateQueries({ queryKey: ['productivity-stats'] });
     },
   });
 
   const deleteTodoMutation = useMutation({
     mutationFn: (id: string) => apiClient.delete(`/todos/${id}`),
     onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['todos-daily'] });
+      void queryClient.invalidateQueries({ queryKey: ['activity-logs'] });
+      void queryClient.invalidateQueries({ queryKey: ['productivity-stats'] });
+    },
+  });
+
+  const deleteActivityLogMutation = useMutation({
+    mutationFn: (id: string) => apiClient.delete(`/todos/activity-logs/${id}`),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['activity-logs'] });
+      void queryClient.invalidateQueries({ queryKey: ['productivity-stats'] });
       void queryClient.invalidateQueries({ queryKey: ['todos-daily'] });
     },
   });
@@ -564,14 +577,14 @@ export const TodoCalendarPage: React.FC = () => {
                 return (
                   <div
                     key={log.id}
-                    className="p-3.5 rounded-2xl bg-dark-900 border border-dark-800 flex items-center justify-between gap-3 shadow-sm"
+                    className="p-3.5 rounded-2xl bg-dark-900 border border-dark-800 flex items-center justify-between gap-3 shadow-sm hover:border-dark-700 transition-colors"
                   >
-                    <div className="flex items-center gap-3 min-w-0">
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
                       <div className="w-9 h-9 rounded-xl bg-dark-800 border border-dark-700 flex items-center justify-center text-emerald-400 font-bold shrink-0">
                         <CheckCircle2 className="w-4 h-4" />
                       </div>
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-extrabold text-white text-sm truncate">
                             {log.task_title}
                           </span>
@@ -581,23 +594,42 @@ export const TodoCalendarPage: React.FC = () => {
                             {badge.label}
                           </span>
                         </div>
-                        <div className="text-xs text-zinc-400 flex items-center gap-2 mt-0.5">
+                        <div className="text-xs text-zinc-400 flex items-center gap-2 mt-0.5 flex-wrap">
                           <span className="font-mono text-zinc-300">
                             {startTime} — {endTime}
                           </span>
                           <span>•</span>
                           <span className="capitalize text-zinc-400">
-                            {t('todo.mode', { mode: log.session_type })}
+                            {log.session_type === 'task_completed'
+                              ? t('todo.taskCompleted') || 'Завершено'
+                              : t('todo.mode', { mode: log.session_type })}
                           </span>
+                          {log.notes && (
+                            <>
+                              <span>•</span>
+                              <span className="text-zinc-500 italic truncate max-w-[200px]">
+                                {log.notes}
+                              </span>
+                            </>
+                          )}
                         </div>
                       </div>
                     </div>
 
-                    <div className="text-right shrink-0">
-                      <div className="text-sm font-black text-brand-400 font-mono">
-                        +{log.duration_minutes} {t('common.minutes')}
+                    <div className="flex items-center gap-2.5 shrink-0">
+                      <div className="text-right">
+                        <div className="text-sm font-black text-brand-400 font-mono">
+                          +{log.duration_minutes} {t('common.minutes')}
+                        </div>
                       </div>
-                      <div className="text-[10px] text-zinc-500">{t('todo.countedInStats')}</div>
+
+                      <button
+                        onClick={() => deleteActivityLogMutation.mutate(log.id)}
+                        className="p-1.5 rounded-lg bg-dark-800 hover:bg-red-950/40 text-zinc-500 hover:text-red-400 transition-colors cursor-pointer"
+                        title={t('common.delete')}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
                     </div>
                   </div>
                 );

@@ -15,7 +15,6 @@ import {
   ArrowUpDown,
   Calendar,
   Sparkles,
-  ChevronRight,
   Dumbbell,
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -275,7 +274,7 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = () => {
       {sectionTab === 'routines' && (
         <>
           {/* Active Program / Multi-Day Split Hero Section */}
-          {activeProgram ? (
+          {activeProgram && (
             <Card className="p-4 sm:p-5 bg-gradient-to-br from-dark-800 via-dark-850 to-dark-900 border border-brand-500/30 shadow-xl relative overflow-hidden">
               <div className="absolute top-0 right-0 w-48 h-48 bg-brand-500/5 rounded-full blur-3xl pointer-events-none" />
 
@@ -410,30 +409,6 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = () => {
                   </div>
                 )}
               </div>
-            </Card>
-          ) : (
-            <Card
-              onClick={() => setSectionTab('programs')}
-              className="p-4 bg-dark-800/80 border border-dashed border-dark-700 hover:border-brand-500/40 transition-all cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-3 group"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-brand-500/10 text-brand-400 border border-brand-500/20 flex items-center justify-center shrink-0">
-                  <Calendar className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-bold text-white group-hover:text-brand-400 transition-colors">
-                    {t('programs.chooseSplitTitle')}
-                  </h3>
-                  <p className="text-xs text-zinc-400 mt-0.5">
-                    {t('programs.chooseSplitDesc')}
-                  </p>
-                </div>
-              </div>
-
-              <Button variant="outline" size="sm" className="text-xs self-start sm:self-auto pointer-events-none">
-                <span>{t('programs.browseSplits')}</span>
-                <ChevronRight className="w-3.5 h-3.5 ml-1 text-brand-400" />
-              </Button>
             </Card>
           )}
 

@@ -36,7 +36,7 @@ export interface ActivityLogItem {
   started_at: string;
   ended_at: string;
   duration_minutes: number;
-  session_type: 'pomodoro' | 'stopwatch' | 'timer' | 'manual';
+  session_type: 'pomodoro' | 'stopwatch' | 'timer' | 'manual' | 'task_completed' | string;
   notes?: string;
   created_at: string;
 }

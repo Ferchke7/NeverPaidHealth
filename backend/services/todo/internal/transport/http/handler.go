@@ -30,6 +30,7 @@ func (h *Handler) Routes() http.Handler {
 		tr.Post("/", httpx.RequireAuth(h.handleCreateTodo))
 		tr.Post("/focus-sessions", httpx.RequireAuth(h.handleLogFocusSession))
 		tr.Get("/activity-logs", httpx.RequireAuth(h.handleGetActivityLogs))
+		tr.Delete("/activity-logs/{id}", httpx.RequireAuth(h.handleDeleteActivityLog))
 		tr.Get("/stats", httpx.RequireAuth(h.handleGetStats))
 		tr.Put("/{id}", httpx.RequireAuth(h.handleUpdateTodo))
 		tr.Delete("/{id}", httpx.RequireAuth(h.handleDeleteTodo))
@@ -46,6 +47,7 @@ func (h *Handler) Routes() http.Handler {
 
 	// Standalone endpoints
 	r.Get("/activity-logs", httpx.RequireAuth(h.handleGetActivityLogs))
+	r.Delete("/activity-logs/{id}", httpx.RequireAuth(h.handleDeleteActivityLog))
 	r.Get("/stats", httpx.RequireAuth(h.handleGetStats))
 	r.Post("/focus-sessions", httpx.RequireAuth(h.handleLogFocusSession))
 
@@ -167,6 +169,20 @@ func (h *Handler) handleGetActivityLogs(w http.ResponseWriter, r *http.Request, 
 	}
 
 	httpx.WriteJSON(w, http.StatusOK, res)
+}
+
+func (h *Handler) handleDeleteActivityLog(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
+	logID, ok := httpx.PathUUID(w, r, "id")
+	if !ok {
+		return
+	}
+
+	if err := h.todoService.DeleteActivityLog(r.Context(), userID, logID); err != nil {
+		httpx.WriteProblem(w, http.StatusInternalServerError, "Internal Error", err.Error(), "ERR_DELETE_ACTIVITY_LOG")
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (h *Handler) handleGetStats(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
