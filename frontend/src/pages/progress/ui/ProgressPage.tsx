@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '../../../shared/api/client.ts';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, Badge } from '../../../shared/ui/card.tsx';
+import { Card, CardHeader, CardTitle, CardContent, Badge } from '../../../shared/ui/card.tsx';
 import { Input } from '../../../shared/ui/input.tsx';
 import { Tabs } from '../../../shared/ui/tabs.tsx';
 import { ProgressBar } from '../../../shared/ui/progress.tsx';
@@ -482,7 +482,6 @@ export const ProgressPage: React.FC = () => {
                   <TrendingUp className="w-5 h-5 text-brand-400" />
                   {labels.progressionTitle}
                 </CardTitle>
-                <CardDescription>{labels.progressionDesc}</CardDescription>
               </div>
 
               <select
@@ -666,7 +665,6 @@ export const ProgressPage: React.FC = () => {
                   <Layers className="w-5 h-5 text-brand-400" />
                   {labels.muscleVolumeTitle}
                 </CardTitle>
-                <CardDescription>{labels.muscleVolumeDesc}</CardDescription>
               </div>
             </CardHeader>
 
@@ -740,7 +738,6 @@ export const ProgressPage: React.FC = () => {
                   <Calculator className="w-5 h-5 text-brand-400" />
                   {labels.calcTitle}
                 </CardTitle>
-                <CardDescription>{labels.calcDesc}</CardDescription>
               </div>
             </CardHeader>
 
@@ -804,7 +801,6 @@ export const ProgressPage: React.FC = () => {
                   <Shield className="w-5 h-5 text-brand-400" />
                   {labels.standardsTitle}
                 </CardTitle>
-                <CardDescription>{labels.standardsDesc}</CardDescription>
               </div>
             </CardHeader>
 

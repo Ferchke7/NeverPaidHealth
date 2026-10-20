@@ -20,7 +20,7 @@ import {
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../../shared/api/client.ts';
 import { Button } from '../../../shared/ui/button.tsx';
-import { Card, Badge } from '../../../shared/ui/card.tsx';
+import { Card } from '../../../shared/ui/card.tsx';
 import { Input } from '../../../shared/ui/input.tsx';
 import { Tabs } from '../../../shared/ui/tabs.tsx';
 import { RoutineEditorModal } from '../../../features/routine-builder/ui/RoutineEditorModal.tsx';
@@ -69,6 +69,7 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = () => {
   const [selectedRoutinePreview, setSelectedRoutinePreview] = useState<Routine | null>(null);
   const [selectedProgramPreview, setSelectedProgramPreview] = useState<Program | null>(null);
   const [selectedProgramDayIndex, setSelectedProgramDayIndex] = useState(0);
+  const [isSplitExpanded, setIsSplitExpanded] = useState(false);
 
   const [customRoutineOrder, setCustomRoutineOrder] = useState<string[]>(() => {
     try {
@@ -275,140 +276,102 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = () => {
         <>
           {/* Active Program / Multi-Day Split Hero Section */}
           {activeProgram && (
-            <Card className="p-4 sm:p-5 bg-gradient-to-br from-dark-800 via-dark-850 to-dark-900 border border-brand-500/30 shadow-xl relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-48 h-48 bg-brand-500/5 rounded-full blur-3xl pointer-events-none" />
-
-              <div className="space-y-4 relative z-10">
-                {/* Split Header */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-dark-750 pb-3">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-brand-500/20 text-brand-400 border border-brand-500/30 flex items-center gap-1">
-                        <Sparkles className="w-3 h-3" />
-                        {t('programs.activeSplit')}
-                      </span>
-                      <Badge variant="neutral" size="sm">
-                        {activeProgram.days_per_week || activeProgramDays.length} {t('programs.daysCount')}
-                      </Badge>
-                    </div>
-                    <h2 className="text-base sm:text-lg font-black text-white flex items-center gap-2">
-                      <span>{activeProgram.name}</span>
-                    </h2>
+            <Card className="p-3.5 sm:p-4 bg-gradient-to-br from-dark-850 to-dark-900 border border-brand-500/30 shadow-lg rounded-2xl space-y-3">
+              {/* Compact Next Workout Bar */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-brand-500/15 text-brand-400 border border-brand-500/30 flex items-center gap-1">
+                      <Sparkles className="w-3 h-3" />
+                      {activeProgram.name}
+                    </span>
+                    <span className="text-xs text-zinc-400 font-mono">
+                      #{selectedProgramDayIndex + 1}
+                    </span>
                   </div>
+                  <div className="flex items-center gap-2 mt-1">
+                    <h2 className="text-sm sm:text-base font-black text-white truncate">
+                      {currentProgramDay?.name || `${t('programs.dayShort')} ${selectedProgramDayIndex + 1}`}
+                    </h2>
+                    <span className="text-xs text-zinc-500 font-mono">
+                      • {currentProgramDay?.exercises?.length || 0} {t('programs.exercises')}
+                    </span>
+                  </div>
+                </div>
 
-                  {/* Program Switcher & Full View Actions */}
-                  <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
-                    {installedPrograms.length > 1 && (
-                      <div className="flex items-center gap-1">
-                        <select
-                          value={activeProgramData?.user_program?.id || ''}
-                          onChange={(e) => setActiveProgramMutation.mutate(e.target.value)}
-                          className="bg-dark-900 border border-dark-700 text-xs text-zinc-300 rounded-xl px-2.5 py-1.5 focus:outline-none focus:border-brand-500 font-medium"
-                          title={t('programs.switchProgram')}
-                        >
-                          {installedPrograms.map((item) => (
-                            <option key={item.user_program.id} value={item.user_program.id}>
-                              {item.program?.name || item.user_program.custom_name || 'Program'}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    )}
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    onClick={() => setIsSplitExpanded((v) => !v)}
+                    className="px-2.5 py-1.5 rounded-xl bg-dark-800 hover:bg-dark-700 text-zinc-400 hover:text-white border border-dark-700 text-xs font-semibold flex items-center gap-1 transition-colors cursor-pointer"
+                    title={t('programs.trainingSchedule')}
+                  >
+                    <Calendar className="w-3.5 h-3.5 text-brand-400" />
+                    <span className="text-[10px]">{isSplitExpanded ? '▲' : '▼'}</span>
+                  </button>
+
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    className="font-bold text-xs flex items-center gap-1.5 px-3.5 py-2 shadow-lg shadow-brand-500/20"
+                    onClick={() => handleStartProgramDay(activeProgram, currentProgramDay)}
+                  >
+                    <Play className="w-3.5 h-3.5 fill-current" />
+                    <span>{t('workouts.start')}</span>
+                  </Button>
+                </div>
+              </div>
+
+              {/* Collapsible Split Days Selector */}
+              {isSplitExpanded && (
+                <div className="pt-2.5 border-t border-dark-800 space-y-2.5 animate-in fade-in duration-150">
+                  {installedPrograms.length > 1 && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-[11px] text-zinc-400">{t('programs.switchProgram')}:</span>
+                      <select
+                        value={activeProgramData?.user_program?.id || ''}
+                        onChange={(e) => setActiveProgramMutation.mutate(e.target.value)}
+                        className="bg-dark-900 border border-dark-750 text-xs text-zinc-200 rounded-xl px-2.5 py-1 focus:outline-none focus:border-brand-500 font-medium"
+                      >
+                        {installedPrograms.map((item) => (
+                          <option key={item.user_program.id} value={item.user_program.id}>
+                            {item.program?.name || item.user_program.custom_name || 'Program'}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none flex-1">
+                      {activeProgramDays.map((day, idx) => {
+                        const isSelected = idx === selectedProgramDayIndex;
+                        return (
+                          <button
+                            key={idx}
+                            onClick={() => setSelectedProgramDayIndex(idx)}
+                            className={`text-xs px-2.5 py-1.5 rounded-xl font-medium transition-all whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
+                              isSelected
+                                ? 'bg-brand-500/20 text-brand-400 border border-brand-500/50 font-bold shadow-md'
+                                : 'bg-dark-900 text-zinc-400 hover:text-zinc-200 hover:bg-dark-800 border border-dark-750'
+                            }`}
+                          >
+                            <span className="font-mono text-brand-400">#{idx + 1}</span>
+                            <span className="truncate max-w-[120px]">{day.name}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
 
                     <button
                       onClick={() => setSelectedProgramPreview(activeProgram)}
-                      className="text-xs font-semibold px-3 py-1.5 rounded-xl bg-dark-900 hover:bg-dark-750 text-zinc-300 border border-dark-700 transition-all flex items-center gap-1.5 cursor-pointer"
+                      className="text-xs font-semibold px-2.5 py-1.5 rounded-xl bg-dark-900 hover:bg-dark-800 text-zinc-300 border border-dark-750 transition-all flex items-center gap-1 shrink-0 cursor-pointer"
                     >
-                      <BookOpen className="w-3.5 h-3.5 text-brand-400" />
+                      <BookOpen className="w-3 h-3 text-brand-400" />
                       <span>{t('programs.viewSplit')}</span>
                     </button>
                   </div>
                 </div>
-
-                {/* Split Days Carousel / Selector */}
-                <div className="space-y-2.5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
-                      <Calendar className="w-3.5 h-3.5 text-brand-400" />
-                      <span>{t('programs.trainingSchedule')}</span>
-                    </span>
-                    <span className="text-xs text-zinc-500 font-mono">
-                      {t('programs.dayShort')} {selectedProgramDayIndex + 1} / {activeProgramDays.length}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
-                    {activeProgramDays.map((day, idx) => {
-                      const isSelected = idx === selectedProgramDayIndex;
-                      return (
-                        <button
-                          key={idx}
-                          onClick={() => setSelectedProgramDayIndex(idx)}
-                          className={`text-xs px-3 py-2 rounded-xl font-medium transition-all whitespace-nowrap flex items-center gap-2 cursor-pointer ${
-                            isSelected
-                              ? 'bg-brand-500/20 text-brand-400 border border-brand-500/50 font-bold shadow-md'
-                              : 'bg-dark-900 text-zinc-400 hover:text-zinc-200 hover:bg-dark-800 border border-dark-750'
-                          }`}
-                        >
-                          <span className="font-mono text-brand-400">#{idx + 1}</span>
-                          <span className="truncate max-w-[120px]">{day.name}</span>
-                          <span className="text-[10px] text-zinc-500 font-mono">
-                            ({day.exercises?.length || 0})
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Selected Day Quick Card */}
-                {currentProgramDay && (
-                  <div className="bg-dark-900/90 border border-dark-750 p-3.5 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div className="space-y-2 flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-mono font-bold text-brand-400 bg-brand-500/10 px-2 py-0.5 rounded-lg border border-brand-500/20">
-                          {t('programs.dayShort')} {selectedProgramDayIndex + 1}
-                        </span>
-                        <h3 className="text-sm font-bold text-white truncate">
-                          {currentProgramDay.name}
-                        </h3>
-                      </div>
-
-                      {/* Exercise tags preview */}
-                      <div className="flex flex-wrap gap-1.5">
-                        {currentProgramDay.exercises?.slice(0, 4).map((ex, i) => (
-                          <span
-                            key={i}
-                            className="text-[10px] bg-dark-800 border border-dark-700 text-zinc-300 px-2 py-0.5 rounded-lg flex items-center gap-1 font-mono"
-                          >
-                            <span className="text-brand-400 font-bold">{ex.target_sets || 3}×</span>
-                            <span className="font-sans truncate max-w-[110px]">{ex.exercise_name}</span>
-                          </span>
-                        ))}
-                        {(currentProgramDay.exercises?.length || 0) > 4 && (
-                          <span className="text-[10px] bg-dark-800 border border-dark-700 text-zinc-500 px-2 py-0.5 rounded-lg font-mono">
-                            +{(currentProgramDay.exercises?.length || 0) - 4} {t('programs.more')}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    <Button
-                      variant="primary"
-                      size="sm"
-                      className="font-bold text-xs flex items-center justify-center gap-1.5 px-4 shadow-lg shadow-brand-500/20 shrink-0 self-start sm:self-auto"
-                      onClick={() => handleStartProgramDay(activeProgram, currentProgramDay)}
-                    >
-                      <Play className="w-3.5 h-3.5 fill-current" />
-                      <span>
-                        {t('programs.startDayWorkout', {
-                          day: currentProgramDay.name || `${t('programs.dayShort')} ${selectedProgramDayIndex + 1}`,
-                        })}
-                      </span>
-                    </Button>
-                  </div>
-                )}
-              </div>
+              )}
             </Card>
           )}
 

@@ -167,11 +167,19 @@ export const SetRow: React.FC<SetRowProps> = ({
       <div className="col-span-2 flex items-center justify-center gap-1">
         <button
           type="button"
-          onClick={onCompleteToggle}
-          className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center transition-all duration-200 active:scale-90 shrink-0 cursor-pointer ${
+          onClick={() => {
+            if (!set.completed && set.weightKg === 0 && set.reps === 0 && hasPrevious) {
+              onUpdate({
+                weightKg: prevWeight,
+                reps: prevReps > 0 ? prevReps : 10,
+              });
+            }
+            onCompleteToggle();
+          }}
+          className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center transition-all duration-200 active:scale-90 shrink-0 cursor-pointer ${
             set.completed
               ? 'bg-emerald-500 text-dark-950 shadow-md shadow-emerald-500/30'
-              : 'bg-dark-700 text-zinc-500 hover:text-white hover:bg-dark-600 border border-dark-600/70'
+              : 'bg-dark-700 text-zinc-400 hover:text-white hover:bg-dark-600 border border-dark-600/80'
           }`}
           title={set.completed ? 'Mark set incomplete' : 'Mark set complete (starts rest timer)'}
         >
