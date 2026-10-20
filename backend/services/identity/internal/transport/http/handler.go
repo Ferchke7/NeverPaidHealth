@@ -40,8 +40,8 @@ func (h *Handler) Routes() http.Handler {
 	// Auth routes (supporting both with and without /auth prefix)
 	r.Post("/google", h.handleGoogleAuth)
 	r.Post("/auth/google", h.handleGoogleAuth)
-	r.Post("/dev-login", h.handleDevLogin)
-	r.Post("/auth/dev-login", h.handleDevLogin)
+	r.Post("/logout", h.handleLogout)
+	r.Post("/auth/logout", h.handleLogout)
 
 	// Profile & Me routes
 	r.Get("/me", httpx.RequireAuth(h.handleGetMe))
@@ -91,22 +91,34 @@ func (h *Handler) handleGoogleAuth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	isSecure := r.TLS != nil || r.Header.Get("X-Forwarded-Proto") == "https"
+	http.SetCookie(w, &http.Cookie{
+		Name:     "np_access_token",
+		Value:    res.AccessToken,
+		Path:     "/",
+		MaxAge:   res.ExpiresIn,
+		HttpOnly: true,
+		Secure:   isSecure,
+		SameSite: http.SameSiteLaxMode,
+	})
+
 	httpx.WriteJSON(w, http.StatusOK, mapAuthResponse(res))
 }
 
-func (h *Handler) handleDevLogin(w http.ResponseWriter, r *http.Request) {
-	req, ok := httpx.DecodeJSON[devLoginReq](w, r)
-	if !ok {
-		return
-	}
+func (h *Handler) handleLogout(w http.ResponseWriter, r *http.Request) {
+	isSecure := r.TLS != nil || r.Header.Get("X-Forwarded-Proto") == "https"
+	http.SetCookie(w, &http.Cookie{
+		Name:     "np_access_token",
+		Value:    "",
+		Path:     "/",
+		MaxAge:   -1,
+		HttpOnly: true,
+		Secure:   isSecure,
+		SameSite: http.SameSiteLaxMode,
+	})
 
-	res, err := h.devLoginHandler.Handle(r.Context(), req.Email, req.DisplayName)
-	if err != nil {
-		httpx.WriteProblem(w, http.StatusForbidden, "Forbidden", err.Error(), "ERR_DEV_LOGIN_DISABLED")
-		return
-	}
-
-	httpx.WriteJSON(w, http.StatusOK, mapAuthResponse(res))
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte(`{"status":"logged_out"}`))
 }
 
 func (h *Handler) handleGetMe(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {

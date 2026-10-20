@@ -162,6 +162,7 @@ func (r *ProgramRepository) Save(ctx context.Context, p *program.Program) error 
 			installs_count = EXCLUDED.installs_count,
 			days = EXCLUDED.days,
 			updated_at = EXCLUDED.updated_at
+		WHERE programs.user_id = EXCLUDED.user_id OR EXCLUDED.user_id = '00000000-0000-0000-0000-000000000000'
 	`
 
 	_, err = r.pool.Exec(ctx, query,
@@ -184,7 +185,7 @@ func (r *ProgramRepository) Save(ctx context.Context, p *program.Program) error 
 }
 
 func (r *ProgramRepository) Delete(ctx context.Context, id uuid.UUID) error {
-	query := `DELETE FROM programs WHERE id = $1`
+	query := `DELETE FROM programs WHERE id = $1 AND user_id != '00000000-0000-0000-0000-000000000000'`
 	_, err := r.pool.Exec(ctx, query, id)
 	return err
 }

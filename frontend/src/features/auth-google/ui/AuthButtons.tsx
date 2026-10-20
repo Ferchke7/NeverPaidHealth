@@ -1,6 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Button } from '../../../shared/ui/button.tsx';
-import { Input } from '../../../shared/ui/input.tsx';
 import { apiClient } from '../../../shared/api/client.ts';
 import { useAuthStore } from '../../../entities/user/model/authStore.ts';
 import { AuthResponse } from '../../../entities/user/model/types.ts';
@@ -34,79 +32,6 @@ declare global {
     };
   }
 }
-
-export const DevLoginModal: React.FC = () => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [email, setEmail] = useState('athlete@duda.uz');
-  const [displayName, setDisplayName] = useState('Athlete');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const setAuth = useAuthStore((s) => s.setAuth);
-
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
-
-    try {
-      const res = await apiClient<AuthResponse>('/auth/dev-login', {
-        method: 'POST',
-        body: JSON.stringify({ email, display_name: displayName }),
-      });
-      setAuth(res.access_token, res.user);
-      setIsOpen(false);
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Login failed');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div>
-      <Button variant="outline" size="md" className="w-full text-xs font-semibold" onClick={() => setIsOpen(true)}>
-        ⚡ Quick Direct Sign In
-      </Button>
-
-      {isOpen && (
-        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
-          <div className="bg-dark-800 border border-dark-700 rounded-2xl p-6 max-w-sm w-full shadow-2xl">
-            <h3 className="text-base font-bold text-zinc-100 mb-1">Direct Sign In</h3>
-            <p className="text-xs text-zinc-400 mb-4">Instant login for testing and personal accounts.</p>
-
-            <form onSubmit={handleLogin} className="space-y-3">
-              <Input
-                label="Email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-              <Input
-                label="Display Name"
-                type="text"
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-              />
-
-              {error && <p className="text-xs text-red-400">{error}</p>}
-
-              <div className="flex gap-2 pt-2">
-                <Button type="button" variant="ghost" className="w-full" onClick={() => setIsOpen(false)}>
-                  Cancel
-                </Button>
-                <Button type="submit" variant="primary" className="w-full font-bold" disabled={loading}>
-                  {loading ? 'Signing in...' : 'Sign In'}
-                </Button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
 
 export const GoogleSignInButton: React.FC = () => {
   const setAuth = useAuthStore((s) => s.setAuth);

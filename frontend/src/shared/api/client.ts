@@ -35,6 +35,7 @@ export async function apiClient<T>(
 
   const url = `${ENV.API_BASE_URL}${endpoint}`;
   const response = await fetch(url, {
+    credentials: 'include',
     ...options,
     headers,
   });

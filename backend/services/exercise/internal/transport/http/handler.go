@@ -110,7 +110,7 @@ func (h *Handler) handleList(w http.ResponseWriter, r *http.Request, userID uuid
 	}
 
 	dataBytes, _ := json.Marshal(dtos)
-	hash := sha256.Sum256(dataBytes)
+	hash := sha256.Sum256(append(dataBytes, []byte(userID.String())...))
 	etag := fmt.Sprintf(`"%s"`, hex.EncodeToString(hash[:8]))
 
 	if match := r.Header.Get("If-None-Match"); match != "" && match == etag {
@@ -119,7 +119,7 @@ func (h *Handler) handleList(w http.ResponseWriter, r *http.Request, userID uuid
 	}
 
 	w.Header().Set("ETag", etag)
-	w.Header().Set("Cache-Control", "public, max-age=60")
+	w.Header().Set("Cache-Control", "private, no-cache")
 	httpx.WriteJSON(w, http.StatusOK, dtos)
 }
 
@@ -193,6 +193,11 @@ func (h *Handler) handleGetByID(w http.ResponseWriter, r *http.Request, userID u
 
 	ex, err := h.getHandler.Handle(r.Context(), id)
 	if err != nil {
+		httpx.WriteProblem(w, http.StatusNotFound, "Not Found", "Exercise not found", "ERR_NOT_FOUND")
+		return
+	}
+
+	if ex.IsCustom() && ex.CreatedByUserID() != nil && *ex.CreatedByUserID() != userID {
 		httpx.WriteProblem(w, http.StatusNotFound, "Not Found", "Exercise not found", "ERR_NOT_FOUND")
 		return
 	}

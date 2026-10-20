@@ -83,7 +83,7 @@ func (r *TrainingRepository) Save(ctx context.Context, rot *routine.Routine) err
 }
 
 func (r *TrainingRepository) Delete(ctx context.Context, id uuid.UUID) error {
-	query := `DELETE FROM routines WHERE id = $1`
+	query := `DELETE FROM routines WHERE id = $1 AND user_id != '00000000-0000-0000-0000-000000000000'`
 	_, err := r.pool.Exec(ctx, query, id)
 	return err
 }

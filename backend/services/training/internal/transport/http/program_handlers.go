@@ -41,6 +41,11 @@ func (h *Handler) handleGetProgramByID(w http.ResponseWriter, r *http.Request, u
 		return
 	}
 
+	if p.UserID() != userID && !p.IsSystem() && !p.IsPublic() {
+		httpx.WriteProblem(w, http.StatusNotFound, "Not Found", "Program not found", "ERR_NOT_FOUND")
+		return
+	}
+
 	httpx.WriteJSON(w, http.StatusOK, mapProgramDTO(p))
 }
 

@@ -92,6 +92,11 @@ func (h *Handler) handleGetWorkoutByID(w http.ResponseWriter, r *http.Request, u
 		return
 	}
 
+	if res.UserID() != userID {
+		httpx.WriteProblem(w, http.StatusNotFound, "Not Found", "Workout not found", "ERR_NOT_FOUND")
+		return
+	}
+
 	httpx.WriteJSON(w, http.StatusOK, mapWorkoutDTO(res))
 }
 

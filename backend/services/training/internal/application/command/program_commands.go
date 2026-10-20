@@ -79,8 +79,28 @@ func (h *CreateProgramHandler) Handle(ctx context.Context, in CreateProgramInput
 		if err != nil {
 			return nil, err
 		}
-		if existing.UserID() != in.UserID && !existing.IsSystem() {
-			return nil, program.ErrUnauthorizedProgramEdit
+
+		// If editing a system program or another user's program, fork it into a new personal split
+		if existing.UserID() != in.UserID {
+			forked, err := program.NewProgram(
+				in.UserID,
+				in.Name,
+				in.Description,
+				program.SplitType(in.SplitType),
+				in.DaysPerWeek,
+				program.Level(in.Level),
+				false, // personal copy is private by default
+				in.AuthorName,
+				days,
+				now,
+			)
+			if err != nil {
+				return nil, err
+			}
+			if err := h.repo.Save(ctx, forked); err != nil {
+				return nil, err
+			}
+			return forked, nil
 		}
 
 		err = existing.Update(

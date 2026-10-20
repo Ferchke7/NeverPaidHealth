@@ -56,6 +56,11 @@ func (h *Handler) handleGetRoutineByID(w http.ResponseWriter, r *http.Request, u
 		return
 	}
 
+	if rot.UserID() != userID && rot.UserID() != uuid.Nil {
+		httpx.WriteProblem(w, http.StatusNotFound, "Not Found", "Routine not found", "ERR_NOT_FOUND")
+		return
+	}
+
 	httpx.WriteJSON(w, http.StatusOK, mapRoutineDTO(rot))
 }
 

@@ -33,11 +33,11 @@ func NewRouter(cfg *config.Config, tokenService *jwtauth.TokenService, logger *s
 	})
 
 	r.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   []string{"*"},
+		AllowOriginFunc:  func(r *http.Request, origin string) bool { return true },
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token", "If-None-Match"},
-		ExposedHeaders:   []string{"Link", "ETag"},
-		AllowCredentials: false,
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token", "If-None-Match", "Accept-Language"},
+		ExposedHeaders:   []string{"Link", "ETag", "Set-Cookie"},
+		AllowCredentials: true,
 		MaxAge:           300,
 	}))
 
