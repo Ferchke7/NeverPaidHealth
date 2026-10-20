@@ -22,8 +22,9 @@ import { useTranslation } from '../../../shared/lib/i18n/i18n.ts';
 import { Program, ProgramDay } from '../../../entities/program/model/types.ts';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../../shared/api/client.ts';
+import { useAuthStore } from '../../../entities/user/model/authStore.ts';
 import { useStartWorkout } from '../../start-workout/model/useStartWorkout.ts';
-import { InstagramCommentsSection } from './InstagramCommentsSection.tsx';
+import { InstagramCommentsModal } from './InstagramCommentsModal.tsx';
 import { AthleteAvatar } from '../../../entities/user/ui/AthleteAvatar.tsx';
 import { AthleteProfileModal } from '../../../entities/user/ui/AthleteProfileModal.tsx';
 
@@ -49,8 +50,10 @@ export const ProgramDetailModal: React.FC<ProgramDetailModalProps> = ({
   onSelectProgram,
 }) => {
   const { t } = useTranslation();
+  const user = useAuthStore((s) => s.user);
   const queryClient = useQueryClient();
   const [selectedDayIndex, setSelectedDayIndex] = useState(0);
+  const [isCommentsOpen, setIsCommentsOpen] = useState(false);
   const [inspectingExercise, setInspectingExercise] = useState<{
     name: string;
     muscle?: string;
@@ -124,13 +127,6 @@ export const ProgramDetailModal: React.FC<ProgramDetailModalProps> = ({
       name: `${program.name} - ${day.name}`,
       exercises: day.exercises,
     });
-  };
-
-  const scrollToComments = () => {
-    const el = document.getElementById('program-comments-section');
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth' });
-    }
   };
 
   const getSplitLabel = (type: string) => {
@@ -280,98 +276,6 @@ export const ProgramDetailModal: React.FC<ProgramDetailModalProps> = ({
             </div>
           )}
 
-          {/* Instagram-Style Social Action Bar */}
-          <div className="bg-dark-900/90 border border-dark-750 p-3 rounded-2xl space-y-2 shadow-sm">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                {/* Heart / Like button */}
-                <button
-                  type="button"
-                  onClick={() => toggleLikeMutation.mutate()}
-                  className="flex items-center gap-1.5 text-xs font-bold transition-transform active:scale-125 cursor-pointer group"
-                  title="Нравится"
-                >
-                  <Heart
-                    className={`w-5 h-5 transition-colors ${
-                      hasLiked
-                        ? 'fill-rose-500 text-rose-500'
-                        : 'text-zinc-400 group-hover:text-rose-400'
-                    }`}
-                  />
-                  <span
-                    className={`font-mono text-xs ${
-                      hasLiked ? 'text-rose-400 font-bold' : 'text-zinc-300'
-                    }`}
-                  >
-                    {program.likes_count || 0}
-                  </span>
-                </button>
-
-                {/* Comment button (Scrolls down to comments) */}
-                <button
-                  type="button"
-                  onClick={scrollToComments}
-                  className="flex items-center gap-1.5 text-xs font-bold text-zinc-400 hover:text-white transition-colors cursor-pointer group"
-                  title="Перейти к комментариям"
-                >
-                  <MessageCircle className="w-5 h-5 text-zinc-400 group-hover:text-brand-400 transition-colors" />
-                  <span className="font-mono text-xs text-zinc-300">
-                    {comments.length}
-                  </span>
-                </button>
-              </div>
-
-              {/* Install badge or button on right */}
-              {isActiveProgram ? (
-                <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-full flex items-center gap-1">
-                  <Check className="w-3 h-3" />
-                  Активен
-                </span>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => installMutation.mutate({ setActive: true })}
-                  disabled={installMutation.isPending}
-                  className="text-[11px] font-bold text-brand-400 hover:text-brand-300 bg-brand-500/10 border border-brand-500/30 px-2.5 py-0.5 rounded-full transition-all cursor-pointer flex items-center gap-1"
-                >
-                  <Award className="w-3 h-3" />
-                  <span>{isInstalled ? 'Активировать' : 'Установить'}</span>
-                </button>
-              )}
-            </div>
-
-            {/* Instagram Social Preview */}
-            <div className="text-xs space-y-1 pt-1.5 border-t border-dark-800/80">
-              <div className="text-zinc-400 font-medium text-[11px]">
-                {program.likes_count > 0 ? (
-                  <span>
-                    Отметок «Нравится»: <strong className="text-white font-mono">{program.likes_count}</strong>
-                  </span>
-                ) : (
-                  <span className="text-zinc-500">Поставьте первый лайк программе</span>
-                )}
-              </div>
-
-              <div className="flex items-center justify-between text-xs pt-0.5">
-                <button
-                  type="button"
-                  onClick={scrollToComments}
-                  className="text-zinc-500 hover:text-zinc-300 font-medium transition-colors cursor-pointer text-left"
-                >
-                  {comments.length > 0
-                    ? `Посмотреть все комментарии (${comments.length}) снизу...`
-                    : 'Оставить первый комментарий снизу...'}
-                </button>
-
-                {comments[0] && (
-                  <span className="text-[11px] text-zinc-400 truncate max-w-[180px] hidden sm:inline">
-                    <strong className="text-zinc-300">@{comments[0].author_name}:</strong> {comments[0].content}
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-
           {/* Days Tabs Header */}
           <div className="space-y-2.5">
             <div className="flex items-center justify-between">
@@ -519,16 +423,131 @@ export const ProgramDetailModal: React.FC<ProgramDetailModalProps> = ({
             </div>
           )}
 
-          {/* Instagram Comments Section Directly Embedded at the Bottom */}
-          <InstagramCommentsSection
-            programId={program.id}
-            programAuthorId={program.user_id}
-            onOpenAthlete={(athleteId, name, avatar) =>
-              setSelectedAthlete({ id: athleteId, name, avatar })
-            }
-          />
+          {/* Instagram-Style Social Action Bar (At the Bottom after exercises) */}
+          <div className="bg-dark-900/90 border border-dark-750 p-3.5 rounded-2xl space-y-2.5 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                {/* Heart / Like button */}
+                <button
+                  type="button"
+                  onClick={() => toggleLikeMutation.mutate()}
+                  className="flex items-center gap-1.5 text-xs font-bold transition-transform active:scale-125 cursor-pointer group"
+                  title="Нравится"
+                >
+                  <Heart
+                    className={`w-5 h-5 transition-colors ${
+                      hasLiked
+                        ? 'fill-rose-500 text-rose-500'
+                        : 'text-zinc-400 group-hover:text-rose-400'
+                    }`}
+                  />
+                  <span
+                    className={`font-mono text-xs ${
+                      hasLiked ? 'text-rose-400 font-bold' : 'text-zinc-300'
+                    }`}
+                  >
+                    {program.likes_count || 0}
+                  </span>
+                </button>
+
+                {/* Comment button -> Opens separate Instagram Comments popup */}
+                <button
+                  type="button"
+                  onClick={() => setIsCommentsOpen(true)}
+                  className="flex items-center gap-1.5 text-xs font-bold text-zinc-400 hover:text-white transition-colors cursor-pointer group"
+                  title="Открыть комментарии"
+                >
+                  <MessageCircle className="w-5 h-5 text-zinc-400 group-hover:text-brand-400 transition-colors" />
+                  <span className="font-mono text-xs text-zinc-300">
+                    {comments.length}
+                  </span>
+                </button>
+              </div>
+
+              {/* Install badge or button on right */}
+              {isActiveProgram ? (
+                <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2.5 py-1 rounded-full flex items-center gap-1">
+                  <Check className="w-3 h-3" />
+                  Активен
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => installMutation.mutate({ setActive: true })}
+                  disabled={installMutation.isPending}
+                  className="text-[11px] font-bold text-brand-400 hover:text-brand-300 bg-brand-500/10 border border-brand-500/30 px-3 py-1 rounded-full transition-all cursor-pointer flex items-center gap-1.5"
+                >
+                  <Award className="w-3.5 h-3.5" />
+                  <span>{isInstalled ? 'Активировать' : 'Установить'}</span>
+                </button>
+              )}
+            </div>
+
+            {/* Likes count & Instagram Comments trigger */}
+            <div className="text-xs space-y-1.5 pt-2 border-t border-dark-800/80">
+              <div className="text-zinc-400 font-medium text-[11px]">
+                {program.likes_count > 0 ? (
+                  <span>
+                    Отметок «Нравится»: <strong className="text-white font-mono">{program.likes_count}</strong>
+                  </span>
+                ) : (
+                  <span className="text-zinc-500">Поставьте первый лайк программе</span>
+                )}
+              </div>
+
+              {/* Tap to open comments in popup */}
+              <button
+                type="button"
+                onClick={() => setIsCommentsOpen(true)}
+                className="w-full text-left text-zinc-500 hover:text-zinc-300 font-medium text-xs transition-colors cursor-pointer block"
+              >
+                {comments.length > 0
+                  ? `Посмотреть все комментарии (${comments.length})...`
+                  : 'Оставить первый комментарий...'}
+              </button>
+
+              {/* Latest comment preview */}
+              {comments[0] && (
+                <div
+                  onClick={() => setIsCommentsOpen(true)}
+                  className="text-[11px] text-zinc-400 truncate cursor-pointer hover:text-zinc-300 transition-colors"
+                >
+                  <strong className="text-zinc-300">@{comments[0].author_name}:</strong> {comments[0].content}
+                </div>
+              )}
+
+              {/* Quick comment input strip (Clicking opens comments modal with focus) */}
+              <div
+                onClick={() => setIsCommentsOpen(true)}
+                className="flex items-center gap-2 pt-1.5 cursor-pointer group"
+              >
+                <AthleteAvatar
+                  name={user?.display_name || 'А'}
+                  avatarUrl={user?.avatar_url}
+                  size="xs"
+                  className="w-6 h-6"
+                />
+                <div className="flex-1 bg-dark-950/60 border border-dark-750 group-hover:border-dark-600 rounded-full px-3 py-1.5 text-xs text-zinc-500 transition-colors flex items-center justify-between">
+                  <span>Добавьте комментарий...</span>
+                  <span className="text-[10px] text-brand-400 font-bold group-hover:underline">Открыть</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </Modal>
+
+      {/* Instagram Comments Sheet Modal (Separate popup like Instagram) */}
+      <InstagramCommentsModal
+        isOpen={isCommentsOpen}
+        onClose={() => setIsCommentsOpen(false)}
+        programId={program.id}
+        programTitle={program.name}
+        programAuthorId={program.user_id}
+        onOpenAthlete={(athleteId, name, avatar) =>
+          setSelectedAthlete({ id: athleteId, name, avatar })
+        }
+      />
 
       {/* Inspect Exercise Technique Modal */}
       {inspectingExercise && (
