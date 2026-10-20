@@ -9,7 +9,6 @@ import {
   ExternalLink,
   Trash2,
   Edit3,
-  TrendingUp,
   ChevronLeft,
   ChevronRight,
   Flame,
@@ -17,6 +16,7 @@ import {
   History,
   AlertTriangle,
   Trophy,
+  ArrowRight,
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../../shared/api/client.ts';
@@ -45,6 +45,9 @@ export const TodoCalendarPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<ViewTab>('schedule');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingTodo, setEditingTodo] = useState<TodoItem | null>(null);
+  const [quickTaskTitle, setQuickTaskTitle] = useState('');
+  const [quickCategory, setQuickCategory] = useState<TodoCategory>('work');
+  const [taskFilter, setTaskFilter] = useState<'all' | 'active' | 'completed'>('all');
 
   const startForTodo = useFocusTimerStore((s) => s.startForTodo);
   const startQuickSession = useFocusTimerStore((s) => s.startQuickSession);
@@ -56,11 +59,12 @@ export const TodoCalendarPage: React.FC = () => {
   });
 
   // 2. Fetch Activity Logs
-  const { data: activityLogs = [] } = useQuery<ActivityLogItem[]>({
+  const { data: rawActivityLogs } = useQuery<ActivityLogItem[]>({
     queryKey: ['activity-logs', selectedDate],
     queryFn: () => apiClient<ActivityLogItem[]>(`/todos/activity-logs?date=${selectedDate}`),
     enabled: activeTab === 'history',
   });
+  const activityLogs = Array.isArray(rawActivityLogs) ? rawActivityLogs : [];
 
   // 3. Calendar Month query (todos for the whole month)
   const calYear = calendarDate.getFullYear();
@@ -73,11 +77,12 @@ export const TodoCalendarPage: React.FC = () => {
     enabled: activeTab === 'calendar',
   });
 
-  const { data: monthLogs = [] } = useQuery<ActivityLogItem[]>({
+  const { data: rawMonthLogs } = useQuery<ActivityLogItem[]>({
     queryKey: ['activity-logs-month', monthKey],
     queryFn: () => apiClient<ActivityLogItem[]>(`/todos/activity-logs?date=${monthKey}`),
     enabled: activeTab === 'calendar',
   });
+  const monthLogs = Array.isArray(rawMonthLogs) ? rawMonthLogs : [];
 
   // 4. Mutations
   const createTodoMutation = useMutation({
@@ -126,6 +131,42 @@ export const TodoCalendarPage: React.FC = () => {
       void queryClient.invalidateQueries({ queryKey: ['todos-month'] });
     },
   });
+
+  const handleQuickCreate = () => {
+    const trimmed = quickTaskTitle.trim();
+    if (!trimmed) return;
+    createTodoMutation.mutate({
+      title: trimmed,
+      category: quickCategory,
+      priority: 'medium',
+      start_date: selectedDate,
+      end_date: selectedDate,
+      target_duration_minutes: 25,
+    });
+    setQuickTaskTitle('');
+  };
+
+  const handleMoveToTomorrow = (item: TodoItem) => {
+    const currentStart = item.start_date || selectedDate;
+    const d = new Date(currentStart);
+    d.setDate(d.getDate() + 1);
+    const nextDate = d.toISOString().split('T')[0];
+    updateTodoMutation.mutate({
+      id: item.id,
+      data: {
+        title: item.title,
+        description: item.description,
+        category: item.category,
+        priority: item.priority,
+        start_date: nextDate,
+        end_date: nextDate,
+        start_time: item.start_time,
+        end_time: item.end_time,
+        target_duration_minutes: item.target_duration_minutes,
+        status: item.status,
+      },
+    });
+  };
 
   // Date Navigation helpers for Daily view
   const handleShiftDate = (days: number) => {
@@ -270,7 +311,12 @@ export const TodoCalendarPage: React.FC = () => {
     }
   };
 
-  const todos = schedule?.todos || [];
+  const todos = Array.isArray(schedule?.todos) ? schedule.todos : [];
+  const filteredTodos = useMemo(() => {
+    if (taskFilter === 'active') return todos.filter((t) => t.status !== 'completed');
+    if (taskFilter === 'completed') return todos.filter((t) => t.status === 'completed');
+    return todos;
+  }, [todos, taskFilter]);
   const totalPlannedMins = schedule?.total_planned_minutes || 0;
   const totalSpentMins = schedule?.total_spent_minutes || 0;
   const completedTasks = schedule?.completed_tasks || 0;
@@ -414,56 +460,110 @@ export const TodoCalendarPage: React.FC = () => {
         )}
       </div>
 
-      {/* 2. Daily Summary Stats Strip (Visible in Daily view) */}
+      {/* 2. Compact Daily Summary & Progress Bar */}
       {activeTab === 'schedule' && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <Card className="p-3.5 bg-dark-900 border-dark-800 flex items-center justify-between">
-            <div>
-              <div className="text-[10px] uppercase font-bold text-zinc-500">{t('todo.planned')}</div>
-              <div className="text-base sm:text-lg font-black text-white mt-0.5">
-                {Math.floor(totalPlannedMins / 60)}{t('common.hours')} {totalPlannedMins % 60}{t('common.minutes')}
-              </div>
+        <Card className="p-3.5 sm:p-4 bg-dark-900 border-dark-800 space-y-2.5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-white">Прогресс дня:</span>
+              <span className="text-xs font-mono font-black text-brand-400">
+                {completedTasks} / {totalTasks} ({progressPercent}%)
+              </span>
             </div>
-            <div className="w-8 h-8 rounded-xl bg-blue-500/15 border border-blue-500/30 flex items-center justify-center text-blue-400">
-              <Clock className="w-4 h-4" />
+            <div className="flex items-center gap-3 text-xs text-zinc-400">
+              <span className="flex items-center gap-1 font-mono">
+                <Clock className="w-3.5 h-3.5 text-blue-400" />
+                <span>План: {Math.floor(totalPlannedMins / 60)}ч {totalPlannedMins % 60}м</span>
+              </span>
+              <span>•</span>
+              <span className="flex items-center gap-1 font-mono text-emerald-400">
+                <Flame className="w-3.5 h-3.5" />
+                <span>Факт: {Math.floor(totalSpentMins / 60)}ч {totalSpentMins % 60}м</span>
+              </span>
             </div>
-          </Card>
+          </div>
 
-          <Card className="p-3.5 bg-dark-900 border-dark-800 flex items-center justify-between">
-            <div>
-              <div className="text-[10px] uppercase font-bold text-zinc-500">{t('todo.spent')}</div>
-              <div className="text-base sm:text-lg font-black text-emerald-400 mt-0.5">
-                {Math.floor(totalSpentMins / 60)}{t('common.hours')} {totalSpentMins % 60}{t('common.minutes')}
-              </div>
-            </div>
-            <div className="w-8 h-8 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
-              <Flame className="w-4 h-4" />
-            </div>
-          </Card>
+          {/* Visual progress bar */}
+          <div className="w-full bg-dark-800 h-2 rounded-full overflow-hidden">
+            <div
+              className="bg-brand-500 h-full rounded-full transition-all duration-300"
+              style={{ width: `${progressPercent}%` }}
+            />
+          </div>
+        </Card>
+      )}
 
-          <Card className="p-3.5 bg-dark-900 border-dark-800 flex items-center justify-between">
-            <div>
-              <div className="text-[10px] uppercase font-bold text-zinc-500">{t('todo.completedCount')}</div>
-              <div className="text-base sm:text-lg font-black text-brand-400 mt-0.5">
-                {completedTasks} / {totalTasks}
-              </div>
-            </div>
-            <div className="w-8 h-8 rounded-xl bg-brand-500/15 border border-brand-500/30 flex items-center justify-center text-brand-400">
-              <CheckCircle2 className="w-4 h-4" />
-            </div>
-          </Card>
+      {/* Quick Inline Task Creator */}
+      {activeTab === 'schedule' && (
+        <div className="flex items-center gap-2 bg-dark-900 border border-dark-800 rounded-2xl p-2 sm:p-2.5 shadow-sm">
+          <input
+            type="text"
+            placeholder="+ Быстрая задача на сегодня... (нажмите Enter)"
+            value={quickTaskTitle}
+            onChange={(e) => setQuickTaskTitle(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') handleQuickCreate();
+            }}
+            className="bg-transparent flex-1 text-xs sm:text-sm text-white placeholder-zinc-500 focus:outline-none px-2"
+          />
+          <select
+            value={quickCategory}
+            onChange={(e) => setQuickCategory(e.target.value as TodoCategory)}
+            className="bg-dark-800 border border-dark-700 text-[11px] sm:text-xs text-zinc-300 rounded-xl px-2.5 py-1.5 focus:outline-none cursor-pointer"
+          >
+            <option value="work">Работа</option>
+            <option value="workout">Тренировка</option>
+            <option value="study">Учёба</option>
+            <option value="health">Здоровье</option>
+            <option value="meeting">Встреча</option>
+            <option value="personal">Личное</option>
+          </select>
+          <Button
+            size="sm"
+            variant="primary"
+            disabled={!quickTaskTitle.trim()}
+            onClick={handleQuickCreate}
+            className="rounded-xl px-3 py-1.5 text-xs font-bold shrink-0"
+          >
+            <Plus className="w-3.5 h-3.5 sm:mr-1" />
+            <span className="hidden sm:inline">Добавить</span>
+          </Button>
+        </div>
+      )}
 
-          <Card className="p-3.5 bg-dark-900 border-dark-800 flex items-center justify-between">
-            <div>
-              <div className="text-[10px] uppercase font-bold text-zinc-500">{t('todo.dayProgress')}</div>
-              <div className="text-base sm:text-lg font-black text-white mt-0.5">
-                {progressPercent}%
-              </div>
-            </div>
-            <div className="w-8 h-8 rounded-xl bg-purple-500/15 border border-purple-500/30 flex items-center justify-center text-purple-400">
-              <TrendingUp className="w-4 h-4" />
-            </div>
-          </Card>
+      {/* Filter Tabs: Все / Активные / Готовые */}
+      {activeTab === 'schedule' && todos.length > 0 && (
+        <div className="flex items-center gap-1.5 text-xs">
+          <button
+            onClick={() => setTaskFilter('all')}
+            className={`px-3 py-1 rounded-xl font-bold transition-all ${
+              taskFilter === 'all'
+                ? 'bg-brand-500/20 text-brand-400 border border-brand-500/40'
+                : 'bg-dark-900 text-zinc-400 hover:text-white border border-dark-800'
+            }`}
+          >
+            Все ({todos.length})
+          </button>
+          <button
+            onClick={() => setTaskFilter('active')}
+            className={`px-3 py-1 rounded-xl font-bold transition-all ${
+              taskFilter === 'active'
+                ? 'bg-brand-500/20 text-brand-400 border border-brand-500/40'
+                : 'bg-dark-900 text-zinc-400 hover:text-white border border-dark-800'
+            }`}
+          >
+            Активные ({todos.length - completedTasks})
+          </button>
+          <button
+            onClick={() => setTaskFilter('completed')}
+            className={`px-3 py-1 rounded-xl font-bold transition-all ${
+              taskFilter === 'completed'
+                ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
+                : 'bg-dark-900 text-zinc-400 hover:text-white border border-dark-800'
+            }`}
+          >
+            Готовые ({completedTasks})
+          </button>
         </div>
       )}
 
@@ -495,7 +595,7 @@ export const TodoCalendarPage: React.FC = () => {
             </Card>
           ) : (
             <div className="space-y-2.5">
-              {todos.map((item) => {
+              {filteredTodos.map((item) => {
                 const badge = getCategoryBadge(item.category);
                 const isDone = item.status === 'completed';
                 const hasTime = item.start_time || item.end_time;
@@ -612,6 +712,17 @@ export const TodoCalendarPage: React.FC = () => {
                         >
                           <Play className="w-3.5 h-3.5 fill-current" />
                           <span>{t('todo.startPomodoro')}</span>
+                        </button>
+                      )}
+
+                      {!isDone && (
+                        <button
+                          onClick={() => handleMoveToTomorrow(item)}
+                          className="px-2.5 py-1.5 rounded-xl bg-dark-800 hover:bg-dark-750 text-zinc-400 hover:text-amber-400 border border-dark-700 text-xs font-semibold flex items-center gap-1 transition-colors"
+                          title="Перенести на завтра (+1 день)"
+                        >
+                          <span className="hidden sm:inline">Завтра</span>
+                          <ArrowRight className="w-3.5 h-3.5 text-amber-400" />
                         </button>
                       )}
 

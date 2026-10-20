@@ -14,6 +14,7 @@ import {
   Award,
   Users,
   Share2,
+  Star,
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../../shared/api/client.ts';
@@ -69,13 +70,14 @@ export const ProgramsPage: React.FC<ProgramsPageProps> = ({ onNavigateToWorkouts
   });
 
   // Fetch Installed Programs
-  const { data: installedPrograms = [] } = useQuery<InstalledProgramItem[]>({
+  const { data: rawInstalledPrograms } = useQuery<InstalledProgramItem[]>({
     queryKey: ['programs', 'installed'],
     queryFn: () => apiClient<InstalledProgramItem[]>('/programs/user/installed'),
   });
+  const installedPrograms = Array.isArray(rawInstalledPrograms) ? rawInstalledPrograms : [];
 
   // Fetch Programs by Tab & Split Type
-  const { data: programs = [], isLoading } = useQuery<Program[]>({
+  const { data: rawPrograms, isLoading } = useQuery<Program[]>({
     queryKey: ['programs', activeTab, selectedSplitType, searchQuery],
     queryFn: () => {
       const params = new URLSearchParams();
@@ -89,6 +91,7 @@ export const ProgramsPage: React.FC<ProgramsPageProps> = ({ onNavigateToWorkouts
       return apiClient<Program[]>(`/programs?${params.toString()}`);
     },
   });
+  const programs = Array.isArray(rawPrograms) ? rawPrograms : [];
 
   const activeProgramId = activeProgramData?.program?.id || activeProgramData?.user_program?.program_id;
   const installedProgramIds = useMemo(() => {
@@ -379,15 +382,17 @@ export const ProgramsPage: React.FC<ProgramsPageProps> = ({ onNavigateToWorkouts
                             ? t('programs.byAuthor', { author: prog.author_name })
                             : t('programs.officialSplit')}
                         </span>
-                        {prog.installs_count > 0 && (
-                          <>
-                            <span>•</span>
-                            <span className="flex items-center gap-1 text-zinc-400">
-                              <Users className="w-3 h-3 text-zinc-500" />
-                              {prog.installs_count}
-                            </span>
-                          </>
-                        )}
+                        <span>•</span>
+                        <span className="flex items-center gap-1 text-amber-400 font-bold">
+                          <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                          <span>{(prog.rating_avg && prog.rating_avg > 0) ? prog.rating_avg.toFixed(1) : '—'}</span>
+                          <span className="text-zinc-500 font-normal">({prog.reviews_count || 0})</span>
+                        </span>
+                        <span>•</span>
+                        <span className="flex items-center gap-1 text-zinc-400">
+                          <Users className="w-3 h-3 text-zinc-500" />
+                          <span>{prog.installs_count || 0}</span>
+                        </span>
                       </div>
                     </div>
 

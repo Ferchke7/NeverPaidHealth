@@ -81,10 +81,11 @@ export const BodyPage: React.FC = () => {
     queryFn: () => apiClient<BodyTrendResponse>('/body/trend'),
   });
 
-  const { data: logs = [], isLoading: isLoadingLogs } = useQuery<BodyLog[]>({
+  const { data: rawLogs, isLoading: isLoadingLogs } = useQuery<BodyLog[]>({
     queryKey: ['body-logs'],
     queryFn: () => apiClient<BodyLog[]>('/body/logs'),
   });
+  const logs = Array.isArray(rawLogs) ? rawLogs : [];
 
   const numWeight =
     parseFloat(weightInput) ||

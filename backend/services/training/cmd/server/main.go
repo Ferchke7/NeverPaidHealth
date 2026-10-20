@@ -108,6 +108,7 @@ func main() {
 	repo := postgres.NewTrainingRepository(pool)
 	progRepo := postgres.NewProgramRepository(pool)
 	userProgRepo := postgres.NewUserProgramRepository(pool)
+	communityRepo := postgres.NewCommunityRepository(pool)
 
 	wRepo := workoutAdapter{repo: repo}
 	rRepo := routineAdapter{repo: repo}
@@ -149,6 +150,7 @@ func main() {
 		deleteProgCmd,
 		queries,
 		progQueries,
+		communityRepo,
 	)
 
 	srv := &http.Server{

@@ -228,23 +228,25 @@ export const ProgressPage: React.FC = () => {
   );
 
   // Fetch all personal records
-  const { data: recordGroups = [] } = useQuery<ExerciseRecordGroup[]>({
+  const { data: rawRecordGroups } = useQuery<ExerciseRecordGroup[]>({
     queryKey: ['records'],
     queryFn: () => apiClient<ExerciseRecordGroup[]>('/progress/records'),
   });
+  const recordGroups = Array.isArray(rawRecordGroups) ? rawRecordGroups : [];
 
   // Fetch workout history for analytics
   const { data: workoutsData } = useQuery<{ items: WorkoutHistoryItem[] }>({
     queryKey: ['workouts'],
     queryFn: () => apiClient<{ items: WorkoutHistoryItem[] }>('/workouts?limit=100'),
   });
-  const workouts = workoutsData?.items || [];
+  const workouts = Array.isArray(workoutsData?.items) ? workoutsData.items : [];
 
   // Fetch exercise catalog for dropdown
-  const { data: exercises = [] } = useQuery<Exercise[]>({
+  const { data: rawExercises } = useQuery<Exercise[]>({
     queryKey: ['exercises'],
     queryFn: () => apiClient<Exercise[]>('/exercises'),
   });
+  const exercises = Array.isArray(rawExercises) ? rawExercises : [];
 
   const activeExerciseId =
     selectedExerciseId || (recordGroups[0]?.exercise_id ?? exercises[0]?.id);

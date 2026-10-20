@@ -80,6 +80,8 @@ export const useAuthStore = create<AuthState>((set) => ({
     try {
       localStorage.removeItem('neverpaid_auth_v1');
       localStorage.removeItem('neverpaid_active_workout_v1');
+      localStorage.removeItem('neverpaid_active_workout_v2');
+      localStorage.removeItem('np_exercise_notes_v1');
     } catch {}
     set({
       accessToken: null,

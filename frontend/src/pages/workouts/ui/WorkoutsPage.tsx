@@ -16,9 +16,11 @@ import {
   Calendar,
   Sparkles,
   Dumbbell,
+  Zap,
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../../shared/api/client.ts';
+import { useAuthStore } from '../../../entities/user/model/authStore.ts';
 import { Button } from '../../../shared/ui/button.tsx';
 import { Card } from '../../../shared/ui/card.tsx';
 import { Input } from '../../../shared/ui/input.tsx';
@@ -61,6 +63,7 @@ interface WorkoutsPageProps {
 
 export const WorkoutsPage: React.FC<WorkoutsPageProps> = () => {
   const { t } = useTranslation();
+  const user = useAuthStore((s) => s.user);
   const queryClient = useQueryClient();
   const [sectionTab, setSectionTab] = useState<'routines' | 'programs' | 'exercises'>('routines');
   const [searchQuery, setSearchQuery] = useState('');
@@ -71,9 +74,10 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = () => {
   const [selectedProgramDayIndex, setSelectedProgramDayIndex] = useState(0);
   const [isSplitExpanded, setIsSplitExpanded] = useState(false);
 
+  const routineOrderKey = user?.id ? `np_my_routines_custom_order_${user.id}` : 'np_my_routines_custom_order';
   const [customRoutineOrder, setCustomRoutineOrder] = useState<string[]>(() => {
     try {
-      const stored = localStorage.getItem('np_my_routines_custom_order');
+      const stored = localStorage.getItem(user?.id ? `np_my_routines_custom_order_${user.id}` : 'np_my_routines_custom_order');
       return stored ? JSON.parse(stored) : [];
     } catch {
       return [];
@@ -83,6 +87,14 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = () => {
 
   const startWorkout = useStartWorkout();
 
+  const handleStartQuickEmptyWorkout = async () => {
+    const today = new Date().toLocaleDateString([], { day: 'numeric', month: 'short' });
+    await startWorkout({
+      name: `Быстрая тренировка (${today})`,
+      exercises: [],
+    });
+  };
+
   // Fetch Active Program
   const { data: activeProgramData } = useQuery<ActiveProgramResponse>({
     queryKey: ['programs', 'active'],
@@ -90,16 +102,18 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = () => {
   });
 
   // Fetch Installed Programs
-  const { data: installedPrograms = [] } = useQuery<InstalledProgramItem[]>({
+  const { data: rawInstalledPrograms } = useQuery<InstalledProgramItem[]>({
     queryKey: ['programs', 'installed'],
     queryFn: () => apiClient<InstalledProgramItem[]>('/programs/user/installed'),
   });
+  const installedPrograms = Array.isArray(rawInstalledPrograms) ? rawInstalledPrograms : [];
 
   // Fetch routines (both user + library templates)
-  const { data: routines = [], isLoading: isRoutinesLoading } = useQuery<Routine[]>({
+  const { data: rawRoutines, isLoading: isRoutinesLoading } = useQuery<Routine[]>({
     queryKey: ['routines'],
     queryFn: () => apiClient<Routine[]>('/routines'),
   });
+  const routines = Array.isArray(rawRoutines) ? rawRoutines : [];
 
   // Set Active Program Mutation
   const setActiveProgramMutation = useMutation({
@@ -177,7 +191,7 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = () => {
     updated[targetIndex] = temp;
 
     setCustomRoutineOrder(updated);
-    localStorage.setItem('np_my_routines_custom_order', JSON.stringify(updated));
+    localStorage.setItem(routineOrderKey, JSON.stringify(updated));
   };
 
   const handleStartRoutine = async (routine: Routine) => {
@@ -246,7 +260,16 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = () => {
         />
 
         {sectionTab === 'routines' && (
-          <div className="flex items-center gap-2 self-start sm:self-auto">
+          <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-xs flex items-center gap-1.5 border-brand-500/40 text-brand-400 hover:bg-brand-500/10"
+              onClick={handleStartQuickEmptyWorkout}
+            >
+              <Zap className="w-4 h-4 fill-current" />
+              <span>⚡ Пустая тренировка</span>
+            </Button>
             <Button
               variant="primary"
               size="sm"

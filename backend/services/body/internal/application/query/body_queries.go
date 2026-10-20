@@ -33,7 +33,7 @@ func (h *BodyQueriesHandler) GetTrend(ctx context.Context, userID uuid.UUID) (*b
 		return &body.TrendResult{
 			CurrentWeightKg: 0,
 			Current7DaySMA:  0,
-			TrendPoints:     nil,
+			TrendPoints:     make([]body.TrendPoint, 0),
 		}, nil
 	}
 

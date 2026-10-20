@@ -67,9 +67,9 @@ type finishWorkoutReq struct {
 }
 
 func mapProgramDTO(p *program.Program) map[string]any {
-	var daysList []any
+	daysList := make([]any, 0)
 	for _, d := range p.Days() {
-		var exList []any
+		exList := make([]any, 0)
 		for _, ex := range d.Exercises() {
 			exList = append(exList, map[string]any{
 				"exercise_id":     ex.ExerciseID().String(),
@@ -100,6 +100,8 @@ func mapProgramDTO(p *program.Program) map[string]any {
 		"author_name":    p.AuthorName(),
 		"likes_count":    p.LikesCount(),
 		"installs_count": p.InstallsCount(),
+		"rating_avg":     p.RatingAvg(),
+		"reviews_count":  p.ReviewsCount(),
 		"days":           daysList,
 		"created_at":     p.CreatedAt().Format("2006-01-02T15:04:05Z07:00"),
 		"updated_at":     p.UpdatedAt().Format("2006-01-02T15:04:05Z07:00"),
@@ -119,7 +121,7 @@ func mapUserProgramDTO(up *program.UserProgram) map[string]any {
 }
 
 func mapWorkoutDTO(w *workout.Workout) map[string]any {
-	var exList []any
+	exList := make([]any, 0)
 	for _, ex := range w.Exercises() {
 		exList = append(exList, mapExerciseDTO(ex))
 	}
@@ -159,7 +161,7 @@ func mapWorkoutDTO(w *workout.Workout) map[string]any {
 }
 
 func mapExerciseDTO(ex *workout.WorkoutExercise) map[string]any {
-	var setsList []any
+	setsList := make([]any, 0)
 	for _, s := range ex.Sets() {
 		setsList = append(setsList, mapSetDTO(s))
 	}
@@ -204,7 +206,7 @@ func mapSetDTO(s *workout.WorkoutSet) map[string]any {
 }
 
 func mapRoutineDTO(r *routine.Routine) map[string]any {
-	var exList []any
+	exList := make([]any, 0)
 	for _, ex := range r.Exercises() {
 		exList = append(exList, map[string]any{
 			"exercise_id":     ex.ExerciseID().String(),

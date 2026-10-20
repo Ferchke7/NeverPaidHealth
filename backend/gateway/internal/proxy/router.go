@@ -70,6 +70,8 @@ func NewRouter(cfg *config.Config, tokenService *jwtauth.TokenService, logger *s
 			authed.Mount("/routines", trainingProxy)
 			authed.Mount("/workouts", trainingProxy)
 			authed.Mount("/programs", trainingProxy)
+			authed.Mount("/feedback", trainingProxy)
+			authed.Mount("/platform", trainingProxy)
 			authed.Mount("/progress", progressProxy)
 			authed.Mount("/body", bodyProxy)
 			authed.Mount("/coach", coachProxy)

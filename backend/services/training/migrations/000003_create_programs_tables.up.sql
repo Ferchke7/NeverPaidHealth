@@ -49,8 +49,8 @@ VALUES
   'advanced',
   true,
   'Jeff Nippard',
-  482,
-  1250,
+  0,
+  0,
   '[
     {
       "day_number": 1,
@@ -146,8 +146,8 @@ VALUES
   'intermediate',
   true,
   'Duda Science Team',
-  318,
-  890,
+  0,
+  0,
   '[
     {
       "day_number": 1,
@@ -209,8 +209,8 @@ VALUES
   'beginner',
   true,
   'Duda Strength Lab',
-  245,
-  620,
+  0,
+  0,
   '[
     {
       "day_number": 1,

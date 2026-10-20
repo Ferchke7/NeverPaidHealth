@@ -12,6 +12,7 @@ import {
   AlertTriangle,
   FileText,
   RefreshCw,
+  Droplets,
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../../shared/api/client.ts';
@@ -75,6 +76,22 @@ interface DailyNutritionSummary {
 export const NutritionPage: React.FC = () => {
   const { t, language } = useTranslation();
   const queryClient = useQueryClient();
+  const user = useAuthStore((s) => s.user);
+
+  // Water Tracker State
+  const todayKey = new Date().toISOString().slice(0, 10);
+  const waterStorageKey = user?.id ? `np_water_${user.id}_${todayKey}` : `np_water_${todayKey}`;
+  const [waterMl, setWaterMl] = useState<number>(() => {
+    return Number(localStorage.getItem(waterStorageKey) || '0');
+  });
+  const targetWaterMl = 2500;
+  const waterPct = Math.min(100, Math.round((waterMl / targetWaterMl) * 100));
+
+  const addWater = (amount: number) => {
+    const updated = Math.max(0, waterMl + amount);
+    setWaterMl(updated);
+    localStorage.setItem(waterStorageKey, updated.toString());
+  };
 
   // Unified logging modal state
   const [isLogModalOpen, setIsLogModalOpen] = useState(false);
@@ -245,8 +262,6 @@ export const NutritionPage: React.FC = () => {
   };
 
   // User Profile Nutrition Targets
-  const user = useAuthStore((s) => s.user);
-
   const targetCals =
     user?.target_calories ||
     Number(localStorage.getItem('np_nutrition_target_calories')) ||
@@ -438,6 +453,57 @@ export const NutritionPage: React.FC = () => {
         </div>
       </Card>
 
+      {/* Water Intake Tracker */}
+      <div className="bg-dark-850 border border-dark-750 p-3 sm:p-4 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 flex items-center justify-center shrink-0">
+            <Droplets className="w-5 h-5" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-white">Водный баланс</span>
+              <span className="text-xs font-mono font-bold text-cyan-400">
+                {waterMl} <span className="text-zinc-500">/ {targetWaterMl} мл</span>
+              </span>
+              <span className="text-[10px] text-zinc-400 font-mono">({waterPct}%)</span>
+            </div>
+            <div className="w-36 sm:w-48 mt-1.5">
+              <ProgressBar value={waterPct} color="primary" size="sm" />
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-1.5 self-end sm:self-auto">
+          <button
+            type="button"
+            onClick={() => addWater(250)}
+            className="px-2.5 py-1.5 rounded-xl bg-dark-900 hover:bg-dark-800 text-cyan-300 border border-cyan-500/20 text-xs font-bold transition-all flex items-center gap-1 cursor-pointer active:scale-95"
+          >
+            <span>+250 мл</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => addWater(500)}
+            className="px-2.5 py-1.5 rounded-xl bg-dark-900 hover:bg-dark-800 text-cyan-300 border border-cyan-500/20 text-xs font-bold transition-all flex items-center gap-1 cursor-pointer active:scale-95"
+          >
+            <span>+500 мл</span>
+          </button>
+          {waterMl > 0 && (
+            <button
+              type="button"
+              onClick={() => {
+                setWaterMl(0);
+                localStorage.setItem(waterStorageKey, '0');
+              }}
+              className="px-2 py-1.5 rounded-xl text-zinc-500 hover:text-zinc-300 text-xs transition-colors"
+              title="Сбросить воду"
+            >
+              Сброс
+            </button>
+          )}
+        </div>
+      </div>
+
       {/* 3. Daily Meal Logs Timeline */}
       <div className="space-y-3">
         <div className="flex items-center justify-between border-b border-dark-800 pb-2">
@@ -518,6 +584,25 @@ export const NutritionPage: React.FC = () => {
                 </div>
 
                 <div className="flex items-center gap-1 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      saveMealMutation.mutate({
+                        meal_type: meal.meal_type,
+                        name: meal.name,
+                        calories: meal.calories,
+                        protein_g: meal.protein_g,
+                        carbs_g: meal.carbs_g,
+                        fat_g: meal.fat_g,
+                        photo_url: meal.photo_url,
+                        items: meal.items || [],
+                      });
+                    }}
+                    className="p-1.5 rounded-lg text-zinc-400 hover:text-brand-400 hover:bg-brand-500/10 transition-colors cursor-pointer"
+                    title="Повторить прием пищи"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" />
+                  </button>
                   <button
                     onClick={() => deleteMealMutation.mutate(meal.id)}
                     className="p-1.5 rounded-lg text-zinc-500 hover:text-red-400 hover:bg-red-950/20 transition-colors cursor-pointer"

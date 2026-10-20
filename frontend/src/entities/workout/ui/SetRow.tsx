@@ -134,8 +134,10 @@ export const SetRow: React.FC<SetRowProps> = ({
           />
         </div>
         {e1rm !== null && e1rm > 0 && measurementType === 'weight_reps' && (
-          <div className="text-[8px] sm:text-[9px] text-zinc-500 text-center mt-0.5 font-mono leading-none truncate">
-            1RM: {formatWeight(e1rm, unit)}
+          <div className="text-[8px] sm:text-[9px] text-zinc-500 text-center mt-0.5 font-mono leading-none truncate" title={set.weightKg >= 25 ? `Гриф 20 кг + ${((set.weightKg - 20) / 2).toFixed(1).replace('.0', '')} кг с каждой стороны` : undefined}>
+            {set.weightKg >= 25
+              ? `(20+${((set.weightKg - 20) / 2).toFixed(1).replace('.0', '')}кг)`
+              : `1RM: ${formatWeight(e1rm, unit)}`}
           </div>
         )}
       </div>

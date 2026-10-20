@@ -189,13 +189,22 @@ export const AICoachPage: React.FC = () => {
     ];
   }, [t, dynamicSuggestions]);
 
+  const userStorageKey = user?.id ? `np_ai_coach_messages_${user.id}` : 'np_ai_coach_messages_guest';
+
+  // Fetch per-user chat messages from PostgreSQL
+  const { data: dbMessages } = useQuery<any[]>({
+    queryKey: ['coach-messages', user?.id],
+    queryFn: () => apiClient<any[]>('/coach/messages'),
+    enabled: !!user?.id,
+  });
+
   const [messages, setMessages] = useState<ChatMessage[]>(() => {
     try {
-      const saved = localStorage.getItem('np_ai_coach_messages_v4');
+      const saved = localStorage.getItem(userStorageKey);
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed.slice(-20);
+          return parsed.slice(-30);
         }
       }
     } catch {
@@ -204,16 +213,40 @@ export const AICoachPage: React.FC = () => {
     return [];
   });
 
-  // Persist messages to localStorage
+  // Sync DB messages into state if available
+  useEffect(() => {
+    if (Array.isArray(dbMessages) && dbMessages.length > 0) {
+      const formatted: ChatMessage[] = dbMessages.map((m) => {
+        let sw: SuggestedWorkoutAction | undefined;
+        if (m.suggested_workout) {
+          try {
+            sw = typeof m.suggested_workout === 'string' ? JSON.parse(m.suggested_workout) : m.suggested_workout;
+          } catch {
+            // ignore
+          }
+        }
+        return {
+          id: m.id,
+          role: m.role === 'user' ? 'user' : 'coach',
+          content: m.content,
+          suggestedWorkout: sw,
+          timestamp: new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        };
+      });
+      setMessages(formatted);
+    }
+  }, [dbMessages]);
+
+  // Persist messages to user-scoped localStorage
   useEffect(() => {
     try {
       if (messages.length > 0) {
-        localStorage.setItem('np_ai_coach_messages_v4', JSON.stringify(messages.slice(-20)));
+        localStorage.setItem(userStorageKey, JSON.stringify(messages.slice(-30)));
       }
     } catch {
       // Ignore
     }
-  }, [messages]);
+  }, [messages, userStorageKey]);
 
   const handleScroll = useCallback(() => {
     const el = scrollContainerRef.current;
@@ -354,7 +387,13 @@ export const AICoachPage: React.FC = () => {
     setTimeout(() => setCopiedMessageId(null), 2000);
   };
 
-  const handleClearChatConfirm = () => {
+  const handleClearChatConfirm = async () => {
+    try {
+      await apiClient.delete('/coach/messages');
+    } catch {
+      // Ignore network error on delete
+    }
+    localStorage.removeItem(userStorageKey);
     localStorage.removeItem('np_ai_coach_messages_v4');
     localStorage.removeItem('np_ai_coach_messages_v3');
     setMessages([]);

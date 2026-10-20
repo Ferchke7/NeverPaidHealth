@@ -29,6 +29,10 @@ func (h *Handler) Routes() http.Handler {
 	r.Get("/coach/insights", httpx.RequireAuth(h.handleGetInsights))
 	r.Post("/chat", httpx.RequireAuth(h.handleChat))
 	r.Post("/coach/chat", httpx.RequireAuth(h.handleChat))
+	r.Get("/messages", httpx.RequireAuth(h.handleGetChatMessages))
+	r.Get("/coach/messages", httpx.RequireAuth(h.handleGetChatMessages))
+	r.Delete("/messages", httpx.RequireAuth(h.handleClearChatMessages))
+	r.Delete("/coach/messages", httpx.RequireAuth(h.handleClearChatMessages))
 
 	// Nutrition & AI Analysis (Photo + Text)
 	r.Post("/nutrition/analyze-photo", httpx.RequireAuth(h.handleAnalyzePhoto))
@@ -85,6 +89,25 @@ func (h *Handler) handleChat(w http.ResponseWriter, r *http.Request, userID uuid
 	}
 
 	httpx.WriteJSON(w, http.StatusOK, res)
+}
+
+func (h *Handler) handleGetChatMessages(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
+	messages, err := h.coachService.GetChatMessages(r.Context(), userID)
+	if err != nil {
+		httpx.WriteProblem(w, http.StatusInternalServerError, "Internal Server Error", err.Error(), "ERR_INTERNAL")
+		return
+	}
+
+	httpx.WriteJSON(w, http.StatusOK, messages)
+}
+
+func (h *Handler) handleClearChatMessages(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
+	if err := h.coachService.ClearChatMessages(r.Context(), userID); err != nil {
+		httpx.WriteProblem(w, http.StatusInternalServerError, "Internal Server Error", err.Error(), "ERR_INTERNAL")
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func extractLanguage(r *http.Request) string {

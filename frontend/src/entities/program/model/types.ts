@@ -29,6 +29,8 @@ export interface Program {
   author_name?: string;
   likes_count: number;
   installs_count: number;
+  rating_avg?: number;
+  reviews_count?: number;
   days: ProgramDay[];
   created_at?: string;
   updated_at?: string;

@@ -38,6 +38,8 @@ type Program struct {
 	authorName    string
 	likesCount    int
 	installsCount int
+	ratingAvg     float64
+	reviewsCount  int
 	days          []*ProgramDay
 	createdAt     time.Time
 	updatedAt     time.Time
@@ -136,6 +138,12 @@ func (p *Program) IsPublic() bool            { return p.isPublic }
 func (p *Program) AuthorName() string        { return p.authorName }
 func (p *Program) LikesCount() int           { return p.likesCount }
 func (p *Program) InstallsCount() int        { return p.installsCount }
+func (p *Program) RatingAvg() float64        { return p.ratingAvg }
+func (p *Program) ReviewsCount() int         { return p.reviewsCount }
+func (p *Program) SetReviewsStats(avg float64, count int) {
+	p.ratingAvg = avg
+	p.reviewsCount = count
+}
 func (p *Program) Days() []*ProgramDay       { return p.days }
 func (p *Program) CreatedAt() time.Time      { return p.createdAt }
 func (p *Program) UpdatedAt() time.Time      { return p.updatedAt }

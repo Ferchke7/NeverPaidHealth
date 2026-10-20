@@ -274,9 +274,12 @@ func (s *TodoService) GetDailySchedule(ctx context.Context, userID uuid.UUID, da
 	if err != nil {
 		return nil, err
 	}
+	if todos == nil {
+		todos = make([]todo.Todo, 0)
+	}
 
 	logs, err := s.repo.GetActivityLogs(ctx, userID, dateStr)
-	if err != nil {
+	if err != nil || logs == nil {
 		logs = make([]todo.ActivityLog, 0)
 	}
 
@@ -417,7 +420,14 @@ func (s *TodoService) LogFocusSession(ctx context.Context, userID uuid.UUID, in 
 }
 
 func (s *TodoService) GetActivityLogs(ctx context.Context, userID uuid.UUID, dateStr string) ([]todo.ActivityLog, error) {
-	return s.repo.GetActivityLogs(ctx, userID, dateStr)
+	logs, err := s.repo.GetActivityLogs(ctx, userID, dateStr)
+	if err != nil {
+		return nil, err
+	}
+	if logs == nil {
+		logs = make([]todo.ActivityLog, 0)
+	}
+	return logs, nil
 }
 
 func (s *TodoService) GetStats(ctx context.Context, userID uuid.UUID, days int) (*todo.ProductivityStats, error) {

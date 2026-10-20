@@ -19,8 +19,70 @@ type ProgramRepository struct {
 }
 
 func NewProgramRepository(pool *pgxpool.Pool) *ProgramRepository {
-	return &ProgramRepository{pool: pool}
+	repo := &ProgramRepository{pool: pool}
+	if pool != nil {
+		repo.InitSchema(context.Background())
+	}
+	return repo
 }
+
+func (r *ProgramRepository) InitSchema(ctx context.Context) {
+	if r.pool == nil {
+		return
+	}
+	schema := `
+		UPDATE programs SET likes_count = 0, installs_count = 0 WHERE user_id = '00000000-0000-0000-0000-000000000000';
+
+		CREATE TABLE IF NOT EXISTS program_reviews (
+			id UUID PRIMARY KEY,
+			program_id UUID NOT NULL REFERENCES programs(id) ON DELETE CASCADE,
+			user_id UUID NOT NULL,
+			author_name VARCHAR(100) NOT NULL DEFAULT 'Атлет',
+			rating INT NOT NULL CHECK (rating >= 1 AND rating <= 5),
+			comment TEXT NOT NULL,
+			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+			updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+			CONSTRAINT uq_program_user_review UNIQUE (program_id, user_id)
+		);
+		CREATE INDEX IF NOT EXISTS idx_program_reviews_prog ON program_reviews(program_id, created_at DESC);
+
+		CREATE TABLE IF NOT EXISTS feedback_reports (
+			id UUID PRIMARY KEY,
+			user_id UUID NOT NULL,
+			author_name VARCHAR(100) NOT NULL DEFAULT 'Атлет',
+			category VARCHAR(30) NOT NULL DEFAULT 'bug',
+			title VARCHAR(200) NOT NULL,
+			message TEXT NOT NULL,
+			status VARCHAR(30) NOT NULL DEFAULT 'open',
+			upvotes INT NOT NULL DEFAULT 0,
+			upvoters UUID[] NOT NULL DEFAULT '{}',
+			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+			updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+		);
+		CREATE INDEX IF NOT EXISTS idx_feedback_reports_created ON feedback_reports(created_at DESC);
+		CREATE INDEX IF NOT EXISTS idx_feedback_reports_cat ON feedback_reports(category);
+
+		CREATE TABLE IF NOT EXISTS coach_messages (
+			id UUID PRIMARY KEY,
+			user_id UUID NOT NULL,
+			role VARCHAR(20) NOT NULL,
+			content TEXT NOT NULL,
+			suggested_workout JSONB,
+			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+		);
+		CREATE INDEX IF NOT EXISTS idx_coach_messages_user_created ON coach_messages(user_id, created_at ASC);
+	`
+	_, _ = r.pool.Exec(ctx, schema)
+}
+
+const programSelectCols = `
+	p.id, p.user_id, p.name, p.description, p.split_type, p.days_per_week, p.level, p.is_public, p.author_name,
+	p.likes_count,
+	COALESCE((SELECT COUNT(DISTINCT up.user_id) FROM user_programs up WHERE up.program_id = p.id), 0) AS installs_count,
+	p.days, p.created_at, p.updated_at,
+	COALESCE((SELECT ROUND(AVG(pr.rating)::numeric, 1) FROM program_reviews pr WHERE pr.program_id = p.id), 0.0) AS rating_avg,
+	COALESCE((SELECT COUNT(*) FROM program_reviews pr WHERE pr.program_id = p.id), 0) AS reviews_count
+`
 
 type ExJSONItem struct {
 	ExerciseID    uuid.UUID `json:"exercise_id"`
@@ -39,10 +101,10 @@ type DayJSONItem struct {
 }
 
 func (r *ProgramRepository) GetByID(ctx context.Context, id uuid.UUID) (*program.Program, error) {
-	query := `
-		SELECT id, user_id, name, description, split_type, days_per_week, level, is_public, author_name, likes_count, installs_count, days, created_at, updated_at
-		FROM programs WHERE id = $1
-	`
+	query := fmt.Sprintf(`
+		SELECT %s
+		FROM programs p WHERE p.id = $1
+	`, programSelectCols)
 	row := r.pool.QueryRow(ctx, query, id)
 	return scanProgram(row)
 }
@@ -52,26 +114,26 @@ func (r *ProgramRepository) ListLibrary(ctx context.Context, splitType string, s
 	var args []any
 	argIdx := 1
 
-	conditions = append(conditions, "user_id = '00000000-0000-0000-0000-000000000000'")
+	conditions = append(conditions, "p.user_id = '00000000-0000-0000-0000-000000000000'")
 
 	if splitType != "" && splitType != "all" {
-		conditions = append(conditions, fmt.Sprintf("split_type = $%d", argIdx))
+		conditions = append(conditions, fmt.Sprintf("p.split_type = $%d", argIdx))
 		args = append(args, splitType)
 		argIdx++
 	}
 
 	if search != "" {
-		conditions = append(conditions, fmt.Sprintf("(name ILIKE $%d OR description ILIKE $%d)", argIdx, argIdx))
+		conditions = append(conditions, fmt.Sprintf("(p.name ILIKE $%d OR p.description ILIKE $%d)", argIdx, argIdx))
 		args = append(args, "%"+search+"%")
 		argIdx++
 	}
 
 	query := fmt.Sprintf(`
-		SELECT id, user_id, name, description, split_type, days_per_week, level, is_public, author_name, likes_count, installs_count, days, created_at, updated_at
-		FROM programs
+		SELECT %s
+		FROM programs p
 		WHERE %s
-		ORDER BY created_at ASC
-	`, strings.Join(conditions, " AND "))
+		ORDER BY p.created_at ASC
+	`, programSelectCols, strings.Join(conditions, " AND "))
 
 	return r.queryPrograms(ctx, query, args...)
 }
@@ -84,39 +146,39 @@ func (r *ProgramRepository) ListCommunity(ctx context.Context, splitType string,
 	var args []any
 	argIdx := 1
 
-	conditions = append(conditions, "is_public = true")
+	conditions = append(conditions, "p.is_public = true")
 
 	if splitType != "" && splitType != "all" {
-		conditions = append(conditions, fmt.Sprintf("split_type = $%d", argIdx))
+		conditions = append(conditions, fmt.Sprintf("p.split_type = $%d", argIdx))
 		args = append(args, splitType)
 		argIdx++
 	}
 
 	if search != "" {
-		conditions = append(conditions, fmt.Sprintf("(name ILIKE $%d OR description ILIKE $%d OR author_name ILIKE $%d)", argIdx, argIdx, argIdx))
+		conditions = append(conditions, fmt.Sprintf("(p.name ILIKE $%d OR p.description ILIKE $%d OR p.author_name ILIKE $%d)", argIdx, argIdx, argIdx))
 		args = append(args, "%"+search+"%")
 		argIdx++
 	}
 
 	query := fmt.Sprintf(`
-		SELECT id, user_id, name, description, split_type, days_per_week, level, is_public, author_name, likes_count, installs_count, days, created_at, updated_at
-		FROM programs
+		SELECT %s
+		FROM programs p
 		WHERE %s
-		ORDER BY likes_count DESC, installs_count DESC, created_at DESC
+		ORDER BY installs_count DESC, rating_avg DESC, p.created_at DESC
 		LIMIT $%d OFFSET $%d
-	`, strings.Join(conditions, " AND "), argIdx, argIdx+1)
+	`, programSelectCols, strings.Join(conditions, " AND "), argIdx, argIdx+1)
 
 	args = append(args, limit, offset)
 	return r.queryPrograms(ctx, query, args...)
 }
 
 func (r *ProgramRepository) ListByUserID(ctx context.Context, userID uuid.UUID) ([]*program.Program, error) {
-	query := `
-		SELECT id, user_id, name, description, split_type, days_per_week, level, is_public, author_name, likes_count, installs_count, days, created_at, updated_at
-		FROM programs
-		WHERE user_id = $1
-		ORDER BY created_at DESC
-	`
+	query := fmt.Sprintf(`
+		SELECT %s
+		FROM programs p
+		WHERE p.user_id = $1
+		ORDER BY p.created_at DESC
+	`, programSelectCols)
 	return r.queryPrograms(ctx, query, userID)
 }
 
@@ -197,7 +259,7 @@ func (r *ProgramRepository) queryPrograms(ctx context.Context, query string, arg
 	}
 	defer rows.Close()
 
-	var list []*program.Program
+	list := make([]*program.Program, 0)
 	for rows.Next() {
 		p, err := scanProgram(rows)
 		if err != nil {
@@ -259,7 +321,7 @@ func (r *UserProgramRepository) ListByUserID(ctx context.Context, userID uuid.UU
 	}
 	defer rows.Close()
 
-	var list []*program.UserProgram
+	list := make([]*program.UserProgram, 0)
 	for rows.Next() {
 		up, err := scanUserProgram(rows)
 		if err != nil {
@@ -338,6 +400,8 @@ func scanProgram(row pgx.Row) (*program.Program, error) {
 		daysJSON      []byte
 		createdAt     time.Time
 		updatedAt     time.Time
+		ratingAvg     float64
+		reviewsCount  int
 	)
 
 	err := row.Scan(
@@ -355,6 +419,8 @@ func scanProgram(row pgx.Row) (*program.Program, error) {
 		&daysJSON,
 		&createdAt,
 		&updatedAt,
+		&ratingAvg,
+		&reviewsCount,
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -401,7 +467,7 @@ func scanProgram(row pgx.Row) (*program.Program, error) {
 		authStr = *authorName
 	}
 
-	return program.Reconstitute(
+	prog := program.Reconstitute(
 		id,
 		userID,
 		name,
@@ -416,7 +482,9 @@ func scanProgram(row pgx.Row) (*program.Program, error) {
 		days,
 		createdAt,
 		updatedAt,
-	), nil
+	)
+	prog.SetReviewsStats(ratingAvg, reviewsCount)
+	return prog, nil
 }
 
 func scanUserProgram(row pgx.Row) (*program.UserProgram, error) {

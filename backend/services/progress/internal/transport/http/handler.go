@@ -104,7 +104,7 @@ func (h *Handler) handleGetExerciseHistory(w http.ResponseWriter, r *http.Reques
 }
 
 func mapRecordBookDTO(b *record.ExerciseRecordBook) map[string]any {
-	var recordsList []any
+	recordsList := make([]any, 0)
 	for _, rec := range b.Records() {
 		recordsList = append(recordsList, map[string]any{
 			"pr_type":     string(rec.Type),
@@ -126,7 +126,7 @@ func mapRecordBookDTO(b *record.ExerciseRecordBook) map[string]any {
 }
 
 func mapHistorySeriesDTO(s *history.ExerciseHistorySeries) map[string]any {
-	var pts []any
+	pts := make([]any, 0)
 	for _, p := range s.DataPoints {
 		pts = append(pts, map[string]any{
 			"workout_id":               p.WorkoutID.String(),

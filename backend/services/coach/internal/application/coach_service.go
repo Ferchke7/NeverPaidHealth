@@ -2,6 +2,7 @@ package application
 
 import (
 	"context"
+	"encoding/json"
 	"math"
 	"time"
 
@@ -66,6 +67,15 @@ func (s *CoachService) GetInsights(ctx context.Context, userID uuid.UUID) (coach
 }
 
 func (s *CoachService) Chat(ctx context.Context, userID uuid.UUID, userName string, req coach.ChatRequest, lang string) (coach.ChatResponse, error) {
+	// 1. Save user's incoming message
+	_ = s.meals.SaveChatMessage(ctx, data.CoachChatMessage{
+		ID:        uuid.New(),
+		UserID:    userID,
+		Role:      "user",
+		Content:   req.Message,
+		CreatedAt: time.Now().UTC(),
+	})
+
 	insights, err := s.GetInsights(ctx, userID)
 	if err != nil {
 		insights = coach.AnalyzeUserData(nil, nil, nil, nil, time.Now())
@@ -75,7 +85,34 @@ func (s *CoachService) Chat(ctx context.Context, userID uuid.UUID, userName stri
 		userName = "Athlete"
 	}
 
-	return s.ai.GenerateChatResponse(ctx, req, insights, userName, lang)
+	res, err := s.ai.GenerateChatResponse(ctx, req, insights, userName, lang)
+	if err != nil {
+		return res, err
+	}
+
+	// 2. Save assistant's reply and suggested workout
+	var swBytes json.RawMessage
+	if res.SuggestedWorkout != nil {
+		swBytes, _ = json.Marshal(res.SuggestedWorkout)
+	}
+	_ = s.meals.SaveChatMessage(ctx, data.CoachChatMessage{
+		ID:               uuid.New(),
+		UserID:           userID,
+		Role:             "assistant",
+		Content:          res.Reply,
+		SuggestedWorkout: swBytes,
+		CreatedAt:        time.Now().UTC(),
+	})
+
+	return res, nil
+}
+
+func (s *CoachService) GetChatMessages(ctx context.Context, userID uuid.UUID) ([]data.CoachChatMessage, error) {
+	return s.meals.GetChatMessages(ctx, userID)
+}
+
+func (s *CoachService) ClearChatMessages(ctx context.Context, userID uuid.UUID) error {
+	return s.meals.ClearChatMessages(ctx, userID)
 }
 
 func (s *CoachService) AnalyzeMealPhoto(ctx context.Context, imageBase64, mimeType, notes string, lang string) (coach.MealAnalysisResult, error) {
@@ -103,6 +140,9 @@ func (s *CoachService) GetTodayNutrition(ctx context.Context, userID uuid.UUID) 
 	meals, err := s.meals.GetTodayMeals(ctx, userID)
 	if err != nil {
 		return coach.DailyNutritionSummary{}, err
+	}
+	if meals == nil {
+		meals = make([]coach.MealLog, 0)
 	}
 
 	var totCals int

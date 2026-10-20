@@ -1,11 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Dumbbell, LineChart, LogOut, Bot, Utensils, ListTodo } from 'lucide-react';
+import { Dumbbell, LineChart, LogOut, Bot, Utensils, ListTodo, MessageSquarePlus } from 'lucide-react';
 import { useAuthStore } from '../../../entities/user/model/authStore.ts';
 import { UserAvatar } from '../../../entities/user/ui/UserAvatar.tsx';
 import { LanguageSwitchToggle } from '../../../features/switch-language/ui/LanguageSwitchToggle.tsx';
 import { PWAInstallBanner } from '../../../features/pwa-install/ui/PWAInstallBanner.tsx';
 import { PWAInstallButton } from '../../../features/pwa-install/ui/PWAInstallButton.tsx';
+import { FeedbackModal } from '../../../features/feedback/ui/FeedbackModal.tsx';
 import { useTranslation } from '../../../shared/lib/i18n/i18n.ts';
 
 export type NavTab =
@@ -36,6 +37,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
   const { t } = useTranslation();
+  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
 
   // Derive active tab from URL path
   const pathSegment = location.pathname.replace(/^\//, '').split('/')[0] as NavTab;
@@ -171,6 +173,15 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
         </div>
 
         <div className="flex items-center gap-1.5 sm:gap-3">
+          <button
+            type="button"
+            onClick={() => setIsFeedbackOpen(true)}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-dark-800 text-zinc-300 hover:text-brand-400 hover:border-brand-500/30 border border-dark-700 transition-colors cursor-pointer"
+            title="Оставить отзыв или баг-репорт"
+          >
+            <MessageSquarePlus className="w-3.5 h-3.5 text-brand-400" />
+            <span className="hidden sm:inline">Фидбек</span>
+          </button>
           <PWAInstallButton className="hidden lg:flex" />
           <LanguageSwitchToggle variant="header" />
           <div className="flex items-center gap-1.5 sm:gap-2 pl-1.5 sm:pl-2 border-l border-dark-700">
@@ -240,6 +251,11 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           );
         })}
       </nav>
+
+      <FeedbackModal
+        isOpen={isFeedbackOpen}
+        onClose={() => setIsFeedbackOpen(false)}
+      />
     </div>
   );
 };

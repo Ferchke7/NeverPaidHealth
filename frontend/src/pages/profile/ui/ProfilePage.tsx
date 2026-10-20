@@ -12,6 +12,10 @@ import {
   LogOut,
   Save,
   CheckCircle2,
+  ThumbsUp,
+  Globe,
+  MessageSquare,
+  Plus,
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/entities/user/model/authStore.ts';
@@ -23,6 +27,7 @@ import { Switch } from '@/shared/ui';
 import { UserAvatar } from '@/entities/user/ui/UserAvatar.tsx';
 import { LanguageSwitchToggle } from '@/features/switch-language/ui/LanguageSwitchToggle.tsx';
 import { PWAInstallButton } from '@/features/pwa-install/ui/PWAInstallButton.tsx';
+import { FeedbackModal } from '@/features/feedback/ui/FeedbackModal.tsx';
 import { useTranslation } from '@/shared/lib/i18n/i18n.ts';
 
 interface ProfilePageProps {
@@ -146,6 +151,34 @@ export const ProfilePage: React.FC<ProfilePageProps> = () => {
     (acc, group) => acc + (group.records?.length || 1),
     0
   );
+
+  const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
+
+  const { data: platformStats } = useQuery<{
+    total_workouts: number;
+    total_tonnage_kg: number;
+    total_programs: number;
+    total_installs: number;
+    total_feedbacks: number;
+    total_reviews: number;
+    active_athletes_30d: number;
+  }>({
+    queryKey: ['platform', 'stats'],
+    queryFn: () => apiClient.get('/platform/stats'),
+  });
+
+  const { data: rawFeedbacks = [], refetch: refetchFeedbacks } = useQuery<any[]>({
+    queryKey: ['feedback'],
+    queryFn: () => apiClient.get('/feedback'),
+  });
+  const feedbacks = Array.isArray(rawFeedbacks) ? rawFeedbacks : [];
+
+  const upvoteMutation = useMutation({
+    mutationFn: (feedbackId: string) => apiClient.post(`/feedback/${feedbackId}/upvote`),
+    onSuccess: () => {
+      void refetchFeedbacks();
+    },
+  });
 
   // Mutation to update unit preference
   const updateUnitMutation = useMutation({
@@ -285,6 +318,56 @@ export const ProfilePage: React.FC<ProfilePageProps> = () => {
           </div>
         </Card>
       </div>
+
+      {/* Platform & Community Real Stats */}
+      {platformStats && (
+        <Card className="bg-dark-850 border-dark-750 p-4 sm:p-5">
+          <div className="flex items-center justify-between mb-3 border-b border-dark-750 pb-2.5">
+            <div className="flex items-center gap-2">
+              <Globe className="w-4 h-4 text-brand-400" />
+              <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-200">
+                Статистика платформы duda.uz
+              </h3>
+            </div>
+            <span className="text-[10px] text-emerald-400 font-mono bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              В реальном времени
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center sm:text-left">
+            <div className="bg-dark-900/60 p-2.5 rounded-xl border border-dark-800">
+              <div className="text-[10px] text-zinc-400 font-medium">Активных атлетов (30д)</div>
+              <div className="text-lg font-black text-white font-mono mt-0.5">
+                {platformStats.active_athletes_30d || 1}
+              </div>
+            </div>
+
+            <div className="bg-dark-900/60 p-2.5 rounded-xl border border-dark-800">
+              <div className="text-[10px] text-zinc-400 font-medium">Всего тренировок</div>
+              <div className="text-lg font-black text-brand-400 font-mono mt-0.5">
+                {platformStats.total_workouts}
+              </div>
+            </div>
+
+            <div className="bg-dark-900/60 p-2.5 rounded-xl border border-dark-800">
+              <div className="text-[10px] text-zinc-400 font-medium">Общий вес комьюнити</div>
+              <div className="text-lg font-black text-emerald-400 font-mono mt-0.5">
+                {platformStats.total_tonnage_kg > 1000
+                  ? `${(platformStats.total_tonnage_kg / 1000).toFixed(1)} т`
+                  : `${platformStats.total_tonnage_kg} кг`}
+              </div>
+            </div>
+
+            <div className="bg-dark-900/60 p-2.5 rounded-xl border border-dark-800">
+              <div className="text-[10px] text-zinc-400 font-medium">Установок программ</div>
+              <div className="text-lg font-black text-amber-400 font-mono mt-0.5">
+                {platformStats.total_installs}
+              </div>
+            </div>
+          </div>
+        </Card>
+      )}
 
       {/* Settings Form */}
       <Card className="space-y-6">
@@ -466,6 +549,86 @@ export const ProfilePage: React.FC<ProfilePageProps> = () => {
         </CardContent>
       </Card>
 
+      {/* Community Feedback & Bug Reports Board */}
+      <Card className="space-y-4">
+        <CardHeader>
+          <div className="w-full flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <CardTitle>
+                <MessageSquare className="w-5 h-5 text-brand-400" />
+                Идеи и баг-репорты комьюнити
+              </CardTitle>
+              <CardDescription>
+                Голосуйте за нужные функции и предлагайте свои улучшения
+              </CardDescription>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsFeedbackModalOpen(true)}
+              className="text-xs font-bold gap-1.5 border-brand-500/30 text-brand-400 hover:bg-brand-500/10 shrink-0 self-start sm:self-auto"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              Оставить отзыв
+            </Button>
+          </div>
+        </CardHeader>
+
+        <CardContent>
+          <div className="space-y-2.5">
+            {feedbacks.length === 0 ? (
+              <div className="text-center py-6 text-xs text-zinc-500">
+                Пока нет предложений от сообщества. Будьте первым!
+              </div>
+            ) : (
+              feedbacks.slice(0, 10).map((fb) => (
+                <div
+                  key={fb.id}
+                  className="bg-dark-900/70 border border-dark-750 p-3 rounded-2xl flex items-start justify-between gap-3"
+                >
+                  <div className="flex-1 min-w-0 space-y-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span
+                        className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                          fb.category === 'bug'
+                            ? 'bg-rose-500/10 text-rose-400 border-rose-500/20'
+                            : fb.category === 'feature'
+                            ? 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+                            : 'bg-brand-500/10 text-brand-400 border-brand-500/20'
+                        }`}
+                      >
+                        {fb.category === 'bug' ? '🐞 Баг' : fb.category === 'feature' ? '💡 Идея' : '⚡ UI/UX'}
+                      </span>
+                      <h4 className="text-xs font-bold text-white truncate">{fb.title}</h4>
+                    </div>
+
+                    <p className="text-xs text-zinc-300 leading-relaxed">{fb.description}</p>
+
+                    <div className="text-[10px] text-zinc-500 flex items-center gap-2 pt-0.5">
+                      <span>{fb.author_name || 'Атлет'}</span>
+                      <span>•</span>
+                      <span>{new Date(fb.created_at).toLocaleDateString()}</span>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => upvoteMutation.mutate(fb.id)}
+                    className="flex flex-col items-center justify-center min-w-[42px] px-2 py-1.5 rounded-xl bg-dark-800 hover:bg-brand-500/15 border border-dark-700 hover:border-brand-500/30 text-zinc-400 hover:text-brand-400 transition-all shrink-0 cursor-pointer group"
+                    title="Поддержать предложение"
+                  >
+                    <ThumbsUp className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
+                    <span className="text-[11px] font-bold font-mono mt-0.5">
+                      {fb.upvotes_count || 0}
+                    </span>
+                  </button>
+                </div>
+              ))
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
       {/* PWA App Installation Option */}
       <PWAInstallButton variant="card" />
 
@@ -488,6 +651,11 @@ export const ProfilePage: React.FC<ProfilePageProps> = () => {
           {labels.exportBtn}
         </Button>
       </Card>
+
+      <FeedbackModal
+        isOpen={isFeedbackModalOpen}
+        onClose={() => setIsFeedbackModalOpen(false)}
+      />
     </div>
   );
 };

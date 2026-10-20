@@ -39,7 +39,7 @@ func (r *BodyRepository) ListRange(ctx context.Context, userID uuid.UUID, fromDa
 	}
 	defer rows.Close()
 
-	var list []*body.BodyLog
+	list := make([]*body.BodyLog, 0)
 	for rows.Next() {
 		l, err := scanBodyLog(rows)
 		if err != nil {
@@ -61,7 +61,7 @@ func (r *BodyRepository) ListAll(ctx context.Context, userID uuid.UUID) ([]*body
 	}
 	defer rows.Close()
 
-	var list []*body.BodyLog
+	list := make([]*body.BodyLog, 0)
 	for rows.Next() {
 		l, err := scanBodyLog(rows)
 		if err != nil {

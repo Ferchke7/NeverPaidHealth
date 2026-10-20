@@ -5,6 +5,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/neverpaidhealth/backend/pkg/httpx"
+	"github.com/neverpaidhealth/backend/services/training/internal/adapters/postgres"
 	"github.com/neverpaidhealth/backend/services/training/internal/application/command"
 	"github.com/neverpaidhealth/backend/services/training/internal/application/query"
 )
@@ -25,6 +26,7 @@ type Handler struct {
 	deleteProgramCmd    *command.DeleteProgramHandler
 	queries             *query.TrainingQueriesHandler
 	programQueries      *query.ProgramQueriesHandler
+	communityRepo       *postgres.CommunityRepository
 }
 
 func NewHandler(
@@ -43,6 +45,7 @@ func NewHandler(
 	deleteProgram *command.DeleteProgramHandler,
 	queries *query.TrainingQueriesHandler,
 	programQueries *query.ProgramQueriesHandler,
+	communityRepo *postgres.CommunityRepository,
 ) *Handler {
 	return &Handler{
 		startWorkoutCmd:     startWorkout,
@@ -60,6 +63,7 @@ func NewHandler(
 		deleteProgramCmd:    deleteProgram,
 		queries:             queries,
 		programQueries:      programQueries,
+		communityRepo:       communityRepo,
 	}
 }
 
@@ -79,6 +83,20 @@ func (h *Handler) Routes() http.Handler {
 	r.Delete("/programs/{id}", httpx.RequireAuth(h.handleDeleteProgram))
 	r.Post("/programs/{id}/publish", httpx.RequireAuth(h.handlePublishProgram))
 	r.Post("/programs/{id}/install", httpx.RequireAuth(h.handleInstallProgram))
+
+	// Program Reviews & Ratings
+	r.Get("/programs/{id}/reviews", httpx.RequireAuth(h.handleListProgramReviews))
+	r.Post("/programs/{id}/reviews", httpx.RequireAuth(h.handleSaveProgramReview))
+	r.Delete("/programs/{id}/reviews/{reviewId}", httpx.RequireAuth(h.handleDeleteProgramReview))
+
+	// Feedback & Bug Reports
+	r.Get("/feedback", httpx.RequireAuth(h.handleListFeedback))
+	r.Post("/feedback", httpx.RequireAuth(h.handleCreateFeedback))
+	r.Post("/feedback/{id}/upvote", httpx.RequireAuth(h.handleToggleFeedbackUpvote))
+	r.Delete("/feedback/{id}", httpx.RequireAuth(h.handleDeleteFeedback))
+
+	// Platform & Users Statistics
+	r.Get("/platform/stats", httpx.RequireAuth(h.handleGetPlatformStats))
 
 	// Routines
 	r.Get("/routines", httpx.RequireAuth(h.handleListRoutines))

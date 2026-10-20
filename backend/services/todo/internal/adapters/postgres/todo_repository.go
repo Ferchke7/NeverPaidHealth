@@ -62,7 +62,7 @@ func (r *TodoRepository) GetByDate(ctx context.Context, userID uuid.UUID, dateSt
 	}
 	defer rows.Close()
 
-	var result []todo.Todo
+	result := make([]todo.Todo, 0)
 	for rows.Next() {
 		var t todo.Todo
 		var desc *string
@@ -249,7 +249,7 @@ func (r *TodoRepository) GetActivityLogs(ctx context.Context, userID uuid.UUID, 
 	}
 	defer rows.Close()
 
-	var result []todo.ActivityLog
+	result := make([]todo.ActivityLog, 0)
 	for rows.Next() {
 		var l todo.ActivityLog
 		var notes *string

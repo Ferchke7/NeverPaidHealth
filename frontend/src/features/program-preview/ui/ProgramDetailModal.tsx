@@ -9,6 +9,9 @@ import {
   Users,
   Award,
   Sparkles,
+  Star,
+  MessageSquare,
+  Trash2,
 } from 'lucide-react';
 import { Button } from '../../../shared/ui/button.tsx';
 import { Modal } from '../../../shared/ui/modal.tsx';
@@ -18,8 +21,9 @@ import { ExerciseInfoModal } from '../../exercise-detail/ui/ExerciseInfoModal.ts
 import { getExerciseVisual } from '../../../shared/lib/exerciseImages.ts';
 import { useTranslation } from '../../../shared/lib/i18n/i18n.ts';
 import { Program, ProgramDay } from '../../../entities/program/model/types.ts';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../../shared/api/client.ts';
+import { useAuthStore } from '../../../entities/user/model/authStore.ts';
 import { useStartWorkout } from '../../start-workout/model/useStartWorkout.ts';
 
 interface ProgramDetailModalProps {
@@ -42,14 +46,58 @@ export const ProgramDetailModal: React.FC<ProgramDetailModalProps> = ({
   onProgramInstalled,
 }) => {
   const { t } = useTranslation();
+  const user = useAuthStore((s) => s.user);
   const queryClient = useQueryClient();
+  const [modalTab, setModalTab] = useState<'schedule' | 'reviews'>('schedule');
   const [selectedDayIndex, setSelectedDayIndex] = useState(0);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewComment, setReviewComment] = useState('');
   const [inspectingExercise, setInspectingExercise] = useState<{
     name: string;
     muscle?: string;
   } | null>(null);
 
   const startWorkout = useStartWorkout();
+
+  // Fetch reviews for this program
+  const { data: rawReviews, refetch: refetchReviews } = useQuery<any[]>({
+    queryKey: ['program-reviews', program?.id],
+    queryFn: () => apiClient<any[]>(`/programs/${program?.id}/reviews`),
+    enabled: isOpen && !!program?.id,
+  });
+  const reviews = Array.isArray(rawReviews) ? rawReviews : [];
+
+  const postReviewMutation = useMutation({
+    mutationFn: async () => {
+      if (!program) return;
+      return apiClient(`/programs/${program.id}/reviews`, {
+        method: 'POST',
+        body: JSON.stringify({
+          rating: reviewRating,
+          comment: reviewComment,
+          author_name: user?.display_name || 'Атлет',
+        }),
+      });
+    },
+    onSuccess: () => {
+      setReviewComment('');
+      void refetchReviews();
+      void queryClient.invalidateQueries({ queryKey: ['programs'] });
+    },
+  });
+
+  const deleteReviewMutation = useMutation({
+    mutationFn: async (reviewId: string) => {
+      if (!program) return;
+      return apiClient(`/programs/${program.id}/reviews/${reviewId}`, {
+        method: 'DELETE',
+      });
+    },
+    onSuccess: () => {
+      void refetchReviews();
+      void queryClient.invalidateQueries({ queryKey: ['programs'] });
+    },
+  });
 
   const installMutation = useMutation({
     mutationFn: async ({ setActive }: { setActive: boolean }) => {
@@ -208,148 +256,290 @@ export const ProgramDetailModal: React.FC<ProgramDetailModalProps> = ({
             </div>
           )}
 
-          {/* Days Tabs Header */}
-          <div className="space-y-2.5">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
-                <Calendar className="w-3.5 h-3.5 text-brand-400" />
-                <span>{t('programs.splitDaysOverview')}</span>
-              </span>
-              <span className="text-xs text-zinc-500 font-mono">
-                {days.length} {t('programs.daysCount')}
-              </span>
-            </div>
-
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
-              {days.map((d, idx) => {
-                const isSelected = idx === selectedDayIndex;
-                return (
-                  <button
-                    key={idx}
-                    type="button"
-                    onClick={() => setSelectedDayIndex(idx)}
-                    className={`text-xs px-3.5 py-2 rounded-xl font-medium transition-all whitespace-nowrap flex items-center gap-2 ${
-                      isSelected
-                        ? 'bg-dark-700 text-brand-400 border border-brand-500/50 font-bold shadow-md'
-                        : 'bg-dark-900 text-zinc-400 hover:text-zinc-200 hover:bg-dark-800 border border-dark-800'
-                    }`}
-                  >
-                    <span className="font-mono text-brand-400">#{idx + 1}</span>
-                    <span className="truncate max-w-[140px]">{d.name}</span>
-                    <span className="text-[10px] text-zinc-500 font-mono">
-                      ({d.exercises?.length || 0})
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
+          {/* Tab Selector */}
+          <div className="flex border-b border-dark-800 gap-4">
+            <button
+              type="button"
+              onClick={() => setModalTab('schedule')}
+              className={`pb-2 text-xs font-bold transition-all border-b-2 flex items-center gap-1.5 ${
+                modalTab === 'schedule'
+                  ? 'border-brand-500 text-brand-400'
+                  : 'border-transparent text-zinc-400 hover:text-zinc-200'
+              }`}
+            >
+              <Calendar className="w-3.5 h-3.5" />
+              <span>{t('programs.splitDaysOverview')}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setModalTab('reviews')}
+              className={`pb-2 text-xs font-bold transition-all border-b-2 flex items-center gap-1.5 ${
+                modalTab === 'reviews'
+                  ? 'border-brand-500 text-brand-400'
+                  : 'border-transparent text-zinc-400 hover:text-zinc-200'
+              }`}
+            >
+              <MessageSquare className="w-3.5 h-3.5" />
+              <span>Отзывы и оценка</span>
+              {reviews.length > 0 && (
+                <span className="text-[10px] bg-dark-800 border border-dark-700 text-zinc-300 px-1.5 py-0.2 rounded-full font-mono">
+                  {reviews.length}
+                </span>
+              )}
+            </button>
           </div>
 
-          {/* Current Day Exercise List */}
-          {currentDay && (
-            <div className="bg-dark-900/90 border border-dark-750 p-4 rounded-2xl space-y-3">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 border-b border-dark-800 pb-2.5">
-                <div>
-                  <h4 className="text-sm font-bold text-white flex items-center gap-2">
-                    <span className="text-brand-400 font-mono">Day {selectedDayIndex + 1}:</span>
-                    <span>{currentDay.name}</span>
-                  </h4>
-                  {currentDay.notes && (
-                    <p className="text-xs text-zinc-400 mt-0.5 italic">"{currentDay.notes}"</p>
-                  )}
+          {modalTab === 'schedule' ? (
+            <>
+              {/* Days Tabs Header */}
+              <div className="space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
+                    <Calendar className="w-3.5 h-3.5 text-brand-400" />
+                    <span>Дни программы</span>
+                  </span>
+                  <span className="text-xs text-zinc-500 font-mono">
+                    {days.length} {t('programs.daysCount')}
+                  </span>
                 </div>
 
-                <div className="flex items-center gap-2 text-xs text-zinc-400 font-mono">
-                  <span className="flex items-center gap-1">
-                    <Layers className="w-3.5 h-3.5 text-zinc-500" />
-                    {currentDay.exercises?.length || 0} {t('programs.exercises')}
-                  </span>
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+                  {days.map((d, idx) => {
+                    const isSelected = idx === selectedDayIndex;
+                    return (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => setSelectedDayIndex(idx)}
+                        className={`text-xs px-3.5 py-2 rounded-xl font-medium transition-all whitespace-nowrap flex items-center gap-2 ${
+                          isSelected
+                            ? 'bg-dark-700 text-brand-400 border border-brand-500/50 font-bold shadow-md'
+                            : 'bg-dark-900 text-zinc-400 hover:text-zinc-200 hover:bg-dark-800 border border-dark-800'
+                        }`}
+                      >
+                        <span className="font-mono text-brand-400">#{idx + 1}</span>
+                        <span className="truncate max-w-[140px]">{d.name}</span>
+                        <span className="text-[10px] text-zinc-500 font-mono">
+                          ({d.exercises?.length || 0})
+                        </span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
-              <div className="space-y-2 divide-y divide-dark-800">
-                {currentDay.exercises && currentDay.exercises.length > 0 ? (
-                  currentDay.exercises.map((ex, exIdx) => {
-                    const exName = ex.exercise_name || 'Exercise';
-                    const targetSets = ex.target_sets || 3;
-                    const visual = getExerciseVisual(exName);
-                    const primaryMuscle = visual.primaryMuscles[0] || 'Strength';
+              {/* Current Day Exercise List */}
+              {currentDay && (
+                <div className="bg-dark-900/90 border border-dark-750 p-4 rounded-2xl space-y-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 border-b border-dark-800 pb-2.5">
+                    <div>
+                      <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                        <span className="text-brand-400 font-mono">Day {selectedDayIndex + 1}:</span>
+                        <span>{currentDay.name}</span>
+                      </h4>
+                      {currentDay.notes && (
+                        <p className="text-xs text-zinc-400 mt-0.5 italic">"{currentDay.notes}"</p>
+                      )}
+                    </div>
 
-                    return (
-                      <div
-                        key={ex.exercise_id || exIdx}
-                        className="pt-2.5 first:pt-0 flex items-center justify-between gap-3 group"
-                      >
-                        <div
-                          className="cursor-pointer shrink-0"
-                          onClick={() =>
-                            setInspectingExercise({
-                              name: exName,
-                              muscle: primaryMuscle,
-                            })
-                          }
-                          title={t('routines.viewTechnique')}
-                        >
-                          <ExerciseThumbnail
-                            exerciseName={exName}
-                            fallbackMuscle={primaryMuscle}
-                            size="md"
-                            className="rounded-xl border border-dark-700/80 group-hover:border-brand-500/60 transition-colors shadow-sm"
-                          />
-                        </div>
-
-                        <div
-                          className="flex-1 min-w-0 cursor-pointer"
-                          onClick={() =>
-                            setInspectingExercise({
-                              name: exName,
-                              muscle: primaryMuscle,
-                            })
-                          }
-                        >
-                          <div className="text-sm font-bold text-zinc-100 group-hover:text-brand-400 transition-colors truncate">
-                            <span className="text-brand-400 font-extrabold mr-1.5">
-                              {targetSets} ×
-                            </span>
-                            <span>{exName}</span>
-                          </div>
-                          <div className="text-xs text-zinc-400 capitalize mt-0.5 flex items-center gap-2">
-                            <span className="text-zinc-300 font-medium">{primaryMuscle}</span>
-                            {ex.target_reps_min && (
-                              <>
-                                <span className="text-zinc-600">•</span>
-                                <span className="text-zinc-400 font-mono text-[11px]">
-                                  {ex.target_reps_min}
-                                  {ex.target_reps_max && ex.target_reps_max !== ex.target_reps_min
-                                    ? `-${ex.target_reps_max}`
-                                    : ''}{' '}
-                                  {t('activeWorkout.reps')}
-                                </span>
-                              </>
-                            )}
-                          </div>
-                        </div>
-
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setInspectingExercise({
-                              name: exName,
-                              muscle: primaryMuscle,
-                            })
-                          }
-                          className="w-8 h-8 rounded-xl border border-dark-700 text-zinc-400 hover:text-white hover:border-dark-600 hover:bg-dark-800 flex items-center justify-center transition-all shrink-0 cursor-pointer"
-                          title={t('routines.techniqueTooltip')}
-                        >
-                          <HelpCircle className="w-4 h-4" />
-                        </button>
-                      </div>
-                    );
-                  })
-                ) : (
-                  <div className="text-center py-6 text-xs text-zinc-500">
-                    {t('programs.noExercisesInDay')}
+                    <div className="flex items-center gap-2 text-xs text-zinc-400 font-mono">
+                      <span className="flex items-center gap-1">
+                        <Layers className="w-3.5 h-3.5 text-zinc-500" />
+                        {currentDay.exercises?.length || 0} {t('programs.exercises')}
+                      </span>
+                    </div>
                   </div>
+
+                  <div className="space-y-2 divide-y divide-dark-800">
+                    {currentDay.exercises && currentDay.exercises.length > 0 ? (
+                      currentDay.exercises.map((ex, exIdx) => {
+                        const exName = ex.exercise_name || 'Exercise';
+                        const targetSets = ex.target_sets || 3;
+                        const visual = getExerciseVisual(exName);
+                        const primaryMuscle = visual.primaryMuscles[0] || 'Strength';
+
+                        return (
+                          <div
+                            key={ex.exercise_id || exIdx}
+                            className="pt-2.5 first:pt-0 flex items-center justify-between gap-3 group"
+                          >
+                            <div
+                              className="cursor-pointer shrink-0"
+                              onClick={() =>
+                                setInspectingExercise({
+                                  name: exName,
+                                  muscle: primaryMuscle,
+                                })
+                              }
+                              title={t('routines.viewTechnique')}
+                            >
+                              <ExerciseThumbnail
+                                exerciseName={exName}
+                                fallbackMuscle={primaryMuscle}
+                                size="md"
+                                className="rounded-xl border border-dark-700/80 group-hover:border-brand-500/60 transition-colors shadow-sm"
+                              />
+                            </div>
+
+                            <div
+                              className="flex-1 min-w-0 cursor-pointer"
+                              onClick={() =>
+                                setInspectingExercise({
+                                  name: exName,
+                                  muscle: primaryMuscle,
+                                })
+                              }
+                            >
+                              <div className="text-sm font-bold text-zinc-100 group-hover:text-brand-400 transition-colors truncate">
+                                <span className="text-brand-400 font-extrabold mr-1.5">
+                                  {targetSets} ×
+                                </span>
+                                <span>{exName}</span>
+                              </div>
+                              <div className="text-xs text-zinc-400 capitalize mt-0.5 flex items-center gap-2">
+                                <span className="text-zinc-300 font-medium">{primaryMuscle}</span>
+                                {ex.target_reps_min && (
+                                  <>
+                                    <span className="text-zinc-600">•</span>
+                                    <span className="text-zinc-400 font-mono text-[11px]">
+                                      {ex.target_reps_min}
+                                      {ex.target_reps_max && ex.target_reps_max !== ex.target_reps_min
+                                        ? `-${ex.target_reps_max}`
+                                        : ''}{' '}
+                                      {t('activeWorkout.reps')}
+                                    </span>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setInspectingExercise({
+                                  name: exName,
+                                  muscle: primaryMuscle,
+                                })
+                              }
+                              className="w-8 h-8 rounded-xl border border-dark-700 text-zinc-400 hover:text-white hover:border-dark-600 hover:bg-dark-800 flex items-center justify-center transition-all shrink-0 cursor-pointer"
+                              title={t('routines.techniqueTooltip')}
+                            >
+                              <HelpCircle className="w-4 h-4" />
+                            </button>
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <div className="text-center py-6 text-xs text-zinc-500">
+                        {t('programs.noExercisesInDay')}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </>
+          ) : (
+            /* Reviews & Rating Tab */
+            <div className="space-y-4">
+              {/* Add / Update Review Form */}
+              <div className="bg-dark-900 border border-dark-750 p-3.5 rounded-2xl space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-white">Оставить отзыв</span>
+                  <div className="flex items-center gap-1">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button
+                        key={star}
+                        type="button"
+                        onClick={() => setReviewRating(star)}
+                        className="p-1 hover:scale-110 transition-transform"
+                      >
+                        <Star
+                          className={`w-4 h-4 ${
+                            star <= reviewRating
+                              ? 'text-amber-400 fill-amber-400'
+                              : 'text-zinc-600'
+                          }`}
+                        />
+                      </button>
+                    ))}
+                    <span className="text-xs font-bold text-amber-400 ml-1 font-mono">{reviewRating} / 5</span>
+                  </div>
+                </div>
+
+                <textarea
+                  value={reviewComment}
+                  onChange={(e) => setReviewComment(e.target.value)}
+                  placeholder="Поделитесь впечатлениями о программе, интенсивности и результатах..."
+                  rows={2}
+                  className="w-full bg-dark-950/80 border border-dark-700 rounded-xl px-3 py-2 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-brand-500 transition-colors resize-none"
+                />
+
+                <div className="flex justify-end">
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    className="text-xs font-bold"
+                    isLoading={postReviewMutation.isPending}
+                    onClick={() => postReviewMutation.mutate()}
+                  >
+                    Отправить отзыв
+                  </Button>
+                </div>
+              </div>
+
+              {/* Reviews List */}
+              <div className="space-y-2">
+                {reviews.length === 0 ? (
+                  <div className="text-center py-8 text-zinc-500 text-xs">
+                    Пока нет отзывов к этой программе. Будьте первым, кто оценит её!
+                  </div>
+                ) : (
+                  reviews.map((rev) => (
+                    <div
+                      key={rev.id}
+                      className="bg-dark-900/60 border border-dark-800 p-3 rounded-xl space-y-1.5"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-zinc-200">
+                            {rev.author_name || 'Атлет'}
+                          </span>
+                          <div className="flex items-center gap-0.5">
+                            {[1, 2, 3, 4, 5].map((s) => (
+                              <Star
+                                key={s}
+                                className={`w-3 h-3 ${
+                                  s <= rev.rating
+                                    ? 'text-amber-400 fill-amber-400'
+                                    : 'text-zinc-700'
+                                }`}
+                              />
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] text-zinc-500 font-mono">
+                            {new Date(rev.created_at).toLocaleDateString()}
+                          </span>
+                          {user?.id && rev.user_id === user.id && (
+                            <button
+                              type="button"
+                              onClick={() => deleteReviewMutation.mutate(rev.id)}
+                              className="text-zinc-500 hover:text-rose-400 transition-colors p-0.5"
+                              title="Удалить отзыв"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      {rev.comment && (
+                        <p className="text-xs text-zinc-300 leading-relaxed">{rev.comment}</p>
+                      )}
+                    </div>
+                  ))
                 )}
               </div>
             </div>

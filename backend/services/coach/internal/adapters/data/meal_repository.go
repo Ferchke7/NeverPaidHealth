@@ -42,6 +42,16 @@ func (r *MealRepository) autoMigrate(ctx context.Context) {
 			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 		);
 		CREATE INDEX IF NOT EXISTS idx_meals_user_logged ON meals(user_id, logged_at DESC);
+
+		CREATE TABLE IF NOT EXISTS coach_messages (
+			id UUID PRIMARY KEY,
+			user_id UUID NOT NULL,
+			role VARCHAR(20) NOT NULL,
+			content TEXT NOT NULL,
+			suggested_workout JSONB,
+			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+		);
+		CREATE INDEX IF NOT EXISTS idx_coach_messages_user_created ON coach_messages(user_id, created_at ASC);
 	`
 	_, _ = r.pool.Exec(ctx, query)
 }
@@ -109,7 +119,7 @@ func (r *MealRepository) GetTodayMeals(ctx context.Context, userID uuid.UUID) ([
 	}
 	defer rows.Close()
 
-	var meals []coach.MealLog
+	meals := make([]coach.MealLog, 0)
 	for rows.Next() {
 		var (
 			m          coach.MealLog
@@ -142,5 +152,80 @@ func (r *MealRepository) DeleteMeal(ctx context.Context, userID, mealID uuid.UUI
 	}
 	query := `DELETE FROM meals WHERE id = $1 AND user_id = $2`
 	_, err := r.pool.Exec(ctx, query, mealID, userID)
+	return err
+}
+
+type CoachChatMessage struct {
+	ID               uuid.UUID       `json:"id"`
+	UserID           uuid.UUID       `json:"user_id"`
+	Role             string          `json:"role"`
+	Content          string          `json:"content"`
+	SuggestedWorkout json.RawMessage `json:"suggested_workout,omitempty"`
+	CreatedAt        time.Time       `json:"created_at"`
+}
+
+func (r *MealRepository) GetChatMessages(ctx context.Context, userID uuid.UUID) ([]CoachChatMessage, error) {
+	if r.pool == nil {
+		return make([]CoachChatMessage, 0), nil
+	}
+	query := `
+		SELECT id, user_id, role, content, COALESCE(suggested_workout::text, ''), created_at
+		FROM coach_messages
+		WHERE user_id = $1
+		ORDER BY created_at ASC
+		LIMIT 100
+	`
+	rows, err := r.pool.Query(ctx, query, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	list := make([]CoachChatMessage, 0)
+	for rows.Next() {
+		var (
+			m      CoachChatMessage
+			swText string
+		)
+		if err := rows.Scan(&m.ID, &m.UserID, &m.Role, &m.Content, &swText, &m.CreatedAt); err != nil {
+			return nil, err
+		}
+		if swText != "" && swText != "{}" {
+			m.SuggestedWorkout = json.RawMessage(swText)
+		}
+		list = append(list, m)
+	}
+	return list, nil
+}
+
+func (r *MealRepository) SaveChatMessage(ctx context.Context, msg CoachChatMessage) error {
+	if r.pool == nil {
+		return nil
+	}
+	if msg.ID == uuid.Nil {
+		msg.ID = uuid.New()
+	}
+	if msg.CreatedAt.IsZero() {
+		msg.CreatedAt = time.Now().UTC()
+	}
+	var swParam any
+	if len(msg.SuggestedWorkout) > 0 {
+		swParam = string(msg.SuggestedWorkout)
+	}
+
+	query := `
+		INSERT INTO coach_messages (id, user_id, role, content, suggested_workout, created_at)
+		VALUES ($1, $2, $3, $4, $5, $6)
+	`
+	_, err := r.pool.Exec(ctx, query, msg.ID, msg.UserID, msg.Role, msg.Content, swParam, msg.CreatedAt)
+	return err
+}
+
+func (r *MealRepository) ClearChatMessages(ctx context.Context, userID uuid.UUID) error {
+	if r.pool == nil {
+		return nil
+	}
+	query := `DELETE FROM coach_messages WHERE user_id = $1`
+	_, err := r.pool.Exec(ctx, query, userID)
 	return err
 }
