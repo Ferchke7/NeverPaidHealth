@@ -10,8 +10,9 @@ import {
   Award,
   Sparkles,
   Star,
-  MessageSquare,
+  MessageCircle,
   Trash2,
+  Heart,
 } from 'lucide-react';
 import { Button } from '../../../shared/ui/button.tsx';
 import { Modal } from '../../../shared/ui/modal.tsx';
@@ -25,7 +26,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../../shared/api/client.ts';
 import { useAuthStore } from '../../../entities/user/model/authStore.ts';
 import { useStartWorkout } from '../../start-workout/model/useStartWorkout.ts';
-import { ProgramDiscussionSection } from './ProgramDiscussionSection.tsx';
+import { InstagramCommentsModal } from './InstagramCommentsModal.tsx';
 
 interface ProgramDetailModalProps {
   isOpen: boolean;
@@ -49,8 +50,9 @@ export const ProgramDetailModal: React.FC<ProgramDetailModalProps> = ({
   const { t } = useTranslation();
   const user = useAuthStore((s) => s.user);
   const queryClient = useQueryClient();
-  const [modalTab, setModalTab] = useState<'schedule' | 'discussion' | 'reviews'>('schedule');
   const [selectedDayIndex, setSelectedDayIndex] = useState(0);
+  const [isCommentsOpen, setIsCommentsOpen] = useState(false);
+  const [isReviewsOpen, setIsReviewsOpen] = useState(false);
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewComment, setReviewComment] = useState('');
   const [inspectingExercise, setInspectingExercise] = useState<{
@@ -59,6 +61,30 @@ export const ProgramDetailModal: React.FC<ProgramDetailModalProps> = ({
   } | null>(null);
 
   const startWorkout = useStartWorkout();
+
+  // Fetch program like status
+  const { data: likeStatus } = useQuery<{ has_liked: boolean }>({
+    queryKey: ['program-like-status', program?.id],
+    queryFn: () => apiClient<{ has_liked: boolean }>(`/programs/${program?.id}/like`),
+    enabled: isOpen && !!program?.id,
+  });
+  const hasLiked = likeStatus?.has_liked ?? false;
+
+  const toggleLikeMutation = useMutation({
+    mutationFn: async () => {
+      if (!program) return;
+      return apiClient<{ likes_count: number; has_liked: boolean }>(`/programs/${program.id}/like`, {
+        method: 'POST',
+      });
+    },
+    onSuccess: (res) => {
+      if (res && program) {
+        program.likes_count = res.likes_count;
+      }
+      void queryClient.invalidateQueries({ queryKey: ['program-like-status', program?.id] });
+      void queryClient.invalidateQueries({ queryKey: ['programs'] });
+    },
+  });
 
   // Fetch comments for this program
   const { data: rawComments } = useQuery<any[]>({
@@ -265,320 +291,396 @@ export const ProgramDetailModal: React.FC<ProgramDetailModalProps> = ({
             </div>
           )}
 
-          {/* Tab Selector */}
-          <div className="flex border-b border-dark-800 gap-4 overflow-x-auto scrollbar-none pb-0.5">
-            <button
-              type="button"
-              onClick={() => setModalTab('schedule')}
-              className={`pb-2 text-xs font-bold transition-all border-b-2 flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
-                modalTab === 'schedule'
-                  ? 'border-brand-500 text-brand-400'
-                  : 'border-transparent text-zinc-400 hover:text-zinc-200'
-              }`}
-            >
-              <Calendar className="w-3.5 h-3.5" />
-              <span>{t('programs.splitDaysOverview')}</span>
-            </button>
+          {/* Instagram-Style Social Action Bar */}
+          <div className="bg-dark-900/90 border border-dark-750 p-3 rounded-2xl space-y-2 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5 sm:gap-3.5">
+                {/* Heart / Like button */}
+                <button
+                  type="button"
+                  onClick={() => toggleLikeMutation.mutate()}
+                  className="flex items-center gap-1.5 text-xs font-bold transition-transform active:scale-125 cursor-pointer group"
+                  title="Нравится"
+                >
+                  <Heart
+                    className={`w-5 h-5 transition-colors ${
+                      hasLiked
+                        ? 'fill-rose-500 text-rose-500'
+                        : 'text-zinc-400 group-hover:text-rose-400'
+                    }`}
+                  />
+                  <span
+                    className={`font-mono text-xs ${
+                      hasLiked ? 'text-rose-400 font-bold' : 'text-zinc-300'
+                    }`}
+                  >
+                    {program.likes_count || 0}
+                  </span>
+                </button>
 
-            <button
-              type="button"
-              onClick={() => setModalTab('discussion')}
-              className={`pb-2 text-xs font-bold transition-all border-b-2 flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
-                modalTab === 'discussion'
-                  ? 'border-brand-500 text-brand-400'
-                  : 'border-transparent text-zinc-400 hover:text-zinc-200'
-              }`}
-            >
-              <MessageSquare className="w-3.5 h-3.5" />
-              <span>Форум и обсуждение</span>
-              {comments.length > 0 && (
-                <span className="text-[10px] bg-brand-500/15 border border-brand-500/30 text-brand-400 px-1.5 py-0.2 rounded-full font-mono font-bold">
-                  {comments.length}
-                </span>
-              )}
-            </button>
+                {/* Comment button */}
+                <button
+                  type="button"
+                  onClick={() => setIsCommentsOpen(true)}
+                  className="flex items-center gap-1.5 text-xs font-bold text-zinc-400 hover:text-white transition-colors cursor-pointer group"
+                  title="Комментарии"
+                >
+                  <MessageCircle className="w-5 h-5 text-zinc-400 group-hover:text-brand-400 transition-colors" />
+                  <span className="font-mono text-xs text-zinc-300">
+                    {comments.length}
+                  </span>
+                </button>
 
-            <button
-              type="button"
-              onClick={() => setModalTab('reviews')}
-              className={`pb-2 text-xs font-bold transition-all border-b-2 flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
-                modalTab === 'reviews'
-                  ? 'border-brand-500 text-brand-400'
-                  : 'border-transparent text-zinc-400 hover:text-zinc-200'
-              }`}
-            >
-              <Star className="w-3.5 h-3.5" />
-              <span>Отзывы и оценка</span>
-              {reviews.length > 0 && (
-                <span className="text-[10px] bg-dark-800 border border-dark-700 text-zinc-300 px-1.5 py-0.2 rounded-full font-mono">
-                  {reviews.length}
+                {/* Rating Pill */}
+                <button
+                  type="button"
+                  onClick={() => setIsReviewsOpen(true)}
+                  className="flex items-center gap-1 text-xs font-bold text-amber-400 hover:text-amber-300 transition-colors cursor-pointer bg-amber-500/10 border border-amber-500/25 px-2 py-0.5 rounded-full"
+                  title="Оценки и отзывы"
+                >
+                  <Star className="w-3.5 h-3.5 fill-amber-400" />
+                  <span>
+                    {program.rating_avg && program.rating_avg > 0
+                      ? program.rating_avg.toFixed(1)
+                      : 'Оценить'}
+                  </span>
+                  {program.reviews_count ? (
+                    <span className="text-[10px] text-zinc-500 font-normal">
+                      ({program.reviews_count})
+                    </span>
+                  ) : null}
+                </button>
+              </div>
+
+              {/* Install badge or button on right */}
+              {isActiveProgram ? (
+                <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-full flex items-center gap-1">
+                  <Check className="w-3 h-3" />
+                  Активен
                 </span>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => installMutation.mutate({ setActive: true })}
+                  disabled={installMutation.isPending}
+                  className="text-[11px] font-bold text-brand-400 hover:text-brand-300 bg-brand-500/10 border border-brand-500/30 px-2.5 py-0.5 rounded-full transition-all cursor-pointer flex items-center gap-1"
+                >
+                  <Award className="w-3 h-3" />
+                  <span>{isInstalled ? 'Активировать' : 'Установить'}</span>
+                </button>
               )}
-            </button>
+            </div>
+
+            {/* Instagram Social Preview & Link to comments */}
+            <div className="text-xs space-y-1 pt-1.5 border-t border-dark-800/80">
+              <div className="text-zinc-400 font-medium text-[11px]">
+                {program.likes_count > 0 ? (
+                  <span>
+                    Отметок «Нравится»: <strong className="text-white font-mono">{program.likes_count}</strong>
+                  </span>
+                ) : (
+                  <span className="text-zinc-500">Поставьте первый лайк программе</span>
+                )}
+              </div>
+
+              <div className="flex items-center justify-between text-xs pt-0.5">
+                <button
+                  type="button"
+                  onClick={() => setIsCommentsOpen(true)}
+                  className="text-zinc-500 hover:text-zinc-300 font-medium transition-colors cursor-pointer text-left"
+                >
+                  {comments.length > 0
+                    ? `Посмотреть все комментарии (${comments.length})...`
+                    : 'Написать первый комментарий...'}
+                </button>
+
+                {comments[0] && (
+                  <span className="text-[11px] text-zinc-400 truncate max-w-[180px] hidden sm:inline">
+                    <strong className="text-zinc-300">@{comments[0].author_name}:</strong> {comments[0].content}
+                  </span>
+                )}
+              </div>
+            </div>
           </div>
 
-          {modalTab === 'schedule' ? (
-            <>
-              {/* Days Tabs Header */}
-              <div className="space-y-2.5">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
-                    <Calendar className="w-3.5 h-3.5 text-brand-400" />
-                    <span>Дни программы</span>
-                  </span>
-                  <span className="text-xs text-zinc-500 font-mono">
-                    {days.length} {t('programs.daysCount')}
-                  </span>
-                </div>
+          {/* Days Tabs Header */}
+          <div className="space-y-2.5">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
+                <Calendar className="w-3.5 h-3.5 text-brand-400" />
+                <span>{t('programs.splitDaysOverview')}</span>
+              </span>
+              <span className="text-xs text-zinc-500 font-mono">
+                {days.length} {t('programs.daysCount')}
+              </span>
+            </div>
 
-                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
-                  {days.map((d, idx) => {
-                    const isSelected = idx === selectedDayIndex;
-                    return (
-                      <button
-                        key={idx}
-                        type="button"
-                        onClick={() => setSelectedDayIndex(idx)}
-                        className={`text-xs px-3.5 py-2 rounded-xl font-medium transition-all whitespace-nowrap flex items-center gap-2 ${
-                          isSelected
-                            ? 'bg-dark-700 text-brand-400 border border-brand-500/50 font-bold shadow-md'
-                            : 'bg-dark-900 text-zinc-400 hover:text-zinc-200 hover:bg-dark-800 border border-dark-800'
-                        }`}
-                      >
-                        <span className="font-mono text-brand-400">#{idx + 1}</span>
-                        <span className="truncate max-w-[140px]">{d.name}</span>
-                        <span className="text-[10px] text-zinc-500 font-mono">
-                          ({d.exercises?.length || 0})
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Current Day Exercise List */}
-              {currentDay && (
-                <div className="bg-dark-900/90 border border-dark-750 p-4 rounded-2xl space-y-3">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 border-b border-dark-800 pb-2.5">
-                    <div>
-                      <h4 className="text-sm font-bold text-white flex items-center gap-2">
-                        <span className="text-brand-400 font-mono">Day {selectedDayIndex + 1}:</span>
-                        <span>{currentDay.name}</span>
-                      </h4>
-                      {currentDay.notes && (
-                        <p className="text-xs text-zinc-400 mt-0.5 italic">"{currentDay.notes}"</p>
-                      )}
-                    </div>
-
-                    <div className="flex items-center gap-2 text-xs text-zinc-400 font-mono">
-                      <span className="flex items-center gap-1">
-                        <Layers className="w-3.5 h-3.5 text-zinc-500" />
-                        {currentDay.exercises?.length || 0} {t('programs.exercises')}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2 divide-y divide-dark-800">
-                    {currentDay.exercises && currentDay.exercises.length > 0 ? (
-                      currentDay.exercises.map((ex, exIdx) => {
-                        const exName = ex.exercise_name || 'Exercise';
-                        const targetSets = ex.target_sets || 3;
-                        const visual = getExerciseVisual(exName);
-                        const primaryMuscle = visual.primaryMuscles[0] || 'Strength';
-
-                        return (
-                          <div
-                            key={ex.exercise_id || exIdx}
-                            className="pt-2.5 first:pt-0 flex items-center justify-between gap-3 group"
-                          >
-                            <div
-                              className="cursor-pointer shrink-0"
-                              onClick={() =>
-                                setInspectingExercise({
-                                  name: exName,
-                                  muscle: primaryMuscle,
-                                })
-                              }
-                              title={t('routines.viewTechnique')}
-                            >
-                              <ExerciseThumbnail
-                                exerciseName={exName}
-                                fallbackMuscle={primaryMuscle}
-                                size="md"
-                                className="rounded-xl border border-dark-700/80 group-hover:border-brand-500/60 transition-colors shadow-sm"
-                              />
-                            </div>
-
-                            <div
-                              className="flex-1 min-w-0 cursor-pointer"
-                              onClick={() =>
-                                setInspectingExercise({
-                                  name: exName,
-                                  muscle: primaryMuscle,
-                                })
-                              }
-                            >
-                              <div className="text-sm font-bold text-zinc-100 group-hover:text-brand-400 transition-colors truncate">
-                                <span className="text-brand-400 font-extrabold mr-1.5">
-                                  {targetSets} ×
-                                </span>
-                                <span>{exName}</span>
-                              </div>
-                              <div className="text-xs text-zinc-400 capitalize mt-0.5 flex items-center gap-2">
-                                <span className="text-zinc-300 font-medium">{primaryMuscle}</span>
-                                {ex.target_reps_min && (
-                                  <>
-                                    <span className="text-zinc-600">•</span>
-                                    <span className="text-zinc-400 font-mono text-[11px]">
-                                      {ex.target_reps_min}
-                                      {ex.target_reps_max && ex.target_reps_max !== ex.target_reps_min
-                                        ? `-${ex.target_reps_max}`
-                                        : ''}{' '}
-                                      {t('activeWorkout.reps')}
-                                    </span>
-                                  </>
-                                )}
-                              </div>
-                            </div>
-
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setInspectingExercise({
-                                  name: exName,
-                                  muscle: primaryMuscle,
-                                })
-                              }
-                              className="w-8 h-8 rounded-xl border border-dark-700 text-zinc-400 hover:text-white hover:border-dark-600 hover:bg-dark-800 flex items-center justify-center transition-all shrink-0 cursor-pointer"
-                              title={t('routines.techniqueTooltip')}
-                            >
-                              <HelpCircle className="w-4 h-4" />
-                            </button>
-                          </div>
-                        );
-                      })
-                    ) : (
-                      <div className="text-center py-6 text-xs text-zinc-500">
-                        {t('programs.noExercisesInDay')}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-            </>
-          ) : modalTab === 'discussion' ? (
-            /* Habr-Style Discussion Forum Tab */
-            <ProgramDiscussionSection
-              programId={program.id}
-              programAuthorId={program.user_id}
-              programAuthorName={program.author_name}
-            />
-          ) : (
-            /* Reviews & Rating Tab */
-            <div className="space-y-4">
-              {/* Add / Update Review Form */}
-              <div className="bg-dark-900 border border-dark-750 p-3.5 rounded-2xl space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-white">Оставить отзыв</span>
-                  <div className="flex items-center gap-1">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <button
-                        key={star}
-                        type="button"
-                        onClick={() => setReviewRating(star)}
-                        className="p-1 hover:scale-110 transition-transform"
-                      >
-                        <Star
-                          className={`w-4 h-4 ${
-                            star <= reviewRating
-                              ? 'text-amber-400 fill-amber-400'
-                              : 'text-zinc-600'
-                          }`}
-                        />
-                      </button>
-                    ))}
-                    <span className="text-xs font-bold text-amber-400 ml-1 font-mono">{reviewRating} / 5</span>
-                  </div>
-                </div>
-
-                <textarea
-                  value={reviewComment}
-                  onChange={(e) => setReviewComment(e.target.value)}
-                  placeholder="Поделитесь впечатлениями о программе, интенсивности и результатах..."
-                  rows={2}
-                  className="w-full bg-dark-950/80 border border-dark-700 rounded-xl px-3 py-2 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-brand-500 transition-colors resize-none"
-                />
-
-                <div className="flex justify-end">
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    className="text-xs font-bold"
-                    isLoading={postReviewMutation.isPending}
-                    onClick={() => postReviewMutation.mutate()}
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+              {days.map((d, idx) => {
+                const isSelected = idx === selectedDayIndex;
+                return (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => setSelectedDayIndex(idx)}
+                    className={`text-xs px-3.5 py-2 rounded-xl font-medium transition-all whitespace-nowrap flex items-center gap-2 ${
+                      isSelected
+                        ? 'bg-dark-700 text-brand-400 border border-brand-500/50 font-bold shadow-md'
+                        : 'bg-dark-900 text-zinc-400 hover:text-zinc-200 hover:bg-dark-800 border border-dark-800'
+                    }`}
                   >
-                    Отправить отзыв
-                  </Button>
+                    <span className="font-mono text-brand-400">#{idx + 1}</span>
+                    <span className="truncate max-w-[140px]">{d.name}</span>
+                    <span className="text-[10px] text-zinc-500 font-mono">
+                      ({d.exercises?.length || 0})
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Current Day Exercise List */}
+          {currentDay && (
+            <div className="bg-dark-900/90 border border-dark-750 p-4 rounded-2xl space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 border-b border-dark-800 pb-2.5">
+                <div>
+                  <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                    <span className="text-brand-400 font-mono">Day {selectedDayIndex + 1}:</span>
+                    <span>{currentDay.name}</span>
+                  </h4>
+                  {currentDay.notes && (
+                    <p className="text-xs text-zinc-400 mt-0.5 italic">"{currentDay.notes}"</p>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-2 text-xs text-zinc-400 font-mono">
+                  <span className="flex items-center gap-1">
+                    <Layers className="w-3.5 h-3.5 text-zinc-500" />
+                    {currentDay.exercises?.length || 0} {t('programs.exercises')}
+                  </span>
                 </div>
               </div>
 
-              {/* Reviews List */}
-              <div className="space-y-2">
-                {reviews.length === 0 ? (
-                  <div className="text-center py-8 text-zinc-500 text-xs">
-                    Пока нет отзывов к этой программе. Будьте первым, кто оценит её!
-                  </div>
-                ) : (
-                  reviews.map((rev) => (
-                    <div
-                      key={rev.id}
-                      className="bg-dark-900/60 border border-dark-800 p-3 rounded-xl space-y-1.5"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold text-zinc-200">
-                            {rev.author_name || 'Атлет'}
-                          </span>
-                          <div className="flex items-center gap-0.5">
-                            {[1, 2, 3, 4, 5].map((s) => (
-                              <Star
-                                key={s}
-                                className={`w-3 h-3 ${
-                                  s <= rev.rating
-                                    ? 'text-amber-400 fill-amber-400'
-                                    : 'text-zinc-700'
-                                }`}
-                              />
-                            ))}
+              <div className="space-y-2 divide-y divide-dark-800">
+                {currentDay.exercises && currentDay.exercises.length > 0 ? (
+                  currentDay.exercises.map((ex, exIdx) => {
+                    const exName = ex.exercise_name || 'Exercise';
+                    const targetSets = ex.target_sets || 3;
+                    const visual = getExerciseVisual(exName);
+                    const primaryMuscle = visual.primaryMuscles[0] || 'Strength';
+
+                    return (
+                      <div
+                        key={ex.exercise_id || exIdx}
+                        className="pt-2.5 first:pt-0 flex items-center justify-between gap-3 group"
+                      >
+                        <div
+                          className="cursor-pointer shrink-0"
+                          onClick={() =>
+                            setInspectingExercise({
+                              name: exName,
+                              muscle: primaryMuscle,
+                            })
+                          }
+                          title={t('routines.viewTechnique')}
+                        >
+                          <ExerciseThumbnail
+                            exerciseName={exName}
+                            fallbackMuscle={primaryMuscle}
+                            size="md"
+                            className="rounded-xl border border-dark-700/80 group-hover:border-brand-500/60 transition-colors shadow-sm"
+                          />
+                        </div>
+
+                        <div
+                          className="flex-1 min-w-0 cursor-pointer"
+                          onClick={() =>
+                            setInspectingExercise({
+                              name: exName,
+                              muscle: primaryMuscle,
+                            })
+                          }
+                        >
+                          <div className="text-sm font-bold text-zinc-100 group-hover:text-brand-400 transition-colors truncate">
+                            <span className="text-brand-400 font-extrabold mr-1.5">
+                              {targetSets} ×
+                            </span>
+                            <span>{exName}</span>
+                          </div>
+                          <div className="text-xs text-zinc-400 capitalize mt-0.5 flex items-center gap-2">
+                            <span className="text-zinc-300 font-medium">{primaryMuscle}</span>
+                            {ex.target_reps_min && (
+                              <>
+                                <span className="text-zinc-600">•</span>
+                                <span className="text-zinc-400 font-mono text-[11px]">
+                                  {ex.target_reps_min}
+                                  {ex.target_reps_max && ex.target_reps_max !== ex.target_reps_min
+                                    ? `-${ex.target_reps_max}`
+                                    : ''}{' '}
+                                  {t('activeWorkout.reps')}
+                                </span>
+                              </>
+                            )}
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-2">
-                          <span className="text-[10px] text-zinc-500 font-mono">
-                            {new Date(rev.created_at).toLocaleDateString()}
-                          </span>
-                          {user?.id && rev.user_id === user.id && (
-                            <button
-                              type="button"
-                              onClick={() => deleteReviewMutation.mutate(rev.id)}
-                              className="text-zinc-500 hover:text-rose-400 transition-colors p-0.5"
-                              title="Удалить отзыв"
-                            >
-                              <Trash2 className="w-3 h-3" />
-                            </button>
-                          )}
-                        </div>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setInspectingExercise({
+                              name: exName,
+                              muscle: primaryMuscle,
+                            })
+                          }
+                          className="w-8 h-8 rounded-xl border border-dark-700 text-zinc-400 hover:text-white hover:border-dark-600 hover:bg-dark-800 flex items-center justify-center transition-all shrink-0 cursor-pointer"
+                          title={t('routines.techniqueTooltip')}
+                        >
+                          <HelpCircle className="w-4 h-4" />
+                        </button>
                       </div>
-
-                      {rev.comment && (
-                        <p className="text-xs text-zinc-300 leading-relaxed">{rev.comment}</p>
-                      )}
-                    </div>
-                  ))
+                    );
+                  })
+                ) : (
+                  <div className="text-center py-6 text-xs text-zinc-500">
+                    {t('programs.noExercisesInDay')}
+                  </div>
                 )}
               </div>
             </div>
           )}
+        </div>
+      </Modal>
+
+      {/* Instagram Comments Sheet Modal */}
+      <InstagramCommentsModal
+        isOpen={isCommentsOpen}
+        onClose={() => setIsCommentsOpen(false)}
+        programId={program.id}
+        programTitle={program.name}
+        programAuthorId={program.user_id}
+      />
+
+      {/* Rating & Review Modal */}
+      <Modal
+        isOpen={isReviewsOpen}
+        onClose={() => setIsReviewsOpen(false)}
+        size="md"
+        title={
+          <div className="flex items-center gap-2">
+            <Star className="w-5 h-5 text-amber-400 fill-amber-400" />
+            <span className="font-extrabold text-white">Оценка и отзывы</span>
+          </div>
+        }
+        subtitle={program.name}
+      >
+        <div className="space-y-4">
+          {/* Add / Update Review Form */}
+          <div className="bg-dark-900 border border-dark-750 p-3.5 rounded-2xl space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-white">Ваша оценка</span>
+              <div className="flex items-center gap-1">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    type="button"
+                    onClick={() => setReviewRating(star)}
+                    className="p-1 hover:scale-110 transition-transform cursor-pointer"
+                  >
+                    <Star
+                      className={`w-4 h-4 ${
+                        star <= reviewRating
+                          ? 'text-amber-400 fill-amber-400'
+                          : 'text-zinc-600'
+                      }`}
+                    />
+                  </button>
+                ))}
+                <span className="text-xs font-bold text-amber-400 ml-1 font-mono">
+                  {reviewRating} / 5
+                </span>
+              </div>
+            </div>
+
+            <textarea
+              value={reviewComment}
+              onChange={(e) => setReviewComment(e.target.value)}
+              placeholder="Поделитесь впечатлениями о сплите, нагрузке и результатах..."
+              rows={2}
+              className="w-full bg-dark-950/80 border border-dark-700 rounded-xl px-3 py-2 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-brand-500 transition-colors resize-none"
+            />
+
+            <div className="flex justify-end">
+              <Button
+                variant="primary"
+                size="sm"
+                className="text-xs font-bold"
+                isLoading={postReviewMutation.isPending}
+                onClick={() => {
+                  postReviewMutation.mutate();
+                  setIsReviewsOpen(false);
+                }}
+              >
+                Сохранить оценку
+              </Button>
+            </div>
+          </div>
+
+          {/* Reviews List */}
+          <div className="space-y-2 max-h-[300px] overflow-y-auto">
+            {reviews.length === 0 ? (
+              <div className="text-center py-6 text-zinc-500 text-xs">
+                Пока нет отзывов. Будьте первым!
+              </div>
+            ) : (
+              reviews.map((rev) => (
+                <div
+                  key={rev.id}
+                  className="bg-dark-900/60 border border-dark-800 p-3 rounded-xl space-y-1.5 text-xs"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-zinc-200">
+                        {rev.author_name || 'Атлет'}
+                      </span>
+                      <div className="flex items-center gap-0.5">
+                        {[1, 2, 3, 4, 5].map((s) => (
+                          <Star
+                            key={s}
+                            className={`w-3 h-3 ${
+                              s <= rev.rating
+                                ? 'text-amber-400 fill-amber-400'
+                                : 'text-zinc-700'
+                            }`}
+                          />
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] text-zinc-500 font-mono">
+                        {new Date(rev.created_at).toLocaleDateString()}
+                      </span>
+                      {user?.id && rev.user_id === user.id && (
+                        <button
+                          type="button"
+                          onClick={() => deleteReviewMutation.mutate(rev.id)}
+                          className="text-zinc-500 hover:text-rose-400 transition-colors p-0.5"
+                          title="Удалить"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {rev.comment && (
+                    <p className="text-zinc-300 leading-relaxed">{rev.comment}</p>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
         </div>
       </Modal>
 

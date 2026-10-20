@@ -304,3 +304,37 @@ func (h *Handler) handleDeleteProgramComment(w http.ResponseWriter, r *http.Requ
 
 	httpx.WriteJSON(w, http.StatusOK, map[string]string{"status": "deleted"})
 }
+
+// -------------------------------------------------------------
+// Program Like Handlers (Instagram-style hearts)
+// -------------------------------------------------------------
+
+func (h *Handler) handleToggleProgramLike(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
+	programID, ok := httpx.PathUUID(w, r, "id")
+	if !ok {
+		return
+	}
+
+	likesCount, hasLiked, err := h.communityRepo.ToggleProgramLike(r.Context(), programID, userID)
+	if err != nil {
+		httpx.WriteProblem(w, http.StatusBadRequest, "Bad Request", err.Error(), "ERR_TOGGLE_LIKE")
+		return
+	}
+
+	httpx.WriteJSON(w, http.StatusOK, map[string]any{
+		"likes_count": likesCount,
+		"has_liked":   hasLiked,
+	})
+}
+
+func (h *Handler) handleGetProgramLikeStatus(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
+	programID, ok := httpx.PathUUID(w, r, "id")
+	if !ok {
+		return
+	}
+
+	hasLiked := h.communityRepo.HasUserLikedProgram(r.Context(), programID, userID)
+	httpx.WriteJSON(w, http.StatusOK, map[string]any{
+		"has_liked": hasLiked,
+	})
+}

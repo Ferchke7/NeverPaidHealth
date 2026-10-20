@@ -557,3 +557,42 @@ func (r *CommunityRepository) DeleteProgramComment(ctx context.Context, commentI
 
 	return err
 }
+
+// -------------------------------------------------------------
+// Program Likes (Instagram-style hearts)
+// -------------------------------------------------------------
+
+func (r *CommunityRepository) ToggleProgramLike(ctx context.Context, programID uuid.UUID, userID uuid.UUID) (int, bool, error) {
+	if r.pool == nil {
+		return 0, false, errors.New("database pool not available")
+	}
+
+	var exists bool
+	err := r.pool.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM program_likes WHERE program_id = $1 AND user_id = $2)`, programID, userID).Scan(&exists)
+	if err != nil {
+		return 0, false, fmt.Errorf("failed to check like: %w", err)
+	}
+
+	if exists {
+		_, err = r.pool.Exec(ctx, `DELETE FROM program_likes WHERE program_id = $1 AND user_id = $2`, programID, userID)
+	} else {
+		_, err = r.pool.Exec(ctx, `INSERT INTO program_likes (program_id, user_id, created_at) VALUES ($1, $2, NOW()) ON CONFLICT DO NOTHING`, programID, userID)
+	}
+	if err != nil {
+		return 0, false, fmt.Errorf("failed to toggle program like: %w", err)
+	}
+
+	var count int
+	_ = r.pool.QueryRow(ctx, `SELECT COUNT(*) FROM program_likes WHERE program_id = $1`, programID).Scan(&count)
+
+	return count, !exists, nil
+}
+
+func (r *CommunityRepository) HasUserLikedProgram(ctx context.Context, programID uuid.UUID, userID uuid.UUID) bool {
+	if r.pool == nil {
+		return false
+	}
+	var exists bool
+	_ = r.pool.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM program_likes WHERE program_id = $1 AND user_id = $2)`, programID, userID).Scan(&exists)
+	return exists
+}

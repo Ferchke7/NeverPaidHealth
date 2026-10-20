@@ -14,3 +14,12 @@ CREATE TABLE IF NOT EXISTS program_comments (
 
 CREATE INDEX IF NOT EXISTS idx_program_comments_prog_created ON program_comments(program_id, created_at ASC);
 CREATE INDEX IF NOT EXISTS idx_program_comments_parent ON program_comments(parent_id);
+
+CREATE TABLE IF NOT EXISTS program_likes (
+    program_id UUID NOT NULL REFERENCES programs(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (program_id, user_id)
+);
+CREATE INDEX IF NOT EXISTS idx_program_likes_prog ON program_likes(program_id);
+CREATE INDEX IF NOT EXISTS idx_program_likes_user ON program_likes(user_id);

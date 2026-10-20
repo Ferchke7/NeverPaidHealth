@@ -28,6 +28,7 @@ export interface Program {
   is_public: boolean;
   author_name?: string;
   likes_count: number;
+  has_liked?: boolean;
   installs_count: number;
   rating_avg?: number;
   reviews_count?: number;

@@ -84,6 +84,10 @@ func (h *Handler) Routes() http.Handler {
 	r.Post("/programs/{id}/publish", httpx.RequireAuth(h.handlePublishProgram))
 	r.Post("/programs/{id}/install", httpx.RequireAuth(h.handleInstallProgram))
 
+	// Program Likes (Instagram-style hearts)
+	r.Get("/programs/{id}/like", httpx.RequireAuth(h.handleGetProgramLikeStatus))
+	r.Post("/programs/{id}/like", httpx.RequireAuth(h.handleToggleProgramLike))
+
 	// Program Reviews & Ratings
 	r.Get("/programs/{id}/reviews", httpx.RequireAuth(h.handleListProgramReviews))
 	r.Post("/programs/{id}/reviews", httpx.RequireAuth(h.handleSaveProgramReview))

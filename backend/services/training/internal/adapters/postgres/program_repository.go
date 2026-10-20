@@ -87,13 +87,22 @@ func (r *ProgramRepository) InitSchema(ctx context.Context) {
 		);
 		CREATE INDEX IF NOT EXISTS idx_program_comments_prog_created ON program_comments(program_id, created_at ASC);
 		CREATE INDEX IF NOT EXISTS idx_program_comments_parent ON program_comments(parent_id);
+
+		CREATE TABLE IF NOT EXISTS program_likes (
+			program_id UUID NOT NULL REFERENCES programs(id) ON DELETE CASCADE,
+			user_id UUID NOT NULL,
+			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+			PRIMARY KEY (program_id, user_id)
+		);
+		CREATE INDEX IF NOT EXISTS idx_program_likes_prog ON program_likes(program_id);
+		CREATE INDEX IF NOT EXISTS idx_program_likes_user ON program_likes(user_id);
 	`
 	_, _ = r.pool.Exec(ctx, schema)
 }
 
 const programSelectCols = `
 	p.id, p.user_id, p.name, p.description, p.split_type, p.days_per_week, p.level, p.is_public, p.author_name,
-	p.likes_count,
+	COALESCE((SELECT COUNT(*) FROM program_likes pl WHERE pl.program_id = p.id), 0) AS likes_count,
 	COALESCE((SELECT COUNT(DISTINCT up.user_id) FROM user_programs up WHERE up.program_id = p.id), 0) AS installs_count,
 	p.days, p.created_at, p.updated_at,
 	COALESCE((SELECT ROUND(AVG(pr.rating)::numeric, 1) FROM program_reviews pr WHERE pr.program_id = p.id), 0.0) AS rating_avg,
