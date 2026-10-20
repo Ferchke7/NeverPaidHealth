@@ -6,3 +6,4 @@ export * from './switch.tsx';
 export * from './tabs.tsx';
 export * from './modal.tsx';
 export * from './skeleton.tsx';
+export * from './EChartsReact.tsx';

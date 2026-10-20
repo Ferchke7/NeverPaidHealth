@@ -19,6 +19,7 @@ import { useAuthStore } from '../../../entities/user/model/authStore.ts';
 import { useTranslation } from '../../../shared/lib/i18n/i18n.ts';
 import { BMICalculatorCard } from '../../../features/bmi-calculator/ui/BMICalculatorCard.tsx';
 import { BodyTargetProgressCard } from '../../../features/body-target-progress/ui/BodyTargetProgressCard.tsx';
+import { BodyWeightTrendChart } from '../../../features/progress-charts/index.ts';
 
 interface BodyLog {
   id: string;
@@ -287,6 +288,13 @@ export const BodyPage: React.FC = () => {
           </Card>
         </div>
       )}
+
+      {/* Interactive 7-Day SMA & Weight Trend Chart (Apache ECharts) */}
+      <BodyWeightTrendChart
+        trendPoints={trend?.trend_points || []}
+        targetWeightKg={user?.target_weight_kg}
+        unitPref={unitPref}
+      />
 
       {/* Detailed Measurement Input Card */}
       <Card className="space-y-3">

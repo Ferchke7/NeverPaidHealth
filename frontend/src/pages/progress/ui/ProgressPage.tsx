@@ -7,7 +7,6 @@ import {
   Calculator,
   Calendar as CalendarIcon,
   Activity,
-  Layers,
   BarChart3,
   Shield,
   Scale,
@@ -18,7 +17,6 @@ import { Card, CardHeader, CardTitle, CardContent, Badge } from '../../../shared
 import { Input } from '../../../shared/ui/input.tsx';
 import { Tabs } from '../../../shared/ui/tabs.tsx';
 import { ProgressBar } from '../../../shared/ui/progress.tsx';
-import { formatDate } from '../../../shared/lib/dates.ts';
 import { formatWeight } from '../../../shared/lib/units.ts';
 import { useAuthStore } from '../../../entities/user/model/authStore.ts';
 import { Exercise } from '../../../entities/exercise/model/types.ts';
@@ -26,6 +24,12 @@ import { WorkoutHistoryItem } from '../../../entities/workout/model/types.ts';
 import { useTranslation } from '../../../shared/lib/i18n/i18n.ts';
 import { HistoryPage } from '../../history/ui/HistoryPage.tsx';
 import { BodyPage } from '../../body/ui/BodyPage.tsx';
+import {
+  ExerciseProgressionChart,
+  MuscleBalanceRadarChart,
+  TonnageVolumeHistoryChart,
+  StrengthStandardsBarChart,
+} from '../../../features/progress-charts/index.ts';
 
 interface PersonalRecord {
   pr_type: 'heaviest_weight' | 'best_e1rm' | 'max_volume_set' | 'max_reps';
@@ -250,6 +254,8 @@ export const ProgressPage: React.FC = () => {
 
   const activeExerciseId =
     selectedExerciseId || (recordGroups[0]?.exercise_id ?? exercises[0]?.id);
+  const activeExercise = exercises.find((e) => e.id === activeExerciseId);
+  const activeExerciseName = activeExercise?.name || labels.progressionTitle;
 
   // Fetch time-series history for chosen exercise
   const { data: historyData } = useQuery<ExerciseHistoryResponse>({
@@ -476,7 +482,7 @@ export const ProgressPage: React.FC = () => {
             </Card>
           </div>
 
-          {/* Exercise Progression Curve Chart */}
+          {/* Exercise Progression Curve Chart (Apache ECharts) */}
           <Card className="space-y-4">
             <CardHeader>
               <div>
@@ -501,84 +507,11 @@ export const ProgressPage: React.FC = () => {
 
             <CardContent>
               {historyData?.data_points && historyData.data_points.length > 0 ? (
-                <div className="space-y-4 pt-2">
-                  <div className="h-56 sm:h-64 w-full bg-dark-950/70 rounded-2xl p-4 border border-dark-700/60 relative flex items-end">
-                    <svg className="w-full h-full overflow-visible" preserveAspectRatio="none">
-                      <defs>
-                        <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#22c55e" stopOpacity="0.35" />
-                          <stop offset="100%" stopColor="#22c55e" stopOpacity="0.0" />
-                        </linearGradient>
-                      </defs>
-
-                      {(() => {
-                        const pts = historyData.data_points;
-                        const maxVal = Math.max(...pts.map((p) => p.best_weight_kg || 1), 10);
-                        const minVal = Math.min(...pts.map((p) => p.best_weight_kg || 0), 0);
-                        const range = maxVal - minVal || 1;
-
-                        const coords = pts.map((p, i) => {
-                          const x = pts.length === 1 ? 50 : (i / (pts.length - 1)) * 96 + 2;
-                          const y = 90 - ((p.best_weight_kg - minVal) / range) * 75;
-                          return { x, y, val: p.best_weight_kg, date: p.date };
-                        });
-
-                        const pathString = coords
-                          .map((c, i) => `${i === 0 ? 'M' : 'L'} ${c.x}% ${c.y}%`)
-                          .join(' ');
-
-                        return (
-                          <>
-                            <path
-                              d={`${pathString} L ${coords[coords.length - 1].x}% 95% L ${coords[0].x}% 95% Z`}
-                              fill="url(#areaGradient)"
-                            />
-                            <path
-                              d={pathString}
-                              fill="none"
-                              stroke="#22c55e"
-                              strokeWidth="3"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            />
-                            {coords.map((c, i) => (
-                              <g key={i} className="group cursor-pointer">
-                                <circle
-                                  cx={`${c.x}%`}
-                                  cy={`${c.y}%`}
-                                  r="5"
-                                  className="fill-emerald-400 stroke-dark-900 stroke-2"
-                                />
-                                <text
-                                  x={`${c.x}%`}
-                                  y={`${c.y - 8}%`}
-                                  textAnchor="middle"
-                                  className="text-[10px] font-bold fill-zinc-200 font-mono"
-                                >
-                                  {c.val}kg
-                                </text>
-                              </g>
-                            ))}
-                          </>
-                        );
-                      })()}
-                    </svg>
-                  </div>
-
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                    {historyData.data_points.slice(-8).map((p, idx) => (
-                      <div
-                        key={idx}
-                        className="p-2.5 rounded-xl bg-dark-900/80 border border-dark-750 flex items-center justify-between text-xs font-mono"
-                      >
-                        <span className="text-zinc-400 font-sans truncate">{formatDate(p.date)}</span>
-                        <span className="text-emerald-400 font-bold shrink-0">
-                          {formatWeight(p.best_weight_kg, unitPref)}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                <ExerciseProgressionChart
+                  dataPoints={historyData.data_points}
+                  exerciseName={activeExerciseName}
+                  unitPref={unitPref}
+                />
               ) : (
                 <div className="text-center py-10 text-zinc-500 text-xs">
                   {labels.noHistoryData}
@@ -586,6 +519,9 @@ export const ProgressPage: React.FC = () => {
               )}
             </CardContent>
           </Card>
+
+          {/* Overall Tonnage & Workload Volume History Chart (Apache ECharts) */}
+          <TonnageVolumeHistoryChart workouts={workouts} unitPref={unitPref} />
 
           {/* Personal Records (PRs Hall of Fame) */}
           <Card className="space-y-4">
@@ -659,67 +595,8 @@ export const ProgressPage: React.FC = () => {
             </CardContent>
           </Card>
 
-          {/* Muscle Volume Distribution */}
-          <Card className="space-y-4">
-            <CardHeader>
-              <div>
-                <CardTitle>
-                  <Layers className="w-5 h-5 text-brand-400" />
-                  {labels.muscleVolumeTitle}
-                </CardTitle>
-              </div>
-            </CardHeader>
-
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-                {Object.entries(analyticsSummary.muscleSets).map(([muscle, setsCount]) => {
-                  const targetSets = 16;
-                  const pct = Math.min(100, Math.round((setsCount / targetSets) * 100));
-                  const status =
-                    setsCount >= 10 && setsCount <= 20
-                      ? { label: labels.statusOptimal, badge: 'success' }
-                      : setsCount > 20
-                      ? { label: labels.statusHigh, badge: 'warning' }
-                      : setsCount > 0
-                      ? { label: labels.statusMaint, badge: 'info' }
-                      : { label: labels.statusUntrained, badge: 'neutral' };
-
-                  return (
-                    <div
-                      key={muscle}
-                      className="p-3.5 rounded-2xl bg-dark-900/80 border border-dark-700/80 space-y-2"
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-extrabold text-zinc-100">{muscle}</span>
-                        <Badge variant={status.badge as any} size="sm">
-                          {status.label}
-                        </Badge>
-                      </div>
-
-                      <ProgressBar
-                        value={pct}
-                        color={
-                          status.badge === 'success'
-                            ? 'success'
-                            : status.badge === 'warning'
-                            ? 'warning'
-                            : 'primary'
-                        }
-                        size="sm"
-                      />
-
-                      <div className="flex items-center justify-between text-[11px] text-zinc-400 font-mono">
-                        <span>
-                          {setsCount} {labels.completedSets}
-                        </span>
-                        <span>{labels.targetSets}</span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
+          {/* Muscle Volume Distribution & Radar Chart (Apache ECharts) */}
+          <MuscleBalanceRadarChart muscleSets={analyticsSummary.muscleSets} />
         </div>
       )}
 
@@ -794,6 +671,9 @@ export const ProgressPage: React.FC = () => {
               </div>
             </CardContent>
           </Card>
+
+          {/* Athletic Strength Standards Horizontal Benchmark (Apache ECharts) */}
+          <StrengthStandardsBarChart standards={strengthStandards} unitPref={unitPref} />
 
           {/* Athletic Strength Classification */}
           <Card className="space-y-4">
