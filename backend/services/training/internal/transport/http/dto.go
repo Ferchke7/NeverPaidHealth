@@ -102,6 +102,7 @@ func mapProgramDTO(p *program.Program) map[string]any {
 		"installs_count": p.InstallsCount(),
 		"rating_avg":     p.RatingAvg(),
 		"reviews_count":  p.ReviewsCount(),
+		"comments_count": p.CommentsCount(),
 		"days":           daysList,
 		"created_at":     p.CreatedAt().Format("2006-01-02T15:04:05Z07:00"),
 		"updated_at":     p.UpdatedAt().Format("2006-01-02T15:04:05Z07:00"),

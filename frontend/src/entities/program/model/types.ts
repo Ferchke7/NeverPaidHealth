@@ -31,6 +31,7 @@ export interface Program {
   installs_count: number;
   rating_avg?: number;
   reviews_count?: number;
+  comments_count?: number;
   days: ProgramDay[];
   created_at?: string;
   updated_at?: string;
@@ -54,4 +55,18 @@ export interface ActiveProgramResponse {
 export interface InstalledProgramItem {
   user_program: UserProgram;
   program?: Program;
+}
+
+export interface ProgramComment {
+  id: string;
+  program_id: string;
+  user_id: string;
+  author_name: string;
+  parent_id: string | null;
+  content: string;
+  upvotes: number;
+  has_upvoted: boolean;
+  created_at: string;
+  updated_at: string;
+  is_deleted: boolean;
 }

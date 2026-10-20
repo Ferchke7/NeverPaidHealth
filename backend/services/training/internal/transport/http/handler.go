@@ -89,6 +89,12 @@ func (h *Handler) Routes() http.Handler {
 	r.Post("/programs/{id}/reviews", httpx.RequireAuth(h.handleSaveProgramReview))
 	r.Delete("/programs/{id}/reviews/{reviewId}", httpx.RequireAuth(h.handleDeleteProgramReview))
 
+	// Program Discussion Forum (Habr-style nested threads)
+	r.Get("/programs/{id}/comments", httpx.RequireAuth(h.handleListProgramComments))
+	r.Post("/programs/{id}/comments", httpx.RequireAuth(h.handleCreateProgramComment))
+	r.Post("/programs/{id}/comments/{commentId}/upvote", httpx.RequireAuth(h.handleToggleCommentUpvote))
+	r.Delete("/programs/{id}/comments/{commentId}", httpx.RequireAuth(h.handleDeleteProgramComment))
+
 	// Feedback & Bug Reports
 	r.Get("/feedback", httpx.RequireAuth(h.handleListFeedback))
 	r.Post("/feedback", httpx.RequireAuth(h.handleCreateFeedback))

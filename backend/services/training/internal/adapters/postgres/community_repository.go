@@ -51,6 +51,20 @@ type PlatformStats struct {
 	RecentAthletes   []AthleteSummary `json:"recent_athletes"`
 }
 
+type ProgramComment struct {
+	ID         uuid.UUID  `json:"id"`
+	ProgramID  uuid.UUID  `json:"program_id"`
+	UserID     uuid.UUID  `json:"user_id"`
+	AuthorName string     `json:"author_name"`
+	ParentID   *uuid.UUID `json:"parent_id"`
+	Content    string     `json:"content"`
+	Upvotes    int        `json:"upvotes"`
+	HasUpvoted bool       `json:"has_upvoted"`
+	CreatedAt  time.Time  `json:"created_at"`
+	UpdatedAt  time.Time  `json:"updated_at"`
+	IsDeleted  bool       `json:"is_deleted"`
+}
+
 type CommunityRepository struct {
 	pool *pgxpool.Pool
 }
@@ -381,4 +395,165 @@ func (r *CommunityRepository) GetPlatformStats(ctx context.Context) (*PlatformSt
 	}
 
 	return stats, nil
+}
+
+// -------------------------------------------------------------
+// Program Comments / Habr-Style Threaded Discussions
+// -------------------------------------------------------------
+
+func (r *CommunityRepository) ListProgramComments(ctx context.Context, programID uuid.UUID, userID uuid.UUID) ([]ProgramComment, error) {
+	if r.pool == nil {
+		return make([]ProgramComment, 0), nil
+	}
+
+	query := `
+		SELECT
+			id, program_id, user_id, author_name, parent_id,
+			CASE WHEN deleted_at IS NOT NULL THEN '[Сообщение удалено автором]' ELSE content END,
+			upvotes,
+			($2 = ANY(upvoters)) AS has_upvoted,
+			created_at, updated_at,
+			(deleted_at IS NOT NULL) AS is_deleted
+		FROM program_comments
+		WHERE program_id = $1
+		ORDER BY created_at ASC
+	`
+	rows, err := r.pool.Query(ctx, query, programID, userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query program comments: %w", err)
+	}
+	defer rows.Close()
+
+	list := make([]ProgramComment, 0)
+	for rows.Next() {
+		var c ProgramComment
+		if err := rows.Scan(
+			&c.ID,
+			&c.ProgramID,
+			&c.UserID,
+			&c.AuthorName,
+			&c.ParentID,
+			&c.Content,
+			&c.Upvotes,
+			&c.HasUpvoted,
+			&c.CreatedAt,
+			&c.UpdatedAt,
+			&c.IsDeleted,
+		); err != nil {
+			return nil, err
+		}
+		list = append(list, c)
+	}
+	return list, nil
+}
+
+func (r *CommunityRepository) CreateProgramComment(ctx context.Context, c ProgramComment) (*ProgramComment, error) {
+	if r.pool == nil {
+		return nil, errors.New("database pool not available")
+	}
+
+	if c.ID == uuid.Nil {
+		c.ID = uuid.New()
+	}
+
+	query := `
+		INSERT INTO program_comments (
+			id, program_id, user_id, author_name, parent_id, content, upvotes, upvoters, created_at, updated_at
+		) VALUES ($1, $2, $3, $4, $5, $6, 0, '{}', NOW(), NOW())
+		RETURNING id, program_id, user_id, author_name, parent_id, content, upvotes, created_at, updated_at
+	`
+	row := r.pool.QueryRow(ctx, query, c.ID, c.ProgramID, c.UserID, c.AuthorName, c.ParentID, c.Content)
+	var created ProgramComment
+	if err := row.Scan(
+		&created.ID,
+		&created.ProgramID,
+		&created.UserID,
+		&created.AuthorName,
+		&created.ParentID,
+		&created.Content,
+		&created.Upvotes,
+		&created.CreatedAt,
+		&created.UpdatedAt,
+	); err != nil {
+		return nil, fmt.Errorf("failed to insert comment: %w", err)
+	}
+	created.HasUpvoted = false
+	created.IsDeleted = false
+	return &created, nil
+}
+
+func (r *CommunityRepository) ToggleCommentUpvote(ctx context.Context, commentID uuid.UUID, userID uuid.UUID) (int, bool, error) {
+	if r.pool == nil {
+		return 0, false, errors.New("database pool not available")
+	}
+
+	var hasUpvoted bool
+	checkQuery := `SELECT ($2 = ANY(upvoters)) FROM program_comments WHERE id = $1`
+	err := r.pool.QueryRow(ctx, checkQuery, commentID, userID).Scan(&hasUpvoted)
+	if err != nil {
+		return 0, false, fmt.Errorf("comment not found: %w", err)
+	}
+
+	var updateQuery string
+	if hasUpvoted {
+		updateQuery = `
+			UPDATE program_comments
+			SET upvotes = GREATEST(0, upvotes - 1),
+			    upvoters = array_remove(upvoters, $2),
+			    updated_at = NOW()
+			WHERE id = $1
+			RETURNING upvotes
+		`
+	} else {
+		updateQuery = `
+			UPDATE program_comments
+			SET upvotes = upvotes + 1,
+			    upvoters = array_append(upvoters, $2),
+			    updated_at = NOW()
+			WHERE id = $1
+			RETURNING upvotes
+		`
+	}
+
+	var newUpvotes int
+	if err := r.pool.QueryRow(ctx, updateQuery, commentID, userID).Scan(&newUpvotes); err != nil {
+		return 0, false, fmt.Errorf("failed to toggle upvote: %w", err)
+	}
+
+	return newUpvotes, !hasUpvoted, nil
+}
+
+func (r *CommunityRepository) DeleteProgramComment(ctx context.Context, commentID uuid.UUID, userID uuid.UUID) error {
+	if r.pool == nil {
+		return errors.New("database pool not available")
+	}
+
+	var ownerID uuid.UUID
+	err := r.pool.QueryRow(ctx, `SELECT user_id FROM program_comments WHERE id = $1`, commentID).Scan(&ownerID)
+	if err != nil {
+		return errors.New("comment not found")
+	}
+	if ownerID != userID {
+		return errors.New("unauthorized to delete this comment")
+	}
+
+	// Check if this comment has any child replies
+	var childCount int
+	_ = r.pool.QueryRow(ctx, `SELECT COUNT(*) FROM program_comments WHERE parent_id = $1`, commentID).Scan(&childCount)
+
+	if childCount > 0 {
+		// Soft delete to keep child replies in tree intact
+		_, err = r.pool.Exec(ctx, `
+			UPDATE program_comments
+			SET deleted_at = NOW(),
+			    content = '[Сообщение удалено автором]',
+			    updated_at = NOW()
+			WHERE id = $1
+		`, commentID)
+	} else {
+		// Leaf comment, hard delete
+		_, err = r.pool.Exec(ctx, `DELETE FROM program_comments WHERE id = $1`, commentID)
+	}
+
+	return err
 }

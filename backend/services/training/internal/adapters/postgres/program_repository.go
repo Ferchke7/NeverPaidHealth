@@ -71,6 +71,22 @@ func (r *ProgramRepository) InitSchema(ctx context.Context) {
 			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 		);
 		CREATE INDEX IF NOT EXISTS idx_coach_messages_user_created ON coach_messages(user_id, created_at ASC);
+
+		CREATE TABLE IF NOT EXISTS program_comments (
+			id UUID PRIMARY KEY,
+			program_id UUID NOT NULL REFERENCES programs(id) ON DELETE CASCADE,
+			user_id UUID NOT NULL,
+			author_name VARCHAR(100) NOT NULL DEFAULT 'Атлет',
+			parent_id UUID NULL REFERENCES program_comments(id) ON DELETE CASCADE,
+			content TEXT NOT NULL,
+			upvotes INT NOT NULL DEFAULT 0,
+			upvoters UUID[] NOT NULL DEFAULT '{}',
+			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+			updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+			deleted_at TIMESTAMPTZ NULL
+		);
+		CREATE INDEX IF NOT EXISTS idx_program_comments_prog_created ON program_comments(program_id, created_at ASC);
+		CREATE INDEX IF NOT EXISTS idx_program_comments_parent ON program_comments(parent_id);
 	`
 	_, _ = r.pool.Exec(ctx, schema)
 }
@@ -81,7 +97,8 @@ const programSelectCols = `
 	COALESCE((SELECT COUNT(DISTINCT up.user_id) FROM user_programs up WHERE up.program_id = p.id), 0) AS installs_count,
 	p.days, p.created_at, p.updated_at,
 	COALESCE((SELECT ROUND(AVG(pr.rating)::numeric, 1) FROM program_reviews pr WHERE pr.program_id = p.id), 0.0) AS rating_avg,
-	COALESCE((SELECT COUNT(*) FROM program_reviews pr WHERE pr.program_id = p.id), 0) AS reviews_count
+	COALESCE((SELECT COUNT(*) FROM program_reviews pr WHERE pr.program_id = p.id), 0) AS reviews_count,
+	COALESCE((SELECT COUNT(*) FROM program_comments pc WHERE pc.program_id = p.id AND pc.deleted_at IS NULL), 0) AS comments_count
 `
 
 type ExJSONItem struct {
@@ -402,6 +419,7 @@ func scanProgram(row pgx.Row) (*program.Program, error) {
 		updatedAt     time.Time
 		ratingAvg     float64
 		reviewsCount  int
+		commentsCount int
 	)
 
 	err := row.Scan(
@@ -421,6 +439,7 @@ func scanProgram(row pgx.Row) (*program.Program, error) {
 		&updatedAt,
 		&ratingAvg,
 		&reviewsCount,
+		&commentsCount,
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -484,6 +503,7 @@ func scanProgram(row pgx.Row) (*program.Program, error) {
 		updatedAt,
 	)
 	prog.SetReviewsStats(ratingAvg, reviewsCount)
+	prog.SetCommentsCount(commentsCount)
 	return prog, nil
 }
 

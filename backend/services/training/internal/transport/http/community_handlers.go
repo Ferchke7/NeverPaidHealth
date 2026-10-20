@@ -23,6 +23,12 @@ type createFeedbackReq struct {
 	AuthorName string `json:"author_name,omitempty"`
 }
 
+type createCommentReq struct {
+	Content    string  `json:"content"`
+	ParentID   *string `json:"parent_id,omitempty"`
+	AuthorName string  `json:"author_name,omitempty"`
+}
+
 // -------------------------------------------------------------
 // Program Reviews Handlers
 // -------------------------------------------------------------
@@ -200,4 +206,101 @@ func (h *Handler) handleGetPlatformStats(w http.ResponseWriter, r *http.Request,
 	}
 
 	httpx.WriteJSON(w, http.StatusOK, stats)
+}
+
+// -------------------------------------------------------------
+// Program Discussion Comments Handlers (Habr-style nested threads)
+// -------------------------------------------------------------
+
+func (h *Handler) handleListProgramComments(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
+	programID, ok := httpx.PathUUID(w, r, "id")
+	if !ok {
+		return
+	}
+
+	comments, err := h.communityRepo.ListProgramComments(r.Context(), programID, userID)
+	if err != nil {
+		httpx.WriteProblem(w, http.StatusInternalServerError, "Internal Server Error", err.Error(), "ERR_INTERNAL")
+		return
+	}
+
+	httpx.WriteJSON(w, http.StatusOK, comments)
+}
+
+func (h *Handler) handleCreateProgramComment(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
+	programID, ok := httpx.PathUUID(w, r, "id")
+	if !ok {
+		return
+	}
+
+	var req createCommentReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		httpx.WriteProblem(w, http.StatusBadRequest, "Bad Request", "Invalid JSON payload", "ERR_BAD_JSON")
+		return
+	}
+
+	trimmedContent := strings.TrimSpace(req.Content)
+	if trimmedContent == "" {
+		httpx.WriteProblem(w, http.StatusBadRequest, "Bad Request", "Comment content cannot be empty", "ERR_EMPTY_CONTENT")
+		return
+	}
+
+	var parentUUID *uuid.UUID
+	if req.ParentID != nil && strings.TrimSpace(*req.ParentID) != "" {
+		parsed, err := uuid.Parse(strings.TrimSpace(*req.ParentID))
+		if err == nil && parsed != uuid.Nil {
+			parentUUID = &parsed
+		}
+	}
+
+	author := strings.TrimSpace(req.AuthorName)
+	if author == "" {
+		author = "Атлет"
+	}
+
+	comment, err := h.communityRepo.CreateProgramComment(r.Context(), postgres.ProgramComment{
+		ProgramID:  programID,
+		UserID:     userID,
+		AuthorName: author,
+		ParentID:   parentUUID,
+		Content:    trimmedContent,
+	})
+	if err != nil {
+		httpx.WriteProblem(w, http.StatusInternalServerError, "Internal Server Error", err.Error(), "ERR_INTERNAL")
+		return
+	}
+
+	httpx.WriteJSON(w, http.StatusCreated, comment)
+}
+
+func (h *Handler) handleToggleCommentUpvote(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
+	commentID, ok := httpx.PathUUID(w, r, "commentId")
+	if !ok {
+		return
+	}
+
+	upvotes, hasUpvoted, err := h.communityRepo.ToggleCommentUpvote(r.Context(), commentID, userID)
+	if err != nil {
+		httpx.WriteProblem(w, http.StatusBadRequest, "Bad Request", err.Error(), "ERR_UPVOTE")
+		return
+	}
+
+	httpx.WriteJSON(w, http.StatusOK, map[string]any{
+		"upvotes":     upvotes,
+		"has_upvoted": hasUpvoted,
+	})
+}
+
+func (h *Handler) handleDeleteProgramComment(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
+	commentID, ok := httpx.PathUUID(w, r, "commentId")
+	if !ok {
+		return
+	}
+
+	if err := h.communityRepo.DeleteProgramComment(r.Context(), commentID, userID); err != nil {
+		httpx.WriteProblem(w, http.StatusBadRequest, "Bad Request", err.Error(), "ERR_DELETE")
+		return
+	}
+
+	httpx.WriteJSON(w, http.StatusOK, map[string]string{"status": "deleted"})
 }

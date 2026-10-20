@@ -15,6 +15,7 @@ import {
   Users,
   Share2,
   Star,
+  MessageSquare,
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../../shared/api/client.ts';
@@ -392,6 +393,11 @@ export const ProgramsPage: React.FC<ProgramsPageProps> = ({ onNavigateToWorkouts
                         <span className="flex items-center gap-1 text-zinc-400">
                           <Users className="w-3 h-3 text-zinc-500" />
                           <span>{prog.installs_count || 0}</span>
+                        </span>
+                        <span>•</span>
+                        <span className="flex items-center gap-1 text-zinc-400" title="Обсуждений и ответов">
+                          <MessageSquare className="w-3 h-3 text-brand-400" />
+                          <span>{prog.comments_count || 0}</span>
                         </span>
                       </div>
                     </div>

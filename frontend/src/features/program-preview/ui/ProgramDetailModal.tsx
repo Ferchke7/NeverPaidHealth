@@ -25,6 +25,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../../shared/api/client.ts';
 import { useAuthStore } from '../../../entities/user/model/authStore.ts';
 import { useStartWorkout } from '../../start-workout/model/useStartWorkout.ts';
+import { ProgramDiscussionSection } from './ProgramDiscussionSection.tsx';
 
 interface ProgramDetailModalProps {
   isOpen: boolean;
@@ -48,7 +49,7 @@ export const ProgramDetailModal: React.FC<ProgramDetailModalProps> = ({
   const { t } = useTranslation();
   const user = useAuthStore((s) => s.user);
   const queryClient = useQueryClient();
-  const [modalTab, setModalTab] = useState<'schedule' | 'reviews'>('schedule');
+  const [modalTab, setModalTab] = useState<'schedule' | 'discussion' | 'reviews'>('schedule');
   const [selectedDayIndex, setSelectedDayIndex] = useState(0);
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewComment, setReviewComment] = useState('');
@@ -58,6 +59,14 @@ export const ProgramDetailModal: React.FC<ProgramDetailModalProps> = ({
   } | null>(null);
 
   const startWorkout = useStartWorkout();
+
+  // Fetch comments for this program
+  const { data: rawComments } = useQuery<any[]>({
+    queryKey: ['program-comments', program?.id],
+    queryFn: () => apiClient<any[]>(`/programs/${program?.id}/comments`),
+    enabled: isOpen && !!program?.id,
+  });
+  const comments = Array.isArray(rawComments) ? rawComments : [];
 
   // Fetch reviews for this program
   const { data: rawReviews, refetch: refetchReviews } = useQuery<any[]>({
@@ -257,11 +266,11 @@ export const ProgramDetailModal: React.FC<ProgramDetailModalProps> = ({
           )}
 
           {/* Tab Selector */}
-          <div className="flex border-b border-dark-800 gap-4">
+          <div className="flex border-b border-dark-800 gap-4 overflow-x-auto scrollbar-none pb-0.5">
             <button
               type="button"
               onClick={() => setModalTab('schedule')}
-              className={`pb-2 text-xs font-bold transition-all border-b-2 flex items-center gap-1.5 ${
+              className={`pb-2 text-xs font-bold transition-all border-b-2 flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
                 modalTab === 'schedule'
                   ? 'border-brand-500 text-brand-400'
                   : 'border-transparent text-zinc-400 hover:text-zinc-200'
@@ -270,16 +279,35 @@ export const ProgramDetailModal: React.FC<ProgramDetailModalProps> = ({
               <Calendar className="w-3.5 h-3.5" />
               <span>{t('programs.splitDaysOverview')}</span>
             </button>
+
             <button
               type="button"
-              onClick={() => setModalTab('reviews')}
-              className={`pb-2 text-xs font-bold transition-all border-b-2 flex items-center gap-1.5 ${
-                modalTab === 'reviews'
+              onClick={() => setModalTab('discussion')}
+              className={`pb-2 text-xs font-bold transition-all border-b-2 flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
+                modalTab === 'discussion'
                   ? 'border-brand-500 text-brand-400'
                   : 'border-transparent text-zinc-400 hover:text-zinc-200'
               }`}
             >
               <MessageSquare className="w-3.5 h-3.5" />
+              <span>Форум и обсуждение</span>
+              {comments.length > 0 && (
+                <span className="text-[10px] bg-brand-500/15 border border-brand-500/30 text-brand-400 px-1.5 py-0.2 rounded-full font-mono font-bold">
+                  {comments.length}
+                </span>
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setModalTab('reviews')}
+              className={`pb-2 text-xs font-bold transition-all border-b-2 flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
+                modalTab === 'reviews'
+                  ? 'border-brand-500 text-brand-400'
+                  : 'border-transparent text-zinc-400 hover:text-zinc-200'
+              }`}
+            >
+              <Star className="w-3.5 h-3.5" />
               <span>Отзывы и оценка</span>
               {reviews.length > 0 && (
                 <span className="text-[10px] bg-dark-800 border border-dark-700 text-zinc-300 px-1.5 py-0.2 rounded-full font-mono">
@@ -438,6 +466,13 @@ export const ProgramDetailModal: React.FC<ProgramDetailModalProps> = ({
                 </div>
               )}
             </>
+          ) : modalTab === 'discussion' ? (
+            /* Habr-Style Discussion Forum Tab */
+            <ProgramDiscussionSection
+              programId={program.id}
+              programAuthorId={program.user_id}
+              programAuthorName={program.author_name}
+            />
           ) : (
             /* Reviews & Rating Tab */
             <div className="space-y-4">
