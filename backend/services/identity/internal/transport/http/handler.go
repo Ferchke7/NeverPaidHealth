@@ -46,6 +46,8 @@ func (h *Handler) Routes() http.Handler {
 	// Profile & Me routes
 	r.Get("/me", httpx.RequireAuth(h.handleGetMe))
 	r.Get("/profile/me", httpx.RequireAuth(h.handleGetMe))
+	r.Get("/profile/{id}", httpx.RequireAuth(h.handleGetPublicProfile))
+	r.Get("/users/{id}", httpx.RequireAuth(h.handleGetPublicProfile))
 	r.Put("/profile/unit-preference", httpx.RequireAuth(h.handleUpdateUnitPreference))
 
 	return r
@@ -129,6 +131,35 @@ func (h *Handler) handleGetMe(w http.ResponseWriter, r *http.Request, userID uui
 	}
 
 	httpx.WriteJSON(w, http.StatusOK, mapUserResponse(u))
+}
+
+type publicUserResponse struct {
+	ID          string `json:"id"`
+	DisplayName string `json:"display_name"`
+	AvatarURL   string `json:"avatar_url"`
+	CreatedAt   string `json:"created_at"`
+}
+
+func (h *Handler) handleGetPublicProfile(w http.ResponseWriter, r *http.Request, _ uuid.UUID) {
+	idStr := chi.URLParam(r, "id")
+	targetID, err := uuid.Parse(idStr)
+	if err != nil {
+		httpx.WriteProblem(w, http.StatusBadRequest, "Invalid ID", "Target user ID must be a valid UUID", "ERR_INVALID_ID")
+		return
+	}
+
+	u, err := h.getProfileHandler.Handle(r.Context(), targetID)
+	if err != nil {
+		httpx.WriteProblem(w, http.StatusNotFound, "Not Found", "User profile not found", "ERR_USER_NOT_FOUND")
+		return
+	}
+
+	httpx.WriteJSON(w, http.StatusOK, publicUserResponse{
+		ID:          u.ID().String(),
+		DisplayName: u.DisplayName(),
+		AvatarURL:   u.AvatarURL(),
+		CreatedAt:   u.CreatedAt().Format("2006-01-02T15:04:05Z07:00"),
+	})
 }
 
 func (h *Handler) handleUpdateUnitPreference(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {

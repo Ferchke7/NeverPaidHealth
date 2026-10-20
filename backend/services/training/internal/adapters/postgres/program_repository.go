@@ -96,6 +96,9 @@ func (r *ProgramRepository) InitSchema(ctx context.Context) {
 		);
 		CREATE INDEX IF NOT EXISTS idx_program_likes_prog ON program_likes(program_id);
 		CREATE INDEX IF NOT EXISTS idx_program_likes_user ON program_likes(user_id);
+
+		ALTER TABLE programs ADD COLUMN IF NOT EXISTS author_avatar_url TEXT DEFAULT '';
+		ALTER TABLE program_comments ADD COLUMN IF NOT EXISTS avatar_url TEXT DEFAULT '';
 	`
 	_, _ = r.pool.Exec(ctx, schema)
 }
@@ -107,7 +110,8 @@ const programSelectCols = `
 	p.days, p.created_at, p.updated_at,
 	COALESCE((SELECT ROUND(AVG(pr.rating)::numeric, 1) FROM program_reviews pr WHERE pr.program_id = p.id), 0.0) AS rating_avg,
 	COALESCE((SELECT COUNT(*) FROM program_reviews pr WHERE pr.program_id = p.id), 0) AS reviews_count,
-	COALESCE((SELECT COUNT(*) FROM program_comments pc WHERE pc.program_id = p.id AND pc.deleted_at IS NULL), 0) AS comments_count
+	COALESCE((SELECT COUNT(*) FROM program_comments pc WHERE pc.program_id = p.id AND pc.deleted_at IS NULL), 0) AS comments_count,
+	COALESCE(p.author_avatar_url, '') AS author_avatar_url
 `
 
 type ExJSONItem struct {
@@ -208,6 +212,16 @@ func (r *ProgramRepository) ListByUserID(ctx context.Context, userID uuid.UUID) 
 	return r.queryPrograms(ctx, query, userID)
 }
 
+func (r *ProgramRepository) ListPublicByUserID(ctx context.Context, userID uuid.UUID) ([]*program.Program, error) {
+	query := fmt.Sprintf(`
+		SELECT %s
+		FROM programs p
+		WHERE p.user_id = $1 AND p.is_public = true
+		ORDER BY p.created_at DESC
+	`, programSelectCols)
+	return r.queryPrograms(ctx, query, userID)
+}
+
 func (r *ProgramRepository) Save(ctx context.Context, p *program.Program) error {
 	var daysJSON []DayJSONItem
 	for _, d := range p.Days() {
@@ -236,8 +250,8 @@ func (r *ProgramRepository) Save(ctx context.Context, p *program.Program) error 
 	}
 
 	query := `
-		INSERT INTO programs (id, user_id, name, description, split_type, days_per_week, level, is_public, author_name, likes_count, installs_count, days, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+		INSERT INTO programs (id, user_id, name, description, split_type, days_per_week, level, is_public, author_name, author_avatar_url, likes_count, installs_count, days, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
 		ON CONFLICT (id) DO UPDATE SET
 			name = EXCLUDED.name,
 			description = EXCLUDED.description,
@@ -246,6 +260,7 @@ func (r *ProgramRepository) Save(ctx context.Context, p *program.Program) error 
 			level = EXCLUDED.level,
 			is_public = EXCLUDED.is_public,
 			author_name = EXCLUDED.author_name,
+			author_avatar_url = EXCLUDED.author_avatar_url,
 			likes_count = EXCLUDED.likes_count,
 			installs_count = EXCLUDED.installs_count,
 			days = EXCLUDED.days,
@@ -263,6 +278,7 @@ func (r *ProgramRepository) Save(ctx context.Context, p *program.Program) error 
 		string(p.Level()),
 		p.IsPublic(),
 		p.AuthorName(),
+		p.AuthorAvatarURL(),
 		p.LikesCount(),
 		p.InstallsCount(),
 		rawDays,
@@ -426,9 +442,10 @@ func scanProgram(row pgx.Row) (*program.Program, error) {
 		daysJSON      []byte
 		createdAt     time.Time
 		updatedAt     time.Time
-		ratingAvg     float64
-		reviewsCount  int
-		commentsCount int
+		ratingAvg       float64
+		reviewsCount    int
+		commentsCount   int
+		authorAvatarURL string
 	)
 
 	err := row.Scan(
@@ -449,6 +466,7 @@ func scanProgram(row pgx.Row) (*program.Program, error) {
 		&ratingAvg,
 		&reviewsCount,
 		&commentsCount,
+		&authorAvatarURL,
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -513,6 +531,7 @@ func scanProgram(row pgx.Row) (*program.Program, error) {
 	)
 	prog.SetReviewsStats(ratingAvg, reviewsCount)
 	prog.SetCommentsCount(commentsCount)
+	prog.SetAuthorAvatarURL(authorAvatarURL)
 	return prog, nil
 }
 

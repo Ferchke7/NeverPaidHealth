@@ -27,23 +27,24 @@ const (
 )
 
 type Program struct {
-	id            uuid.UUID
-	userID        uuid.UUID
-	name          string
-	description   string
-	splitType     SplitType
-	daysPerWeek   int
-	level         Level
-	isPublic      bool
-	authorName    string
-	likesCount    int
-	installsCount int
-	ratingAvg     float64
-	reviewsCount  int
-	commentsCount int
-	days          []*ProgramDay
-	createdAt     time.Time
-	updatedAt     time.Time
+	id              uuid.UUID
+	userID          uuid.UUID
+	name            string
+	description     string
+	splitType       SplitType
+	daysPerWeek     int
+	level           Level
+	isPublic        bool
+	authorName      string
+	authorAvatarURL string
+	likesCount      int
+	installsCount   int
+	ratingAvg       float64
+	reviewsCount    int
+	commentsCount   int
+	days            []*ProgramDay
+	createdAt       time.Time
+	updatedAt       time.Time
 }
 
 func NewProgram(
@@ -137,6 +138,8 @@ func (p *Program) DaysPerWeek() int          { return p.daysPerWeek }
 func (p *Program) Level() Level              { return p.level }
 func (p *Program) IsPublic() bool            { return p.isPublic }
 func (p *Program) AuthorName() string        { return p.authorName }
+func (p *Program) AuthorAvatarURL() string    { return p.authorAvatarURL }
+func (p *Program) SetAuthorAvatarURL(url string) { p.authorAvatarURL = url }
 func (p *Program) LikesCount() int           { return p.likesCount }
 func (p *Program) InstallsCount() int        { return p.installsCount }
 func (p *Program) RatingAvg() float64        { return p.ratingAvg }

@@ -27,6 +27,7 @@ export interface Program {
   level: ProgramLevel;
   is_public: boolean;
   author_name?: string;
+  author_avatar_url?: string;
   likes_count: number;
   has_liked?: boolean;
   installs_count: number;
@@ -63,6 +64,7 @@ export interface ProgramComment {
   program_id: string;
   user_id: string;
   author_name: string;
+  avatar_url?: string;
   parent_id: string | null;
   content: string;
   upvotes: number;
@@ -70,4 +72,14 @@ export interface ProgramComment {
   created_at: string;
   updated_at: string;
   is_deleted: boolean;
+}
+
+export interface AthleteProfile {
+  id: string;
+  display_name: string;
+  avatar_url?: string;
+  workouts_done: number;
+  total_volume_kg: number;
+  member_since: string;
+  public_programs: Program[];
 }

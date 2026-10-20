@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/neverpaidhealth/backend/services/training/internal/domain/program"
 )
 
 type ProgramReview struct {
@@ -56,6 +57,7 @@ type ProgramComment struct {
 	ProgramID  uuid.UUID  `json:"program_id"`
 	UserID     uuid.UUID  `json:"user_id"`
 	AuthorName string     `json:"author_name"`
+	AvatarURL  string     `json:"avatar_url"`
 	ParentID   *uuid.UUID `json:"parent_id"`
 	Content    string     `json:"content"`
 	Upvotes    int        `json:"upvotes"`
@@ -63,6 +65,16 @@ type ProgramComment struct {
 	CreatedAt  time.Time  `json:"created_at"`
 	UpdatedAt  time.Time  `json:"updated_at"`
 	IsDeleted  bool       `json:"is_deleted"`
+}
+
+type PublicAthleteProfile struct {
+	ID             uuid.UUID          `json:"id"`
+	DisplayName    string             `json:"display_name"`
+	AvatarURL      string             `json:"avatar_url"`
+	WorkoutsDone   int                `json:"workouts_done"`
+	TotalVolumeKg  float64            `json:"total_volume_kg"`
+	MemberSince    time.Time          `json:"member_since"`
+	PublicPrograms []*program.Program `json:"public_programs"`
 }
 
 type CommunityRepository struct {
@@ -408,7 +420,7 @@ func (r *CommunityRepository) ListProgramComments(ctx context.Context, programID
 
 	query := `
 		SELECT
-			id, program_id, user_id, author_name, parent_id,
+			id, program_id, user_id, author_name, COALESCE(avatar_url, '') AS avatar_url, parent_id,
 			CASE WHEN deleted_at IS NOT NULL THEN '[Сообщение удалено автором]' ELSE content END,
 			upvotes,
 			($2 = ANY(upvoters)) AS has_upvoted,
@@ -432,6 +444,7 @@ func (r *CommunityRepository) ListProgramComments(ctx context.Context, programID
 			&c.ProgramID,
 			&c.UserID,
 			&c.AuthorName,
+			&c.AvatarURL,
 			&c.ParentID,
 			&c.Content,
 			&c.Upvotes,
@@ -458,17 +471,18 @@ func (r *CommunityRepository) CreateProgramComment(ctx context.Context, c Progra
 
 	query := `
 		INSERT INTO program_comments (
-			id, program_id, user_id, author_name, parent_id, content, upvotes, upvoters, created_at, updated_at
-		) VALUES ($1, $2, $3, $4, $5, $6, 0, '{}', NOW(), NOW())
-		RETURNING id, program_id, user_id, author_name, parent_id, content, upvotes, created_at, updated_at
+			id, program_id, user_id, author_name, avatar_url, parent_id, content, upvotes, upvoters, created_at, updated_at
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, 0, '{}', NOW(), NOW())
+		RETURNING id, program_id, user_id, author_name, COALESCE(avatar_url, ''), parent_id, content, upvotes, created_at, updated_at
 	`
-	row := r.pool.QueryRow(ctx, query, c.ID, c.ProgramID, c.UserID, c.AuthorName, c.ParentID, c.Content)
+	row := r.pool.QueryRow(ctx, query, c.ID, c.ProgramID, c.UserID, c.AuthorName, c.AvatarURL, c.ParentID, c.Content)
 	var created ProgramComment
 	if err := row.Scan(
 		&created.ID,
 		&created.ProgramID,
 		&created.UserID,
 		&created.AuthorName,
+		&created.AvatarURL,
 		&created.ParentID,
 		&created.Content,
 		&created.Upvotes,
@@ -480,6 +494,88 @@ func (r *CommunityRepository) CreateProgramComment(ctx context.Context, c Progra
 	created.HasUpvoted = false
 	created.IsDeleted = false
 	return &created, nil
+}
+
+func (r *CommunityRepository) GetAthleteProfile(ctx context.Context, athleteID uuid.UUID) (*PublicAthleteProfile, error) {
+	profile := &PublicAthleteProfile{
+		ID:             athleteID,
+		DisplayName:    "Атлет",
+		PublicPrograms: make([]*program.Program, 0),
+	}
+	if r.pool == nil {
+		return profile, nil
+	}
+
+	// 1. Workouts count, volume kg, member since
+	wQuery := `
+		SELECT
+			COUNT(*),
+			COALESCE(SUM(total_volume_kg), 0),
+			COALESCE(MIN(started_at), NOW())
+		FROM workouts
+		WHERE user_id = $1 AND status = 'finished'
+	`
+	_ = r.pool.QueryRow(ctx, wQuery, athleteID).Scan(&profile.WorkoutsDone, &profile.TotalVolumeKg, &profile.MemberSince)
+
+	// 2. Fetch athlete name & avatar from comments or programs
+	var authorName, avatarURL string
+	row := r.pool.QueryRow(ctx, `
+		SELECT author_name, COALESCE(avatar_url, '')
+		FROM program_comments
+		WHERE user_id = $1 AND deleted_at IS NULL AND author_name != ''
+		ORDER BY created_at DESC
+		LIMIT 1
+	`, athleteID)
+	_ = row.Scan(&authorName, &avatarURL)
+
+	if authorName == "" {
+		row = r.pool.QueryRow(ctx, `
+			SELECT author_name, COALESCE(author_avatar_url, '')
+			FROM programs
+			WHERE user_id = $1 AND author_name != ''
+			ORDER BY created_at DESC
+			LIMIT 1
+		`, athleteID)
+		_ = row.Scan(&authorName, &avatarURL)
+	}
+
+	if authorName == "" {
+		row = r.pool.QueryRow(ctx, `
+			SELECT author_name
+			FROM feedback_reports
+			WHERE user_id = $1 AND author_name != ''
+			ORDER BY created_at DESC
+			LIMIT 1
+		`, athleteID)
+		_ = row.Scan(&authorName)
+	}
+
+	if authorName != "" {
+		profile.DisplayName = authorName
+	} else {
+		profile.DisplayName = "Атлет " + athleteID.String()[:8]
+	}
+	profile.AvatarURL = avatarURL
+
+	// 3. Public programs created by athlete
+	pQuery := fmt.Sprintf(`
+		SELECT %s
+		FROM programs p
+		WHERE p.user_id = $1 AND p.is_public = true
+		ORDER BY p.created_at DESC
+	`, programSelectCols)
+	rows, err := r.pool.Query(ctx, pQuery, athleteID)
+	if err == nil {
+		defer rows.Close()
+		for rows.Next() {
+			prog, err := scanProgram(rows)
+			if err == nil && prog != nil {
+				profile.PublicPrograms = append(profile.PublicPrograms, prog)
+			}
+		}
+	}
+
+	return profile, nil
 }
 
 func (r *CommunityRepository) ToggleCommentUpvote(ctx context.Context, commentID uuid.UUID, userID uuid.UUID) (int, bool, error) {

@@ -107,6 +107,7 @@ func (h *Handler) Routes() http.Handler {
 
 	// Platform & Users Statistics
 	r.Get("/platform/stats", httpx.RequireAuth(h.handleGetPlatformStats))
+	r.Get("/athletes/{id}", httpx.RequireAuth(h.handleGetAthleteProfile))
 
 	// Routines
 	r.Get("/routines", httpx.RequireAuth(h.handleListRoutines))

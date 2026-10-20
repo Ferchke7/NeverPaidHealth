@@ -25,16 +25,17 @@ type ProgramDayInput struct {
 }
 
 type CreateProgramInput struct {
-	ID          *uuid.UUID        `json:"id,omitempty"`
-	UserID      uuid.UUID         `json:"user_id"`
-	Name        string            `json:"name"`
-	Description string            `json:"description,omitempty"`
-	SplitType   string            `json:"split_type"`
-	DaysPerWeek int               `json:"days_per_week"`
-	Level       string            `json:"level"`
-	IsPublic    bool              `json:"is_public"`
-	AuthorName  string            `json:"author_name,omitempty"`
-	Days        []ProgramDayInput `json:"days"`
+	ID              *uuid.UUID        `json:"id,omitempty"`
+	UserID          uuid.UUID         `json:"user_id"`
+	Name            string            `json:"name"`
+	Description     string            `json:"description,omitempty"`
+	SplitType       string            `json:"split_type"`
+	DaysPerWeek     int               `json:"days_per_week"`
+	Level           string            `json:"level"`
+	IsPublic        bool              `json:"is_public"`
+	AuthorName      string            `json:"author_name,omitempty"`
+	AuthorAvatarURL string            `json:"author_avatar_url,omitempty"`
+	Days            []ProgramDayInput `json:"days"`
 }
 
 type CreateProgramHandler struct {
@@ -97,6 +98,9 @@ func (h *CreateProgramHandler) Handle(ctx context.Context, in CreateProgramInput
 			if err != nil {
 				return nil, err
 			}
+			if in.AuthorAvatarURL != "" {
+				forked.SetAuthorAvatarURL(in.AuthorAvatarURL)
+			}
 			if err := h.repo.Save(ctx, forked); err != nil {
 				return nil, err
 			}
@@ -116,6 +120,9 @@ func (h *CreateProgramHandler) Handle(ctx context.Context, in CreateProgramInput
 		)
 		if err != nil {
 			return nil, err
+		}
+		if in.AuthorAvatarURL != "" {
+			existing.SetAuthorAvatarURL(in.AuthorAvatarURL)
 		}
 
 		if err := h.repo.Save(ctx, existing); err != nil {
@@ -138,6 +145,9 @@ func (h *CreateProgramHandler) Handle(ctx context.Context, in CreateProgramInput
 	)
 	if err != nil {
 		return nil, err
+	}
+	if in.AuthorAvatarURL != "" {
+		prog.SetAuthorAvatarURL(in.AuthorAvatarURL)
 	}
 
 	if err := h.repo.Save(ctx, prog); err != nil {

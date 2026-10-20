@@ -14,7 +14,6 @@ import {
   Award,
   Users,
   Share2,
-  Star,
   MessageSquare,
   Heart,
 } from 'lucide-react';
@@ -34,6 +33,8 @@ import {
 } from '../../../entities/program/model/types.ts';
 import { ProgramEditorModal } from '../../../features/program-builder/ui/ProgramEditorModal.tsx';
 import { ProgramDetailModal } from '../../../features/program-preview/ui/ProgramDetailModal.tsx';
+import { AthleteAvatar } from '../../../entities/user/ui/AthleteAvatar.tsx';
+import { AthleteProfileModal } from '../../../entities/user/ui/AthleteProfileModal.tsx';
 
 interface ProgramsPageProps {
   onNavigateToWorkouts?: () => void;
@@ -51,6 +52,11 @@ export const ProgramsPage: React.FC<ProgramsPageProps> = ({ onNavigateToWorkouts
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [editingProgram, setEditingProgram] = useState<Program | null>(null);
   const [previewingProgram, setPreviewingProgram] = useState<Program | null>(null);
+  const [selectedAthlete, setSelectedAthlete] = useState<{
+    id: string;
+    name?: string;
+    avatar?: string;
+  } | null>(null);
 
   // Split Category Pills
   const splitCategories = useMemo(
@@ -373,17 +379,37 @@ export const ProgramsPage: React.FC<ProgramsPageProps> = ({ onNavigateToWorkouts
                         {prog.name}
                       </h3>
 
-                      <div className="flex items-center gap-2 text-[11px] text-zinc-400 mt-1">
+                      <div className="flex items-center gap-2 text-[11px] text-zinc-400 mt-1 flex-wrap">
                         <span className="flex items-center gap-1">
                           <Calendar className="w-3.5 h-3.5 text-zinc-500" />
                           {t('programs.daysPerWeekCount', { count: prog.days_per_week || daysList.length })}
                         </span>
                         <span>•</span>
-                        <span>
-                          {prog.author_name
-                            ? t('programs.byAuthor', { author: prog.author_name })
-                            : t('programs.officialSplit')}
-                        </span>
+                        {prog.author_name ? (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedAthlete({
+                                id: prog.user_id || '',
+                                name: prog.author_name,
+                                avatar: prog.author_avatar_url,
+                              });
+                            }}
+                            className="flex items-center gap-1 text-zinc-300 hover:text-brand-400 font-semibold transition-colors group/author cursor-pointer"
+                            title="Посмотреть профиль автора"
+                          >
+                            <AthleteAvatar
+                              name={prog.author_name}
+                              avatarUrl={prog.author_avatar_url}
+                              size="xs"
+                              className="w-4 h-4 ring-1 ring-zinc-700 group-hover/author:ring-brand-500 transition-all"
+                            />
+                            <span className="group-hover/author:underline">{prog.author_name}</span>
+                          </button>
+                        ) : (
+                          <span>{t('programs.officialSplit')}</span>
+                        )}
                         <span>•</span>
                         <span className="flex items-center gap-1 text-zinc-400">
                           <Heart className="w-3 h-3 text-rose-500 fill-rose-500" />
@@ -393,12 +419,6 @@ export const ProgramsPage: React.FC<ProgramsPageProps> = ({ onNavigateToWorkouts
                         <span className="flex items-center gap-1 text-zinc-400" title="Комментарии">
                           <MessageSquare className="w-3 h-3 text-zinc-400" />
                           <span>{prog.comments_count || 0}</span>
-                        </span>
-                        <span>•</span>
-                        <span className="flex items-center gap-1 text-amber-400 font-bold">
-                          <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-                          <span>{(prog.rating_avg && prog.rating_avg > 0) ? prog.rating_avg.toFixed(1) : '—'}</span>
-                          <span className="text-zinc-500 font-normal">({prog.reviews_count || 0})</span>
                         </span>
                         <span>•</span>
                         <span className="flex items-center gap-1 text-zinc-400">
@@ -552,7 +572,25 @@ export const ProgramsPage: React.FC<ProgramsPageProps> = ({ onNavigateToWorkouts
           setEditingProgram(p);
           setIsEditorOpen(true);
         }}
+        onSelectProgram={(p) => {
+          setPreviewingProgram(p);
+        }}
       />
+
+      {/* Athlete Profile Modal */}
+      {selectedAthlete && (
+        <AthleteProfileModal
+          isOpen={!!selectedAthlete}
+          athleteId={selectedAthlete.id}
+          fallbackName={selectedAthlete.name}
+          fallbackAvatar={selectedAthlete.avatar}
+          onClose={() => setSelectedAthlete(null)}
+          onSelectProgram={(p) => {
+            setSelectedAthlete(null);
+            setPreviewingProgram(p);
+          }}
+        />
+      )}
 
       {/* Program Editor / Creator Modal */}
       <ProgramEditorModal

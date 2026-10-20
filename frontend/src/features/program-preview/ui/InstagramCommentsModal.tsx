@@ -11,6 +11,7 @@ import { apiClient } from '../../../shared/api/client.ts';
 import { Modal } from '../../../shared/ui/modal.tsx';
 import { useAuthStore } from '../../../entities/user/model/authStore.ts';
 import { ProgramComment } from '../../../entities/program/model/types.ts';
+import { AthleteAvatar } from '../../../entities/user/ui/AthleteAvatar.tsx';
 
 interface CommentNode extends ProgramComment {
   children: CommentNode[];
@@ -22,6 +23,7 @@ interface InstagramCommentsModalProps {
   programId: string;
   programTitle: string;
   programAuthorId?: string;
+  onOpenAthlete?: (athleteId: string, name?: string, avatarUrl?: string) => void;
 }
 
 const QUICK_EMOJIS = ['❤️', '🔥', '👏', '💪', '⚡', '🦾', '💯', '🏋️'];
@@ -31,6 +33,7 @@ export const InstagramCommentsModal: React.FC<InstagramCommentsModalProps> = ({
   onClose,
   programId,
   programAuthorId,
+  onOpenAthlete,
 }) => {
   const user = useAuthStore((s) => s.user);
   const queryClient = useQueryClient();
@@ -58,6 +61,7 @@ export const InstagramCommentsModal: React.FC<InstagramCommentsModalProps> = ({
           content: commentText.trim(),
           parent_id: replyingTo?.id || null,
           author_name: user?.display_name || 'Атлет',
+          avatar_url: user?.avatar_url || '',
         }),
       });
     },
@@ -160,14 +164,34 @@ export const InstagramCommentsModal: React.FC<InstagramCommentsModalProps> = ({
       <div key={item.id} className="space-y-2">
         <div className="flex items-start justify-between gap-3 group">
           {/* Left Avatar */}
-          <div className="w-8 h-8 rounded-full bg-dark-750 border border-dark-700 flex items-center justify-center text-xs font-bold text-zinc-300 uppercase shrink-0 shadow-sm">
-            {(item.author_name || 'А')[0]}
-          </div>
+          <AthleteAvatar
+            name={item.author_name}
+            avatarUrl={item.avatar_url}
+            size="sm"
+            onClick={
+              onOpenAthlete
+                ? () => {
+                    onClose();
+                    onOpenAthlete(item.user_id, item.author_name, item.avatar_url);
+                  }
+                : undefined
+            }
+          />
 
           {/* Center: Author, text, and metadata */}
           <div className="flex-1 min-w-0 text-xs space-y-1">
             <div className="leading-relaxed">
-              <span className="font-bold text-white mr-1.5 hover:underline cursor-pointer">
+              <span
+                onClick={
+                  onOpenAthlete
+                    ? () => {
+                        onClose();
+                        onOpenAthlete(item.user_id, item.author_name, item.avatar_url);
+                      }
+                    : undefined
+                }
+                className="font-bold text-white mr-1.5 hover:underline cursor-pointer"
+              >
                 {item.author_name || 'Атлет'}
               </span>
               {isProgramAuthor && (
@@ -354,9 +378,12 @@ export const InstagramCommentsModal: React.FC<InstagramCommentsModalProps> = ({
             }}
             className="flex items-center gap-2"
           >
-            <div className="w-7 h-7 rounded-full bg-brand-500/15 border border-brand-500/30 text-brand-400 font-bold flex items-center justify-center text-xs uppercase shrink-0">
-              {(user?.display_name || 'А')[0]}
-            </div>
+            <AthleteAvatar
+              name={user?.display_name || 'А'}
+              avatarUrl={user?.avatar_url}
+              size="xs"
+              className="w-7 h-7"
+            />
 
             <input
               ref={inputRef}

@@ -9,9 +9,7 @@ import {
   Users,
   Award,
   Sparkles,
-  Star,
   MessageCircle,
-  Trash2,
   Heart,
 } from 'lucide-react';
 import { Button } from '../../../shared/ui/button.tsx';
@@ -24,9 +22,10 @@ import { useTranslation } from '../../../shared/lib/i18n/i18n.ts';
 import { Program, ProgramDay } from '../../../entities/program/model/types.ts';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../../shared/api/client.ts';
-import { useAuthStore } from '../../../entities/user/model/authStore.ts';
 import { useStartWorkout } from '../../start-workout/model/useStartWorkout.ts';
-import { InstagramCommentsModal } from './InstagramCommentsModal.tsx';
+import { InstagramCommentsSection } from './InstagramCommentsSection.tsx';
+import { AthleteAvatar } from '../../../entities/user/ui/AthleteAvatar.tsx';
+import { AthleteProfileModal } from '../../../entities/user/ui/AthleteProfileModal.tsx';
 
 interface ProgramDetailModalProps {
   isOpen: boolean;
@@ -36,6 +35,7 @@ interface ProgramDetailModalProps {
   isInstalled?: boolean;
   onEditProgram?: (program: Program) => void;
   onProgramInstalled?: () => void;
+  onSelectProgram?: (program: Program) => void;
 }
 
 export const ProgramDetailModal: React.FC<ProgramDetailModalProps> = ({
@@ -46,18 +46,19 @@ export const ProgramDetailModal: React.FC<ProgramDetailModalProps> = ({
   isInstalled = false,
   onEditProgram,
   onProgramInstalled,
+  onSelectProgram,
 }) => {
   const { t } = useTranslation();
-  const user = useAuthStore((s) => s.user);
   const queryClient = useQueryClient();
   const [selectedDayIndex, setSelectedDayIndex] = useState(0);
-  const [isCommentsOpen, setIsCommentsOpen] = useState(false);
-  const [isReviewsOpen, setIsReviewsOpen] = useState(false);
-  const [reviewRating, setReviewRating] = useState(5);
-  const [reviewComment, setReviewComment] = useState('');
   const [inspectingExercise, setInspectingExercise] = useState<{
     name: string;
     muscle?: string;
+  } | null>(null);
+  const [selectedAthlete, setSelectedAthlete] = useState<{
+    id: string;
+    name?: string;
+    avatar?: string;
   } | null>(null);
 
   const startWorkout = useStartWorkout();
@@ -86,53 +87,13 @@ export const ProgramDetailModal: React.FC<ProgramDetailModalProps> = ({
     },
   });
 
-  // Fetch comments for this program
+  // Fetch comments count for this program
   const { data: rawComments } = useQuery<any[]>({
     queryKey: ['program-comments', program?.id],
     queryFn: () => apiClient<any[]>(`/programs/${program?.id}/comments`),
     enabled: isOpen && !!program?.id,
   });
   const comments = Array.isArray(rawComments) ? rawComments : [];
-
-  // Fetch reviews for this program
-  const { data: rawReviews, refetch: refetchReviews } = useQuery<any[]>({
-    queryKey: ['program-reviews', program?.id],
-    queryFn: () => apiClient<any[]>(`/programs/${program?.id}/reviews`),
-    enabled: isOpen && !!program?.id,
-  });
-  const reviews = Array.isArray(rawReviews) ? rawReviews : [];
-
-  const postReviewMutation = useMutation({
-    mutationFn: async () => {
-      if (!program) return;
-      return apiClient(`/programs/${program.id}/reviews`, {
-        method: 'POST',
-        body: JSON.stringify({
-          rating: reviewRating,
-          comment: reviewComment,
-          author_name: user?.display_name || 'Атлет',
-        }),
-      });
-    },
-    onSuccess: () => {
-      setReviewComment('');
-      void refetchReviews();
-      void queryClient.invalidateQueries({ queryKey: ['programs'] });
-    },
-  });
-
-  const deleteReviewMutation = useMutation({
-    mutationFn: async (reviewId: string) => {
-      if (!program) return;
-      return apiClient(`/programs/${program.id}/reviews/${reviewId}`, {
-        method: 'DELETE',
-      });
-    },
-    onSuccess: () => {
-      void refetchReviews();
-      void queryClient.invalidateQueries({ queryKey: ['programs'] });
-    },
-  });
 
   const installMutation = useMutation({
     mutationFn: async ({ setActive }: { setActive: boolean }) => {
@@ -163,6 +124,13 @@ export const ProgramDetailModal: React.FC<ProgramDetailModalProps> = ({
       name: `${program.name} - ${day.name}`,
       exercises: day.exercises,
     });
+  };
+
+  const scrollToComments = () => {
+    const el = document.getElementById('program-comments-section');
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth' });
+    }
   };
 
   const getSplitLabel = (type: string) => {
@@ -215,10 +183,31 @@ export const ProgramDetailModal: React.FC<ProgramDetailModalProps> = ({
           </div>
         }
         subtitle={
-          <div className="flex items-center gap-2 text-xs text-zinc-400 mt-0.5">
-            <span>
-              {program.author_name ? t('programs.byAuthor', { author: program.author_name }) : t('programs.officialSplit')}
-            </span>
+          <div className="flex items-center gap-2 text-xs text-zinc-400 mt-1 flex-wrap">
+            {program.author_name ? (
+              <button
+                type="button"
+                onClick={() =>
+                  setSelectedAthlete({
+                    id: program.user_id || '',
+                    name: program.author_name,
+                    avatar: program.author_avatar_url,
+                  })
+                }
+                className="flex items-center gap-1.5 font-semibold text-zinc-300 hover:text-brand-400 transition-colors group cursor-pointer"
+                title="Посмотреть профиль автора"
+              >
+                <AthleteAvatar
+                  name={program.author_name}
+                  avatarUrl={program.author_avatar_url}
+                  size="xs"
+                  className="ring-1 ring-zinc-700 group-hover:ring-brand-500 transition-all"
+                />
+                <span className="hover:underline">{program.author_name}</span>
+              </button>
+            ) : (
+              <span>{t('programs.officialSplit')}</span>
+            )}
             <span>•</span>
             <span>{t('programs.daysPerWeekCount', { count: program.days_per_week || days.length })}</span>
             {program.installs_count > 0 && (
@@ -294,7 +283,7 @@ export const ProgramDetailModal: React.FC<ProgramDetailModalProps> = ({
           {/* Instagram-Style Social Action Bar */}
           <div className="bg-dark-900/90 border border-dark-750 p-3 rounded-2xl space-y-2 shadow-sm">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2.5 sm:gap-3.5">
+              <div className="flex items-center gap-3">
                 {/* Heart / Like button */}
                 <button
                   type="button"
@@ -318,37 +307,17 @@ export const ProgramDetailModal: React.FC<ProgramDetailModalProps> = ({
                   </span>
                 </button>
 
-                {/* Comment button */}
+                {/* Comment button (Scrolls down to comments) */}
                 <button
                   type="button"
-                  onClick={() => setIsCommentsOpen(true)}
+                  onClick={scrollToComments}
                   className="flex items-center gap-1.5 text-xs font-bold text-zinc-400 hover:text-white transition-colors cursor-pointer group"
-                  title="Комментарии"
+                  title="Перейти к комментариям"
                 >
                   <MessageCircle className="w-5 h-5 text-zinc-400 group-hover:text-brand-400 transition-colors" />
                   <span className="font-mono text-xs text-zinc-300">
                     {comments.length}
                   </span>
-                </button>
-
-                {/* Rating Pill */}
-                <button
-                  type="button"
-                  onClick={() => setIsReviewsOpen(true)}
-                  className="flex items-center gap-1 text-xs font-bold text-amber-400 hover:text-amber-300 transition-colors cursor-pointer bg-amber-500/10 border border-amber-500/25 px-2 py-0.5 rounded-full"
-                  title="Оценки и отзывы"
-                >
-                  <Star className="w-3.5 h-3.5 fill-amber-400" />
-                  <span>
-                    {program.rating_avg && program.rating_avg > 0
-                      ? program.rating_avg.toFixed(1)
-                      : 'Оценить'}
-                  </span>
-                  {program.reviews_count ? (
-                    <span className="text-[10px] text-zinc-500 font-normal">
-                      ({program.reviews_count})
-                    </span>
-                  ) : null}
                 </button>
               </div>
 
@@ -371,7 +340,7 @@ export const ProgramDetailModal: React.FC<ProgramDetailModalProps> = ({
               )}
             </div>
 
-            {/* Instagram Social Preview & Link to comments */}
+            {/* Instagram Social Preview */}
             <div className="text-xs space-y-1 pt-1.5 border-t border-dark-800/80">
               <div className="text-zinc-400 font-medium text-[11px]">
                 {program.likes_count > 0 ? (
@@ -386,12 +355,12 @@ export const ProgramDetailModal: React.FC<ProgramDetailModalProps> = ({
               <div className="flex items-center justify-between text-xs pt-0.5">
                 <button
                   type="button"
-                  onClick={() => setIsCommentsOpen(true)}
+                  onClick={scrollToComments}
                   className="text-zinc-500 hover:text-zinc-300 font-medium transition-colors cursor-pointer text-left"
                 >
                   {comments.length > 0
-                    ? `Посмотреть все комментарии (${comments.length})...`
-                    : 'Написать первый комментарий...'}
+                    ? `Посмотреть все комментарии (${comments.length}) снизу...`
+                    : 'Оставить первый комментарий снизу...'}
                 </button>
 
                 {comments[0] && (
@@ -549,147 +518,37 @@ export const ProgramDetailModal: React.FC<ProgramDetailModalProps> = ({
               </div>
             </div>
           )}
+
+          {/* Instagram Comments Section Directly Embedded at the Bottom */}
+          <InstagramCommentsSection
+            programId={program.id}
+            programAuthorId={program.user_id}
+            onOpenAthlete={(athleteId, name, avatar) =>
+              setSelectedAthlete({ id: athleteId, name, avatar })
+            }
+          />
         </div>
       </Modal>
 
-      {/* Instagram Comments Sheet Modal */}
-      <InstagramCommentsModal
-        isOpen={isCommentsOpen}
-        onClose={() => setIsCommentsOpen(false)}
-        programId={program.id}
-        programTitle={program.name}
-        programAuthorId={program.user_id}
-      />
-
-      {/* Rating & Review Modal */}
-      <Modal
-        isOpen={isReviewsOpen}
-        onClose={() => setIsReviewsOpen(false)}
-        size="md"
-        title={
-          <div className="flex items-center gap-2">
-            <Star className="w-5 h-5 text-amber-400 fill-amber-400" />
-            <span className="font-extrabold text-white">Оценка и отзывы</span>
-          </div>
-        }
-        subtitle={program.name}
-      >
-        <div className="space-y-4">
-          {/* Add / Update Review Form */}
-          <div className="bg-dark-900 border border-dark-750 p-3.5 rounded-2xl space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-white">Ваша оценка</span>
-              <div className="flex items-center gap-1">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <button
-                    key={star}
-                    type="button"
-                    onClick={() => setReviewRating(star)}
-                    className="p-1 hover:scale-110 transition-transform cursor-pointer"
-                  >
-                    <Star
-                      className={`w-4 h-4 ${
-                        star <= reviewRating
-                          ? 'text-amber-400 fill-amber-400'
-                          : 'text-zinc-600'
-                      }`}
-                    />
-                  </button>
-                ))}
-                <span className="text-xs font-bold text-amber-400 ml-1 font-mono">
-                  {reviewRating} / 5
-                </span>
-              </div>
-            </div>
-
-            <textarea
-              value={reviewComment}
-              onChange={(e) => setReviewComment(e.target.value)}
-              placeholder="Поделитесь впечатлениями о сплите, нагрузке и результатах..."
-              rows={2}
-              className="w-full bg-dark-950/80 border border-dark-700 rounded-xl px-3 py-2 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-brand-500 transition-colors resize-none"
-            />
-
-            <div className="flex justify-end">
-              <Button
-                variant="primary"
-                size="sm"
-                className="text-xs font-bold"
-                isLoading={postReviewMutation.isPending}
-                onClick={() => {
-                  postReviewMutation.mutate();
-                  setIsReviewsOpen(false);
-                }}
-              >
-                Сохранить оценку
-              </Button>
-            </div>
-          </div>
-
-          {/* Reviews List */}
-          <div className="space-y-2 max-h-[300px] overflow-y-auto">
-            {reviews.length === 0 ? (
-              <div className="text-center py-6 text-zinc-500 text-xs">
-                Пока нет отзывов. Будьте первым!
-              </div>
-            ) : (
-              reviews.map((rev) => (
-                <div
-                  key={rev.id}
-                  className="bg-dark-900/60 border border-dark-800 p-3 rounded-xl space-y-1.5 text-xs"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold text-zinc-200">
-                        {rev.author_name || 'Атлет'}
-                      </span>
-                      <div className="flex items-center gap-0.5">
-                        {[1, 2, 3, 4, 5].map((s) => (
-                          <Star
-                            key={s}
-                            className={`w-3 h-3 ${
-                              s <= rev.rating
-                                ? 'text-amber-400 fill-amber-400'
-                                : 'text-zinc-700'
-                            }`}
-                          />
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <span className="text-[10px] text-zinc-500 font-mono">
-                        {new Date(rev.created_at).toLocaleDateString()}
-                      </span>
-                      {user?.id && rev.user_id === user.id && (
-                        <button
-                          type="button"
-                          onClick={() => deleteReviewMutation.mutate(rev.id)}
-                          className="text-zinc-500 hover:text-rose-400 transition-colors p-0.5"
-                          title="Удалить"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </button>
-                      )}
-                    </div>
-                  </div>
-
-                  {rev.comment && (
-                    <p className="text-zinc-300 leading-relaxed">{rev.comment}</p>
-                  )}
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-      </Modal>
-
+      {/* Inspect Exercise Technique Modal */}
       {inspectingExercise && (
         <ExerciseInfoModal
           isOpen={true}
           onClose={() => setInspectingExercise(null)}
           exerciseName={inspectingExercise.name}
           fallbackMuscle={inspectingExercise.muscle}
+        />
+      )}
+
+      {/* Athlete Profile Modal */}
+      {selectedAthlete && (
+        <AthleteProfileModal
+          isOpen={!!selectedAthlete}
+          onClose={() => setSelectedAthlete(null)}
+          athleteId={selectedAthlete.id}
+          fallbackName={selectedAthlete.name}
+          fallbackAvatar={selectedAthlete.avatar}
+          onSelectProgram={onSelectProgram}
         />
       )}
     </>

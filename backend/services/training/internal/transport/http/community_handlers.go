@@ -27,6 +27,7 @@ type createCommentReq struct {
 	Content    string  `json:"content"`
 	ParentID   *string `json:"parent_id,omitempty"`
 	AuthorName string  `json:"author_name,omitempty"`
+	AvatarURL  string  `json:"avatar_url,omitempty"`
 }
 
 // -------------------------------------------------------------
@@ -257,11 +258,13 @@ func (h *Handler) handleCreateProgramComment(w http.ResponseWriter, r *http.Requ
 	if author == "" {
 		author = "Атлет"
 	}
+	avatarURL := strings.TrimSpace(req.AvatarURL)
 
 	comment, err := h.communityRepo.CreateProgramComment(r.Context(), postgres.ProgramComment{
 		ProgramID:  programID,
 		UserID:     userID,
 		AuthorName: author,
+		AvatarURL:  avatarURL,
 		ParentID:   parentUUID,
 		Content:    trimmedContent,
 	})
@@ -336,5 +339,33 @@ func (h *Handler) handleGetProgramLikeStatus(w http.ResponseWriter, r *http.Requ
 	hasLiked := h.communityRepo.HasUserLikedProgram(r.Context(), programID, userID)
 	httpx.WriteJSON(w, http.StatusOK, map[string]any{
 		"has_liked": hasLiked,
+	})
+}
+
+func (h *Handler) handleGetAthleteProfile(w http.ResponseWriter, r *http.Request, _ uuid.UUID) {
+	athleteID, ok := httpx.PathUUID(w, r, "id")
+	if !ok {
+		return
+	}
+
+	profile, err := h.communityRepo.GetAthleteProfile(r.Context(), athleteID)
+	if err != nil {
+		httpx.WriteProblem(w, http.StatusInternalServerError, "Internal Server Error", err.Error(), "ERR_INTERNAL")
+		return
+	}
+
+	progsDTO := make([]any, 0)
+	for _, p := range profile.PublicPrograms {
+		progsDTO = append(progsDTO, mapProgramDTO(p))
+	}
+
+	httpx.WriteJSON(w, http.StatusOK, map[string]any{
+		"id":              profile.ID.String(),
+		"display_name":    profile.DisplayName,
+		"avatar_url":      profile.AvatarURL,
+		"workouts_done":   profile.WorkoutsDone,
+		"total_volume_kg": profile.TotalVolumeKg,
+		"member_since":    profile.MemberSince.Format("2006-01-02T15:04:05Z07:00"),
+		"public_programs": progsDTO,
 	})
 }
