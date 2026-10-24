@@ -129,7 +129,12 @@ func (h *Handler) handleToggleTodo(w http.ResponseWriter, r *http.Request, userI
 		return
 	}
 
-	res, err := h.todoService.ToggleTodo(r.Context(), userID, todoID)
+	dateStr := httpx.QueryString(r, "date", "")
+	if dateStr == "" {
+		dateStr = time.Now().Format("2006-01-02")
+	}
+
+	res, err := h.todoService.ToggleTodo(r.Context(), userID, todoID, dateStr)
 	if err != nil {
 		httpx.WriteProblem(w, http.StatusBadRequest, "Bad Request", err.Error(), "ERR_TOGGLE_TODO")
 		return

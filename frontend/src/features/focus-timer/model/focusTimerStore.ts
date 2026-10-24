@@ -3,6 +3,9 @@ import { persist } from 'zustand/middleware';
 import { apiClient } from '../../../shared/api/client.ts';
 import { TodoCategory } from '../../../entities/todo/model/types.ts';
 import { t } from '../../../shared/lib/i18n/i18n.ts';
+import { toLocalDateKey } from '../../../shared/lib/dates.ts';
+import { queryClient } from '../../../app/providers/QueryProvider.tsx';
+import { invalidateTodoQueries } from '../../../entities/todo/api/todoQueries.ts';
 
 export type TimerMode = 'pomodoro' | 'target_timer' | 'stopwatch';
 export type PomodoroPhase = 'work' | 'short_break' | 'long_break';
@@ -625,6 +628,7 @@ export const useFocusTimerStore = create<FocusTimerState>()(
           : state.accumulatedWorkSeconds;
 
         const durationMins = Math.max(1, Math.round(finalTotalSec / 60));
+        const localDate = toLocalDateKey(state.sessionStartedAt || now);
 
         try {
           await apiClient.post('/todos/focus-sessions', {
@@ -635,9 +639,13 @@ export const useFocusTimerStore = create<FocusTimerState>()(
             session_type: state.mode,
             notes,
             mark_completed: markCompleted,
+            date: localDate,
           });
+          // Immediately invalidate and refresh all todo schedule queries!
+          invalidateTodoQueries(queryClient);
         } catch (err) {
-          console.warn('Failed logging focus session:', err);
+          console.error('Failed logging focus session:', err);
+          throw err;
         }
 
         playChimeSound('complete');

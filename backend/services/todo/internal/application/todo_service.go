@@ -17,6 +17,10 @@ type TodoRepository interface {
 	Create(ctx context.Context, t *todo.Todo) error
 	Update(ctx context.Context, t *todo.Todo) error
 	Delete(ctx context.Context, userID, todoID uuid.UUID) error
+	SetDayStatus(ctx context.Context, userID, todoID uuid.UUID, day string, status todo.Status, completedAt *time.Time) error
+	GetDayStatus(ctx context.Context, userID, todoID uuid.UUID, day string) (todo.Status, *time.Time, int, error)
+	AddDaySpent(ctx context.Context, userID, todoID uuid.UUID, day string, deltaMinutes int) error
+	GetDayProgressRange(ctx context.Context, userID uuid.UUID, fromDay, toDay string) ([]todo.DayProgress, error)
 	CreateActivityLog(ctx context.Context, log *todo.ActivityLog) error
 	GetActivityLogs(ctx context.Context, userID uuid.UUID, dateStr string) ([]todo.ActivityLog, error)
 	DeleteActivityLog(ctx context.Context, userID, logID uuid.UUID) error
@@ -60,6 +64,10 @@ func (s *TodoService) CreateTodo(ctx context.Context, userID uuid.UUID, in Creat
 		endDate = startDate
 	}
 
+	if endDate < startDate {
+		endDate = startDate
+	}
+
 	priority := in.Priority
 	if priority == "" {
 		priority = todo.PriorityMedium
@@ -84,6 +92,16 @@ func (s *TodoService) CreateTodo(ctx context.Context, userID uuid.UUID, in Creat
 		targetDuration = 30
 	}
 
+	isMulti := endDate > startDate
+	totalDays := 1
+	if isMulti {
+		t1, e1 := time.Parse("2006-01-02", startDate)
+		t2, e2 := time.Parse("2006-01-02", endDate)
+		if e1 == nil && e2 == nil {
+			totalDays = int(t2.Sub(t1).Hours()/24) + 1
+		}
+	}
+
 	item := &todo.Todo{
 		ID:                    uuid.New(),
 		UserID:                userID,
@@ -98,8 +116,12 @@ func (s *TodoService) CreateTodo(ctx context.Context, userID uuid.UUID, in Creat
 		EndTime:               in.EndTime,
 		TargetDurationMinutes: targetDuration,
 		TotalSpentMinutes:     0,
+		LifetimeSpentMinutes:  0,
 		Status:                todo.StatusPending,
 		MeetingURL:            in.MeetingURL,
+		IsMultiDay:            isMulti,
+		TotalDays:             totalDays,
+		CompletedDays:         0,
 		CreatedAt:             time.Now(),
 		UpdatedAt:             time.Now(),
 	}
@@ -154,19 +176,13 @@ func (s *TodoService) UpdateTodo(ctx context.Context, userID, todoID uuid.UUID, 
 	if in.EndDate != "" {
 		existing.EndDate = in.EndDate
 	}
+	if existing.EndDate < existing.StartDate {
+		existing.EndDate = existing.StartDate
+	}
 	existing.StartTime = in.StartTime
 	existing.EndTime = in.EndTime
 	if in.TargetDurationMinutes > 0 {
 		existing.TargetDurationMinutes = in.TargetDurationMinutes
-	}
-	if in.Status != "" {
-		existing.Status = in.Status
-		if in.Status == todo.StatusCompleted && existing.CompletedAt == nil {
-			now := time.Now()
-			existing.CompletedAt = &now
-		} else if in.Status != todo.StatusCompleted {
-			existing.CompletedAt = nil
-		}
 	}
 	existing.MeetingURL = in.MeetingURL
 
@@ -177,7 +193,7 @@ func (s *TodoService) UpdateTodo(ctx context.Context, userID, todoID uuid.UUID, 
 	return existing, nil
 }
 
-func (s *TodoService) ToggleTodo(ctx context.Context, userID, todoID uuid.UUID) (*todo.Todo, error) {
+func (s *TodoService) ToggleTodo(ctx context.Context, userID, todoID uuid.UUID, dateStr string) (*todo.Todo, error) {
 	existing, err := s.repo.GetByID(ctx, userID, todoID)
 	if err != nil {
 		return nil, err
@@ -186,44 +202,48 @@ func (s *TodoService) ToggleTodo(ctx context.Context, userID, todoID uuid.UUID) 
 		return nil, errors.New("todo not found")
 	}
 
-	if existing.Status == todo.StatusCompleted {
-		existing.Status = todo.StatusPending
-		existing.CompletedAt = nil
-	} else {
-		existing.Status = todo.StatusCompleted
-		now := time.Now()
-		existing.CompletedAt = &now
-
-		// Smart tracking: Automatically log an activity log entry when task is marked done!
-		dur := existing.TargetDurationMinutes
-		if dur <= 0 {
-			dur = 25
-		}
-		if existing.TotalSpentMinutes > 0 {
-			dur = existing.TotalSpentMinutes
-		}
-
-		startedAt := now.Add(-time.Duration(dur) * time.Minute)
-		actLog := &todo.ActivityLog{
-			ID:              uuid.New(),
-			UserID:          userID,
-			TodoID:          &existing.ID,
-			TaskTitle:       existing.Title,
-			Category:        existing.Category,
-			StartedAt:       startedAt,
-			EndedAt:         now,
-			DurationMinutes: dur,
-			SessionType:     "task_completed",
-			Notes:           existing.Description,
-			CreatedAt:       now,
-		}
-		_ = s.repo.CreateActivityLog(ctx, actLog)
+	if dateStr == "" {
+		dateStr = time.Now().Format("2006-01-02")
 	}
 
-	if err := s.repo.Update(ctx, existing); err != nil {
+	// Validate date is within task range
+	if dateStr < existing.StartDate || dateStr > existing.EndDate {
+		return nil, fmt.Errorf("date %s is outside task range [%s, %s]", dateStr, existing.StartDate, existing.EndDate)
+	}
+
+	currentStatus, _, _, err := s.repo.GetDayStatus(ctx, userID, todoID, dateStr)
+	if err != nil {
 		return nil, err
 	}
 
+	var newStatus todo.Status
+	var completedAt *time.Time
+
+	if currentStatus == todo.StatusCompleted {
+		newStatus = todo.StatusPending
+		completedAt = nil
+	} else {
+		newStatus = todo.StatusCompleted
+		now := time.Now()
+		completedAt = &now
+	}
+
+	if err := s.repo.SetDayStatus(ctx, userID, todoID, dateStr, newStatus, completedAt); err != nil {
+		return nil, err
+	}
+
+	// Re-fetch updated day-specific representation
+	updatedList, err := s.repo.GetByDate(ctx, userID, dateStr)
+	if err == nil {
+		for _, item := range updatedList {
+			if item.ID == todoID {
+				return &item, nil
+			}
+		}
+	}
+
+	existing.Status = newStatus
+	existing.CompletedAt = completedAt
 	return existing, nil
 }
 
@@ -283,43 +303,56 @@ func (s *TodoService) GetDailySchedule(ctx context.Context, userID uuid.UUID, da
 		logs = make([]todo.ActivityLog, 0)
 	}
 
-	// Detect and annotate schedule time conflicts
-	for i := range todos {
-		startMin, ok := parseTimeToMinutes(todos[i].StartTime)
-		if !ok {
-			continue
+	// Month view: attach day-by-day progress records
+	var dayProgress []todo.DayProgress
+	if len(dateStr) == 7 {
+		firstDay := dateStr + "-01"
+		lastDay := dateStr + "-31"
+		dayProgress, _ = s.repo.GetDayProgressRange(ctx, userID, firstDay, lastDay)
+		if dayProgress == nil {
+			dayProgress = make([]todo.DayProgress, 0)
 		}
-		endMin, hasEnd := parseTimeToMinutes(todos[i].EndTime)
-		if !hasEnd || endMin <= startMin {
-			dur := todos[i].TargetDurationMinutes
-			if dur <= 0 {
-				dur = 30
-			}
-			endMin = startMin + dur
-		}
+	}
 
-		for j := range todos {
-			if i == j {
+	// Detect and annotate schedule time conflicts (only for daily view)
+	if len(dateStr) == 10 {
+		for i := range todos {
+			startMin, ok := parseTimeToMinutes(todos[i].StartTime)
+			if !ok {
 				continue
 			}
-			otherStart, otherOk := parseTimeToMinutes(todos[j].StartTime)
-			if !otherOk {
-				continue
-			}
-			otherEnd, otherHasEnd := parseTimeToMinutes(todos[j].EndTime)
-			if !otherHasEnd || otherEnd <= otherStart {
-				dur := todos[j].TargetDurationMinutes
+			endMin, hasEnd := parseTimeToMinutes(todos[i].EndTime)
+			if !hasEnd || endMin <= startMin {
+				dur := todos[i].TargetDurationMinutes
 				if dur <= 0 {
 					dur = 30
 				}
-				otherEnd = otherStart + dur
+				endMin = startMin + dur
 			}
 
-			if startMin < otherEnd && endMin > otherStart {
-				todos[i].HasConflict = true
-				conflictMsg := fmt.Sprintf("%s (%s)", todos[j].Title, formatTimeRange(todos[j].StartTime, todos[j].EndTime, otherEnd))
-				todos[i].ConflictingWith = &conflictMsg
-				break
+			for j := range todos {
+				if i == j {
+					continue
+				}
+				otherStart, otherOk := parseTimeToMinutes(todos[j].StartTime)
+				if !otherOk {
+					continue
+				}
+				otherEnd, otherHasEnd := parseTimeToMinutes(todos[j].EndTime)
+				if !otherHasEnd || otherEnd <= otherStart {
+					dur := todos[j].TargetDurationMinutes
+					if dur <= 0 {
+						dur = 30
+					}
+					otherEnd = otherStart + dur
+				}
+
+				if startMin < otherEnd && endMin > otherStart {
+					todos[i].HasConflict = true
+					conflictMsg := fmt.Sprintf("%s (%s)", todos[j].Title, formatTimeRange(todos[j].StartTime, todos[j].EndTime, otherEnd))
+					todos[i].ConflictingWith = &conflictMsg
+					break
+				}
 			}
 		}
 	}
@@ -344,6 +377,7 @@ func (s *TodoService) GetDailySchedule(ctx context.Context, userID uuid.UUID, da
 		TotalSpentMinutes:   totalSpent,
 		Todos:               todos,
 		RecentLogs:          logs,
+		DayProgress:         dayProgress,
 	}, nil
 }
 
@@ -355,6 +389,7 @@ type LogFocusSessionInput struct {
 	SessionType     string     `json:"session_type"` // "pomodoro", "stopwatch", "timer"
 	Notes           string     `json:"notes,omitempty"`
 	MarkCompleted   bool       `json:"mark_completed"`
+	Date            string     `json:"date,omitempty"` // "YYYY-MM-DD"
 }
 
 func (s *TodoService) LogFocusSession(ctx context.Context, userID uuid.UUID, in LogFocusSessionInput) (*todo.ActivityLog, error) {
@@ -372,6 +407,11 @@ func (s *TodoService) LogFocusSession(ctx context.Context, userID uuid.UUID, in 
 		sessionType = "pomodoro"
 	}
 
+	sessionDate := in.Date
+	if sessionDate == "" {
+		sessionDate = now.Format("2006-01-02")
+	}
+
 	if in.TodoID != nil {
 		item, err := s.repo.GetByID(ctx, userID, *in.TodoID)
 		if err == nil && item != nil {
@@ -381,12 +421,15 @@ func (s *TodoService) LogFocusSession(ctx context.Context, userID uuid.UUID, in 
 			if category == "" {
 				category = item.Category
 			}
-			item.TotalSpentMinutes += in.DurationMinutes
-			if in.MarkCompleted {
-				item.Status = todo.StatusCompleted
-				item.CompletedAt = &now
+
+			// Atomically add day & lifetime spent minutes
+			if err := s.repo.AddDaySpent(ctx, userID, *in.TodoID, sessionDate, in.DurationMinutes); err != nil {
+				return nil, fmt.Errorf("failed to record day spent minutes: %w", err)
 			}
-			_ = s.repo.Update(ctx, item)
+
+			if in.MarkCompleted {
+				_ = s.repo.SetDayStatus(ctx, userID, *in.TodoID, sessionDate, todo.StatusCompleted, &now)
+			}
 		}
 	}
 
@@ -404,6 +447,7 @@ func (s *TodoService) LogFocusSession(ctx context.Context, userID uuid.UUID, in 
 		TodoID:          in.TodoID,
 		TaskTitle:       taskTitle,
 		Category:        category,
+		LogDate:         sessionDate,
 		StartedAt:       startedAt,
 		EndedAt:         now,
 		DurationMinutes: in.DurationMinutes,

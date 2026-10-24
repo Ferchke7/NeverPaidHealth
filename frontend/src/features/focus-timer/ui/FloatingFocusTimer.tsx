@@ -59,6 +59,7 @@ export const FloatingFocusTimer: React.FC = () => {
   const [notes, setNotes] = useState('');
   const [markCompleted, setMarkCompleted] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   // Sync tick interval + visibility/focus recovery for 0ms drift
   useEffect(() => {
@@ -129,9 +130,12 @@ export const FloatingFocusTimer: React.FC = () => {
 
   const handleFinishAndSave = async () => {
     setIsSubmitting(true);
+    setSaveError(null);
     try {
       await stopAndLog(markCompleted, notes);
       setNotes('');
+    } catch (err: any) {
+      setSaveError(err?.message || 'Ошибка сохранения сессии. Попробуйте еще раз.');
     } finally {
       setIsSubmitting(false);
     }
@@ -505,6 +509,12 @@ export const FloatingFocusTimer: React.FC = () => {
             <span>{t('focusTimer.done')}</span>
           </button>
         </div>
+
+        {saveError && (
+          <div className="w-full mt-2 p-2 bg-red-950/60 border border-red-800 text-red-300 text-xs rounded-xl text-center">
+            {saveError}
+          </div>
+        )}
 
         {/* Notes & Mark Completed Checkbox */}
         <div className="w-full mt-3 pt-3 border-t border-dark-800 text-left space-y-2">

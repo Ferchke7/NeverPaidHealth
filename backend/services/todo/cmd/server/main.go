@@ -52,6 +52,9 @@ func main() {
 	}
 
 	repo := postgres.NewTodoRepository(pool)
+	if err := repo.AutoMigrate(ctx); err != nil {
+		logger.Warn("Database auto-migration warning", "error", err)
+	}
 	todoSvc := application.NewTodoService(repo)
 	handler := transport.NewHandler(todoSvc)
 
