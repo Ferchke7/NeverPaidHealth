@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Trophy,
   TrendingUp,
@@ -10,6 +11,8 @@ import {
   BarChart3,
   Shield,
   Scale,
+  PieChart,
+  ChevronRight,
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '../../../shared/api/client.ts';
@@ -22,8 +25,6 @@ import { useAuthStore } from '../../../entities/user/model/authStore.ts';
 import { Exercise } from '../../../entities/exercise/model/types.ts';
 import { WorkoutHistoryItem } from '../../../entities/workout/model/types.ts';
 import { useTranslation } from '../../../shared/lib/i18n/i18n.ts';
-import { HistoryPage } from '../../history/ui/HistoryPage.tsx';
-import { BodyPage } from '../../body/ui/BodyPage.tsx';
 import {
   ExerciseProgressionChart,
   MuscleBalanceRadarChart,
@@ -63,9 +64,10 @@ interface ExerciseHistoryResponse {
 }
 
 export const ProgressPage: React.FC = () => {
+  const navigate = useNavigate();
   const unitPref = useAuthStore((s) => s.unitPreference);
   const { language } = useTranslation();
-  const [activeTab, setActiveTab] = useState<string>('overview');
+  const [activeTab, setActiveTab] = useState<string>('progression');
   const [selectedMuscle, setSelectedMuscle] = useState('all');
   const [selectedExerciseId, setSelectedExerciseId] = useState<string | null>(null);
 
@@ -77,10 +79,10 @@ export const ProgressPage: React.FC = () => {
     if (language === 'ru') {
       return {
         title: 'Прогресс и аналитика',
-        tabOverview: 'Обзор & PR',
-        tabHistory: 'История',
-        tabBody: 'Тело & ИМТ',
-        tabStrength: '1RM & Стандарты',
+        subtitle: 'Динамика силы, персональные рекорды и баланс мышечной нагрузки',
+        tabProgression: 'Прогрессия & PR',
+        tabVolume: 'Баланс & Тоннаж',
+        tabStandards: '1RM & Стандарты',
         totalWorkouts: 'Тренировки',
         totalTonnage: 'Общий тоннаж',
         personalRecords: 'Личные рекорды',
@@ -125,10 +127,10 @@ export const ProgressPage: React.FC = () => {
     if (language === 'uz') {
       return {
         title: 'Progress va tahlil',
-        tabOverview: 'Umumiy & PR',
-        tabHistory: 'Tarix',
-        tabBody: 'Tana & BMI',
-        tabStrength: '1RM & Standartlar',
+        subtitle: 'Kuch dinamikasi, shaxsiy rekordlar va yuklama balansi',
+        tabProgression: 'Progressiya & PR',
+        tabVolume: 'Balans & Tonnaj',
+        tabStandards: '1RM & Standartlar',
         totalWorkouts: 'Mashg‘ulotlar',
         totalTonnage: 'Umumiy tonnaj',
         personalRecords: 'Shaxsiy rekordlar',
@@ -172,10 +174,10 @@ export const ProgressPage: React.FC = () => {
     }
     return {
       title: 'Progress & Analytics',
-      tabOverview: 'Overview & PRs',
-      tabHistory: 'History',
-      tabBody: 'Body & BMI',
-      tabStrength: '1RM & Standards',
+      subtitle: 'Strength milestones, personal records, and muscle load balance',
+      tabProgression: 'Progression & PRs',
+      tabVolume: 'Balance & Tonnage',
+      tabStandards: '1RM & Standards',
       totalWorkouts: 'Workouts',
       totalTonnage: 'Total Tonnage',
       personalRecords: 'Personal Records',
@@ -402,28 +404,28 @@ export const ProgressPage: React.FC = () => {
     });
   }, [recordGroups]);
 
-  // 4 Consolidated Tabs
+  // Strictly 3 Focused Analytics Tabs (Zero page embedding)
   const navTabs = useMemo(
     () => [
-      { id: 'overview', label: labels.tabOverview, icon: <Activity className="w-3.5 h-3.5" />, badge: recordGroups.length },
-      { id: 'history', label: labels.tabHistory, icon: <CalendarIcon className="w-3.5 h-3.5" /> },
-      { id: 'body', label: labels.tabBody, icon: <Scale className="w-3.5 h-3.5" /> },
-      { id: 'strength', label: labels.tabStrength, icon: <Shield className="w-3.5 h-3.5" /> },
+      { id: 'progression', label: labels.tabProgression, icon: <TrendingUp className="w-3.5 h-3.5" />, badge: recordGroups.length },
+      { id: 'volume', label: labels.tabVolume, icon: <PieChart className="w-3.5 h-3.5" /> },
+      { id: 'standards', label: labels.tabStandards, icon: <Shield className="w-3.5 h-3.5" /> },
     ],
     [labels, recordGroups.length]
   );
 
   return (
-    <div className="space-y-5 animate-fade-in pb-12">
-      {/* Compact Header + 4 Consolidated HeroUI Tabs */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-brand-500/15 border border-brand-500/30 flex items-center justify-center text-brand-400 shadow-sm shrink-0">
-            <BarChart3 className="w-4 h-4" />
-          </div>
-          <h1 className="text-lg sm:text-xl font-black text-white tracking-tight">
-            {labels.title}
+    <div className="space-y-6 animate-fade-in pb-12">
+      {/* Page Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-1 border-b border-dark-800/80">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight flex items-center gap-2">
+            <BarChart3 className="w-6 h-6 text-brand-400" />
+            <span>{labels.title}</span>
           </h1>
+          <p className="text-xs text-zinc-400 mt-0.5">
+            {labels.subtitle}
+          </p>
         </div>
 
         <Tabs
@@ -434,54 +436,54 @@ export const ProgressPage: React.FC = () => {
         />
       </div>
 
-      {/* TAB 1: OVERVIEW, PROGRESSION, MUSCLE VOLUME & PRS */}
-      {activeTab === 'overview' && (
-        <div className="space-y-5 animate-fade-in">
-          {/* Top KPI Metric Cards */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <Card className="p-4 bg-dark-800/80 border-dark-700/80 space-y-1">
-              <div className="flex items-center gap-1.5 text-xs text-zinc-400 font-bold">
-                <Dumbbell className="w-3.5 h-3.5 text-brand-400" />
-                <span className="truncate">{labels.totalWorkouts}</span>
-              </div>
-              <div className="text-xl sm:text-2xl font-black text-white font-mono">
-                {analyticsSummary.totalWorkouts}
-              </div>
-            </Card>
-
-            <Card className="p-4 bg-dark-800/80 border-dark-700/80 space-y-1">
-              <div className="flex items-center gap-1.5 text-xs text-zinc-400 font-bold">
-                <Flame className="w-3.5 h-3.5 text-emerald-400" />
-                <span className="truncate">{labels.totalTonnage}</span>
-              </div>
-              <div className="text-xl sm:text-2xl font-black text-emerald-400 font-mono">
-                {analyticsSummary.totalTonnageKg > 1000
-                  ? `${(analyticsSummary.totalTonnageKg / 1000).toFixed(1)} T`
-                  : `${analyticsSummary.totalTonnageKg.toFixed(0)} kg`}
-              </div>
-            </Card>
-
-            <Card className="p-4 bg-dark-800/80 border-dark-700/80 space-y-1">
-              <div className="flex items-center gap-1.5 text-xs text-zinc-400 font-bold">
-                <Trophy className="w-3.5 h-3.5 text-amber-400" />
-                <span className="truncate">{labels.personalRecords}</span>
-              </div>
-              <div className="text-xl sm:text-2xl font-black text-amber-400 font-mono">
-                {analyticsSummary.totalPRs}
-              </div>
-            </Card>
-
-            <Card className="p-4 bg-dark-800/80 border-dark-700/80 space-y-1">
-              <div className="flex items-center gap-1.5 text-xs text-zinc-400 font-bold">
-                <Activity className="w-3.5 h-3.5 text-sky-400" />
-                <span className="truncate">{labels.timeUnderLoad}</span>
-              </div>
-              <div className="text-xl sm:text-2xl font-black text-sky-400 font-mono">
-                {analyticsSummary.totalHours} {labels.hrs}
-              </div>
-            </Card>
+      {/* Top KPI Metric Cards (Consistent across all tabs) */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <Card className="p-3.5 sm:p-4 bg-dark-850/80 border-dark-750/80 space-y-1">
+          <div className="flex items-center gap-1.5 text-xs text-zinc-400 font-bold">
+            <Dumbbell className="w-3.5 h-3.5 text-brand-400" />
+            <span className="truncate">{labels.totalWorkouts}</span>
           </div>
+          <div className="text-xl sm:text-2xl font-black text-white font-mono">
+            {analyticsSummary.totalWorkouts}
+          </div>
+        </Card>
 
+        <Card className="p-3.5 sm:p-4 bg-dark-850/80 border-dark-750/80 space-y-1">
+          <div className="flex items-center gap-1.5 text-xs text-zinc-400 font-bold">
+            <Flame className="w-3.5 h-3.5 text-emerald-400" />
+            <span className="truncate">{labels.totalTonnage}</span>
+          </div>
+          <div className="text-xl sm:text-2xl font-black text-emerald-400 font-mono">
+            {analyticsSummary.totalTonnageKg > 1000
+              ? `${(analyticsSummary.totalTonnageKg / 1000).toFixed(1)} T`
+              : `${analyticsSummary.totalTonnageKg.toFixed(0)} kg`}
+          </div>
+        </Card>
+
+        <Card className="p-3.5 sm:p-4 bg-dark-850/80 border-dark-750/80 space-y-1">
+          <div className="flex items-center gap-1.5 text-xs text-zinc-400 font-bold">
+            <Trophy className="w-3.5 h-3.5 text-amber-400" />
+            <span className="truncate">{labels.personalRecords}</span>
+          </div>
+          <div className="text-xl sm:text-2xl font-black text-amber-400 font-mono">
+            {analyticsSummary.totalPRs}
+          </div>
+        </Card>
+
+        <Card className="p-3.5 sm:p-4 bg-dark-850/80 border-dark-750/80 space-y-1">
+          <div className="flex items-center gap-1.5 text-xs text-zinc-400 font-bold">
+            <Activity className="w-3.5 h-3.5 text-sky-400" />
+            <span className="truncate">{labels.timeUnderLoad}</span>
+          </div>
+          <div className="text-xl sm:text-2xl font-black text-sky-400 font-mono">
+            {analyticsSummary.totalHours} {labels.hrs}
+          </div>
+        </Card>
+      </div>
+
+      {/* TAB 1: PROGRESSION & PERSONAL RECORDS */}
+      {activeTab === 'progression' && (
+        <div className="space-y-6 animate-fade-in">
           {/* Exercise Progression Curve Chart (Apache ECharts) */}
           <Card className="space-y-4">
             <CardHeader>
@@ -520,9 +522,6 @@ export const ProgressPage: React.FC = () => {
             </CardContent>
           </Card>
 
-          {/* Overall Tonnage & Workload Volume History Chart (Apache ECharts) */}
-          <TonnageVolumeHistoryChart workouts={workouts} unitPref={unitPref} />
-
           {/* Personal Records (PRs Hall of Fame) */}
           <Card className="space-y-4">
             <CardHeader>
@@ -538,7 +537,7 @@ export const ProgressPage: React.FC = () => {
                     onClick={() => setSelectedMuscle(filter.id)}
                     className={`px-3 py-1 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
                       selectedMuscle === filter.id
-                        ? 'bg-brand-500 text-dark-950 shadow-sm'
+                        ? 'bg-brand-500 text-dark-950 shadow-sm font-black'
                         : 'bg-dark-900 text-zinc-400 hover:text-zinc-200 border border-dark-700'
                     }`}
                   >
@@ -549,66 +548,74 @@ export const ProgressPage: React.FC = () => {
             </CardHeader>
 
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-                {filteredRecordGroups.map((group) => (
-                  <div
-                    key={group.exercise_id}
-                    className="p-4 rounded-2xl bg-dark-900/80 border border-dark-700/80 space-y-3 hover:border-brand-500/40 transition-colors"
-                  >
-                    <div className="flex items-center gap-2 border-b border-dark-700/60 pb-2.5">
-                      <Trophy className="w-4 h-4 text-amber-400 shrink-0" />
-                      <h3 className="text-sm font-black text-white truncate">{group.exercise_name}</h3>
+              {filteredRecordGroups.length === 0 ? (
+                <div className="text-center py-8 text-zinc-500 text-xs">
+                  Нет записей для выбранной группы мышц.
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                  {filteredRecordGroups.map((group) => (
+                    <div
+                      key={group.exercise_id}
+                      className="p-4 rounded-2xl bg-dark-900/80 border border-dark-700/80 space-y-3 hover:border-brand-500/40 transition-colors"
+                    >
+                      <div className="flex items-center gap-2 border-b border-dark-700/60 pb-2.5">
+                        <Trophy className="w-4 h-4 text-amber-400 shrink-0" />
+                        <h3 className="text-sm font-black text-white truncate">{group.exercise_name}</h3>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="p-2.5 rounded-xl bg-dark-850 border border-dark-700/50">
+                          <div className="text-[10px] text-zinc-400">{labels.heaviestWeight}</div>
+                          <div className="text-sm font-bold text-blue-400 font-mono mt-0.5">
+                            {group.best_weight_kg ? formatWeight(group.best_weight_kg, unitPref) : '—'}
+                          </div>
+                        </div>
+
+                        <div className="p-2.5 rounded-xl bg-dark-850 border border-dark-700/50">
+                          <div className="text-[10px] text-zinc-400">{labels.bestE1rm}</div>
+                          <div className="text-sm font-bold text-amber-400 font-mono mt-0.5">
+                            {group.best_e1rm_kg ? formatWeight(Math.round(group.best_e1rm_kg * 10) / 10, unitPref) : '—'}
+                          </div>
+                        </div>
+
+                        <div className="p-2.5 rounded-xl bg-dark-850 border border-dark-700/50">
+                          <div className="text-[10px] text-zinc-400">{labels.maxSetVolume}</div>
+                          <div className="text-sm font-bold text-emerald-400 font-mono mt-0.5">
+                            {group.max_volume_set_kg ? formatWeight(group.max_volume_set_kg, unitPref) : '—'}
+                          </div>
+                        </div>
+
+                        <div className="p-2.5 rounded-xl bg-dark-850 border border-dark-700/50">
+                          <div className="text-[10px] text-zinc-400">{labels.maxReps}</div>
+                          <div className="text-sm font-bold text-purple-400 font-mono mt-0.5">
+                            {group.max_reps ? `${group.max_reps} ${labels.repsUnit}` : '—'}
+                          </div>
+                        </div>
+                      </div>
                     </div>
-
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="p-2.5 rounded-xl bg-dark-850 border border-dark-700/50">
-                        <div className="text-[10px] text-zinc-400">{labels.heaviestWeight}</div>
-                        <div className="text-sm font-bold text-blue-400 font-mono mt-0.5">
-                          {group.best_weight_kg ? formatWeight(group.best_weight_kg, unitPref) : '—'}
-                        </div>
-                      </div>
-
-                      <div className="p-2.5 rounded-xl bg-dark-850 border border-dark-700/50">
-                        <div className="text-[10px] text-zinc-400">{labels.bestE1rm}</div>
-                        <div className="text-sm font-bold text-amber-400 font-mono mt-0.5">
-                          {group.best_e1rm_kg ? formatWeight(Math.round(group.best_e1rm_kg * 10) / 10, unitPref) : '—'}
-                        </div>
-                      </div>
-
-                      <div className="p-2.5 rounded-xl bg-dark-850 border border-dark-700/50">
-                        <div className="text-[10px] text-zinc-400">{labels.maxSetVolume}</div>
-                        <div className="text-sm font-bold text-emerald-400 font-mono mt-0.5">
-                          {group.max_volume_set_kg ? formatWeight(group.max_volume_set_kg, unitPref) : '—'}
-                        </div>
-                      </div>
-
-                      <div className="p-2.5 rounded-xl bg-dark-850 border border-dark-700/50">
-                        <div className="text-[10px] text-zinc-400">{labels.maxReps}</div>
-                        <div className="text-sm font-bold text-purple-400 font-mono mt-0.5">
-                          {group.max_reps ? `${group.max_reps} ${labels.repsUnit}` : '—'}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
-
-          {/* Muscle Volume Distribution & Radar Chart (Apache ECharts) */}
-          <MuscleBalanceRadarChart muscleSets={analyticsSummary.muscleSets} />
         </div>
       )}
 
-      {/* TAB 2: WORKOUT HISTORY & CALENDAR */}
-      {activeTab === 'history' && <HistoryPage />}
+      {/* TAB 2: VOLUME & MUSCLE BALANCE */}
+      {activeTab === 'volume' && (
+        <div className="space-y-6 animate-fade-in">
+          {/* Muscle Volume Distribution & Radar Chart (Apache ECharts) */}
+          <MuscleBalanceRadarChart muscleSets={analyticsSummary.muscleSets} />
 
-      {/* TAB 3: BODY WEIGHT, TARGETS, BMI & CIRCUMFERENCES */}
-      {activeTab === 'body' && <BodyPage />}
+          {/* Overall Tonnage & Workload Volume History Chart (Apache ECharts) */}
+          <TonnageVolumeHistoryChart workouts={workouts} unitPref={unitPref} />
+        </div>
+      )}
 
-      {/* TAB 4: 1RM CALCULATOR & STRENGTH STANDARDS */}
-      {activeTab === 'strength' && (
-        <div className="space-y-5 animate-fade-in">
+      {/* TAB 3: 1RM CALCULATOR & STRENGTH STANDARDS */}
+      {activeTab === 'standards' && (
+        <div className="space-y-6 animate-fade-in">
           {/* 1RM Calculator */}
           <Card className="space-y-5">
             <CardHeader>
@@ -723,7 +730,50 @@ export const ProgressPage: React.FC = () => {
           </Card>
         </div>
       )}
+
+      {/* Dedicated Navigation Quick-Links (Single Job Architecture: Deep Dives) */}
+      <div className="pt-2 border-t border-dark-800/80 grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <button
+          onClick={() => navigate('/history')}
+          className="p-3.5 rounded-2xl bg-dark-850/60 hover:bg-dark-800 border border-dark-750 hover:border-brand-500/40 transition-all flex items-center justify-between group cursor-pointer text-left"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-brand-500/10 border border-brand-500/20 flex items-center justify-center text-brand-400">
+              <CalendarIcon className="w-4 h-4" />
+            </div>
+            <div>
+              <div className="text-xs font-bold text-white group-hover:text-brand-400 transition-colors">
+                История тренировок
+              </div>
+              <div className="text-[11px] text-zinc-400">
+                Календарь прошлых сессий, повторы и подходы
+              </div>
+            </div>
+          </div>
+          <ChevronRight className="w-4 h-4 text-zinc-500 group-hover:text-brand-400 group-hover:translate-x-0.5 transition-all" />
+        </button>
+
+        <button
+          onClick={() => navigate('/body')}
+          className="p-3.5 rounded-2xl bg-dark-850/60 hover:bg-dark-800 border border-dark-750 hover:border-brand-500/40 transition-all flex items-center justify-between group cursor-pointer text-left"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400">
+              <Scale className="w-4 h-4" />
+            </div>
+            <div>
+              <div className="text-xs font-bold text-white group-hover:text-purple-400 transition-colors">
+                Замеры тела и вес
+              </div>
+              <div className="text-[11px] text-zinc-400">
+                График веса, расчёт ИМТ и обхваты тела
+              </div>
+            </div>
+          </div>
+          <ChevronRight className="w-4 h-4 text-zinc-500 group-hover:text-purple-400 group-hover:translate-x-0.5 transition-all" />
+        </button>
+      </div>
     </div>
   );
 };
-
+export default ProgressPage;

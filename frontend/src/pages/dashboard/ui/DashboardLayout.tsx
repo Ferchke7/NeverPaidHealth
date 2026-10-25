@@ -1,6 +1,18 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Dumbbell, LineChart, LogOut, Bot, Utensils, ListTodo, MessageSquarePlus } from 'lucide-react';
+import {
+  Dumbbell,
+  LineChart,
+  LogOut,
+  Bot,
+  Utensils,
+  ListTodo,
+  MessageSquarePlus,
+  BookOpen,
+  Layers,
+  History,
+  Scale,
+} from 'lucide-react';
 import { useAuthStore } from '../../../entities/user/model/authStore.ts';
 import { UserAvatar } from '../../../entities/user/ui/UserAvatar.tsx';
 import { LanguageSwitchToggle } from '../../../features/switch-language/ui/LanguageSwitchToggle.tsx';
@@ -12,12 +24,12 @@ import { useTranslation } from '../../../shared/lib/i18n/i18n.ts';
 export type NavTab =
   | 'workouts'
   | 'programs'
-  | 'todo'
   | 'exercises'
-  | 'history'
-  | 'coach'
+  | 'todo'
   | 'nutrition'
+  | 'coach'
   | 'progress'
+  | 'history'
   | 'body'
   | 'profile';
 
@@ -51,120 +63,108 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
     navigate(`/${tabId}`);
   };
 
-  const isNavItemActive = (itemId: NavTab): boolean => {
-    if (itemId === 'workouts') {
-      return currentTab === 'workouts' || currentTab === 'programs' || currentTab === 'exercises';
-    }
-    if (itemId === 'progress') {
-      return currentTab === 'progress' || currentTab === 'history' || currentTab === 'body';
-    }
-    return currentTab === itemId;
-  };
-
-  const navItems: {
+  // Primary bottom mobile tabs (5 high-frequency actions)
+  const mobileBottomItems: {
     id: NavTab;
     label: string;
-    renderIcon: (active: boolean) => React.ReactNode;
+    icon: React.ReactNode;
   }[] = [
-    {
-      id: 'workouts',
-      label: t('nav.workouts'),
-      renderIcon: (active) => (
-        <Dumbbell
-          className={`w-4 h-4 md:w-5 md:h-5 transition-colors ${
-            active ? 'text-brand-400' : 'text-zinc-400 group-hover:text-zinc-200'
-          }`}
-        />
-      ),
-    },
-    {
-      id: 'todo',
-      label: t('nav.todo'),
-      renderIcon: (active) => (
-        <ListTodo
-          className={`w-4 h-4 md:w-5 md:h-5 transition-colors ${
-            active ? 'text-brand-400' : 'text-zinc-400 group-hover:text-zinc-200'
-          }`}
-        />
-      ),
-    },
-    {
-      id: 'nutrition',
-      label: t('nav.nutrition'),
-      renderIcon: (active) => (
-        <Utensils
-          className={`w-4 h-4 md:w-5 md:h-5 transition-colors ${
-            active ? 'text-brand-400' : 'text-zinc-400 group-hover:text-zinc-200'
-          }`}
-        />
-      ),
-    },
-    {
-      id: 'coach',
-      label: t('nav.coach'),
-      renderIcon: (active) => (
-        <Bot
-          className={`w-4 h-4 md:w-5 md:h-5 transition-colors ${
-            active ? 'text-brand-400' : 'text-zinc-400 group-hover:text-zinc-200'
-          }`}
-        />
-      ),
-    },
-    {
-      id: 'progress',
-      label: t('nav.progress'),
-      renderIcon: (active) => (
-        <LineChart
-          className={`w-4 h-4 md:w-5 md:h-5 transition-colors ${
-            active ? 'text-brand-400' : 'text-zinc-400 group-hover:text-zinc-200'
-          }`}
-        />
-      ),
-    },
+    { id: 'workouts', label: t('nav.workouts') || 'Тренировка', icon: <Dumbbell className="w-4 h-4" /> },
+    { id: 'todo', label: t('nav.todo') || 'План', icon: <ListTodo className="w-4 h-4" /> },
+    { id: 'nutrition', label: t('nav.nutrition') || 'Питание', icon: <Utensils className="w-4 h-4" /> },
+    { id: 'coach', label: t('nav.coach') || 'Тренер', icon: <Bot className="w-4 h-4" /> },
+    { id: 'progress', label: t('nav.progress') || 'Прогресс', icon: <LineChart className="w-4 h-4" /> },
+  ];
+
+  // Full desktop navbar tabs (strictly 1:1 with pages)
+  const desktopNavItems: {
+    id: NavTab;
+    label: string;
+    icon: React.ReactNode;
+  }[] = [
+    { id: 'workouts', label: t('nav.workouts') || 'Тренировки', icon: <Dumbbell className="w-4 h-4" /> },
+    { id: 'programs', label: t('nav.programs') || 'Программы', icon: <BookOpen className="w-4 h-4" /> },
+    { id: 'exercises', label: t('exercises.title') || 'Упражнения', icon: <Layers className="w-4 h-4" /> },
+    { id: 'todo', label: t('nav.todo') || 'План', icon: <ListTodo className="w-4 h-4" /> },
+    { id: 'nutrition', label: t('nav.nutrition') || 'Питание', icon: <Utensils className="w-4 h-4" /> },
+    { id: 'coach', label: t('nav.coach') || 'AI Тренер', icon: <Bot className="w-4 h-4" /> },
+    { id: 'progress', label: t('nav.progress') || 'Прогресс', icon: <LineChart className="w-4 h-4" /> },
+    { id: 'history', label: t('history.title') || 'История', icon: <History className="w-4 h-4" /> },
+    { id: 'body', label: t('body.title') || 'Тело', icon: <Scale className="w-4 h-4" /> },
+  ];
+
+  // Secondary mobile quick navigation pills (accessible under header on mobile)
+  const secondaryMobilePills: { id: NavTab; label: string; icon: React.ReactNode }[] = [
+    { id: 'programs', label: 'Программы', icon: <BookOpen className="w-3 h-3" /> },
+    { id: 'exercises', label: 'База упражнений', icon: <Layers className="w-3 h-3" /> },
+    { id: 'history', label: 'История', icon: <History className="w-3 h-3" /> },
+    { id: 'body', label: 'Замеры тела', icon: <Scale className="w-3 h-3" /> },
   ];
 
   return (
     <div
       className={
         isCoachView
-          ? 'fixed inset-0 h-[100dvh] max-h-[100dvh] w-screen flex flex-col bg-dark-900 text-zinc-100 selection:bg-brand-500 selection:text-black overflow-hidden'
-          : 'min-h-screen flex flex-col bg-dark-900 text-zinc-100 selection:bg-brand-500 selection:text-black'
+          ? 'fixed inset-0 h-[100dvh] max-h-[100dvh] w-screen flex flex-col bg-dark-950 text-zinc-100 selection:bg-brand-500 selection:text-black overflow-hidden'
+          : 'min-h-screen flex flex-col bg-dark-950 text-zinc-100 selection:bg-brand-500 selection:text-black'
       }
     >
       {/* Top App Header */}
       <header
         className={`${
           isCoachView ? 'shrink-0' : 'sticky top-0'
-        } z-40 bg-dark-900/95 backdrop-blur border-b border-dark-800 px-3 sm:px-4 py-2.5 pt-[calc(0.625rem+env(safe-area-inset-top,0px))] flex items-center justify-between`}
+        } z-40 bg-dark-900/90 backdrop-blur-md border-b border-dark-800/80 px-3 sm:px-6 py-2.5 pt-[calc(0.625rem+env(safe-area-inset-top,0px))] flex items-center justify-between transition-colors`}
       >
-        <div className="flex items-center gap-4 sm:gap-6">
+        <div className="flex items-center gap-3 sm:gap-6 min-w-0">
+          {/* Brand Logo */}
           <button
             onClick={() => handleNavClick('workouts')}
-            className="flex items-center gap-2 hover:opacity-90 transition-opacity cursor-pointer"
+            className="flex items-center gap-2.5 hover:opacity-90 transition-opacity cursor-pointer shrink-0"
           >
-            <div className="w-8 h-8 rounded-lg bg-brand-500/10 border border-brand-500/30 flex items-center justify-center text-brand-500 font-bold shadow-sm">
+            <div className="w-8 h-8 rounded-xl bg-brand-500/15 border border-brand-500/30 flex items-center justify-center text-brand-400 font-bold shadow-sm">
               <Dumbbell className="w-4 h-4" />
             </div>
-            <span className="font-bold text-base tracking-tight hidden sm:inline">
-              duda<span className="text-brand-500">.uz</span>
+            <span className="font-black text-base tracking-tight text-white hidden sm:inline">
+              NeverPaid<span className="text-brand-400">Health</span>
             </span>
           </button>
 
-          {/* Desktop Navigation Links */}
-          <nav className="hidden md:flex items-center gap-1">
-            {navItems.map((item) => {
-              const isActive = isNavItemActive(item.id);
+          {/* Desktop Clean Navigation Links (1 page = 1 item) */}
+          <nav className="hidden xl:flex items-center gap-1 min-w-0">
+            {desktopNavItems.map((item) => {
+              const isActive = currentTab === item.id;
               return (
                 <button
                   key={item.id}
                   onClick={() => handleNavClick(item.id)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
+                  className={`px-2.5 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
                     isActive
                       ? 'bg-brand-500/15 text-brand-400 border border-brand-500/30 shadow-sm font-bold'
-                      : 'text-zinc-400 hover:text-zinc-200 hover:bg-dark-800'
+                      : 'text-zinc-400 hover:text-zinc-200 hover:bg-dark-800/60'
                   }`}
                 >
-                  {item.renderIcon(isActive)}
+                  <span className={isActive ? 'text-brand-400' : 'text-zinc-400'}>{item.icon}</span>
+                  <span>{item.label}</span>
+                </button>
+              );
+            })}
+          </nav>
+
+          {/* Medium Desktop (lg) Compact Nav */}
+          <nav className="hidden md:flex xl:hidden items-center gap-1 min-w-0">
+            {desktopNavItems.slice(0, 6).map((item) => {
+              const isActive = currentTab === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => handleNavClick(item.id)}
+                  className={`px-2 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer ${
+                    isActive
+                      ? 'bg-brand-500/15 text-brand-400 border border-brand-500/30 font-bold'
+                      : 'text-zinc-400 hover:text-zinc-200 hover:bg-dark-800/60'
+                  }`}
+                >
+                  {item.icon}
                   <span>{item.label}</span>
                 </button>
               );
@@ -172,34 +172,40 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           </nav>
         </div>
 
-        <div className="flex items-center gap-1.5 sm:gap-3">
+        {/* Right Header Utilities: Feedback, Language, Profile */}
+        <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
           <button
             type="button"
             onClick={() => setIsFeedbackOpen(true)}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-dark-800 text-zinc-300 hover:text-brand-400 hover:border-brand-500/30 border border-dark-700 transition-colors cursor-pointer"
+            className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-dark-850 hover:bg-dark-800 text-zinc-400 hover:text-brand-400 border border-dark-750 transition-colors cursor-pointer"
             title="Оставить отзыв или баг-репорт"
           >
             <MessageSquarePlus className="w-3.5 h-3.5 text-brand-400" />
             <span className="hidden sm:inline">Фидбек</span>
           </button>
+
           <PWAInstallButton className="hidden lg:flex" />
           <LanguageSwitchToggle variant="header" />
-          <div className="flex items-center gap-1.5 sm:gap-2 pl-1.5 sm:pl-2 border-l border-dark-700">
+
+          <div className="flex items-center gap-1.5 sm:gap-2 pl-2 border-l border-dark-800">
             <button
               onClick={() => handleNavClick('profile')}
-              className={`flex items-center gap-2 p-1 rounded-lg transition-colors cursor-pointer ${
-                currentTab === 'profile' ? 'ring-2 ring-brand-500/50 bg-dark-800' : 'hover:bg-dark-800'
+              className={`flex items-center gap-2 p-1 rounded-xl transition-all cursor-pointer ${
+                currentTab === 'profile'
+                  ? 'ring-2 ring-brand-500/50 bg-dark-800'
+                  : 'hover:bg-dark-800/60'
               }`}
               title={t('nav.profile')}
             >
               <UserAvatar user={user} size="sm" />
-              <span className="text-xs font-medium text-zinc-300 hidden sm:inline max-w-[100px] truncate">
+              <span className="text-xs font-medium text-zinc-300 hidden sm:inline max-w-[90px] truncate">
                 {user?.display_name}
               </span>
             </button>
+
             <button
               onClick={logout}
-              className="text-zinc-500 hover:text-red-400 p-1.5 rounded-md transition-colors cursor-pointer"
+              className="text-zinc-500 hover:text-red-400 p-1.5 rounded-lg transition-colors cursor-pointer"
               title={t('nav.logout')}
             >
               <LogOut className="w-4 h-4" />
@@ -208,35 +214,60 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
         </div>
       </header>
 
-      {/* Main Content Area */}
+      {/* Secondary Mobile Quick-Pill Bar (For mobile discovery of Programs, Exercises, History, Body) */}
+      {!isCoachView && (
+        <div className="md:hidden border-b border-dark-800/60 bg-dark-900/60 px-3 py-1.5 overflow-x-auto flex items-center gap-1.5 scrollbar-none">
+          {secondaryMobilePills.map((pill) => {
+            const isActive = currentTab === pill.id;
+            return (
+              <button
+                key={pill.id}
+                onClick={() => handleNavClick(pill.id)}
+                className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold whitespace-nowrap transition-colors cursor-pointer ${
+                  isActive
+                    ? 'bg-brand-500 text-dark-950 font-bold'
+                    : 'bg-dark-800/70 text-zinc-400 hover:text-white border border-dark-700/50'
+                }`}
+              >
+                {pill.icon}
+                <span>{pill.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Main Page Canvas (spacious, breathable, centered) */}
       <main
         className={
           isCoachView
             ? 'flex-1 min-h-0 w-full max-w-5xl mx-auto flex flex-col p-0 md:py-2 md:px-4 overflow-hidden relative'
-            : 'flex-1 max-w-4xl w-full mx-auto p-3.5 sm:p-4 pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))] md:pb-8'
+            : 'flex-1 max-w-4xl w-full mx-auto p-3.5 sm:p-6 pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))] md:pb-12'
         }
       >
         {!isCoachView && <PWAInstallBanner />}
         {children}
       </main>
 
-      {/* Bottom Mobile Navigation Bar (5 clean core items) */}
+      {/* Bottom Mobile Navigation Bar (5 core high-frequency tabs) */}
       <nav
         className={`${
           isCoachView ? 'shrink-0' : 'fixed bottom-0 left-0 right-0'
-        } z-40 bg-dark-900/95 backdrop-blur border-t border-dark-800 md:hidden flex items-center justify-around py-1.5 px-1.5 pb-[calc(0.375rem+env(safe-area-inset-bottom,0px))]`}
+        } z-40 bg-dark-900/95 backdrop-blur-lg border-t border-dark-800/80 md:hidden flex items-center justify-around py-1.5 px-1.5 pb-[calc(0.375rem+env(safe-area-inset-bottom,0px))]`}
       >
-        {navItems.map((item) => {
-          const isActive = isNavItemActive(item.id);
+        {mobileBottomItems.map((item) => {
+          const isActive = currentTab === item.id;
           return (
             <button
               key={item.id}
               onClick={() => handleNavClick(item.id)}
-              className={`flex flex-col items-center gap-0.5 py-1 px-1.5 rounded-xl transition-all relative min-w-0 flex-1 group cursor-pointer ${
+              className={`flex flex-col items-center gap-0.5 py-1 px-1 rounded-xl transition-all relative min-w-0 flex-1 group cursor-pointer ${
                 isActive ? 'text-brand-400 font-bold' : 'text-zinc-400 hover:text-zinc-200'
               }`}
             >
-              {item.renderIcon(isActive)}
+              <div className={`transition-transform ${isActive ? 'scale-110' : ''}`}>
+                {item.icon}
+              </div>
               <span
                 className={`text-[10px] tracking-tight truncate max-w-full ${
                   isActive ? 'text-brand-400 font-bold' : 'text-zinc-400'
@@ -245,7 +276,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 {item.label}
               </span>
               {isActive && (
-                <span className="w-1 h-1 rounded-full bg-brand-400 absolute -bottom-0.5" />
+                <span className="w-1.5 h-1.5 rounded-full bg-brand-400 absolute -bottom-0.5" />
               )}
             </button>
           );
@@ -259,4 +290,4 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
     </div>
   );
 };
-
+export default DashboardLayout;
