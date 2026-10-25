@@ -24,7 +24,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../../shared/api/client.ts';
 import { useAuthStore } from '../../../entities/user/model/authStore.ts';
 import { Button } from '../../../shared/ui/button.tsx';
-import { Card } from '../../../shared/ui/card.tsx';
+import { Card, Badge, Chip } from '../../../shared/ui/card.tsx';
 import { Input } from '../../../shared/ui/input.tsx';
 import { RoutineEditorModal } from '../../../features/routine-builder/ui/RoutineEditorModal.tsx';
 import { RoutineDetailModal } from '../../../features/routine-preview/ui/RoutineDetailModal.tsx';
@@ -251,7 +251,7 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = ({ onNavigateToPrograms
 
   return (
     <div className="space-y-6">
-      {/* Page Header with Direct Action Controls */}
+      {/* Page Header with Ready-Made UI Controls */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-1 border-b border-dark-800/80">
         <div>
           <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight flex items-center gap-2">
@@ -289,16 +289,16 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = ({ onNavigateToPrograms
         </div>
       </div>
 
-      {/* Hero Section: Active Program Split Card (Strictly focused on today's session) */}
+      {/* Hero Section: Active Program Split Card */}
       {activeProgram && (
-        <Card className="p-4 bg-gradient-to-br from-dark-850 to-dark-900 border border-brand-500/30 shadow-xl rounded-2xl space-y-3">
+        <Card className="p-4 bg-gradient-to-br from-dark-850 to-dark-900 border border-brand-500/30 shadow-xl space-y-3">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-brand-500/15 text-brand-400 border border-brand-500/30 flex items-center gap-1">
+                <Badge variant="brand" size="sm" className="flex items-center gap-1 font-mono uppercase">
                   <Sparkles className="w-3 h-3" />
-                  {activeProgram.name}
-                </span>
+                  <span>{activeProgram.name}</span>
+                </Badge>
                 <span className="text-xs text-zinc-400 font-mono">
                   День #{selectedProgramDayIndex + 1} из {activeProgramDays.length}
                 </span>
@@ -314,19 +314,20 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = ({ onNavigateToPrograms
             </div>
 
             <div className="flex items-center gap-2 shrink-0">
-              <button
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => setIsSplitExpanded((v) => !v)}
-                className="px-2.5 py-1.5 rounded-xl bg-dark-800 hover:bg-dark-700 text-zinc-400 hover:text-white border border-dark-700 text-xs font-semibold flex items-center gap-1 transition-colors cursor-pointer"
-                title={t('programs.trainingSchedule') || 'Расписание сплита'}
+                className="text-xs flex items-center gap-1.5"
               >
                 <Calendar className="w-3.5 h-3.5 text-brand-400" />
-                <span className="text-[10px]">{isSplitExpanded ? '▲ Скрыть дни' : '▼ Выбрать день'}</span>
-              </button>
+                <span>{isSplitExpanded ? '▲ Скрыть дни' : '▼ Выбрать день'}</span>
+              </Button>
 
               <Button
                 variant="primary"
                 size="sm"
-                className="font-bold text-xs flex items-center gap-1.5 px-4 py-2 shadow-lg shadow-brand-500/25 cursor-pointer"
+                className="font-bold text-xs flex items-center gap-1.5 px-4 py-2 shadow-lg shadow-brand-500/25"
                 onClick={() => handleStartProgramDay(activeProgram, currentProgramDay)}
               >
                 <Play className="w-3.5 h-3.5 fill-current" />
@@ -360,29 +361,29 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = ({ onNavigateToPrograms
                   {activeProgramDays.map((day, idx) => {
                     const isSelected = idx === selectedProgramDayIndex;
                     return (
-                      <button
+                      <Button
                         key={idx}
+                        size="xs"
+                        variant={isSelected ? 'primary' : 'outline'}
                         onClick={() => setSelectedProgramDayIndex(idx)}
-                        className={`text-xs px-2.5 py-1.5 rounded-xl font-medium transition-all whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
-                          isSelected
-                            ? 'bg-brand-500/20 text-brand-400 border border-brand-500/50 font-bold shadow-md'
-                            : 'bg-dark-900 text-zinc-400 hover:text-zinc-200 hover:bg-dark-800 border border-dark-750'
-                        }`}
+                        className="gap-1.5 whitespace-nowrap text-xs"
                       >
-                        <span className="font-mono text-brand-400">#{idx + 1}</span>
+                        <span className="font-mono">#{idx + 1}</span>
                         <span className="truncate max-w-[130px]">{day.name}</span>
-                      </button>
+                      </Button>
                     );
                   })}
                 </div>
 
-                <button
+                <Button
+                  variant="secondary"
+                  size="xs"
                   onClick={() => setSelectedProgramPreview(activeProgram)}
-                  className="text-xs font-semibold px-2.5 py-1.5 rounded-xl bg-dark-900 hover:bg-dark-800 text-zinc-300 border border-dark-750 transition-all flex items-center gap-1 shrink-0 cursor-pointer"
+                  className="gap-1 text-xs shrink-0"
                 >
                   <BookOpen className="w-3 h-3 text-brand-400" />
                   <span>{t('programs.viewSplit') || 'Обзор'}</span>
-                </button>
+                </Button>
               </div>
             </div>
           )}
@@ -396,24 +397,22 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = ({ onNavigateToPrograms
             <h2 className="text-base font-bold text-white">
               {t('workouts.myRoutines') || 'Мои шаблоны'}
             </h2>
-            <span className="text-xs font-mono px-2 py-0.5 rounded-full bg-dark-800 border border-dark-700 text-zinc-400">
+            <Badge variant="neutral" size="sm">
               {userRoutines.length}
-            </span>
+            </Badge>
           </div>
 
           {userRoutines.length > 1 && (
-            <button
+            <Button
+              size="xs"
+              variant={isReorderMode ? 'flat' : 'outline'}
               onClick={() => setIsReorderMode((prev) => !prev)}
-              className={`text-xs px-2.5 py-1.5 rounded-xl font-bold flex items-center gap-1.5 transition-all border shrink-0 cursor-pointer ${
-                isReorderMode
-                  ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-sm'
-                  : 'bg-dark-850 text-zinc-400 border-dark-750 hover:text-white hover:bg-dark-800'
-              }`}
+              className="gap-1.5 text-xs font-bold"
               title="Переставить шаблоны местами"
             >
               <ArrowUpDown className="w-3.5 h-3.5 text-brand-400" />
               <span>{isReorderMode ? t('workouts.reorderDone') || 'Готово' : t('workouts.reorder') || 'Порядок'}</span>
-            </button>
+            </Button>
           )}
         </div>
 
@@ -439,7 +438,7 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = ({ onNavigateToPrograms
             ))}
           </div>
         ) : filteredRoutines.length === 0 ? (
-          <div className="text-center py-10 border border-dashed border-dark-800 rounded-2xl p-6 bg-dark-900/30">
+          <Card className="text-center py-10 border-dashed border-dark-800 p-6 bg-dark-900/30">
             <FolderPlus className="w-10 h-10 text-zinc-600 mx-auto mb-2" />
             <h3 className="text-sm font-bold text-zinc-300">
               {userRoutines.length === 0
@@ -457,7 +456,7 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = ({ onNavigateToPrograms
                 variant="outline"
                 size="sm"
                 onClick={goToPrograms}
-                className="text-xs cursor-pointer"
+                className="text-xs"
               >
                 <BookOpen className="w-3.5 h-3.5 mr-1 text-brand-400" />
                 <span>{t('workouts.exploreLibrary') || 'Каталог программ'}</span>
@@ -469,13 +468,13 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = ({ onNavigateToPrograms
                   setEditingRoutine(null);
                   setIsCreateRoutineOpen(true);
                 }}
-                className="text-xs cursor-pointer font-bold"
+                className="text-xs font-bold"
               >
                 <Plus className="w-3.5 h-3.5 mr-1" />
                 <span>{t('workouts.createFirstRoutine') || 'Создать шаблон'}</span>
               </Button>
             </div>
-          </div>
+          </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
             {filteredRoutines.map((routine) => {
@@ -485,6 +484,7 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = ({ onNavigateToPrograms
               return (
                 <Card
                   key={routine.id}
+                  isHoverable
                   onClick={() => setSelectedRoutinePreview(routine)}
                   className="p-4 bg-dark-850/90 border border-dark-750/80 hover:border-brand-500/50 transition-all flex flex-col justify-between shadow-lg cursor-pointer group"
                 >
@@ -493,9 +493,9 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = ({ onNavigateToPrograms
                       <div className="min-w-0 flex-1">
                         <div className="flex items-start gap-2">
                           {orderIndex !== -1 && (
-                            <span className="px-1.5 py-0.5 bg-dark-900 border border-brand-500/30 text-[10px] font-mono font-bold text-brand-400 rounded-md shrink-0 mt-0.5">
+                            <Badge variant="brand" size="sm" className="font-mono font-bold mt-0.5">
                               #{orderIndex + 1}
-                            </span>
+                            </Badge>
                           )}
                           <h3 className="text-sm sm:text-base font-bold text-white leading-snug group-hover:text-brand-400 transition-colors break-words flex-1">
                             {routine.name}
@@ -518,49 +518,61 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = ({ onNavigateToPrograms
                       <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
                         {isReorderMode && (
                           <div className="flex items-center bg-dark-900 rounded-lg p-0.5 border border-amber-500/40 mr-0.5 shadow-sm">
-                            <button
+                            <Button
+                              isIconOnly
+                              size="xs"
+                              variant="ghost"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleMoveRoutine(routine.id, 'up');
                               }}
                               disabled={orderIndex <= 0}
-                              className="p-1 text-amber-300 hover:text-amber-200 disabled:opacity-20 transition-colors rounded hover:bg-dark-750 cursor-pointer"
+                              className="text-amber-300 hover:text-amber-200"
                               title={t('routines.moveUp') || 'Вверх'}
                             >
                               <ArrowUp className="w-3.5 h-3.5" />
-                            </button>
-                            <button
+                            </Button>
+                            <Button
+                              isIconOnly
+                              size="xs"
+                              variant="ghost"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleMoveRoutine(routine.id, 'down');
                               }}
                               disabled={orderIndex === -1 || orderIndex >= totalUserRoutines - 1}
-                              className="p-1 text-amber-300 hover:text-amber-200 disabled:opacity-20 transition-colors rounded hover:bg-dark-750 cursor-pointer"
+                              className="text-amber-300 hover:text-amber-200"
                               title={t('routines.moveDown') || 'Вниз'}
                             >
                               <ArrowDown className="w-3.5 h-3.5" />
-                            </button>
+                            </Button>
                           </div>
                         )}
 
-                        <button
+                        <Button
+                          isIconOnly
+                          size="xs"
+                          variant="ghost"
                           onClick={() => {
                             setEditingRoutine(routine);
                             setIsCreateRoutineOpen(true);
                           }}
-                          className="text-zinc-400 hover:text-brand-400 p-1.5 rounded-lg hover:bg-dark-750 transition-colors cursor-pointer"
+                          className="text-zinc-400 hover:text-brand-400"
                           title={t('common.edit') || 'Редактировать'}
                         >
                           <Edit3 className="w-3.5 h-3.5" />
-                        </button>
+                        </Button>
 
-                        <button
+                        <Button
+                          isIconOnly
+                          size="xs"
+                          variant="ghost"
                           onClick={() => deleteRoutineMutation.mutate(routine.id)}
-                          className="text-zinc-500 hover:text-red-400 p-1.5 rounded-lg hover:bg-dark-750 transition-colors cursor-pointer"
+                          className="text-zinc-500 hover:text-red-400"
                           title={t('common.delete') || 'Удалить'}
                         >
                           <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                        </Button>
                       </div>
                     </div>
 
@@ -573,18 +585,21 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = ({ onNavigateToPrograms
                     {/* Exercise Chips */}
                     <div className="flex flex-wrap gap-1.5 pt-0.5">
                       {routine.exercises?.slice(0, 4).map((ex, i) => (
-                        <span
+                        <Chip
                           key={i}
-                          className="text-[10px] bg-dark-900 border border-dark-750 text-zinc-300 px-2 py-0.5 rounded-lg flex items-center gap-1 font-mono"
+                          size="sm"
+                          variant="bordered"
+                          color="default"
+                          className="text-[10px] font-mono"
                         >
                           <span className="text-brand-400 font-bold">{ex.target_sets || 3}×</span>
                           <span className="font-sans truncate max-w-[130px]">{ex.exercise_name}</span>
-                        </span>
+                        </Chip>
                       ))}
                       {(routine.exercises?.length || 0) > 4 && (
-                        <span className="text-[10px] bg-dark-900 border border-dark-750 text-zinc-500 px-2 py-0.5 rounded-lg font-mono">
+                        <Badge variant="neutral" size="sm" className="font-mono text-[10px]">
                           +{(routine.exercises?.length || 0) - 4}
-                        </span>
+                        </Badge>
                       )}
                     </div>
                   </div>
@@ -594,20 +609,22 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = ({ onNavigateToPrograms
                     className="mt-3.5 pt-2.5 border-t border-dark-750 flex items-center justify-between gap-2"
                     onClick={(e) => e.stopPropagation()}
                   >
-                    <button
+                    <Button
+                      variant="ghost"
+                      size="xs"
                       onClick={() => cloneRoutineMutation.mutate(routine)}
                       disabled={cloneRoutineMutation.isPending}
-                      className="text-xs text-zinc-400 hover:text-zinc-200 px-2 py-1 rounded-lg hover:bg-dark-750 transition-colors flex items-center gap-1.5 cursor-pointer"
+                      className="text-xs text-zinc-400 hover:text-zinc-200 gap-1.5"
                       title={t('routines.copyToMy') || 'Дублировать'}
                     >
                       <Copy className="w-3.5 h-3.5 text-zinc-500" />
                       <span>{t('routines.copyToMy') || 'Копия'}</span>
-                    </button>
+                    </Button>
 
                     <Button
                       variant="primary"
                       size="sm"
-                      className="text-xs font-bold flex items-center justify-center gap-1.5 px-4 shadow-sm cursor-pointer"
+                      className="text-xs font-bold flex items-center justify-center gap-1.5 px-4 shadow-sm"
                       onClick={() => handleStartRoutine(routine)}
                     >
                       <Play className="w-3.5 h-3.5 fill-current" />
@@ -621,47 +638,53 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = ({ onNavigateToPrograms
         )}
       </div>
 
-      {/* Dedicated Navigation Quick-Links (Single Job Architecture: Explore other deep sections) */}
+      {/* Dedicated Navigation Cards */}
       <div className="pt-2 border-t border-dark-800/80 grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <button
+        <Card
+          isHoverable
           onClick={goToPrograms}
-          className="p-3.5 rounded-2xl bg-dark-850/60 hover:bg-dark-800 border border-dark-750 hover:border-brand-500/40 transition-all flex items-center justify-between group cursor-pointer text-left"
+          className="p-3.5 bg-dark-850/60 hover:bg-dark-800 border-dark-750 hover:border-brand-500/40 transition-all cursor-pointer group"
         >
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-brand-500/10 border border-brand-500/20 flex items-center justify-center text-brand-400">
-              <BookOpen className="w-4 h-4" />
-            </div>
-            <div>
-              <div className="text-xs font-bold text-white group-hover:text-brand-400 transition-colors">
-                Каталог программ тренировок
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-brand-500/10 border border-brand-500/20 flex items-center justify-center text-brand-400 shrink-0">
+                <BookOpen className="w-4 h-4" />
               </div>
-              <div className="text-[11px] text-zinc-400">
-                PPL, Верх/Низ, Full Body и сплиты сообщества
+              <div>
+                <div className="text-xs font-bold text-white group-hover:text-brand-400 transition-colors">
+                  Каталог программ тренировок
+                </div>
+                <div className="text-[11px] text-zinc-400">
+                  PPL, Верх/Низ, Full Body и сплиты сообщества
+                </div>
               </div>
             </div>
+            <ChevronRight className="w-4 h-4 text-zinc-500 group-hover:text-brand-400 group-hover:translate-x-0.5 transition-all" />
           </div>
-          <ChevronRight className="w-4 h-4 text-zinc-500 group-hover:text-brand-400 group-hover:translate-x-0.5 transition-all" />
-        </button>
+        </Card>
 
-        <button
+        <Card
+          isHoverable
           onClick={() => navigate('/exercises')}
-          className="p-3.5 rounded-2xl bg-dark-850/60 hover:bg-dark-800 border border-dark-750 hover:border-brand-500/40 transition-all flex items-center justify-between group cursor-pointer text-left"
+          className="p-3.5 bg-dark-850/60 hover:bg-dark-800 border-dark-750 hover:border-brand-500/40 transition-all cursor-pointer group"
         >
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
-              <Dumbbell className="w-4 h-4" />
-            </div>
-            <div>
-              <div className="text-xs font-bold text-white group-hover:text-blue-400 transition-colors">
-                База упражнений и техника
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 shrink-0">
+                <Dumbbell className="w-4 h-4" />
               </div>
-              <div className="text-[11px] text-zinc-400">
-                Фильтры по мышцам, оборудованию и 3D-анимации
+              <div>
+                <div className="text-xs font-bold text-white group-hover:text-blue-400 transition-colors">
+                  База упражнений и техника
+                </div>
+                <div className="text-[11px] text-zinc-400">
+                  Фильтры по мышцам, оборудованию и 3D-анимации
+                </div>
               </div>
             </div>
+            <ChevronRight className="w-4 h-4 text-zinc-500 group-hover:text-blue-400 group-hover:translate-x-0.5 transition-all" />
           </div>
-          <ChevronRight className="w-4 h-4 text-zinc-500 group-hover:text-blue-400 group-hover:translate-x-0.5 transition-all" />
-        </button>
+        </Card>
       </div>
 
       {/* Routine Detail Modal */}

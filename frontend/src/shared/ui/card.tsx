@@ -140,6 +140,7 @@ export const Badge: React.FC<BadgeProps> = ({
 export interface ChipProps extends Omit<React.HTMLAttributes<HTMLSpanElement>, 'color'> {
   variant?: 'solid' | 'bordered' | 'flat' | 'dot';
   color?: 'default' | 'primary' | 'success' | 'warning' | 'danger' | 'secondary';
+  size?: 'sm' | 'md' | 'lg';
   onClose?: () => void;
 }
 
@@ -147,6 +148,7 @@ export const Chip: React.FC<ChipProps> = ({
   className = '',
   variant = 'flat',
   color = 'primary',
+  size = 'sm',
   onClose,
   children,
   ...props
@@ -178,7 +180,7 @@ export const Chip: React.FC<ChipProps> = ({
       {...props}
       variant={heroVariantMap[variant]}
       color={heroColorMap[color]}
-      size="sm"
+      size={size}
       className={`gap-1 ${className}`}
     >
       <HeroChip.Label>{children}</HeroChip.Label>

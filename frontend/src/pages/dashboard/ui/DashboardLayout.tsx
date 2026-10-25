@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useAuthStore } from '../../../entities/user/model/authStore.ts';
 import { UserAvatar } from '../../../entities/user/ui/UserAvatar.tsx';
+import { Button } from '../../../shared/ui/button.tsx';
 import { LanguageSwitchToggle } from '../../../features/switch-language/ui/LanguageSwitchToggle.tsx';
 import { PWAInstallBanner } from '../../../features/pwa-install/ui/PWAInstallBanner.tsx';
 import { PWAInstallButton } from '../../../features/pwa-install/ui/PWAInstallButton.tsx';
@@ -174,15 +175,16 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
 
         {/* Right Header Utilities: Feedback, Language, Profile */}
         <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
-          <button
-            type="button"
+          <Button
+            variant="outline"
+            size="sm"
             onClick={() => setIsFeedbackOpen(true)}
-            className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-dark-850 hover:bg-dark-800 text-zinc-400 hover:text-brand-400 border border-dark-750 transition-colors cursor-pointer"
+            className="gap-1 text-xs font-semibold"
             title="Оставить отзыв или баг-репорт"
           >
             <MessageSquarePlus className="w-3.5 h-3.5 text-brand-400" />
             <span className="hidden sm:inline">Фидбек</span>
-          </button>
+          </Button>
 
           <PWAInstallButton className="hidden lg:flex" />
           <LanguageSwitchToggle variant="header" />
@@ -203,13 +205,16 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               </span>
             </button>
 
-            <button
+            <Button
+              isIconOnly
+              size="xs"
+              variant="ghost"
               onClick={logout}
-              className="text-zinc-500 hover:text-red-400 p-1.5 rounded-lg transition-colors cursor-pointer"
+              className="text-zinc-500 hover:text-red-400"
               title={t('nav.logout')}
             >
               <LogOut className="w-4 h-4" />
-            </button>
+            </Button>
           </div>
         </div>
       </header>
@@ -220,18 +225,16 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           {secondaryMobilePills.map((pill) => {
             const isActive = currentTab === pill.id;
             return (
-              <button
+              <Button
                 key={pill.id}
+                size="xs"
+                variant={isActive ? 'primary' : 'outline'}
                 onClick={() => handleNavClick(pill.id)}
-                className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold whitespace-nowrap transition-colors cursor-pointer ${
-                  isActive
-                    ? 'bg-brand-500 text-dark-950 font-bold'
-                    : 'bg-dark-800/70 text-zinc-400 hover:text-white border border-dark-700/50'
-                }`}
+                className="gap-1 text-[11px] whitespace-nowrap font-semibold"
               >
                 {pill.icon}
                 <span>{pill.label}</span>
-              </button>
+              </Button>
             );
           })}
         </div>

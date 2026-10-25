@@ -1,5 +1,7 @@
-import React, { useEffect } from 'react';
+import React from 'react';
+import { Modal as HeroModal } from '@heroui/react';
 import { X } from 'lucide-react';
+import { Button } from './button.tsx';
 import { useTranslation } from '../lib/i18n/i18n.ts';
 
 export interface ModalProps {
@@ -35,22 +37,6 @@ export const Modal: React.FC<ModalProps> = ({
   const effectiveSubtitle = subtitle || description;
   const effectiveIcon = icon || headerIcon;
 
-  useEffect(() => {
-    if (isOpen) {
-      const handleKeyDown = (e: KeyboardEvent) => {
-        if (e.key === 'Escape') onClose();
-      };
-      document.body.style.overflow = 'hidden';
-      window.addEventListener('keydown', handleKeyDown);
-      return () => {
-        document.body.style.overflow = '';
-        window.removeEventListener('keydown', handleKeyDown);
-      };
-    }
-  }, [isOpen, onClose]);
-
-  if (!isOpen) return null;
-
   const sizeStyles = {
     sm: 'max-w-sm',
     md: 'max-w-md',
@@ -60,56 +46,60 @@ export const Modal: React.FC<ModalProps> = ({
   }[size];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200">
-      <div
-        className="fixed inset-0 bg-black/80 backdrop-blur-sm transition-opacity cursor-pointer"
-        onClick={onClose}
-        aria-hidden="true"
-      />
-
-      <div
-        className={`relative w-full ${sizeStyles} bg-dark-850 border border-dark-700/80 rounded-t-3xl sm:rounded-2xl shadow-2xl z-10 flex flex-col max-h-[90dvh] sm:max-h-[85dvh] pb-[env(safe-area-inset-bottom)] sm:pb-0 overflow-hidden ${className}`}
-        role="dialog"
-        aria-modal="true"
-      >
-        {(title || effectiveIcon) && (
-          <div className="px-4 sm:px-6 py-3.5 border-b border-dark-700/70 flex items-center justify-between gap-3 shrink-0 bg-dark-900/40">
-            <div className="flex items-center gap-3 min-w-0">
-              {effectiveIcon && <div className="shrink-0">{effectiveIcon}</div>}
-              <div className="min-w-0">
-                {title && (
-                  <h3 className="text-base sm:text-lg font-bold text-white tracking-tight truncate">
-                    {title}
-                  </h3>
-                )}
-                {effectiveSubtitle && (
-                  <p className="text-xs text-zinc-400 mt-0.5 truncate">{effectiveSubtitle}</p>
-                )}
+    <HeroModal.Root
+      isOpen={isOpen}
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+    >
+      <HeroModal.Backdrop className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 animate-in fade-in duration-200" />
+      <HeroModal.Container className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-y-auto">
+        <HeroModal.Dialog
+          className={`relative w-full ${sizeStyles} bg-dark-850 border border-dark-700/80 rounded-t-3xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[90dvh] sm:max-h-[85dvh] pb-[env(safe-area-inset-bottom)] sm:pb-0 overflow-hidden ${className}`}
+        >
+          {(title || effectiveIcon) && (
+            <HeroModal.Header className="px-4 sm:px-6 py-3.5 border-b border-dark-700/70 flex items-center justify-between gap-3 shrink-0 bg-dark-900/40">
+              <div className="flex items-center gap-3 min-w-0">
+                {effectiveIcon && <div className="shrink-0">{effectiveIcon}</div>}
+                <div className="min-w-0">
+                  {title && (
+                    <HeroModal.Heading className="text-base sm:text-lg font-bold text-white tracking-tight truncate">
+                      {title}
+                    </HeroModal.Heading>
+                  )}
+                  {effectiveSubtitle && (
+                    <p className="text-xs text-zinc-400 mt-0.5 truncate">{effectiveSubtitle}</p>
+                  )}
+                </div>
               </div>
-            </div>
-            {!hideCloseButton && (
-              <button
-                onClick={onClose}
-                className="p-1.5 rounded-xl text-zinc-400 hover:text-white hover:bg-dark-800 transition-colors shrink-0 cursor-pointer"
-                title={t('common.close')}
-                aria-label={t('common.close')}
-              >
-                <X className="w-5 h-5" />
-              </button>
-            )}
-          </div>
-        )}
+              {!hideCloseButton && (
+                <Button
+                  isIconOnly
+                  size="xs"
+                  variant="ghost"
+                  onClick={onClose}
+                  className="text-zinc-400 hover:text-white shrink-0"
+                  aria-label={t('common.close')}
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              )}
+            </HeroModal.Header>
+          )}
 
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 overscroll-contain">
-          {children}
-        </div>
+          <HeroModal.Body className="flex-1 overflow-y-auto p-4 sm:p-6 overscroll-contain">
+            {children}
+          </HeroModal.Body>
 
-        {footer && (
-          <div className="px-4 sm:px-6 py-3 bg-dark-900/80 border-t border-dark-700/70 flex items-center justify-end gap-2.5 shrink-0">
-            {footer}
-          </div>
-        )}
-      </div>
-    </div>
+          {footer && (
+            <HeroModal.Footer className="px-4 sm:px-6 py-3 bg-dark-900/80 border-t border-dark-700/70 flex items-center justify-end gap-2.5 shrink-0">
+              {footer}
+            </HeroModal.Footer>
+          )}
+        </HeroModal.Dialog>
+      </HeroModal.Container>
+    </HeroModal.Root>
   );
 };
+
+export default Modal;

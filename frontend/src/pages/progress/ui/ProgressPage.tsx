@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '../../../shared/api/client.ts';
+import { Button } from '../../../shared/ui/button.tsx';
 import { Card, CardHeader, CardTitle, CardContent, Badge } from '../../../shared/ui/card.tsx';
 import { Input } from '../../../shared/ui/input.tsx';
 import { Tabs } from '../../../shared/ui/tabs.tsx';
@@ -404,7 +405,7 @@ export const ProgressPage: React.FC = () => {
     });
   }, [recordGroups]);
 
-  // Strictly 3 Focused Analytics Tabs (Zero page embedding)
+  // Strictly 3 Focused Analytics Tabs
   const navTabs = useMemo(
     () => [
       { id: 'progression', label: labels.tabProgression, icon: <TrendingUp className="w-3.5 h-3.5" />, badge: recordGroups.length },
@@ -416,7 +417,7 @@ export const ProgressPage: React.FC = () => {
 
   return (
     <div className="space-y-6 animate-fade-in pb-12">
-      {/* Page Header */}
+      {/* Page Header with Ready-Made Tabs */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-1 border-b border-dark-800/80">
         <div>
           <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight flex items-center gap-2">
@@ -436,7 +437,7 @@ export const ProgressPage: React.FC = () => {
         />
       </div>
 
-      {/* Top KPI Metric Cards (Consistent across all tabs) */}
+      {/* Top KPI Metric Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <Card className="p-3.5 sm:p-4 bg-dark-850/80 border-dark-750/80 space-y-1">
           <div className="flex items-center gap-1.5 text-xs text-zinc-400 font-bold">
@@ -484,7 +485,7 @@ export const ProgressPage: React.FC = () => {
       {/* TAB 1: PROGRESSION & PERSONAL RECORDS */}
       {activeTab === 'progression' && (
         <div className="space-y-6 animate-fade-in">
-          {/* Exercise Progression Curve Chart (Apache ECharts) */}
+          {/* Exercise Progression Curve Chart */}
           <Card className="space-y-4">
             <CardHeader>
               <div>
@@ -532,17 +533,15 @@ export const ProgressPage: React.FC = () => {
 
               <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1">
                 {muscleFilters.map((filter) => (
-                  <button
+                  <Button
                     key={filter.id}
+                    size="xs"
+                    variant={selectedMuscle === filter.id ? 'primary' : 'outline'}
                     onClick={() => setSelectedMuscle(filter.id)}
-                    className={`px-3 py-1 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
-                      selectedMuscle === filter.id
-                        ? 'bg-brand-500 text-dark-950 shadow-sm font-black'
-                        : 'bg-dark-900 text-zinc-400 hover:text-zinc-200 border border-dark-700'
-                    }`}
+                    className="whitespace-nowrap font-bold"
                   >
                     {filter.label}
-                  </button>
+                  </Button>
                 ))}
               </div>
             </CardHeader>
@@ -555,9 +554,10 @@ export const ProgressPage: React.FC = () => {
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
                   {filteredRecordGroups.map((group) => (
-                    <div
+                    <Card
                       key={group.exercise_id}
-                      className="p-4 rounded-2xl bg-dark-900/80 border border-dark-700/80 space-y-3 hover:border-brand-500/40 transition-colors"
+                      isHoverable
+                      className="p-4 bg-dark-900/80 border-dark-700/80 hover:border-brand-500/40 space-y-3"
                     >
                       <div className="flex items-center gap-2 border-b border-dark-700/60 pb-2.5">
                         <Trophy className="w-4 h-4 text-amber-400 shrink-0" />
@@ -565,35 +565,35 @@ export const ProgressPage: React.FC = () => {
                       </div>
 
                       <div className="grid grid-cols-2 gap-2">
-                        <div className="p-2.5 rounded-xl bg-dark-850 border border-dark-700/50">
+                        <Card variant="flat" className="p-2.5 bg-dark-850/80 border-dark-700/50">
                           <div className="text-[10px] text-zinc-400">{labels.heaviestWeight}</div>
                           <div className="text-sm font-bold text-blue-400 font-mono mt-0.5">
                             {group.best_weight_kg ? formatWeight(group.best_weight_kg, unitPref) : '—'}
                           </div>
-                        </div>
+                        </Card>
 
-                        <div className="p-2.5 rounded-xl bg-dark-850 border border-dark-700/50">
+                        <Card variant="flat" className="p-2.5 bg-dark-850/80 border-dark-700/50">
                           <div className="text-[10px] text-zinc-400">{labels.bestE1rm}</div>
                           <div className="text-sm font-bold text-amber-400 font-mono mt-0.5">
                             {group.best_e1rm_kg ? formatWeight(Math.round(group.best_e1rm_kg * 10) / 10, unitPref) : '—'}
                           </div>
-                        </div>
+                        </Card>
 
-                        <div className="p-2.5 rounded-xl bg-dark-850 border border-dark-700/50">
+                        <Card variant="flat" className="p-2.5 bg-dark-850/80 border-dark-700/50">
                           <div className="text-[10px] text-zinc-400">{labels.maxSetVolume}</div>
                           <div className="text-sm font-bold text-emerald-400 font-mono mt-0.5">
                             {group.max_volume_set_kg ? formatWeight(group.max_volume_set_kg, unitPref) : '—'}
                           </div>
-                        </div>
+                        </Card>
 
-                        <div className="p-2.5 rounded-xl bg-dark-850 border border-dark-700/50">
+                        <Card variant="flat" className="p-2.5 bg-dark-850/80 border-dark-700/50">
                           <div className="text-[10px] text-zinc-400">{labels.maxReps}</div>
                           <div className="text-sm font-bold text-purple-400 font-mono mt-0.5">
                             {group.max_reps ? `${group.max_reps} ${labels.repsUnit}` : '—'}
                           </div>
-                        </div>
+                        </Card>
                       </div>
-                    </div>
+                    </Card>
                   ))}
                 </div>
               )}
@@ -605,10 +605,10 @@ export const ProgressPage: React.FC = () => {
       {/* TAB 2: VOLUME & MUSCLE BALANCE */}
       {activeTab === 'volume' && (
         <div className="space-y-6 animate-fade-in">
-          {/* Muscle Volume Distribution & Radar Chart (Apache ECharts) */}
+          {/* Muscle Balance Radar Chart */}
           <MuscleBalanceRadarChart muscleSets={analyticsSummary.muscleSets} />
 
-          {/* Overall Tonnage & Workload Volume History Chart (Apache ECharts) */}
+          {/* Overall Tonnage & Workload Volume History Chart */}
           <TonnageVolumeHistoryChart workouts={workouts} unitPref={unitPref} />
         </div>
       )}
@@ -645,12 +645,12 @@ export const ProgressPage: React.FC = () => {
                   className="font-mono text-base font-bold text-blue-400"
                 />
 
-                <div className="p-4 rounded-2xl bg-gradient-to-br from-dark-900 to-brand-950/40 border border-brand-500/30 flex flex-col justify-center items-center">
+                <Card variant="glow" className="p-4 bg-gradient-to-br from-dark-900 to-brand-950/40 border-brand-500/30 flex flex-col justify-center items-center">
                   <div className="text-[11px] text-zinc-400 uppercase font-bold">{labels.estimated1RM}</div>
                   <div className="text-2xl font-black text-brand-400 font-mono">
                     {formatWeight(calculated1RM, unitPref)}
                   </div>
-                </div>
+                </Card>
               </div>
 
               <div className="space-y-2.5">
@@ -659,9 +659,10 @@ export const ProgressPage: React.FC = () => {
                 </h3>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                   {percentageTable.map((item) => (
-                    <div
+                    <Card
+                      variant="flat"
                       key={item.percentage}
-                      className="p-3 rounded-xl bg-dark-900/80 border border-dark-750 flex flex-col justify-between space-y-1"
+                      className="p-3 bg-dark-900/80 border-dark-750 flex flex-col justify-between space-y-1"
                     >
                       <div className="flex items-center justify-between text-xs">
                         <span className="font-bold text-zinc-300">{item.percentage}%</span>
@@ -672,14 +673,14 @@ export const ProgressPage: React.FC = () => {
                       <div className="text-sm font-black text-brand-400 font-mono">
                         {formatWeight(item.weightKg, unitPref)}
                       </div>
-                    </div>
+                    </Card>
                   ))}
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* Athletic Strength Standards Horizontal Benchmark (Apache ECharts) */}
+          {/* Athletic Strength Standards Horizontal Benchmark */}
           <StrengthStandardsBarChart standards={strengthStandards} unitPref={unitPref} />
 
           {/* Athletic Strength Classification */}
@@ -695,9 +696,9 @@ export const ProgressPage: React.FC = () => {
 
             <CardContent className="space-y-3 pt-1">
               {strengthStandards.map((std, idx) => (
-                <div
+                <Card
                   key={idx}
-                  className="p-4 rounded-2xl bg-dark-900/90 border border-dark-700/80 space-y-2.5"
+                  className="p-4 bg-dark-900/90 border-dark-700/80 space-y-2.5"
                 >
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <div>
@@ -724,54 +725,60 @@ export const ProgressPage: React.FC = () => {
                       <span>Elite ({std.elite}kg)</span>
                     </div>
                   </div>
-                </div>
+                </Card>
               ))}
             </CardContent>
           </Card>
         </div>
       )}
 
-      {/* Dedicated Navigation Quick-Links (Single Job Architecture: Deep Dives) */}
+      {/* Dedicated Navigation Cards */}
       <div className="pt-2 border-t border-dark-800/80 grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <button
+        <Card
+          isHoverable
           onClick={() => navigate('/history')}
-          className="p-3.5 rounded-2xl bg-dark-850/60 hover:bg-dark-800 border border-dark-750 hover:border-brand-500/40 transition-all flex items-center justify-between group cursor-pointer text-left"
+          className="p-3.5 bg-dark-850/60 hover:bg-dark-800 border-dark-750 hover:border-brand-500/40 transition-all cursor-pointer group"
         >
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-brand-500/10 border border-brand-500/20 flex items-center justify-center text-brand-400">
-              <CalendarIcon className="w-4 h-4" />
-            </div>
-            <div>
-              <div className="text-xs font-bold text-white group-hover:text-brand-400 transition-colors">
-                История тренировок
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-brand-500/10 border border-brand-500/20 flex items-center justify-center text-brand-400 shrink-0">
+                <CalendarIcon className="w-4 h-4" />
               </div>
-              <div className="text-[11px] text-zinc-400">
-                Календарь прошлых сессий, повторы и подходы
+              <div>
+                <div className="text-xs font-bold text-white group-hover:text-brand-400 transition-colors">
+                  История тренировок
+                </div>
+                <div className="text-[11px] text-zinc-400">
+                  Календарь прошлых сессий, повторы и подходы
+                </div>
               </div>
             </div>
+            <ChevronRight className="w-4 h-4 text-zinc-500 group-hover:text-brand-400 group-hover:translate-x-0.5 transition-all" />
           </div>
-          <ChevronRight className="w-4 h-4 text-zinc-500 group-hover:text-brand-400 group-hover:translate-x-0.5 transition-all" />
-        </button>
+        </Card>
 
-        <button
+        <Card
+          isHoverable
           onClick={() => navigate('/body')}
-          className="p-3.5 rounded-2xl bg-dark-850/60 hover:bg-dark-800 border border-dark-750 hover:border-brand-500/40 transition-all flex items-center justify-between group cursor-pointer text-left"
+          className="p-3.5 bg-dark-850/60 hover:bg-dark-800 border-dark-750 hover:border-brand-500/40 transition-all cursor-pointer group"
         >
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400">
-              <Scale className="w-4 h-4" />
-            </div>
-            <div>
-              <div className="text-xs font-bold text-white group-hover:text-purple-400 transition-colors">
-                Замеры тела и вес
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 shrink-0">
+                <Scale className="w-4 h-4" />
               </div>
-              <div className="text-[11px] text-zinc-400">
-                График веса, расчёт ИМТ и обхваты тела
+              <div>
+                <div className="text-xs font-bold text-white group-hover:text-purple-400 transition-colors">
+                  Замеры тела и вес
+                </div>
+                <div className="text-[11px] text-zinc-400">
+                  График веса, расчёт ИМТ и обхваты тела
+                </div>
               </div>
             </div>
+            <ChevronRight className="w-4 h-4 text-zinc-500 group-hover:text-purple-400 group-hover:translate-x-0.5 transition-all" />
           </div>
-          <ChevronRight className="w-4 h-4 text-zinc-500 group-hover:text-purple-400 group-hover:translate-x-0.5 transition-all" />
-        </button>
+        </Card>
       </div>
     </div>
   );
