@@ -44,14 +44,15 @@ You are developing **NeverPaidHealth**, a free, local-first and microservices-ba
    - The user must be able to focus 100% on the single task of the page (e.g. Daily Todo checklist = daily tasks and activity for the selected day, nothing extraneous).
    - If a feature is secondary or auxiliary (like a full-month matrix or long-term analytics), it belongs in a dedicated tab or separate route, never squeezed into a side column.
 
-8. **STRICT DESIGN SYSTEM ENFORCEMENT (ZERO CUSTOM WHEELS):**
-   - AI agents and frontend developers must strictly reuse the existing ready-made components from `@/shared/ui/`:
-     - `Button` (`@/shared/ui/button.tsx`)
+8. **STRICT DESIGN SYSTEM & HEROUI COMPONENT ENFORCEMENT:**
+   - The project uses the ready-made **HeroUI (`@heroui/react`)** component library!
+   - AI agents and developers must strictly reuse the existing ready-made components from `@/shared/ui/`:
+     - `Button`, `ButtonGroup` (`@/shared/ui/button.tsx`)
      - `Card`, `CardContent`, `CardHeader`, `CardTitle`, `Badge`, `Chip` (`@/shared/ui/card.tsx`)
      - `Input`, `Textarea` (`@/shared/ui/input.tsx`)
      - `Modal` (`@/shared/ui/modal.tsx`)
      - `ProgressBar`, `CircularProgress` (`@/shared/ui/progress.tsx`)
      - `Skeleton` (`@/shared/ui/skeleton.tsx`)
      - `Tabs` (`@/shared/ui/tabs.tsx`)
-   - Absolutely NEVER create ad-hoc custom buttons, custom cards, raw unstyled input wrappers, or custom CSS widgets.
+   - Absolutely **NEVER** write raw HTML `<button className="...">`, raw styled `<div>` cards, raw `<span>` chips, or hand-rolled `<div className="fixed inset-0...">` modal overlays.
    - Always compose cleanly using the design system primitives with consistent spacing and typography tokens.
