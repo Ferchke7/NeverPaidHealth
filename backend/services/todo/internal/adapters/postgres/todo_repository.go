@@ -56,6 +56,10 @@ func (r *TodoRepository) AutoMigrate(ctx context.Context) error {
 		  WHERE status = 'completed'
 		 ON CONFLICT (todo_id, day) DO UPDATE
 		   SET status = 'completed', completed_at = EXCLUDED.completed_at;`,
+		`UPDATE todos t
+		    SET status = 'pending'
+		  WHERE t.end_date > t.start_date
+		    AND (SELECT COUNT(*) FROM todo_daily_progress p WHERE p.todo_id = t.id AND p.status = 'completed') < (t.end_date - t.start_date + 1);`,
 	}
 
 	for _, q := range queries {
@@ -281,10 +285,16 @@ func (r *TodoRepository) SetDayStatus(ctx context.Context, userID, todoID uuid.U
 func (r *TodoRepository) syncParentSingleDayStatus(ctx context.Context, userID, todoID uuid.UUID) error {
 	query := `
 		UPDATE todos t
-		SET status = COALESCE((SELECT p.status FROM todo_daily_progress p WHERE p.todo_id = t.id AND p.day = t.start_date), 'pending'),
+		SET status = CASE
+		      WHEN t.start_date = t.end_date THEN
+		        COALESCE((SELECT p.status FROM todo_daily_progress p WHERE p.todo_id = t.id AND p.day = t.start_date), 'pending')
+		      ELSE
+		        CASE WHEN (SELECT COUNT(*) FROM todo_daily_progress p WHERE p.todo_id = t.id AND p.status = 'completed') >= (t.end_date - t.start_date + 1)
+		             THEN 'completed' ELSE 'pending' END
+		    END,
 		    completed_at = (SELECT p.completed_at FROM todo_daily_progress p WHERE p.todo_id = t.id AND p.day = t.start_date),
 		    updated_at = NOW()
-		WHERE t.id = $1 AND t.user_id = $2 AND t.start_date = t.end_date
+		WHERE t.id = $1 AND t.user_id = $2
 	`
 	_, err := r.pool.Exec(ctx, query, todoID, userID)
 	return err
@@ -493,6 +503,18 @@ func (r *TodoRepository) DeleteActivityLog(ctx context.Context, userID, logID uu
 	}
 
 	return nil
+}
+
+func (r *TodoRepository) DeleteTaskCompletedLog(ctx context.Context, userID, todoID uuid.UUID, dateStr string) error {
+	delQuery := `
+		DELETE FROM todo_activity_logs
+		WHERE user_id = $1
+		  AND todo_id = $2
+		  AND log_date = $3::date
+		  AND session_type = 'task_completed'
+	`
+	_, err := r.pool.Exec(ctx, delQuery, userID, todoID, dateStr)
+	return err
 }
 
 func (r *TodoRepository) GetStats(ctx context.Context, userID uuid.UUID, days int) (*todo.ProductivityStats, error) {

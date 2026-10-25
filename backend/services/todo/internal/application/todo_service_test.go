@@ -157,6 +157,18 @@ func (m *mockTodoRepo) DeleteActivityLog(ctx context.Context, userID, logID uuid
 	return nil
 }
 
+func (m *mockTodoRepo) DeleteTaskCompletedLog(ctx context.Context, userID, todoID uuid.UUID, dateStr string) error {
+	var filtered []todo.ActivityLog
+	for _, l := range m.activityLogs {
+		if l.UserID == userID && l.TodoID != nil && *l.TodoID == todoID && l.LogDate == dateStr && l.SessionType == "task_completed" {
+			continue
+		}
+		filtered = append(filtered, l)
+	}
+	m.activityLogs = filtered
+	return nil
+}
+
 func (m *mockTodoRepo) GetStats(ctx context.Context, userID uuid.UUID, days int) (*todo.ProductivityStats, error) {
 	return &todo.ProductivityStats{PeriodDays: days}, nil
 }
@@ -187,9 +199,9 @@ func TestToggleTodo_MultiDayIsolation(t *testing.T) {
 		t.Errorf("expected completed on 2026-10-15, got %s", toggled.Status)
 	}
 
-	// Verify no fake activity log was created
-	if len(repo.activityLogs) != 0 {
-		t.Errorf("expected 0 fake activity logs, got %d", len(repo.activityLogs))
+	// Verify completion activity log was recorded
+	if len(repo.activityLogs) != 1 || repo.activityLogs[0].SessionType != "task_completed" {
+		t.Errorf("expected 1 task_completed activity log, got %+v", repo.activityLogs)
 	}
 
 	// Check 2026-10-16: should still be pending!
@@ -299,5 +311,69 @@ func TestLogFocusSession_DayAndLifetimeMinutes(t *testing.T) {
 	itemAfter, _ := svc.GetDailySchedule(ctx, userID, "2026-10-12")
 	if itemAfter.Todos[0].LifetimeSpentMinutes != 55 {
 		t.Errorf("expected lifetime spent 55, got %d", itemAfter.Todos[0].LifetimeSpentMinutes)
+	}
+}
+
+func TestToggleTodo_ActivityLogRecordingAndCleanup(t *testing.T) {
+	repo := newMockTodoRepo()
+	svc := application.NewTodoService(repo)
+	ctx := context.Background()
+	userID := uuid.New()
+
+	item, err := svc.CreateTodo(ctx, userID, application.CreateTodoInput{
+		Title:                 "Read sports science paper",
+		Category:              "study",
+		Priority:              todo.PriorityHigh,
+		StartDate:             "2026-10-25",
+		EndDate:               "2026-10-26",
+		TargetDurationMinutes: 30,
+	})
+	if err != nil {
+		t.Fatalf("failed to create todo: %v", err)
+	}
+
+	// 1. Toggle completed on day 1 (2026-10-25)
+	_, err = svc.ToggleTodo(ctx, userID, item.ID, "2026-10-25")
+	if err != nil {
+		t.Fatalf("failed to toggle todo: %v", err)
+	}
+
+	// Verify day 1 schedule shows completed
+	d25, _ := svc.GetDailySchedule(ctx, userID, "2026-10-25")
+	if len(d25.Todos) == 0 || d25.Todos[0].Status != todo.StatusCompleted {
+		t.Fatalf("expected day 25 to be completed, got %+v", d25.Todos)
+	}
+
+	// Verify ActivityLog was automatically created
+	logs, _ := svc.GetActivityLogs(ctx, userID, "2026-10-25")
+	if len(logs) != 1 {
+		t.Fatalf("expected 1 activity log entry for completion, got %d", len(logs))
+	}
+	if logs[0].TaskTitle != "Read sports science paper" || logs[0].SessionType != "task_completed" {
+		t.Errorf("unexpected log entry: %+v", logs[0])
+	}
+
+	// 2. Verify Day 2 (2026-10-26) remains pending (not completed!)
+	d26, _ := svc.GetDailySchedule(ctx, userID, "2026-10-26")
+	if len(d26.Todos) == 0 || d26.Todos[0].Status != todo.StatusPending {
+		t.Fatalf("expected day 26 (tomorrow) to be pending, got %+v", d26.Todos)
+	}
+
+	// 3. Toggle back to pending on day 1 (2026-10-25)
+	_, err = svc.ToggleTodo(ctx, userID, item.ID, "2026-10-25")
+	if err != nil {
+		t.Fatalf("failed to un-toggle todo: %v", err)
+	}
+
+	// Verify Day 1 is now pending
+	d25After, _ := svc.GetDailySchedule(ctx, userID, "2026-10-25")
+	if d25After.Todos[0].Status != todo.StatusPending {
+		t.Fatalf("expected day 25 to be pending after uncheck, got %s", d25After.Todos[0].Status)
+	}
+
+	// Verify ActivityLog was cleaned up
+	logsAfter, _ := svc.GetActivityLogs(ctx, userID, "2026-10-25")
+	if len(logsAfter) != 0 {
+		t.Fatalf("expected 0 activity logs after unchecking task, got %d", len(logsAfter))
 	}
 }

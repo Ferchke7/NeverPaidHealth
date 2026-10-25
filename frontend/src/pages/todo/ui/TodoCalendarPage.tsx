@@ -7,7 +7,6 @@ import {
   History,
   ChevronLeft,
   ChevronRight,
-  Clock,
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../../shared/api/client.ts';
@@ -33,10 +32,8 @@ import { TodoItemCard } from './TodoItemCard.tsx';
 import { TodoMonthCalendar } from './TodoMonthCalendar.tsx';
 import { TodoActivityLog } from './TodoActivityLog.tsx';
 import { ConfirmDeleteModal } from './ConfirmDeleteModal.tsx';
-import { TodoMiniCalendar } from './TodoMiniCalendar.tsx';
-import { TodoQuickRoutines } from './TodoQuickRoutines.tsx';
 
-type ViewTab = 'schedule' | 'calendar' | 'history';
+type ViewTab = 'schedule' | 'history' | 'calendar';
 
 export const TodoCalendarPage: React.FC = () => {
   const { t } = useTranslation();
@@ -60,15 +57,14 @@ export const TodoCalendarPage: React.FC = () => {
     queryFn: () => apiClient<DailyScheduleResponse>(`/todos?date=${selectedDate}`),
   });
 
-  // 2. Fetch Activity Logs
+  // 2. Fetch Activity Logs for selectedDate (always available for the day audit log)
   const { data: rawActivityLogs } = useQuery<ActivityLogItem[]>({
     queryKey: ['activity-logs', selectedDate],
     queryFn: () => apiClient<ActivityLogItem[]>(`/todos/activity-logs?date=${selectedDate}`),
-    enabled: activeTab === 'history' || activeTab === 'schedule',
   });
   const activityLogs = Array.isArray(rawActivityLogs) ? rawActivityLogs : [];
 
-  // 3. Calendar Month query (todos for the whole month for calendar & mini-calendar)
+  // 3. Calendar Month query (loaded when viewing calendar tab)
   const calYear = calendarDate.getFullYear();
   const calMonth = calendarDate.getMonth();
   const monthKey = `${calYear}-${String(calMonth + 1).padStart(2, '0')}`;
@@ -76,13 +72,13 @@ export const TodoCalendarPage: React.FC = () => {
   const { data: monthSchedule } = useQuery<DailyScheduleResponse>({
     queryKey: ['todos-month', monthKey],
     queryFn: () => apiClient<DailyScheduleResponse>(`/todos?date=${monthKey}`),
-    enabled: activeTab === 'calendar' || activeTab === 'schedule',
+    enabled: activeTab === 'calendar',
   });
 
   const { data: rawMonthLogs } = useQuery<ActivityLogItem[]>({
     queryKey: ['activity-logs-month', monthKey],
     queryFn: () => apiClient<ActivityLogItem[]>(`/todos/activity-logs?date=${monthKey}`),
-    enabled: activeTab === 'calendar' || activeTab === 'schedule',
+    enabled: activeTab === 'calendar',
   });
   const monthLogs = Array.isArray(rawMonthLogs) ? rawMonthLogs : [];
 
@@ -176,17 +172,6 @@ export const TodoCalendarPage: React.FC = () => {
     });
   };
 
-  const handleAddRoutine = (title: string, category: TodoCategory, durationMinutes: number) => {
-    createTodoMutation.mutate({
-      title,
-      category,
-      priority: 'high',
-      start_date: selectedDate,
-      end_date: selectedDate,
-      target_duration_minutes: durationMinutes,
-    });
-  };
-
   const handleMoveToTomorrow = (item: TodoItem) => {
     const currentStart = item.start_date || selectedDate;
     const d = new Date(currentStart);
@@ -215,7 +200,6 @@ export const TodoCalendarPage: React.FC = () => {
     const newDateStr = toLocalDateKey(current);
     setSelectedDate(newDateStr);
 
-    // Keep calendar month synchronized if shifted across month border
     if (current.getMonth() !== calendarDate.getMonth() || current.getFullYear() !== calendarDate.getFullYear()) {
       setCalendarDate(new Date(current.getFullYear(), current.getMonth(), 1));
     }
@@ -280,20 +264,20 @@ export const TodoCalendarPage: React.FC = () => {
     () => [
       {
         id: 'schedule',
-        label: t('todo.unifiedPlan') || 'План и Фокус',
+        label: t('todo.tasksForDay', { count: todos.length }) || 'Задачи на день',
         icon: <ListTodo className="w-3.5 h-3.5" />,
         badge: todos.length,
       },
       {
-        id: 'calendar',
-        label: t('todo.calendar') || 'Месяц',
-        icon: <CalendarIcon className="w-3.5 h-3.5" />,
-      },
-      {
         id: 'history',
-        label: t('todo.activityLog') || 'Журнал',
+        label: t('todo.activityLog') || 'Журнал активности',
         icon: <History className="w-3.5 h-3.5" />,
         badge: activityLogs.length > 0 ? activityLogs.length : undefined,
+      },
+      {
+        id: 'calendar',
+        label: t('todo.calendar') || 'Календарь месяца',
+        icon: <CalendarIcon className="w-3.5 h-3.5" />,
       },
     ],
     [todos.length, activityLogs.length, t]
@@ -313,7 +297,7 @@ export const TodoCalendarPage: React.FC = () => {
   const dayProgressList = Array.isArray(monthSchedule?.day_progress) ? monthSchedule.day_progress : [];
 
   return (
-    <div className="space-y-4 max-w-6xl mx-auto pb-16 animate-fade-in">
+    <div className="space-y-4 max-w-4xl mx-auto pb-16 animate-fade-in">
       {/* 1. Header & Navigation Card */}
       <Card className="bg-dark-900 border-dark-800 rounded-3xl shadow-xl">
         <CardContent className="p-3.5 sm:p-5 space-y-3.5">
@@ -360,7 +344,7 @@ export const TodoCalendarPage: React.FC = () => {
             </div>
           </div>
 
-          {/* View Mode Tabs (HeroUI Tabs) */}
+          {/* View Mode Tabs (Single Responsibility per Tab) */}
           <div className="pt-2 border-t border-dark-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <Tabs
               tabs={navTabs}
@@ -369,7 +353,7 @@ export const TodoCalendarPage: React.FC = () => {
               size="sm"
             />
 
-            {/* Quick date navigators in header */}
+            {/* Date Navigators */}
             <div className="flex items-center gap-1.5 self-end sm:self-auto">
               <Button
                 variant="ghost"
@@ -411,7 +395,7 @@ export const TodoCalendarPage: React.FC = () => {
             </div>
           </div>
 
-          {/* 7-Day Buttons Strip */}
+          {/* 7-Day Buttons Strip (Always available for instant 1-tap day switching) */}
           <div className="pt-2 border-t border-dark-800/80">
             <div className="grid grid-cols-7 gap-1 sm:gap-1.5">
               {weekDays.map((wd) => (
@@ -435,177 +419,121 @@ export const TodoCalendarPage: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* 2. UNIFIED WORKSTATION (Left: Tasks & Day Agenda | Right: Mini Calendar & Routines) */}
+      {/* 2. TAB 1: DAILY SCHEDULE WORKSTATION (Single Job: Day's Tasks & Activity) */}
       {activeTab === 'schedule' && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
-          {/* LEFT COLUMN: Day Agenda, Quick-Add, Task Checklist (8 cols) */}
-          <div className="lg:col-span-8 space-y-3.5">
-            {/* Day Progress Summary Strip */}
-            <TodoDaySummary
-              completedTasks={completedTasks}
-              totalTasks={totalTasks}
-              totalPlannedMinutes={schedule?.total_planned_minutes || 0}
-              totalSpentMinutes={schedule?.total_spent_minutes || 0}
-            />
+        <div className="space-y-4">
+          {/* Day Progress Summary Strip */}
+          <TodoDaySummary
+            completedTasks={completedTasks}
+            totalTasks={totalTasks}
+            totalPlannedMinutes={schedule?.total_planned_minutes || 0}
+            totalSpentMinutes={schedule?.total_spent_minutes || 0}
+          />
 
-            {/* Quick Inline Add Bar */}
-            <TodoQuickAdd
-              onAdd={handleQuickAdd}
-              isLoading={createTodoMutation.isPending}
-            />
+          {/* Quick Inline Add Bar */}
+          <TodoQuickAdd
+            onAdd={handleQuickAdd}
+            isLoading={createTodoMutation.isPending}
+          />
 
-            {/* Task Filters Tabs */}
-            {todos.length > 0 && (
-              <div className="flex items-center justify-between">
-                <Tabs
-                  tabs={filterTabs}
-                  selectedKey={taskFilter}
-                  onSelectionChange={(k) => setTaskFilter(k as any)}
-                  size="sm"
-                />
+          {/* Task Filters Tabs */}
+          {todos.length > 0 && (
+            <div className="flex items-center justify-between">
+              <Tabs
+                tabs={filterTabs}
+                selectedKey={taskFilter}
+                onSelectionChange={(k) => setTaskFilter(k as any)}
+                size="sm"
+              />
+            </div>
+          )}
+
+          {/* Tasks List */}
+          {isLoadingDay ? (
+            <div className="space-y-2.5">
+              <Skeleton className="h-20 w-full" variant="rounded" />
+              <Skeleton className="h-20 w-full" variant="rounded" />
+              <Skeleton className="h-20 w-full" variant="rounded" />
+            </div>
+          ) : todos.length === 0 ? (
+            <Card className="p-8 sm:p-10 text-center bg-dark-900 border-dark-800 space-y-3 shadow-xl rounded-3xl">
+              <div className="w-12 h-12 rounded-2xl bg-dark-800 border border-dark-700 flex items-center justify-center mx-auto text-zinc-400">
+                <ListTodo className="w-6 h-6" />
               </div>
-            )}
-
-            {/* Tasks List */}
-            {isLoadingDay ? (
-              <div className="space-y-2.5">
-                <Skeleton className="h-20 w-full" variant="rounded" />
-                <Skeleton className="h-20 w-full" variant="rounded" />
-                <Skeleton className="h-20 w-full" variant="rounded" />
+              <h3 className="text-sm sm:text-base font-bold text-zinc-200">
+                {t('todo.noTasks', { date: selectedDate }) || `На ${selectedDate} нет запланированных задач.`}
+              </h3>
+              <p className="text-xs text-zinc-400 max-w-md mx-auto">
+                {t('todo.noTasksDesc') || 'Создайте задачу с помощью формы быстрого добавления выше.'}
+              </p>
+              <div className="flex items-center justify-center gap-2 pt-2">
+                <Button
+                  variant="primary"
+                  onClick={() => {
+                    setEditingTodo(null);
+                    setIsCreateModalOpen(true);
+                  }}
+                  className="font-bold text-xs"
+                >
+                  <Plus className="w-4 h-4 mr-1" />
+                  <span>{t('todo.add') || 'Создать задачу'}</span>
+                </Button>
               </div>
-            ) : todos.length === 0 ? (
-              <Card className="p-8 sm:p-10 text-center bg-dark-900 border-dark-800 space-y-3 shadow-xl rounded-3xl">
-                <div className="w-12 h-12 rounded-2xl bg-dark-800 border border-dark-700 flex items-center justify-center mx-auto text-zinc-400">
-                  <ListTodo className="w-6 h-6" />
-                </div>
-                <h3 className="text-sm sm:text-base font-bold text-zinc-200">
-                  {t('todo.noTasks', { date: selectedDate }) || `На ${selectedDate} нет запланированных задач.`}
-                </h3>
-                <p className="text-xs text-zinc-400 max-w-md mx-auto">
-                  {t('todo.noTasksDesc') || 'Создайте задачу или используйте быстрое добавление / шаблоны справа.'}
-                </p>
-                <div className="flex items-center justify-center gap-2 pt-2">
-                  <Button
-                    variant="primary"
-                    onClick={() => {
-                      setEditingTodo(null);
-                      setIsCreateModalOpen(true);
-                    }}
-                    className="font-bold text-xs"
-                  >
-                    <Plus className="w-4 h-4 mr-1" />
-                    <span>{t('todo.add') || 'Создать задачу'}</span>
-                  </Button>
-                </div>
-              </Card>
-            ) : filteredTodos.length === 0 ? (
-              <Card className="p-8 text-center bg-dark-900 border-dark-800 rounded-3xl shadow-xl">
-                <p className="text-xs text-zinc-400">
-                  Нет задач, соответствующих выбранному фильтру «{taskFilter}».
-                </p>
-              </Card>
-            ) : (
-              <div className="space-y-2.5">
-                {filteredTodos.map((item) => (
-                  <TodoItemCard
-                    key={item.id}
-                    item={item}
-                    isToday={isSelectedToday}
-                    onToggle={(id) => toggleTodoMutation.mutate(id)}
-                    onStartFocus={(target) =>
-                      startForTodo({
-                        todoId: target.id,
-                        title: target.title,
-                        category: target.category,
-                        targetDurationMinutes: target.target_duration_minutes,
-                      })
-                    }
-                    onMoveToTomorrow={handleMoveToTomorrow}
-                    onEdit={(target) => {
-                      setEditingTodo(target);
-                      setIsCreateModalOpen(true);
-                    }}
-                    onDelete={(target) => setDeletingTodo(target)}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* RIGHT COLUMN: Mini Month Calendar, 1-Click Routines, Focus Activity (4 cols) */}
-          <div className="lg:col-span-4 space-y-3.5">
-            {/* Interactive Month Mini-Calendar Heatmap */}
-            <TodoMiniCalendar
-              calendarDate={calendarDate}
-              onCalendarDateChange={setCalendarDate}
-              selectedDate={selectedDate}
-              onSelectDate={handleSelectDateFromCalendar}
-              monthTodos={monthTodos}
-              monthLogs={monthLogs}
-              dayProgressList={dayProgressList}
-            />
-
-            {/* Quick 1-Click Routines */}
-            <TodoQuickRoutines
-              onAddRoutine={handleAddRoutine}
-              isLoading={createTodoMutation.isPending}
-            />
-
-            {/* Today's Focus Sessions Summary Card */}
-            <Card className="bg-dark-900 border-dark-800 rounded-3xl shadow-xl overflow-hidden">
-              <CardContent className="p-3.5 sm:p-4 space-y-2.5">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-white flex items-center gap-1.5">
-                    <Flame className="w-3.5 h-3.5 text-brand-400" />
-                    Фокус-сессии за день
-                  </span>
-                  <span className="text-[10px] text-zinc-400 font-mono">
-                    {schedule?.total_spent_minutes || 0} мин
-                  </span>
-                </div>
-
-                {activityLogs.length === 0 ? (
-                  <div className="text-center py-4 space-y-2">
-                    <Clock className="w-6 h-6 text-zinc-600 mx-auto" />
-                    <p className="text-[11px] text-zinc-500">
-                      Еще нет завершенных сессий за этот день
-                    </p>
-                    <Button
-                      variant="outline"
-                      size="xs"
-                      onClick={() => startQuickSession('Фокус', 'work', 25, '25m', 'pomodoro')}
-                      className="text-brand-400 text-[11px] font-bold border-dark-700"
-                    >
-                      Запустить 25м фокус
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
-                    {activityLogs.slice(0, 5).map((log) => (
-                      <div
-                        key={log.id}
-                        className="flex items-center justify-between p-2 rounded-xl bg-dark-800/60 border border-dark-700/50 text-xs"
-                      >
-                        <div className="min-w-0 flex items-center gap-1.5">
-                          <Flame className="w-3 h-3 text-brand-400 shrink-0" />
-                          <span className="text-zinc-200 truncate font-medium">
-                            {log.task_title || 'Сессия фокуса'}
-                          </span>
-                        </div>
-                        <span className="font-mono text-zinc-400 text-[10px] shrink-0">
-                          {log.duration_minutes} мин
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
             </Card>
+          ) : filteredTodos.length === 0 ? (
+            <Card className="p-8 text-center bg-dark-900 border-dark-800 rounded-3xl shadow-xl">
+              <p className="text-xs text-zinc-400">
+                Нет задач, соответствующих выбранному фильтру «{taskFilter}».
+              </p>
+            </Card>
+          ) : (
+            <div className="space-y-2.5">
+              {filteredTodos.map((item) => (
+                <TodoItemCard
+                  key={item.id}
+                  item={item}
+                  isToday={isSelectedToday}
+                  onToggle={(id) => toggleTodoMutation.mutate(id)}
+                  onStartFocus={(target) =>
+                    startForTodo({
+                      todoId: target.id,
+                      title: target.title,
+                      category: target.category,
+                      targetDurationMinutes: target.target_duration_minutes,
+                    })
+                  }
+                  onMoveToTomorrow={handleMoveToTomorrow}
+                  onEdit={(target) => {
+                    setEditingTodo(target);
+                    setIsCreateModalOpen(true);
+                  }}
+                  onDelete={(target) => setDeletingTodo(target)}
+                />
+              ))}
+            </div>
+          )}
+
+          {/* Dedicated Day Activity Log (Transparent audit trail for this date) */}
+          <div className="pt-4 border-t border-dark-800/80">
+            <TodoActivityLog
+              logs={activityLogs}
+              selectedDate={selectedDate}
+              onDeleteLog={(id) => setDeletingLogId(id)}
+            />
           </div>
         </div>
       )}
 
-      {/* 3. TAB 2: EXPANDED FULL-SCREEN MONTH CALENDAR VIEW */}
+      {/* 3. TAB 2: AUDIT & FULL HISTORY LOG VIEW */}
+      {activeTab === 'history' && (
+        <TodoActivityLog
+          logs={activityLogs}
+          selectedDate={selectedDate}
+          onDeleteLog={(id) => setDeletingLogId(id)}
+        />
+      )}
+
+      {/* 4. TAB 3: EXPANDED FULL-SCREEN MONTH CALENDAR VIEW */}
       {activeTab === 'calendar' && (
         <TodoMonthCalendar
           calendarDate={calendarDate}
@@ -633,15 +561,6 @@ export const TodoCalendarPage: React.FC = () => {
             setEditingTodo(null);
             setIsCreateModalOpen(true);
           }}
-        />
-      )}
-
-      {/* 4. TAB 3: AUDIT & HISTORY LOG VIEW */}
-      {activeTab === 'history' && (
-        <TodoActivityLog
-          logs={activityLogs}
-          selectedDate={selectedDate}
-          onDeleteLog={(id) => setDeletingLogId(id)}
         />
       )}
 

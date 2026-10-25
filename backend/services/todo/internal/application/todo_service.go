@@ -24,6 +24,7 @@ type TodoRepository interface {
 	CreateActivityLog(ctx context.Context, log *todo.ActivityLog) error
 	GetActivityLogs(ctx context.Context, userID uuid.UUID, dateStr string) ([]todo.ActivityLog, error)
 	DeleteActivityLog(ctx context.Context, userID, logID uuid.UUID) error
+	DeleteTaskCompletedLog(ctx context.Context, userID, todoID uuid.UUID, dateStr string) error
 	GetStats(ctx context.Context, userID uuid.UUID, days int) (*todo.ProductivityStats, error)
 }
 
@@ -222,10 +223,33 @@ func (s *TodoService) ToggleTodo(ctx context.Context, userID, todoID uuid.UUID, 
 	if currentStatus == todo.StatusCompleted {
 		newStatus = todo.StatusPending
 		completedAt = nil
+		_ = s.repo.DeleteTaskCompletedLog(ctx, userID, todoID, dateStr)
 	} else {
 		newStatus = todo.StatusCompleted
 		now := time.Now()
 		completedAt = &now
+
+		duration := existing.TargetDurationMinutes
+		if duration <= 0 {
+			duration = 25
+		}
+		startedAt := now.Add(-time.Duration(duration) * time.Minute)
+
+		compLog := &todo.ActivityLog{
+			ID:              uuid.New(),
+			UserID:          userID,
+			TodoID:          &todoID,
+			TaskTitle:       existing.Title,
+			Category:        existing.Category,
+			LogDate:         dateStr,
+			StartedAt:       startedAt,
+			EndedAt:         now,
+			DurationMinutes: duration,
+			SessionType:     "task_completed",
+			Notes:           "Выполнено в списке задач",
+			CreatedAt:       now,
+		}
+		_ = s.repo.CreateActivityLog(ctx, compLog)
 	}
 
 	if err := s.repo.SetDayStatus(ctx, userID, todoID, dateStr, newStatus, completedAt); err != nil {
