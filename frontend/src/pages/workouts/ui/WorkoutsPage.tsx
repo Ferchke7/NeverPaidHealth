@@ -92,7 +92,7 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = ({ onNavigateToPrograms
   const handleStartQuickEmptyWorkout = async () => {
     const today = new Date().toLocaleDateString([], { day: 'numeric', month: 'short' });
     await startWorkout({
-      name: `Быстрая тренировка (${today})`,
+      name: `${t('workouts.quickWorkoutName') || 'Быстрая тренировка'} (${today})`,
       exercises: [],
     });
   };
@@ -259,7 +259,7 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = ({ onNavigateToPrograms
             <span>{t('workouts.title') || 'Тренировки'}</span>
           </h1>
           <p className="text-xs text-zinc-400 mt-0.5">
-            Запуск сессии, текущий сплит и персональные шаблоны
+            {t('workouts.subtitle') || 'Запуск сессии, текущий сплит и персональные шаблоны'}
           </p>
         </div>
 
@@ -271,7 +271,7 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = ({ onNavigateToPrograms
             onClick={handleStartQuickEmptyWorkout}
           >
             <Zap className="w-3.5 h-3.5 fill-current" />
-            <span>Пустая тренировка</span>
+            <span>{t('workouts.emptyWorkout') || 'Пустая тренировка'}</span>
           </Button>
 
           <Button
@@ -300,7 +300,7 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = ({ onNavigateToPrograms
                   <span>{activeProgram.name}</span>
                 </Badge>
                 <span className="text-xs text-zinc-400 font-mono">
-                  День #{selectedProgramDayIndex + 1} из {activeProgramDays.length}
+                  {t('workouts.dayOf', { day: selectedProgramDayIndex + 1, total: activeProgramDays.length })}
                 </span>
               </div>
               <div className="flex items-center gap-2 mt-1.5">
@@ -321,7 +321,11 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = ({ onNavigateToPrograms
                 className="text-xs flex items-center gap-1.5"
               >
                 <Calendar className="w-3.5 h-3.5 text-brand-400" />
-                <span>{isSplitExpanded ? '▲ Скрыть дни' : '▼ Выбрать день'}</span>
+                <span>
+                  {isSplitExpanded
+                    ? t('workouts.splitHideDays') || '▲ Скрыть дни'
+                    : t('workouts.splitSelectDay') || '▼ Выбрать день'}
+                </span>
               </Button>
 
               <Button
@@ -447,8 +451,8 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = ({ onNavigateToPrograms
             </h3>
             <p className="text-xs text-zinc-500 max-w-sm mx-auto mt-1 mb-4">
               {userRoutines.length === 0
-                ? 'Создайте свой первый тренировочный шаблон или выберите готовую программу в каталоге.'
-                : 'Попробуйте изменить поисковый запрос.'}
+                ? t('workouts.noRoutinesHint') || 'Создайте свой первый тренировочный шаблон или выберите готовую программу в каталоге.'
+                : t('workouts.searchNoResults') || 'Попробуйте изменить поисковый запрос.'}
             </p>
 
             <div className="flex items-center justify-center gap-3">
@@ -510,7 +514,7 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = ({ onNavigateToPrograms
                           <span>•</span>
                           <span className="flex items-center gap-1">
                             <Clock className="w-3.5 h-3.5 text-zinc-500" />
-                            ~{(routine.exercises?.length || 0) * 10} мин
+                            {t('workouts.approxMinutes', { mins: (routine.exercises?.length || 0) * 10 }) || `~${(routine.exercises?.length || 0) * 10} мин`}
                           </span>
                         </div>
                       </div>
@@ -652,10 +656,10 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = ({ onNavigateToPrograms
               </div>
               <div>
                 <div className="text-xs font-bold text-white group-hover:text-brand-400 transition-colors">
-                  Каталог программ тренировок
+                  {t('workouts.programCatalogTitle') || 'Каталог программ тренировок'}
                 </div>
                 <div className="text-[11px] text-zinc-400">
-                  PPL, Верх/Низ, Full Body и сплиты сообщества
+                  {t('workouts.programCatalogDesc') || 'PPL, Верх/Низ, Full Body и сплиты сообщества'}
                 </div>
               </div>
             </div>
@@ -675,10 +679,10 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = ({ onNavigateToPrograms
               </div>
               <div>
                 <div className="text-xs font-bold text-white group-hover:text-blue-400 transition-colors">
-                  База упражнений и техника
+                  {t('workouts.exercisesLibraryTitle') || 'База упражнений и техника'}
                 </div>
                 <div className="text-[11px] text-zinc-400">
-                  Фильтры по мышцам, оборудованию и 3D-анимации
+                  {t('workouts.exercisesLibraryDesc') || 'Фильтры по мышцам, оборудованию и 3D-анимации'}
                 </div>
               </div>
             </div>

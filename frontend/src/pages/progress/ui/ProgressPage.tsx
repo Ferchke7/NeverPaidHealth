@@ -123,6 +123,11 @@ export const ProgressPage: React.FC = () => {
         shoulders: 'Плечи',
         arms: 'Руки',
         core: 'Пресс',
+        noMuscleRecords: 'Нет записей для выбранной группы мышц.',
+        historyCardTitle: 'История тренировок',
+        historyCardDesc: 'Календарь прошлых сессий, повторы и подходы',
+        bodyCardTitle: 'Замеры тела и вес',
+        bodyCardDesc: 'График веса, расчёт ИМТ и обхваты тела',
       };
     }
     if (language === 'uz') {
@@ -171,6 +176,11 @@ export const ProgressPage: React.FC = () => {
         shoulders: 'Yelka',
         arms: 'Qo‘llar',
         core: 'Press',
+        noMuscleRecords: 'Tanlangan mushak guruhi bo‘yicha yozuvlar yo‘q.',
+        historyCardTitle: 'Mashg‘ulotlar tarixi',
+        historyCardDesc: 'O‘tgan mashg‘ulotlar taqvimi, takrorlar va setlar',
+        bodyCardTitle: 'Tana o‘lchamlari va vazn',
+        bodyCardDesc: 'Vazn grafigi, BMI hisoblash va tana aylanasi',
       };
     }
     return {
@@ -218,6 +228,11 @@ export const ProgressPage: React.FC = () => {
       shoulders: 'Shoulders',
       arms: 'Arms',
       core: 'Core',
+      noMuscleRecords: 'No records for the selected muscle group.',
+      historyCardTitle: 'Workout History',
+      historyCardDesc: 'Past workout calendar, sets, and rep logs',
+      bodyCardTitle: 'Body Metrics & Weight',
+      bodyCardDesc: 'Weight trend, BMI calculation, and body measurements',
     };
   }, [language]);
 
@@ -549,7 +564,7 @@ export const ProgressPage: React.FC = () => {
             <CardContent>
               {filteredRecordGroups.length === 0 ? (
                 <div className="text-center py-8 text-zinc-500 text-xs">
-                  Нет записей для выбранной группы мышц.
+                  {labels.noMuscleRecords}
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
@@ -746,10 +761,10 @@ export const ProgressPage: React.FC = () => {
               </div>
               <div>
                 <div className="text-xs font-bold text-white group-hover:text-brand-400 transition-colors">
-                  История тренировок
+                  {labels.historyCardTitle}
                 </div>
                 <div className="text-[11px] text-zinc-400">
-                  Календарь прошлых сессий, повторы и подходы
+                  {labels.historyCardDesc}
                 </div>
               </div>
             </div>
@@ -769,10 +784,10 @@ export const ProgressPage: React.FC = () => {
               </div>
               <div>
                 <div className="text-xs font-bold text-white group-hover:text-purple-400 transition-colors">
-                  Замеры тела и вес
+                  {labels.bodyCardTitle}
                 </div>
                 <div className="text-[11px] text-zinc-400">
-                  График веса, расчёт ИМТ и обхваты тела
+                  {labels.bodyCardDesc}
                 </div>
               </div>
             </div>

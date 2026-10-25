@@ -123,7 +123,9 @@ export const TodoItemCard: React.FC<TodoItemCardProps> = ({
                 <Badge variant="accent" size="sm" className="flex items-center gap-1 font-mono">
                   <Calendar className="w-3 h-3" />
                   <span>
-                    {item.completed_days !== undefined ? `${item.completed_days}/${item.total_days} дн.` : `${item.total_days} дн.`}
+                    {item.completed_days !== undefined
+                      ? `${item.completed_days}/${item.total_days} ${t('todo.daysShort') || 'дн.'}`
+                      : `${item.total_days} ${t('todo.daysShort') || 'дн.'}`}
                   </span>
                 </Badge>
               )}
@@ -156,7 +158,7 @@ export const TodoItemCard: React.FC<TodoItemCardProps> = ({
                 <span>{spentMins} / {targetMins} м</span>
                 {item.lifetime_spent_minutes !== undefined && item.lifetime_spent_minutes > spentMins && (
                   <span className="text-zinc-500 text-[10px]">
-                    (всего {item.lifetime_spent_minutes}м)
+                    {t('todo.lifetimeTotal', { minutes: item.lifetime_spent_minutes }) || `(всего ${item.lifetime_spent_minutes}м)`}
                   </span>
                 )}
               </div>
@@ -198,9 +200,9 @@ export const TodoItemCard: React.FC<TodoItemCardProps> = ({
               size="xs"
               onClick={() => onMoveToTomorrow(item)}
               className="text-zinc-400 hover:text-amber-400 border-dark-700"
-              title="Перенести на завтра (+1 день)"
+              title={t('todo.moveToTomorrowTitle') || 'Перенести на завтра (+1 день)'}
             >
-              <span className="hidden sm:inline">Завтра</span>
+              <span className="hidden sm:inline">{t('todo.moveToTomorrow') || 'Завтра'}</span>
               <ArrowRight className="w-3 h-3 text-amber-400" />
             </Button>
           )}

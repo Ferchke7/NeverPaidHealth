@@ -286,11 +286,11 @@ export const TodoCalendarPage: React.FC = () => {
   // Filter tabs for daily view
   const filterTabs = useMemo(
     () => [
-      { id: 'all', label: 'Все', badge: todos.length },
-      { id: 'active', label: 'Активные', badge: Math.max(0, todos.length - completedTasks) },
-      { id: 'completed', label: 'Готовые', badge: completedTasks },
+      { id: 'all', label: t('todo.filterAll') || 'Все', badge: todos.length },
+      { id: 'active', label: t('todo.filterActive') || 'Активные', badge: Math.max(0, todos.length - completedTasks) },
+      { id: 'completed', label: t('todo.filterCompleted') || 'Готовые', badge: completedTasks },
     ],
-    [todos.length, completedTasks]
+    [todos.length, completedTasks, t]
   );
 
   const monthTodos = Array.isArray(monthSchedule?.todos) ? monthSchedule.todos : [];
@@ -312,7 +312,7 @@ export const TodoCalendarPage: React.FC = () => {
                   {t('todo.title') || 'План и расписание'}
                 </h1>
                 <p className="text-[11px] text-zinc-400 truncate">
-                  {isSelectedToday ? 'Сегодня' : selectedDate} • {completedTasks} из {totalTasks} задач выполнено
+                  {isSelectedToday ? t('todo.today') || 'Сегодня' : selectedDate} • {t('todo.completedOf', { completed: completedTasks, total: totalTasks }) || `${completedTasks} из ${totalTasks} задач выполнено`}
                 </p>
               </div>
             </div>
@@ -483,7 +483,7 @@ export const TodoCalendarPage: React.FC = () => {
           ) : filteredTodos.length === 0 ? (
             <Card className="p-8 text-center bg-dark-900 border-dark-800 rounded-3xl shadow-xl">
               <p className="text-xs text-zinc-400">
-                Нет задач, соответствующих выбранному фильтру «{taskFilter}».
+                {t('todo.noFilteredTasks', { filter: taskFilter }) || `Нет задач, соответствующих выбранному фильтру «${taskFilter}».`}
               </p>
             </Card>
           ) : (

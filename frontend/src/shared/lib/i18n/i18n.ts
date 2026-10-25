@@ -26,6 +26,9 @@ export const useI18nStore = create<I18nState>()(
         if (typeof localStorage !== 'undefined') {
           localStorage.setItem('np_app_lang', lang);
         }
+        if (typeof document !== 'undefined') {
+          document.documentElement.lang = lang;
+        }
         set({ language: lang });
       },
 

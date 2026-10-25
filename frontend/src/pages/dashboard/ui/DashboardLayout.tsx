@@ -96,10 +96,10 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
 
   // Secondary mobile quick navigation pills (accessible under header on mobile)
   const secondaryMobilePills: { id: NavTab; label: string; icon: React.ReactNode }[] = [
-    { id: 'programs', label: 'Программы', icon: <BookOpen className="w-3 h-3" /> },
-    { id: 'exercises', label: 'База упражнений', icon: <Layers className="w-3 h-3" /> },
-    { id: 'history', label: 'История', icon: <History className="w-3 h-3" /> },
-    { id: 'body', label: 'Замеры тела', icon: <Scale className="w-3 h-3" /> },
+    { id: 'programs', label: t('nav.programs') || 'Programs', icon: <BookOpen className="w-3 h-3" /> },
+    { id: 'exercises', label: t('exercises.title') || 'Exercises', icon: <Layers className="w-3 h-3" /> },
+    { id: 'history', label: t('history.title') || 'History', icon: <History className="w-3 h-3" /> },
+    { id: 'body', label: t('body.title') || 'Body', icon: <Scale className="w-3 h-3" /> },
   ];
 
   return (
@@ -126,7 +126,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               <Dumbbell className="w-4 h-4" />
             </div>
             <span className="font-black text-base tracking-tight text-white hidden sm:inline">
-              NeverPaid<span className="text-brand-400">Health</span>
+              duda<span className="text-brand-400">.uz</span>
             </span>
           </button>
 
@@ -180,10 +180,10 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
             size="sm"
             onClick={() => setIsFeedbackOpen(true)}
             className="gap-1 text-xs font-semibold"
-            title="Оставить отзыв или баг-репорт"
+            title={t('nav.feedbackTitle') || 'Feedback'}
           >
             <MessageSquarePlus className="w-3.5 h-3.5 text-brand-400" />
-            <span className="hidden sm:inline">Фидбек</span>
+            <span className="hidden sm:inline">{t('nav.feedback') || 'Feedback'}</span>
           </Button>
 
           <PWAInstallButton className="hidden lg:flex" />
