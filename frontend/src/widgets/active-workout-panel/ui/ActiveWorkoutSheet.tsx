@@ -35,6 +35,7 @@ import { ExerciseInfoModal } from '../../../features/exercise-detail/ui/Exercise
 import { HelpCircle } from 'lucide-react';
 import { useTranslation } from '../../../shared/lib/i18n/i18n.ts';
 import { FloatingActiveWorkoutPill } from './FloatingActiveWorkoutPill.tsx';
+import { playSetCompleteSound, playTaskUncheckSound } from '../../../shared/lib/audio/soundEffects.ts';
 
 export const ActiveWorkoutSheet: React.FC = () => {
   const { t, language } = useTranslation();
@@ -886,8 +887,11 @@ export const ActiveWorkoutSheet: React.FC = () => {
                               const willBeCompleted = !set.completed;
                               updateSet(exercise.instanceId, set.id, { completed: willBeCompleted });
                               if (willBeCompleted) {
+                                playSetCompleteSound();
                                 const defaultRestSecs = Number(localStorage.getItem('np_default_rest_secs')) || 90;
                                 useRestTimerStore.getState().startTimer(defaultRestSecs);
+                              } else {
+                                playTaskUncheckSound();
                               }
                             }}
                           />

@@ -52,7 +52,7 @@ func (p *CompositeAIProvider) callGeminiTextNutrition(ctx context.Context, descr
 		langTarget = "English"
 	}
 
-	prompt := fmt.Sprintf(`You are an elite AI sports nutritionist and precision nutrition calculation engine for the NeverPaidHealth (duda.uz) fitness ecosystem.
+	prompt := fmt.Sprintf(`You are an elite AI sports nutritionist and precision nutrition calculation engine for the NeverPaidHealth fitness ecosystem.
 Analyze the user's meal description and return STRICTLY valid JSON without code fences or extra text.
 
 Target Language: %s. All string fields ("meal_name", item "name", "visual_description", "advice") MUST be written in %s.

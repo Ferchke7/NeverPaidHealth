@@ -6,6 +6,7 @@ import { t } from '../../../shared/lib/i18n/i18n.ts';
 import { toLocalDateKey } from '../../../shared/lib/dates.ts';
 import { queryClient } from '../../../app/providers/QueryProvider.tsx';
 import { invalidateTodoQueries } from '../../../entities/todo/api/todoQueries.ts';
+import { playFocusChimeSound } from '../../../shared/lib/audio/soundEffects.ts';
 
 export type TimerMode = 'pomodoro' | 'target_timer' | 'stopwatch';
 export type PomodoroPhase = 'work' | 'short_break' | 'long_break';
@@ -129,39 +130,9 @@ interface FocusTimerState {
   requestNotificationPermission: () => Promise<void>;
 }
 
-// Web Audio API chime with multi-tone synthesis
+// Web Audio API chime delegate
 function playChimeSound(type: 'complete' | 'break' | 'work') {
-  try {
-    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-    if (!AudioContextClass) return;
-    const ctx = new AudioContextClass();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-
-    const now = ctx.currentTime;
-    if (type === 'work') {
-      osc.frequency.setValueAtTime(587.33, now); // D5
-      osc.frequency.exponentialRampToValueAtTime(880, now + 0.25); // A5
-    } else if (type === 'break') {
-      osc.frequency.setValueAtTime(880, now);
-      osc.frequency.exponentialRampToValueAtTime(587.33, now + 0.25);
-    } else {
-      osc.frequency.setValueAtTime(523.25, now); // C5
-      osc.frequency.exponentialRampToValueAtTime(659.25, now + 0.15); // E5
-      osc.frequency.exponentialRampToValueAtTime(783.99, now + 0.35); // G5
-    }
-
-    gain.gain.setValueAtTime(0.3, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
-
-    osc.start(now);
-    osc.stop(now + 0.6);
-  } catch {
-    // AudioContext blocked
-  }
+  playFocusChimeSound(type);
 }
 
 function sendBrowserNotification(title: string, body: string) {
