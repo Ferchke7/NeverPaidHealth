@@ -19,8 +19,10 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useActiveWorkoutStore } from '../../../entities/workout/model/activeWorkoutStore.ts';
 import { useRestTimerStore } from '../../../entities/workout/model/restTimerStore.ts';
 import { useExerciseNotesStore } from '../../../entities/workout/model/exerciseNotesStore.ts';
-import { PreviousExerciseNote } from '../../../entities/workout/model/types.ts';
+import { PreviousExerciseNote, WorkoutHistoryItem } from '../../../entities/workout/model/types.ts';
 import { SetRow, PreviousSetData } from '../../../entities/workout/ui/SetRow.tsx';
+import { ExerciseSetHistoryModal } from '../../../entities/workout/ui/ExerciseSetHistoryModal.tsx';
+import { extractExerciseHistory, HistoricalSetRecord } from '../../../entities/workout/model/setHistory.ts';
 import { ExercisePickerModal } from '../../../features/exercise-picker/ui/ExercisePickerModal.tsx';
 import { Exercise } from '../../../entities/exercise/model/types.ts';
 import { Button } from '../../../shared/ui/button.tsx';
@@ -149,6 +151,24 @@ export const ActiveWorkoutSheet: React.FC = () => {
     },
     enabled: (exerciseIds.length > 0 || exerciseNames.length > 0) && isOpen,
   });
+
+  // Fetch full workouts history to extract set-level records and PRs for active exercises
+  const { data: workoutsHistoryData } = useQuery<{ items: WorkoutHistoryItem[] }>({
+    queryKey: ['workouts'],
+    queryFn: () => apiClient<{ items: WorkoutHistoryItem[] }>('/workouts?limit=100'),
+    enabled: isOpen,
+    staleTime: 60_000,
+  });
+
+  const [historyModalState, setHistoryModalState] = useState<{
+    isOpen: boolean;
+    exerciseName: string;
+    exerciseId?: string;
+    instanceId: string;
+    setNumber?: number;
+    activeSetId?: string;
+    history: HistoricalSetRecord[];
+  } | null>(null);
 
   const previousExerciseMap = useMemo(() => {
     const map = new Map<string, PreviousSetData[]>();
@@ -868,35 +888,56 @@ export const ActiveWorkoutSheet: React.FC = () => {
 
                     {/* Set Rows List */}
                     <div className="space-y-1.5">
-                      {exercise.sets.map((set, sIdx) => {
-                        const prevSet = prevList && prevList[sIdx]
-                          ? prevList[sIdx]
-                          : prevList && prevList.length > 0
-                          ? prevList[prevList.length - 1]
-                          : null;
-
-                        return (
-                          <SetRow
-                            key={set.id || sIdx}
-                            set={set}
-                            previousSet={prevSet}
-                            measurementType={exercise.measurementType}
-                            onUpdate={(updates) => updateSet(exercise.instanceId, set.id, updates)}
-                            onDelete={() => removeSet(exercise.instanceId, set.id)}
-                            onCompleteToggle={() => {
-                              const willBeCompleted = !set.completed;
-                              updateSet(exercise.instanceId, set.id, { completed: willBeCompleted });
-                              if (willBeCompleted) {
-                                playSetCompleteSound();
-                                const defaultRestSecs = Number(localStorage.getItem('np_default_rest_secs')) || 90;
-                                useRestTimerStore.getState().startTimer(defaultRestSecs);
-                              } else {
-                                playTaskUncheckSound();
-                              }
-                            }}
-                          />
+                      {(() => {
+                        const exerciseHistory = extractExerciseHistory(
+                          workoutsHistoryData?.items,
+                          exercise.exerciseId,
+                          exercise.exerciseName,
+                          Array.isArray(prevList) ? prevList : null
                         );
-                      })}
+
+                        return exercise.sets.map((set, sIdx) => {
+                          const prevSet = prevList && prevList[sIdx]
+                            ? prevList[sIdx]
+                            : prevList && prevList.length > 0
+                            ? prevList[prevList.length - 1]
+                            : null;
+
+                          return (
+                            <SetRow
+                              key={set.id || sIdx}
+                              set={set}
+                              previousSet={prevSet}
+                              measurementType={exercise.measurementType}
+                              allExerciseHistory={exerciseHistory}
+                              onOpenHistoryMenu={(setNum) => {
+                                setHistoryModalState({
+                                  isOpen: true,
+                                  exerciseName: exercise.exerciseName,
+                                  exerciseId: exercise.exerciseId,
+                                  instanceId: exercise.instanceId,
+                                  setNumber: setNum,
+                                  activeSetId: set.id,
+                                  history: exerciseHistory,
+                                });
+                              }}
+                              onUpdate={(updates) => updateSet(exercise.instanceId, set.id, updates)}
+                              onDelete={() => removeSet(exercise.instanceId, set.id)}
+                              onCompleteToggle={() => {
+                                const willBeCompleted = !set.completed;
+                                updateSet(exercise.instanceId, set.id, { completed: willBeCompleted });
+                                if (willBeCompleted) {
+                                  playSetCompleteSound();
+                                  const defaultRestSecs = Number(localStorage.getItem('np_default_rest_secs')) || 90;
+                                  useRestTimerStore.getState().startTimer(defaultRestSecs);
+                                } else {
+                                  playTaskUncheckSound();
+                                }
+                              }}
+                            />
+                          );
+                        });
+                      })()}
                     </div>
 
                     {/* Add Set & Warmup Buttons */}
@@ -982,6 +1023,25 @@ export const ActiveWorkoutSheet: React.FC = () => {
           isOpen={true}
           onClose={() => setInspectingExerciseName(null)}
           exerciseName={inspectingExerciseName}
+        />
+      )}
+
+      {/* Exercise Set History & Records Modal (Отдельное меню) */}
+      {historyModalState?.isOpen && (
+        <ExerciseSetHistoryModal
+          isOpen={true}
+          onClose={() => setHistoryModalState(null)}
+          exerciseName={historyModalState.exerciseName}
+          initialSetNumber={historyModalState.setNumber}
+          history={historyModalState.history}
+          onApplyValues={(wKg, r) => {
+            if (historyModalState.instanceId && historyModalState.activeSetId) {
+              updateSet(historyModalState.instanceId, historyModalState.activeSetId, {
+                weightKg: wKg,
+                reps: r,
+              });
+            }
+          }}
         />
       )}
 
