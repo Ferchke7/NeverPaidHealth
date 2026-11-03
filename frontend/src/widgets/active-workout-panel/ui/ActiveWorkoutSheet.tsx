@@ -22,13 +22,14 @@ import { useExerciseNotesStore } from '../../../entities/workout/model/exerciseN
 import { PreviousExerciseNote, WorkoutHistoryItem } from '../../../entities/workout/model/types.ts';
 import { SetRow, PreviousSetData } from '../../../entities/workout/ui/SetRow.tsx';
 import { ExerciseSetHistoryModal } from '../../../entities/workout/ui/ExerciseSetHistoryModal.tsx';
-import { extractExerciseHistory, HistoricalSetRecord } from '../../../entities/workout/model/setHistory.ts';
+import { extractExerciseHistory, normalizeExerciseName, HistoricalSetRecord } from '../../../entities/workout/model/setHistory.ts';
 import { ExercisePickerModal } from '../../../features/exercise-picker/ui/ExercisePickerModal.tsx';
 import { Exercise } from '../../../entities/exercise/model/types.ts';
 import { Button } from '../../../shared/ui/button.tsx';
 import { Modal } from '../../../shared/ui/modal.tsx';
 import { formatDate, formatDuration } from '../../../shared/lib/dates.ts';
 import { formatWeight } from '../../../shared/lib/units.ts';
+import { workoutHistoryStorage } from '../../../entities/workout/api/workoutHistoryStorage.ts';
 import { useAuthStore } from '../../../entities/user/model/authStore.ts';
 import { apiClient } from '../../../shared/api/client.ts';
 import { WorkoutSummaryModal, FinishedWorkoutSummary } from '../../workout-summary-modal/ui/WorkoutSummaryModal.tsx';
@@ -155,10 +156,29 @@ export const ActiveWorkoutSheet: React.FC = () => {
   // Fetch full workouts history to extract set-level records and PRs for active exercises
   const { data: workoutsHistoryData } = useQuery<{ items: WorkoutHistoryItem[] }>({
     queryKey: ['workouts'],
-    queryFn: () => apiClient<{ items: WorkoutHistoryItem[] }>('/workouts?limit=100'),
+    queryFn: async () => {
+      try {
+        const res = await apiClient<{ items: WorkoutHistoryItem[] }>('/workouts?limit=100');
+        if (res && Array.isArray(res.items)) return res;
+      } catch {
+        // Fallback to local storage
+      }
+      return { items: workoutHistoryStorage.getAll() };
+    },
     enabled: isOpen,
     staleTime: 60_000,
   });
+
+  const allWorkoutsHistory = useMemo(() => {
+    const local = workoutHistoryStorage.getAll();
+    const server = Array.isArray(workoutsHistoryData?.items) ? workoutsHistoryData.items : [];
+    const map = new Map<string, WorkoutHistoryItem>();
+    for (const w of local) map.set(w.id, w);
+    for (const w of server) map.set(w.id, w);
+    return Array.from(map.values()).sort(
+      (a, b) => new Date(b.started_at).getTime() - new Date(a.started_at).getTime()
+    );
+  }, [workoutsHistoryData]);
 
   const [historyModalState, setHistoryModalState] = useState<{
     isOpen: boolean;
@@ -172,6 +192,39 @@ export const ActiveWorkoutSheet: React.FC = () => {
 
   const previousExerciseMap = useMemo(() => {
     const map = new Map<string, PreviousSetData[]>();
+
+    // 1. First seed from allWorkoutsHistory (offline-first recent session sets)
+    for (const w of allWorkoutsHistory) {
+      if (!w.exercises || w.status === 'in_progress' || w.status === 'cancelled') continue;
+      for (const ex of w.exercises) {
+        const completedSets = (ex.sets || [])
+          .filter((s) => s.completed !== false && (Number(s.weight_kg ?? 0) > 0 || Number(s.reps ?? 0) > 0))
+          .sort((a, b) => (a.set_number || 1) - (b.set_number || 1))
+          .map((s) => ({
+            weightKg: Number(s.weight_kg ?? 0),
+            weight_kg: Number(s.weight_kg ?? 0),
+            reps: Number(s.reps ?? 0),
+          }));
+
+        if (completedSets.length === 0) continue;
+
+        const candidateKeys = [
+          ex.exercise_id?.toLowerCase().trim(),
+          ex.exercise_name?.toLowerCase().trim(),
+          ex.exercise_name ? normalizeExerciseName(ex.exercise_name) : null,
+          ex.exercise_id ? ex.exercise_id.replace(/[^a-z0-9а-яё]/gi, '') : null,
+          ex.exercise_name ? ex.exercise_name.replace(/[^a-z0-9а-яё]/gi, '').toLowerCase() : null,
+        ].filter(Boolean) as string[];
+
+        for (const k of candidateKeys) {
+          if (!map.has(k)) {
+            map.set(k, completedSets);
+          }
+        }
+      }
+    }
+
+    // 2. Server previousData enriches or overrides if available
     if (previousData?.items) {
       for (const [key, sets] of Object.entries(previousData.items)) {
         if (!sets || sets.length === 0) continue;
@@ -180,11 +233,11 @@ export const ActiveWorkoutSheet: React.FC = () => {
         const cleanKey = lowerKey.replace(/[^a-z0-9а-яё]/gi, '');
         if (cleanKey) map.set(cleanKey, sets);
         const baseKey = lowerKey.replace(/\s*\([^)]*\)/g, '').replace(/[^a-z0-9а-яё]/gi, '').trim();
-        if (baseKey && !map.has(baseKey)) map.set(baseKey, sets);
+        if (baseKey) map.set(baseKey, sets);
       }
     }
     return map;
-  }, [previousData]);
+  }, [allWorkoutsHistory, previousData]);
 
   // Merge previous notes from backend + local storage cache
   const previousNotesMap = useMemo(() => {
@@ -257,6 +310,35 @@ export const ActiveWorkoutSheet: React.FC = () => {
 
   const prMap = useMemo(() => {
     const map = new Map<string, { weightKg: number; reps: number }>();
+
+    // 1. Scan allWorkoutsHistory for offline PRs
+    for (const w of allWorkoutsHistory) {
+      if (!w.exercises || w.status === 'in_progress' || w.status === 'cancelled') continue;
+      for (const ex of w.exercises) {
+        for (const s of ex.sets || []) {
+          if (s.completed === false) continue;
+          const wKg = Number(s.weight_kg ?? 0);
+          const reps = Number(s.reps ?? 0);
+          if (wKg <= 0 && reps <= 0) continue;
+          const val = { weightKg: wKg, reps: reps };
+
+          const keys = [
+            ex.exercise_id ? String(ex.exercise_id).toLowerCase().trim() : null,
+            ex.exercise_name ? String(ex.exercise_name).toLowerCase().trim() : null,
+            ex.exercise_name ? normalizeExerciseName(ex.exercise_name) : null,
+          ].filter(Boolean) as string[];
+
+          for (const k of keys) {
+            const existing = map.get(k);
+            if (!existing || wKg > existing.weightKg || (wKg === existing.weightKg && reps > existing.reps)) {
+              map.set(k, val);
+            }
+          }
+        }
+      }
+    }
+
+    // 2. Server recordsData enriches or overrides if available
     if (Array.isArray(recordsData)) {
       for (const rec of recordsData) {
         const w = Number(rec.best_weight_kg) || 0;
@@ -298,7 +380,7 @@ export const ActiveWorkoutSheet: React.FC = () => {
       }
     }
     return map;
-  }, [recordsData]);
+  }, [allWorkoutsHistory, recordsData]);
 
   // Elapsed workout stopwatch
   useEffect(() => {
@@ -429,14 +511,42 @@ export const ActiveWorkoutSheet: React.FC = () => {
         }))
         .filter((ex) => ex.sets.length > 0);
 
-      // 1. Sync finished workout to training service
-      await apiClient(`/workouts/${workout.id}/finish`, {
-        method: 'POST',
-        body: JSON.stringify({
-          duration_seconds: elapsedSeconds,
-          exercises: payloadExercises,
-        }),
-      });
+      // Save locally to workoutHistoryStorage immediately
+      const finishedItem: WorkoutHistoryItem = {
+        id: workout.id,
+        user_id: 'local-user',
+        name: workout.name,
+        started_at: new Date(Date.now() - elapsedSeconds * 1000).toISOString(),
+        ended_at: new Date().toISOString(),
+        status: 'completed',
+        total_volume_kg: liveVolume,
+        exercises: payloadExercises.map((e, idx) => ({
+          exercise_id: e.exercise_id,
+          exercise_name: e.exercise_name,
+          order_index: idx,
+          sets: e.sets.map((s) => ({
+            set_number: s.set_number,
+            set_type: s.set_type,
+            weight_kg: s.weight_kg,
+            reps: s.reps,
+            completed: s.completed,
+          })),
+        })),
+      };
+      workoutHistoryStorage.addWorkout(finishedItem);
+
+      // 1. Try syncing finished workout to training service
+      try {
+        await apiClient(`/workouts/${workout.id}/finish`, {
+          method: 'POST',
+          body: JSON.stringify({
+            duration_seconds: elapsedSeconds,
+            exercises: payloadExercises,
+          }),
+        });
+      } catch (err: any) {
+        console.warn('Backend finish sync warning (saved locally):', err);
+      }
 
       setSummary({
         id: workout.id,
@@ -456,8 +566,7 @@ export const ActiveWorkoutSheet: React.FC = () => {
         queryClient.invalidateQueries({ queryKey: ['dashboard'] }),
       ]);
     } catch (err: any) {
-      console.error('Finish workout API error:', err);
-      alert('Network error while saving workout. Your workout remains safe locally. Please retry.');
+      console.error('Finish workout error:', err);
     } finally {
       setIsSubmitting(false);
     }
@@ -890,7 +999,7 @@ export const ActiveWorkoutSheet: React.FC = () => {
                     <div className="space-y-1.5">
                       {(() => {
                         const exerciseHistory = extractExerciseHistory(
-                          workoutsHistoryData?.items,
+                          allWorkoutsHistory,
                           exercise.exerciseId,
                           exercise.exerciseName,
                           Array.isArray(prevList) ? prevList : null

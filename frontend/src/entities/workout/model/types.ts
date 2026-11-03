@@ -38,9 +38,11 @@ export interface ActiveWorkout {
 
 export interface WorkoutHistoryItem {
   id: string;
+  user_id?: string;
   name: string;
   status: string;
   started_at: string;
+  ended_at?: string;
   finished_at?: string;
   total_volume_kg?: number;
   completed_sets_count?: number;
@@ -49,8 +51,9 @@ export interface WorkoutHistoryItem {
     exercise_id: string;
     exercise_name: string;
     notes?: string;
+    order_index?: number;
     sets: {
-      id: string;
+      id?: string;
       set_number: number;
       set_type: SetType;
       weight_kg: number;

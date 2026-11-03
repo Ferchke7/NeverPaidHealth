@@ -5,7 +5,6 @@ import {
   ArrowDownToLine,
   ChevronDown,
   ChevronUp,
-  Trophy,
   History,
   Calendar,
   ExternalLink,
@@ -13,7 +12,7 @@ import {
 import { ActiveSet, SetType } from '../model/types.ts';
 import { calculateE1RM, formatWeight } from '../../../shared/lib/units.ts';
 import { useAuthStore } from '../../user/model/authStore.ts';
-import { HistoricalSetRecord, getTop3BestForSet } from '../model/setHistory.ts';
+import { HistoricalSetRecord, getLast3RecentForSet } from '../model/setHistory.ts';
 import { useTranslation } from '../../../shared/lib/i18n/i18n.ts';
 import { formatDate } from '../../../shared/lib/dates.ts';
 
@@ -74,14 +73,14 @@ export const SetRow: React.FC<SetRowProps> = ({
       : `${prevReps} reps`
     : '—';
 
-  // Compute top 3 best records for this set number
-  const { topRecords, isFallback } = useMemo(() => {
-    return getTop3BestForSet(allExerciseHistory, set.setNumber);
+  // Compute the 3 most recent performances for this set number
+  const { recentRecords, isFallback } = useMemo(() => {
+    return getLast3RecentForSet(allExerciseHistory, set.setNumber);
   }, [allExerciseHistory, set.setNumber]);
 
-  // Fallback to previousSet if topRecords is empty
+  // Fallback to previousSet if recentRecords is empty
   const effectiveTopRecords = useMemo(() => {
-    if (topRecords.length > 0) return topRecords;
+    if (recentRecords.length > 0) return recentRecords;
     if (hasPrevious) {
       const calc1RM = calculateE1RM(prevWeight, prevReps) ?? prevWeight;
       return [
@@ -99,7 +98,7 @@ export const SetRow: React.FC<SetRowProps> = ({
       ];
     }
     return [];
-  }, [topRecords, hasPrevious, prevWeight, prevReps, set.setNumber, set.setType]);
+  }, [recentRecords, hasPrevious, prevWeight, prevReps, set.setNumber, set.setType]);
 
   const handleApply = (record: HistoricalSetRecord, key: string) => {
     onUpdate({
@@ -267,17 +266,17 @@ export const SetRow: React.FC<SetRowProps> = ({
         </div>
       </div>
 
-      {/* Expanded Section: Top 3 Best Records + Separate Menu Trigger */}
+      {/* Expanded Section: Last 3 Results (3 последних результата для этого сета) */}
       {isExpanded && (
         <div className="mt-1.5 p-2.5 sm:p-3 rounded-2xl bg-dark-900/95 border border-brand-500/35 shadow-xl space-y-2 animate-in fade-in slide-in-from-top-1 duration-200">
           {/* Header */}
           <div className="flex items-center justify-between border-b border-dark-800 pb-1.5">
             <div className="flex items-center gap-1.5 text-xs font-bold text-amber-300">
-              <Trophy className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+              <History className="w-3.5 h-3.5 text-amber-400 shrink-0" />
               <span className="truncate">
                 {isFallback
-                  ? t('activeWorkout.setRecordsFallbackTitle')
-                  : t('activeWorkout.setRecordsTitle', { number: set.setNumber })}
+                  ? t('activeWorkout.setRecordsFallbackTitle') || 'Последние результаты'
+                  : t('activeWorkout.setRecordsTitle', { number: set.setNumber }) || `Последние 3 раза (Сет #${set.setNumber})`}
               </span>
             </div>
 
@@ -291,7 +290,7 @@ export const SetRow: React.FC<SetRowProps> = ({
             </button>
           </div>
 
-          {/* List of 3 Best Records */}
+          {/* List of 3 Recent Performances */}
           {effectiveTopRecords.length === 0 ? (
             <div className="py-2.5 text-center text-zinc-500 text-[11px]">
               {t('activeWorkout.noRecordsYet')}
@@ -301,17 +300,16 @@ export const SetRow: React.FC<SetRowProps> = ({
               {effectiveTopRecords.map((rec, rIdx) => {
                 const uniqueKey = `${rec.workoutId}-${rec.setNumber}-${rIdx}`;
                 const isApplied = appliedRecordKey === uniqueKey;
-                const medal = rIdx === 0 ? '🥇' : rIdx === 1 ? '🥈' : '🥉';
 
                 return (
                   <div
                     key={uniqueKey}
                     className="p-2 rounded-xl bg-dark-850/90 border border-dark-750 hover:border-dark-600 flex items-center justify-between gap-2 transition-all"
                   >
-                    {/* Left: Medal + Performance */}
+                    {/* Left: Number + Performance */}
                     <div className="flex items-center gap-2.5 min-w-0">
-                      <span className="text-sm select-none shrink-0" title={`Top ${rIdx + 1}`}>
-                        {medal}
+                      <span className="w-5 h-5 rounded-md bg-dark-800 text-zinc-300 text-xs font-mono font-bold flex items-center justify-center shrink-0">
+                        {rIdx + 1}
                       </span>
                       <div className="min-w-0">
                         <div className="flex items-baseline gap-1.5">

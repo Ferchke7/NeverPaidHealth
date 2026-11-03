@@ -33,8 +33,8 @@ export const ExerciseSetHistoryModal: React.FC<ExerciseSetHistoryModalProps> = (
     initialSetNumber !== undefined ? initialSetNumber : null
   );
 
-  // Sort: 'best' (1RM) or 'date' (most recent)
-  const [sortBy, setSortBy] = useState<'best' | 'date'>('best');
+  // Sort: 'date' (most recent sessions first) or 'best' (1RM)
+  const [sortBy, setSortBy] = useState<'best' | 'date'>('date');
   const [appliedId, setAppliedId] = useState<string | null>(null);
 
   // PR Summary

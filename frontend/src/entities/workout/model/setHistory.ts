@@ -105,6 +105,53 @@ export function extractExerciseHistory(
 }
 
 /**
+ * Returns the last 3 most recent performances for this set number (or exercise).
+ * Sorted strictly by date descending (most recent session first).
+ */
+export function getLast3RecentForSet(
+  allRecords: HistoricalSetRecord[],
+  setNumber: number
+): { recentRecords: HistoricalSetRecord[]; isFallback: boolean } {
+  if (!allRecords || allRecords.length === 0) {
+    return { recentRecords: [], isFallback: false };
+  }
+
+  const sortByDateDesc = (a: HistoricalSetRecord, b: HistoricalSetRecord) =>
+    new Date(b.date).getTime() - new Date(a.date).getTime();
+
+  // 1. Search for this exact set number in recent sessions
+  const exactSet = allRecords.filter((r) => r.setNumber === setNumber).sort(sortByDateDesc);
+
+  const uniqueExact: HistoricalSetRecord[] = [];
+  const seenWorkouts = new Set<string>();
+  for (const r of exactSet) {
+    if (!seenWorkouts.has(r.workoutId)) {
+      seenWorkouts.add(r.workoutId);
+      uniqueExact.push(r);
+      if (uniqueExact.length >= 3) break;
+    }
+  }
+
+  if (uniqueExact.length > 0) {
+    return { recentRecords: uniqueExact, isFallback: false };
+  }
+
+  // 2. Fallback: recent performances for this exercise across any set
+  const allSorted = [...allRecords].sort(sortByDateDesc);
+  const fallbackList: HistoricalSetRecord[] = [];
+  const seenAll = new Set<string>();
+  for (const r of allSorted) {
+    if (!seenAll.has(r.workoutId)) {
+      seenAll.add(r.workoutId);
+      fallbackList.push(r);
+      if (fallbackList.length >= 3) break;
+    }
+  }
+
+  return { recentRecords: fallbackList, isFallback: fallbackList.length > 0 };
+}
+
+/**
  * Returns the top 3 best performances for a specific set number.
  * Sorts primarily by calculated 1RM (or weight if bodyweight), then reps, then recency.
  */

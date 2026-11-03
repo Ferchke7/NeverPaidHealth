@@ -400,9 +400,9 @@ export const uz = {
   'activeWorkout.totalSets': 'Bajarilgan yondashuvlar',
   'activeWorkout.duration': 'Vaqt',
   'activeWorkout.emptyWorkoutWarning': 'Mashg‘ulotni tugatishdan oldin kamida bitta yondashuvni yozing.',
-  'activeWorkout.setRecordsTitle': 'Set #{number} dagi eng yaxshi 3 ta natija',
-  'activeWorkout.setRecordsFallbackTitle': 'Ushbu mashq bo‘yicha eng yaxshi natijalar',
-  'activeWorkout.recordsInSet': 'Set rekordlari',
+  'activeWorkout.setRecordsTitle': 'So‘nggi 3 ta natija (Set #{number})',
+  'activeWorkout.setRecordsFallbackTitle': 'So‘nggi natijalar',
+  'activeWorkout.recordsInSet': 'So‘nggi natijalar',
   'activeWorkout.applyRecord': 'Qo‘llash',
   'activeWorkout.applied': 'Kiritildi!',
   'activeWorkout.openHistoryMenu': 'Barcha setlar tarixi alohida menyuda',
@@ -417,7 +417,7 @@ export const uz = {
   'activeWorkout.bestWeight': 'Eng yaxshi vazn',
   'activeWorkout.totalCompleted': 'Jami bajarilgan',
   'activeWorkout.noHistoryFound': 'Ushbu mashq uchun hali setlar tarixi yo‘q.',
-  'activeWorkout.historyHint': 'Eng yaxshi 3 ta natijani ko‘rish uchun set yoki PREV ustiga bosing',
+  'activeWorkout.historyHint': 'So‘nggi 3 ta natijani ko‘rish uchun set yoki PREV ustiga bosing',
 
   // Mashqlar
   'exercises.title': 'Mashqlar bazasi',
