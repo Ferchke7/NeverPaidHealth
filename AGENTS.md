@@ -56,3 +56,7 @@ You are developing **NeverPaidHealth**, a free, local-first and microservices-ba
      - `Tabs` (`@/shared/ui/tabs.tsx`)
    - Absolutely **NEVER** write raw HTML `<button className="...">`, raw styled `<div>` cards, raw `<span>` chips, or hand-rolled `<div className="fixed inset-0...">` modal overlays.
    - Always compose cleanly using the design system primitives with consistent spacing and typography tokens.
+
+## 9. Mandatory 1-to-1 Web & Mobile Synchronization (Cross-Repo Law)
+- **Universal Feature Parity:** Whenever ANY feature, user flow, UX interaction, record calculation, or improvement is added or modified in `NeverPaidHealth/frontend`, the EXACT same feature MUST be simultaneously and mandatory mirrored in the Kotlin Compose Multiplatform mobile version at `C:\Users\ferda\OneDrive\Desktop\duda-mobile`.
+- **Zero Missing Capabilities:** Set record expansions, top-3 best performance tracking, separate history bottom sheets, plate calculation hints, date-isolated todos, Pomodoro timers, nutrition tracking with AI, program comments with Instagram-style bottom sheets, and trilingual i18n (`RU`/`UZ`/`EN`) must remain 100% identical in functionality and feel across both web and mobile. Both clients represent the exact same product: **`duda.uz`**.
