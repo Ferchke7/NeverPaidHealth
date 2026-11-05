@@ -122,33 +122,32 @@ export function getLast3RecentForSet(
   // 1. Search for this exact set number in recent sessions
   const exactSet = allRecords.filter((r) => r.setNumber === setNumber).sort(sortByDateDesc);
 
-  const uniqueExact: HistoricalSetRecord[] = [];
-  const seenWorkouts = new Set<string>();
+  const result: HistoricalSetRecord[] = [];
+  const seenKeys = new Set<string>();
+
   for (const r of exactSet) {
-    if (!seenWorkouts.has(r.workoutId)) {
-      seenWorkouts.add(r.workoutId);
-      uniqueExact.push(r);
-      if (uniqueExact.length >= 3) break;
+    const key = `${r.workoutId}-${r.setNumber}`;
+    if (!seenKeys.has(key)) {
+      seenKeys.add(key);
+      result.push(r);
+      if (result.length >= 3) break;
     }
   }
 
-  if (uniqueExact.length > 0) {
-    return { recentRecords: uniqueExact, isFallback: false };
-  }
-
-  // 2. Fallback: recent performances for this exercise across any set
-  const allSorted = [...allRecords].sort(sortByDateDesc);
-  const fallbackList: HistoricalSetRecord[] = [];
-  const seenAll = new Set<string>();
-  for (const r of allSorted) {
-    if (!seenAll.has(r.workoutId)) {
-      seenAll.add(r.workoutId);
-      fallbackList.push(r);
-      if (fallbackList.length >= 3) break;
+  // 2. If fewer than 3 records found for this exact set number, pull other sets of this exercise
+  if (result.length < 3) {
+    const allSorted = [...allRecords].sort(sortByDateDesc);
+    for (const r of allSorted) {
+      const key = `${r.workoutId}-${r.setNumber}`;
+      if (!seenKeys.has(key)) {
+        seenKeys.add(key);
+        result.push(r);
+        if (result.length >= 3) break;
+      }
     }
   }
 
-  return { recentRecords: fallbackList, isFallback: fallbackList.length > 0 };
+  return { recentRecords: result, isFallback: result.length > exactSet.length };
 }
 
 /**

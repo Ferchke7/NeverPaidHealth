@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   extractExerciseHistory,
   getTop3BestForSet,
+  getLast3RecentForSet,
   getAllTimeExercisePR,
   normalizeExerciseName,
 } from './setHistory.ts';
@@ -127,5 +128,39 @@ describe('setHistory logic', () => {
     expect(prs.bestReps).toBe(8);
     expect(prs.bestRecord).not.toBeNull();
     expect(prs.totalSets).toBe(8);
+  });
+
+  it('returns last 3 recent sessions for set, pulling from other sets if fewer than 3 exact sets exist', () => {
+    const singleWorkoutMock: WorkoutHistoryItem[] = [
+      {
+        id: 'w-single',
+        name: 'Push 2',
+        status: 'finished',
+        started_at: '2026-11-01T10:00:00Z',
+        exercises: [
+          {
+            exercise_id: 'ex-cable-cross',
+            exercise_name: 'Cable Upper Chest Crossover',
+            sets: [
+              { id: 's1', set_number: 1, set_type: 'normal', weight_kg: 25, reps: 12, completed: true },
+              { id: 's2', set_number: 2, set_type: 'normal', weight_kg: 25, reps: 12, completed: true },
+              { id: 's3', set_number: 3, set_type: 'normal', weight_kg: 20, reps: 12, completed: true },
+            ],
+          },
+        ],
+      },
+    ];
+
+    const records = extractExerciseHistory(singleWorkoutMock, 'ex-cable-cross', 'Cable Upper Chest Crossover');
+    expect(records.length).toBe(3);
+
+    const { recentRecords } = getLast3RecentForSet(records, 1);
+    expect(recentRecords.length).toBe(3);
+    expect(recentRecords[0].weightKg).toBe(25);
+    expect(recentRecords[0].reps).toBe(12);
+    expect(recentRecords[1].weightKg).toBe(25);
+    expect(recentRecords[1].reps).toBe(12);
+    expect(recentRecords[2].weightKg).toBe(20);
+    expect(recentRecords[2].reps).toBe(12);
   });
 });

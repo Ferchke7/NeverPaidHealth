@@ -1,6 +1,6 @@
 import { WorkoutHistoryItem } from '../model/types.ts';
 
-const STORAGE_KEY = 'neverpaid_finished_workouts_v3';
+const STORAGE_KEY = 'neverpaid_finished_workouts_v4';
 
 function generatePastDate(daysAgo: number): string {
   const d = new Date();
@@ -215,6 +215,129 @@ const SEED_WORKOUTS: WorkoutHistoryItem[] = [
           { set_number: 1, set_type: 'normal', weight_kg: 85, reps: 8, completed: true },
           { set_number: 2, set_type: 'normal', weight_kg: 82.5, reps: 8, completed: true },
           { set_number: 3, set_type: 'normal', weight_kg: 80, reps: 10, completed: true },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'seed-w-push2-1',
+    user_id: 'local-user',
+    name: 'Push 2 (Jeff Nippard PPL)',
+    started_at: generatePastDate(3),
+    ended_at: generatePastDate(3),
+    status: 'completed',
+    total_volume_kg: 3450,
+    exercises: [
+      {
+        exercise_id: '10000000-0000-0000-0000-000000000013',
+        exercise_name: 'Cable Upper Chest Crossover',
+        sets: [
+          { set_number: 1, set_type: 'normal', weight_kg: 25, reps: 12, completed: true },
+          { set_number: 2, set_type: 'normal', weight_kg: 25, reps: 12, completed: true },
+          { set_number: 3, set_type: 'normal', weight_kg: 20, reps: 12, completed: true },
+        ],
+      },
+      {
+        exercise_id: '70000000-0000-0000-0000-000000000003',
+        exercise_name: 'Cable Rope Overhead Tricep Extension',
+        sets: [
+          { set_number: 1, set_type: 'normal', weight_kg: 50, reps: 12, completed: true },
+          { set_number: 2, set_type: 'normal', weight_kg: 50, reps: 12, completed: true },
+          { set_number: 3, set_type: 'normal', weight_kg: 50, reps: 12, completed: true },
+        ],
+      },
+      {
+        exercise_id: '50000000-0000-0000-0000-000000000008',
+        exercise_name: 'Barbell Military Press',
+        sets: [
+          { set_number: 1, set_type: 'normal', weight_kg: 60, reps: 8, completed: true },
+          { set_number: 2, set_type: 'normal', weight_kg: 60, reps: 8, completed: true },
+          { set_number: 3, set_type: 'normal', weight_kg: 55, reps: 8, completed: true },
+        ],
+      },
+      {
+        exercise_id: '70000000-0000-0000-0000-000000000004',
+        exercise_name: 'Barbell Bench Press (Close Grip)',
+        sets: [
+          { set_number: 1, set_type: 'normal', weight_kg: 75, reps: 10, completed: true },
+          { set_number: 2, set_type: 'normal', weight_kg: 75, reps: 10, completed: true },
+          { set_number: 3, set_type: 'normal', weight_kg: 70, reps: 10, completed: true },
+        ],
+      },
+      {
+        exercise_id: '50000000-0000-0000-0000-000000000010',
+        exercise_name: 'Dumbbell Lateral Raise',
+        sets: [
+          { set_number: 1, set_type: 'normal', weight_kg: 14, reps: 15, completed: true },
+          { set_number: 2, set_type: 'normal', weight_kg: 14, reps: 15, completed: true },
+          { set_number: 3, set_type: 'normal', weight_kg: 12, reps: 15, completed: true },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'seed-w-push2-2',
+    user_id: 'local-user',
+    name: 'Push 2 (Jeff Nippard PPL)',
+    started_at: generatePastDate(7),
+    ended_at: generatePastDate(7),
+    status: 'completed',
+    total_volume_kg: 3300,
+    exercises: [
+      {
+        exercise_id: '10000000-0000-0000-0000-000000000013',
+        exercise_name: 'Cable Upper Chest Crossover',
+        sets: [
+          { set_number: 1, set_type: 'normal', weight_kg: 25, reps: 10, completed: true },
+          { set_number: 2, set_type: 'normal', weight_kg: 22.5, reps: 12, completed: true },
+          { set_number: 3, set_type: 'normal', weight_kg: 20, reps: 10, completed: true },
+        ],
+      },
+      {
+        exercise_id: '70000000-0000-0000-0000-000000000003',
+        exercise_name: 'Cable Rope Overhead Tricep Extension',
+        sets: [
+          { set_number: 1, set_type: 'normal', weight_kg: 47.5, reps: 12, completed: true },
+          { set_number: 2, set_type: 'normal', weight_kg: 47.5, reps: 12, completed: true },
+          { set_number: 3, set_type: 'normal', weight_kg: 45, reps: 12, completed: true },
+        ],
+      },
+      {
+        exercise_id: '50000000-0000-0000-0000-000000000008',
+        exercise_name: 'Barbell Military Press',
+        sets: [
+          { set_number: 1, set_type: 'normal', weight_kg: 57.5, reps: 8, completed: true },
+          { set_number: 2, set_type: 'normal', weight_kg: 57.5, reps: 8, completed: true },
+          { set_number: 3, set_type: 'normal', weight_kg: 55, reps: 8, completed: true },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'seed-w-push2-3',
+    user_id: 'local-user',
+    name: 'Push 2 (Jeff Nippard PPL)',
+    started_at: generatePastDate(12),
+    ended_at: generatePastDate(12),
+    status: 'completed',
+    total_volume_kg: 3100,
+    exercises: [
+      {
+        exercise_id: '10000000-0000-0000-0000-000000000013',
+        exercise_name: 'Cable Upper Chest Crossover',
+        sets: [
+          { set_number: 1, set_type: 'normal', weight_kg: 22.5, reps: 12, completed: true },
+          { set_number: 2, set_type: 'normal', weight_kg: 22.5, reps: 10, completed: true },
+          { set_number: 3, set_type: 'normal', weight_kg: 17.5, reps: 12, completed: true },
+        ],
+      },
+      {
+        exercise_id: '70000000-0000-0000-0000-000000000003',
+        exercise_name: 'Cable Rope Overhead Tricep Extension',
+        sets: [
+          { set_number: 1, set_type: 'normal', weight_kg: 45, reps: 12, completed: true },
+          { set_number: 2, set_type: 'normal', weight_kg: 45, reps: 12, completed: true },
+          { set_number: 3, set_type: 'normal', weight_kg: 42.5, reps: 12, completed: true },
         ],
       },
     ],

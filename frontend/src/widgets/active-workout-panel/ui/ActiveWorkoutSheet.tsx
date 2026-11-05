@@ -81,6 +81,7 @@ export const ActiveWorkoutSheet: React.FC = () => {
   const [inspectingExerciseName, setInspectingExerciseName] = useState<string | null>(null);
   const [expandedNoteIds, setExpandedNoteIds] = useState<Record<string, boolean>>({});
   const [isWorkoutNoteOpen, setIsWorkoutNoteOpen] = useState(false);
+  const [expandedHistoryExerciseId, setExpandedHistoryExerciseId] = useState<string | null>(null);
 
   const noteLabels = {
     unreadBanner:
@@ -989,9 +990,33 @@ export const ActiveWorkoutSheet: React.FC = () => {
                     {/* Table Column Headers: SET | PREVIOUS | +KG | REPS | ✓ */}
                     <div className="grid grid-cols-12 gap-1.5 sm:gap-2 text-[10px] font-extrabold uppercase tracking-wider text-zinc-400 px-2 sm:px-2.5 pb-1 border-b border-dark-800/60 items-center">
                       <span className="col-span-1 text-center">#</span>
-                      <span className="col-span-3 text-center truncate">{t('activeWorkout.previous')}</span>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setExpandedHistoryExerciseId((prev) =>
+                            prev === exercise.instanceId ? null : exercise.instanceId
+                          )
+                        }
+                        className="col-span-3 text-center truncate hover:text-brand-300 transition-colors cursor-pointer flex items-center justify-center gap-0.5"
+                        title="Показать / скрыть последние 3 результата"
+                      >
+                        <span>{t('activeWorkout.previous')}</span>
+                        <ChevronDown className="w-2.5 h-2.5 text-zinc-500" />
+                      </button>
                       <span className="col-span-3 text-center">{unitPref === 'lb' ? '+LBS' : '+KG'}</span>
-                      <span className="col-span-3 text-center truncate">{t('activeWorkout.reps')}</span>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setExpandedHistoryExerciseId((prev) =>
+                            prev === exercise.instanceId ? null : exercise.instanceId
+                          )
+                        }
+                        className="col-span-3 text-center truncate hover:text-brand-300 transition-colors cursor-pointer flex items-center justify-center gap-0.5"
+                        title="Показать / скрыть последние 3 результата"
+                      >
+                        <span>{t('activeWorkout.reps')}</span>
+                        <ChevronDown className="w-2.5 h-2.5 text-zinc-500" />
+                      </button>
                       <span className="col-span-2 text-center">✓</span>
                     </div>
 
@@ -1019,6 +1044,7 @@ export const ActiveWorkoutSheet: React.FC = () => {
                               previousSet={prevSet}
                               measurementType={exercise.measurementType}
                               allExerciseHistory={exerciseHistory}
+                              forceExpanded={expandedHistoryExerciseId === exercise.instanceId}
                               onOpenHistoryMenu={(setNum) => {
                                 setHistoryModalState({
                                   isOpen: true,
