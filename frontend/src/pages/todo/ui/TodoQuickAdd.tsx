@@ -24,8 +24,10 @@ export const TodoQuickAdd: React.FC<TodoQuickAddProps> = ({ onAdd, isLoading = f
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState<TodoCategory>('work');
 
-  const handleSubmit = (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
+  const handleSubmit = (e?: React.SyntheticEvent | any) => {
+    if (e && typeof e.preventDefault === 'function') {
+      e.preventDefault();
+    }
     const trimmed = title.trim();
     if (!trimmed || isLoading) return;
     onAdd(trimmed, category);

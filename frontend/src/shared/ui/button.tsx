@@ -62,9 +62,16 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         isDisabled={disabled || isLoading}
         onPress={(e) => {
           if (onClick) {
-            onClick(e as unknown as React.MouseEvent<HTMLButtonElement>);
+            const safeEvent = {
+              ...e,
+              preventDefault: typeof (e as any)?.preventDefault === 'function' ? (e as any).preventDefault.bind(e) : () => {},
+              stopPropagation: typeof (e as any)?.stopPropagation === 'function' ? (e as any).stopPropagation.bind(e) : () => {},
+              nativeEvent: e,
+            } as unknown as React.MouseEvent<HTMLButtonElement>;
+            onClick(safeEvent);
           }
         }}
+        onClick={onClick as any}
         className={extraClasses}
         {...(props as Record<string, unknown>)}
       >

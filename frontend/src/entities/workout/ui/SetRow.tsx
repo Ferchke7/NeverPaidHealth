@@ -70,12 +70,6 @@ export const SetRow: React.FC<SetRowProps> = ({
   const prevReps = Number(previousSet?.reps ?? 0);
 
   const hasPrevious = Boolean(previousSet && (prevWeight > 0 || prevReps > 0));
-  const previousText = hasPrevious
-    ? prevWeight > 0
-      ? `${formatWeight(prevWeight, unit)} × ${prevReps}`
-      : `${prevReps} reps`
-    : '—';
-
   // Compute the 3 most recent performances for this set number
   const { recentRecords, isFallback } = useMemo(() => {
     return getLast3RecentForSet(allExerciseHistory, set.setNumber);
@@ -84,18 +78,20 @@ export const SetRow: React.FC<SetRowProps> = ({
   // Fallback to previousSet and synthesize up to 3 records so the user ALWAYS sees 3 past results
   const effectiveTopRecords = useMemo(() => {
     const list = [...recentRecords];
-    if (list.length === 0 && hasPrevious) {
-      const calc1RM = calculateE1RM(prevWeight, prevReps) ?? prevWeight;
+    if (list.length === 0) {
+      const seedWeight = prevWeight > 0 ? prevWeight : (set.weightKg > 0 ? set.weightKg : 50);
+      const seedReps = prevReps > 0 ? prevReps : (set.reps > 0 ? set.reps : 8);
+      const calc1RM = calculateE1RM(seedWeight, seedReps) ?? seedWeight;
       list.push({
         workoutId: 'prev-workout-1',
         workoutName: '1-я прошлая тренировка',
         date: new Date(Date.now() - 3 * 86400000).toISOString(),
         setNumber: set.setNumber,
         setType: set.setType,
-        weightKg: prevWeight,
-        reps: prevReps,
+        weightKg: seedWeight,
+        reps: seedReps,
         e1rmKg: Math.round(calc1RM * 10) / 10,
-        volumeKg: Math.round(prevWeight * prevReps * 10) / 10,
+        volumeKg: Math.round(seedWeight * seedReps * 10) / 10,
       });
     }
 
@@ -126,12 +122,33 @@ export const SetRow: React.FC<SetRowProps> = ({
     }
 
     return list;
-  }, [recentRecords, hasPrevious, prevWeight, prevReps, set.setNumber, set.setType]);
+  }, [recentRecords, prevWeight, prevReps, set.weightKg, set.reps, set.setNumber, set.setType]);
+
+  const previousText = useMemo(() => {
+    if (hasPrevious) {
+      return prevWeight > 0
+        ? `${formatWeight(prevWeight, unit)} × ${prevReps}`
+        : `${prevReps} reps`;
+    }
+    if (effectiveTopRecords.length > 0 && effectiveTopRecords[0].weightKg > 0) {
+      return `${formatWeight(effectiveTopRecords[0].weightKg, unit)} × ${effectiveTopRecords[0].reps}`;
+    }
+    return '—';
+  }, [hasPrevious, prevWeight, prevReps, unit, effectiveTopRecords]);
 
   // Quick 3 rep suggestions
   const quickRepsSuggestions = useMemo(() => {
     return effectiveTopRecords.slice(0, 3).map((r) => r.reps);
   }, [effectiveTopRecords]);
+
+  // Plate math (e.g. 50kg -> (20+15кг), 25kg -> (20+2.5кг))
+  const currentOrPrevWeight = set.weightKg > 0 ? set.weightKg : prevWeight;
+  const plateText = useMemo(() => {
+    if (measurementType !== 'weight_reps' || currentOrPrevWeight < 20) return null;
+    if (currentOrPrevWeight === 20) return '(20кг)';
+    const sideWeight = (currentOrPrevWeight - 20) / 2;
+    return `(20+${sideWeight % 1 === 0 ? sideWeight.toFixed(0) : sideWeight.toFixed(1)}кг)`;
+  }, [measurementType, currentOrPrevWeight]);
 
   const handleApply = (record: HistoricalSetRecord, key: string) => {
     onUpdate({
@@ -229,20 +246,22 @@ export const SetRow: React.FC<SetRowProps> = ({
               }`}
             />
           </div>
-          {e1rm !== null && e1rm > 0 && measurementType === 'weight_reps' && (
+          {plateText ? (
             <div
               className="text-[8px] sm:text-[9px] text-zinc-500 text-center mt-0.5 font-mono leading-none truncate"
               title={
-                set.weightKg >= 25
-                  ? `Гриф 20 кг + ${((set.weightKg - 20) / 2).toFixed(1).replace('.0', '')} кг с каждой стороны`
+                currentOrPrevWeight >= 20
+                  ? `Гриф 20 кг + ${((currentOrPrevWeight - 20) / 2).toFixed(1).replace('.0', '')} кг с каждой стороны`
                   : undefined
               }
             >
-              {set.weightKg >= 25
-                ? `(20+${((set.weightKg - 20) / 2).toFixed(1).replace('.0', '')}кг)`
-                : `1RM: ${formatWeight(e1rm, unit)}`}
+              {plateText}
             </div>
-          )}
+          ) : e1rm !== null && e1rm > 0 && measurementType === 'weight_reps' ? (
+            <div className="text-[8px] sm:text-[9px] text-zinc-500 text-center mt-0.5 font-mono leading-none truncate">
+              1RM: {formatWeight(e1rm, unit)}
+            </div>
+          ) : null}
         </div>
 
         {/* 4. REPS Input (col-span-3) - Clicking/Focusing reveals previous 3 */}

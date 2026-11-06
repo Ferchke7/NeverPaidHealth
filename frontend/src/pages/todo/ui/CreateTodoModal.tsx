@@ -168,8 +168,10 @@ export const CreateTodoModal: React.FC<CreateTodoModalProps> = ({
     setEndTime(formatMinToTime(conflict.suggestedNextStartMin + dur));
   };
 
-  const handleSubmit = (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
+  const handleSubmit = (e?: React.SyntheticEvent | any) => {
+    if (e && typeof e.preventDefault === 'function') {
+      e.preventDefault();
+    }
     if (!title.trim()) {
       setTitleTouched(true);
       return;
