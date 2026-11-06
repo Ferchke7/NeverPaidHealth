@@ -1,6 +1,8 @@
-export function formatDate(dateString: string): string {
+export function formatDate(dateString: string, locale?: string): string {
   const d = new Date(dateString);
-  return d.toLocaleDateString(undefined, {
+  if (isNaN(d.getTime())) return dateString;
+  const loc = locale === 'uz' ? 'uz-UZ' : locale === 'ru' ? 'ru-RU' : locale === 'en' ? 'en-US' : undefined;
+  return d.toLocaleDateString(loc, {
     year: 'numeric',
     month: 'short',
     day: 'numeric',

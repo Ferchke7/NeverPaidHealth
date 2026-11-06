@@ -12,6 +12,7 @@ import { Button } from '../../../shared/ui/button.tsx';
 import { Input, Textarea } from '../../../shared/ui/input.tsx';
 import { Modal } from '../../../shared/ui/modal.tsx';
 import { useTranslation } from '../../../shared/lib/i18n/i18n.ts';
+import { toLocalDateKey } from '../../../shared/lib/dates.ts';
 import {
   TodoItem,
   TodoCategory,
@@ -65,9 +66,10 @@ export const CreateTodoModal: React.FC<CreateTodoModalProps> = ({
   existingTodos = [],
 }) => {
   const { t } = useTranslation();
-  const today = defaultDate || new Date().toISOString().split('T')[0];
+  const today = defaultDate || toLocalDateKey(new Date());
 
   const [title, setTitle] = useState('');
+  const [titleTouched, setTitleTouched] = useState(false);
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState<TodoCategory>('work');
   const [priority, setPriority] = useState<TodoPriority>('medium');
@@ -166,9 +168,12 @@ export const CreateTodoModal: React.FC<CreateTodoModalProps> = ({
     setEndTime(formatMinToTime(conflict.suggestedNextStartMin + dur));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!title.trim()) return;
+  const handleSubmit = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!title.trim()) {
+      setTitleTouched(true);
+      return;
+    }
 
     onSubmit({
       title: title.trim(),
@@ -222,7 +227,12 @@ export const CreateTodoModal: React.FC<CreateTodoModalProps> = ({
           label={t('todo.titleInput')}
           placeholder={t('todo.titlePlaceholder')}
           value={title}
-          onChange={(e) => setTitle(e.target.value)}
+          onChange={(e) => {
+            setTitle(e.target.value);
+            if (titleTouched && e.target.value.trim()) setTitleTouched(false);
+          }}
+          isInvalid={titleTouched && !title.trim()}
+          errorMessage={titleTouched && !title.trim() ? (t('todo.titlePlaceholder') || 'Укажите название задачи') : undefined}
           autoFocus
         />
 

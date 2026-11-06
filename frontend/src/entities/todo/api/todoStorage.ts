@@ -8,8 +8,10 @@ import {
 import { generateUUID } from '../../../shared/lib/uuid.ts';
 import { apiClient } from '../../../shared/api/client.ts';
 import { toLocalDateKey } from '../../../shared/lib/dates.ts';
+import { useAuthStore } from '../../user/model/authStore.ts';
 
 const TODOS_STORAGE_KEY = 'neverpaid_todos_v2';
+const TODOS_SEEDED_KEY = 'neverpaid_todos_seeded_v2';
 const LOGS_STORAGE_KEY = 'neverpaid_activity_logs_v2';
 const PROGRESS_STORAGE_KEY = 'neverpaid_todo_progress_v2';
 
@@ -20,7 +22,7 @@ interface DayProgressRecord {
   };
 }
 
-const DEFAULT_TODOS: Array<Omit<TodoItem, 'id' | 'created_at' | 'updated_at'>> = [
+const DEFAULT_TODOS_RU: Array<Omit<TodoItem, 'id' | 'created_at' | 'updated_at'>> = [
   {
     user_id: 'local-user',
     title: 'Выпить 500 мл воды с электролитами',
@@ -93,14 +95,170 @@ const DEFAULT_TODOS: Array<Omit<TodoItem, 'id' | 'created_at' | 'updated_at'>> =
   },
 ];
 
+const DEFAULT_TODOS_UZ: Array<Omit<TodoItem, 'id' | 'created_at' | 'updated_at'>> = [
+  {
+    user_id: 'local-user',
+    title: '500 ml elektrolitli suv ichish',
+    description: 'Metabolizm va asab tizimini faollashtirish uchun ertalabki odat',
+    category: 'health',
+    priority: 'high',
+    event_type: 'habit',
+    start_date: toLocalDateKey(new Date()),
+    end_date: toLocalDateKey(new Date()),
+    start_time: '07:30',
+    target_duration_minutes: 5,
+    total_spent_minutes: 0,
+    status: 'pending',
+  },
+  {
+    user_id: 'local-user',
+    title: 'Dastur bo‘yicha kuch mashg‘uloti',
+    description: 'Yuklamani oshirish bilan barcha ishchi yondashuvlarni bajarish',
+    category: 'workout',
+    priority: 'high',
+    event_type: 'routine',
+    start_date: toLocalDateKey(new Date()),
+    end_date: toLocalDateKey(new Date()),
+    start_time: '18:00',
+    target_duration_minutes: 60,
+    total_spent_minutes: 0,
+    status: 'pending',
+  },
+  {
+    user_id: 'local-user',
+    title: 'Oqsilga boy taom (40g+ oqsil)',
+    description: 'Mashg‘ulotdan keyin mushak oqsili sintezini optimallashtirish',
+    category: 'health',
+    priority: 'medium',
+    event_type: 'habit',
+    start_date: toLocalDateKey(new Date()),
+    end_date: toLocalDateKey(new Date()),
+    start_time: '19:30',
+    target_duration_minutes: 20,
+    total_spent_minutes: 0,
+    status: 'pending',
+  },
+  {
+    user_id: 'local-user',
+    title: '8 000 – 10 000 qadam piyoda yurish (NEAT)',
+    description: 'Yurak-qon tomir tizimini tiklash va kaloriya yoqish',
+    category: 'health',
+    priority: 'medium',
+    event_type: 'routine',
+    start_date: toLocalDateKey(new Date()),
+    end_date: toLocalDateKey(new Date()),
+    start_time: '20:30',
+    target_duration_minutes: 45,
+    total_spent_minutes: 0,
+    status: 'pending',
+  },
+  {
+    user_id: 'local-user',
+    title: '8 soatlik chuqur uyqu',
+    description: 'Salqin va qorong‘i xonada, uyqudan 30 daqiqa oldin ekransiz',
+    category: 'health',
+    priority: 'urgent',
+    event_type: 'habit',
+    start_date: toLocalDateKey(new Date()),
+    end_date: toLocalDateKey(new Date()),
+    start_time: '23:00',
+    target_duration_minutes: 480,
+    total_spent_minutes: 0,
+    status: 'pending',
+  },
+];
+
+const DEFAULT_TODOS_EN: Array<Omit<TodoItem, 'id' | 'created_at' | 'updated_at'>> = [
+  {
+    user_id: 'local-user',
+    title: 'Drink 500 ml water with electrolytes',
+    description: 'Morning hydration ritual to activate metabolism and nervous system',
+    category: 'health',
+    priority: 'high',
+    event_type: 'habit',
+    start_date: toLocalDateKey(new Date()),
+    end_date: toLocalDateKey(new Date()),
+    start_time: '07:30',
+    target_duration_minutes: 5,
+    total_spent_minutes: 0,
+    status: 'pending',
+  },
+  {
+    user_id: 'local-user',
+    title: 'Strength workout as scheduled',
+    description: 'Complete all working sets with progressive overload',
+    category: 'workout',
+    priority: 'high',
+    event_type: 'routine',
+    start_date: toLocalDateKey(new Date()),
+    end_date: toLocalDateKey(new Date()),
+    start_time: '18:00',
+    target_duration_minutes: 60,
+    total_spent_minutes: 0,
+    status: 'pending',
+  },
+  {
+    user_id: 'local-user',
+    title: 'High-protein meal (40g+ protein)',
+    description: 'Optimize post-workout muscle protein synthesis',
+    category: 'health',
+    priority: 'medium',
+    event_type: 'habit',
+    start_date: toLocalDateKey(new Date()),
+    end_date: toLocalDateKey(new Date()),
+    start_time: '19:30',
+    target_duration_minutes: 20,
+    total_spent_minutes: 0,
+    status: 'pending',
+  },
+  {
+    user_id: 'local-user',
+    title: 'Walk 8,000 – 10,000 steps (NEAT)',
+    description: 'Cardiovascular recovery and active calorie expenditure',
+    category: 'health',
+    priority: 'medium',
+    event_type: 'routine',
+    start_date: toLocalDateKey(new Date()),
+    end_date: toLocalDateKey(new Date()),
+    start_time: '20:30',
+    target_duration_minutes: 45,
+    total_spent_minutes: 0,
+    status: 'pending',
+  },
+  {
+    user_id: 'local-user',
+    title: '8 hours deep recovery sleep',
+    description: 'Cool, dark bedroom with screen-off 30 mins before bed',
+    category: 'health',
+    priority: 'urgent',
+    event_type: 'habit',
+    start_date: toLocalDateKey(new Date()),
+    end_date: toLocalDateKey(new Date()),
+    start_time: '23:00',
+    target_duration_minutes: 480,
+    total_spent_minutes: 0,
+    status: 'pending',
+  },
+];
+
+function getDefaultTodosForLanguage(): Array<Omit<TodoItem, 'id' | 'created_at' | 'updated_at'>> {
+  const lang = typeof window !== 'undefined' ? localStorage.getItem('np_app_lang') : 'ru';
+  if (lang === 'uz') return DEFAULT_TODOS_UZ;
+  if (lang === 'en') return DEFAULT_TODOS_EN;
+  return DEFAULT_TODOS_RU;
+}
+
 function loadStoredTodos(): TodoItem[] {
   if (typeof window === 'undefined') return [];
   try {
     const raw = localStorage.getItem(TODOS_STORAGE_KEY);
+    const hasSeeded = localStorage.getItem(TODOS_SEEDED_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed;
+      if (Array.isArray(parsed)) {
+        if (parsed.length > 0 || hasSeeded) {
+          return parsed;
+        }
       }
     }
   } catch {
@@ -109,13 +267,17 @@ function loadStoredTodos(): TodoItem[] {
 
   // Initialize with seed todos
   const nowIso = new Date().toISOString();
-  const seeded: TodoItem[] = DEFAULT_TODOS.map((def) => ({
+  const seedList = getDefaultTodosForLanguage();
+  const seeded: TodoItem[] = seedList.map((def) => ({
     ...def,
     id: generateUUID(),
     created_at: nowIso,
     updated_at: nowIso,
   }));
   saveStoredTodos(seeded);
+  try {
+    localStorage.setItem(TODOS_SEEDED_KEY, 'true');
+  } catch {}
   return seeded;
 }
 
@@ -180,18 +342,26 @@ export const todoStorage = {
     const progressMap = loadProgressMap();
     const allLogs = loadStoredLogs();
 
-    // Map each todo's completion status for this specific date
-    const dayTodos = allTodos.map((t) => {
-      const key = `${t.id}_${dateStr}`;
-      const record = progressMap[key];
-      const isDone = record ? record.completed : t.start_date === dateStr ? t.status === 'completed' : false;
+    // Map and filter todos that belong to this date:
+    // A habit shows up every day; tasks show up if dateStr is within [start_date, end_date]
+    const dayTodos = allTodos
+      .filter((t) => {
+        if (t.event_type === 'habit') return true;
+        const start = t.start_date || dateStr;
+        const end = t.end_date || start;
+        return dateStr >= start && dateStr <= end;
+      })
+      .map((t) => {
+        const key = `${t.id}_${dateStr}`;
+        const record = progressMap[key];
+        const isDone = record ? record.completed : t.start_date === dateStr ? t.status === 'completed' : false;
 
-      return {
-        ...t,
-        status: isDone ? ('completed' as const) : ('pending' as const),
-        completed_at: record?.completed_at,
-      };
-    });
+        return {
+          ...t,
+          status: isDone ? ('completed' as const) : ('pending' as const),
+          completed_at: record?.completed_at,
+        };
+      });
 
     const completedCount = dayTodos.filter((t) => t.status === 'completed').length;
     const totalPlannedMins = dayTodos.reduce((sum, t) => sum + (t.target_duration_minutes || 0), 0);
@@ -218,24 +388,33 @@ export const todoStorage = {
     start_date?: string;
     end_date?: string;
     start_time?: string;
+    end_time?: string;
+    meeting_url?: string;
   }): TodoItem {
+    const title = (payload.title || '').trim();
+    if (!title) {
+      throw new Error('Title cannot be empty');
+    }
+
     const allTodos = loadStoredTodos();
     const nowIso = new Date().toISOString();
     const dateStr = payload.start_date || toLocalDateKey(new Date());
 
     const newTodo: TodoItem = {
       id: generateUUID(),
-      user_id: 'local-user',
-      title: payload.title.trim(),
-      description: payload.description?.trim() || '',
+      user_id: (typeof window !== 'undefined' && useAuthStore.getState().user?.id) || 'local-user',
+      title,
+      description: (payload.description || '').trim(),
       category: payload.category || 'workout',
       priority: payload.priority || 'medium',
       event_type: 'task',
       start_date: dateStr,
       end_date: payload.end_date || dateStr,
-      start_time: payload.start_time,
-      target_duration_minutes: Number(payload.target_duration_minutes) || 25,
+      start_time: payload.start_time || undefined,
+      end_time: payload.end_time || undefined,
+      target_duration_minutes: Math.max(1, Number(payload.target_duration_minutes) || 25),
       total_spent_minutes: 0,
+      meeting_url: payload.meeting_url?.trim() || undefined,
       status: 'pending',
       created_at: nowIso,
       updated_at: nowIso,
@@ -244,8 +423,23 @@ export const todoStorage = {
     allTodos.unshift(newTodo);
     saveStoredTodos(allTodos);
 
-    // Background sync to backend if online
-    apiClient.post('/todos', newTodo).catch(() => {});
+    // Background sync to backend ONLY if user is authenticated and online
+    if (typeof window !== 'undefined' && useAuthStore.getState().isAuthenticated) {
+      apiClient.post('/todos', {
+        title: newTodo.title,
+        description: newTodo.description || undefined,
+        category: newTodo.category,
+        priority: newTodo.priority,
+        start_date: newTodo.start_date,
+        end_date: newTodo.end_date,
+        start_time: newTodo.start_time || undefined,
+        end_time: newTodo.end_time || undefined,
+        target_duration_minutes: newTodo.target_duration_minutes,
+        meeting_url: newTodo.meeting_url || undefined,
+      }).catch((err) => {
+        console.warn('Backend sync failed, kept safely in local storage:', err);
+      });
+    }
 
     return newTodo;
   },
@@ -272,7 +466,7 @@ export const todoStorage = {
     if (nowCompleted) {
       logs.unshift({
         id: generateUUID(),
-        user_id: 'local-user',
+        user_id: (typeof window !== 'undefined' && useAuthStore.getState().user?.id) || 'local-user',
         todo_id: target.id,
         task_title: target.title,
         category: target.category,
@@ -290,8 +484,10 @@ export const todoStorage = {
     }
     saveStoredLogs(logs);
 
-    // Background sync to backend if online
-    apiClient.post(`/todos/${id}/toggle?date=${dateStr}`).catch(() => {});
+    // Background sync to backend ONLY if authenticated
+    if (typeof window !== 'undefined' && useAuthStore.getState().isAuthenticated) {
+      apiClient.post(`/todos/${id}/toggle?date=${dateStr}`).catch(() => {});
+    }
 
     return {
       completed: nowCompleted,
@@ -315,8 +511,9 @@ export const todoStorage = {
     allTodos[idx] = updated;
     saveStoredTodos(allTodos);
 
-    // Background sync
-    apiClient.put(`/todos/${id}`, data).catch(() => {});
+    if (typeof window !== 'undefined' && useAuthStore.getState().isAuthenticated) {
+      apiClient.put(`/todos/${id}`, data).catch(() => {});
+    }
 
     return updated;
   },
@@ -328,8 +525,9 @@ export const todoStorage = {
 
     saveStoredTodos(filtered);
 
-    // Background sync
-    apiClient.delete(`/todos/${id}`).catch(() => {});
+    if (typeof window !== 'undefined' && useAuthStore.getState().isAuthenticated) {
+      apiClient.delete(`/todos/${id}`).catch(() => {});
+    }
 
     return true;
   },
@@ -345,8 +543,9 @@ export const todoStorage = {
     const filtered = logs.filter((l) => l.id !== id);
     saveStoredLogs(filtered);
 
-    // Background sync
-    apiClient.delete(`/todos/activity-logs/${id}`).catch(() => {});
+    if (typeof window !== 'undefined' && useAuthStore.getState().isAuthenticated) {
+      apiClient.delete(`/todos/activity-logs/${id}`).catch(() => {});
+    }
 
     return true;
   },

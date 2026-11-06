@@ -38,6 +38,8 @@ export const TodoActivityLog: React.FC<TodoActivityLogProps> = ({
   const totalMinutes = logs.reduce((acc, l) => acc + (l.duration_minutes || 0), 0);
   const totalHours = Math.floor(totalMinutes / 60);
   const remMinutes = totalMinutes % 60;
+  const hUnit = t('todo.hourShort') || 'ч';
+  const mUnit = t('todo.minuteShort') || 'м';
 
   return (
     <div className="space-y-3">
@@ -48,7 +50,13 @@ export const TodoActivityLog: React.FC<TodoActivityLogProps> = ({
           <span>{t('todo.sessionsLog') || 'Журнал активности за'} {selectedDate}</span>
         </h2>
         <span className="text-xs text-zinc-400 font-mono">
-          Итого: <strong className="text-emerald-400">{totalHours > 0 ? `${totalHours}ч ` : ''}{remMinutes}м</strong> ({logs.length} зап.)
+          {t('todo.totalSummary') || 'Итого:'}{' '}
+          <strong className="text-emerald-400">
+            {totalHours > 0 ? `${totalHours}${hUnit} ` : ''}
+            {remMinutes}
+            {mUnit}
+          </strong>{' '}
+          ({t('todo.activityLogEntries', { count: logs.length }) || `${logs.length} зап.`})
         </span>
       </div>
 

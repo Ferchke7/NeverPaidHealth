@@ -155,7 +155,7 @@ export const TodoItemCard: React.FC<TodoItemCardProps> = ({
               </div>
 
               <div className="text-[11px] font-mono text-zinc-400 flex items-center gap-1.5">
-                <span>{spentMins} / {targetMins} м</span>
+                <span>{spentMins} / {targetMins} {t('todo.minuteShort') || 'м'}</span>
                 {item.lifetime_spent_minutes !== undefined && item.lifetime_spent_minutes > spentMins && (
                   <span className="text-zinc-500 text-[10px]">
                     {t('todo.lifetimeTotal', { minutes: item.lifetime_spent_minutes }) || `(всего ${item.lifetime_spent_minutes}м)`}

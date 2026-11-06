@@ -5,6 +5,11 @@ import {
   ListTodo,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
+  ChevronUp,
+  History,
+  AlertCircle,
+  X,
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../../shared/api/client.ts';
@@ -21,8 +26,10 @@ import {
 import { invalidateTodoQueries } from '../../../entities/todo/api/todoQueries.ts';
 import { todoStorage } from '../../../entities/todo/api/todoStorage.ts';
 import { useFocusTimerStore } from '../../../features/focus-timer/model/focusTimerStore.ts';
+import { useAuthStore } from '../../../entities/user/model/authStore.ts';
 import { useTranslation } from '../../../shared/lib/i18n/i18n.ts';
-import { toLocalDateKey } from '../../../shared/lib/dates.ts';
+import { toLocalDateKey, formatDate } from '../../../shared/lib/dates.ts';
+import { generateUUID } from '../../../shared/lib/uuid.ts';
 import { playTaskCompleteSound, playTaskUncheckSound } from '../../../shared/lib/audio/soundEffects.ts';
 import { CreateTodoModal } from './CreateTodoModal.tsx';
 import { TodoDaySummary } from './TodoDaySummary.tsx';
@@ -32,7 +39,7 @@ import { TodoActivityLog } from './TodoActivityLog.tsx';
 import { ConfirmDeleteModal } from './ConfirmDeleteModal.tsx';
 
 export const TodoCalendarPage: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const queryClient = useQueryClient();
 
   const [selectedDate, setSelectedDate] = useState(() => toLocalDateKey(new Date()));
@@ -41,58 +48,124 @@ export const TodoCalendarPage: React.FC = () => {
   const [deletingTodo, setDeletingTodo] = useState<TodoItem | null>(null);
   const [deletingLogId, setDeletingLogId] = useState<string | null>(null);
   const [taskFilter, setTaskFilter] = useState<'all' | 'active' | 'completed'>('all');
+  const [isActivityLogOpen, setIsActivityLogOpen] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const startForTodo = useFocusTimerStore((s) => s.startForTodo);
   const startQuickSession = useFocusTimerStore((s) => s.startQuickSession);
 
-  // 1. Fetch Daily Schedule & Todos for selectedDate (offline-first fallback)
+  // 1. Fetch Daily Schedule & Todos for selectedDate (offline-first with seamless backend merge)
   const { data: schedule, isLoading: isLoadingDay } = useQuery<DailyScheduleResponse>({
     queryKey: ['todos-daily', selectedDate],
+    initialData: () => todoStorage.getDailySchedule(selectedDate),
     queryFn: async () => {
+      const local = todoStorage.getDailySchedule(selectedDate);
+      if (!useAuthStore.getState().isAuthenticated) {
+        return local;
+      }
       try {
         const res = await apiClient<DailyScheduleResponse>(`/todos?date=${selectedDate}`);
-        if (res && Array.isArray(res.todos)) return res;
+        if (res && Array.isArray(res.todos)) {
+          // Merge local and backend todos so no locally created task is ever lost
+          const backendIds = new Set(res.todos.map((t) => t.id));
+          const localOnly = local.todos.filter((t) => !backendIds.has(t.id));
+          const mergedTodos = [...localOnly, ...res.todos];
+          return {
+            ...res,
+            todos: mergedTodos,
+            total_tasks: mergedTodos.length,
+            completed_tasks: mergedTodos.filter((t) => t.status === 'completed').length,
+          };
+        }
       } catch {
-        // Fallback to local storage
+        // Fallback safely to local storage
       }
-      return todoStorage.getDailySchedule(selectedDate);
+      return local;
     },
   });
 
   // 2. Fetch Activity Logs for selectedDate (offline-first fallback)
   const { data: rawActivityLogs } = useQuery<ActivityLogItem[]>({
     queryKey: ['activity-logs', selectedDate],
+    initialData: () => todoStorage.getActivityLogs(selectedDate),
     queryFn: async () => {
+      const localLogs = todoStorage.getActivityLogs(selectedDate);
+      if (!useAuthStore.getState().isAuthenticated) {
+        return localLogs;
+      }
       try {
         const res = await apiClient<ActivityLogItem[]>(`/todos/activity-logs?date=${selectedDate}`);
         if (Array.isArray(res) && res.length > 0) return res;
       } catch {
         // Fallback to local storage
       }
-      return todoStorage.getActivityLogs(selectedDate);
+      return localLogs;
     },
   });
   const activityLogs = Array.isArray(rawActivityLogs) ? rawActivityLogs : [];
 
-  // 3. Mutations with instant local storage persistence & optimistic updates
+  // 3. Mutations with optimistic updates and visible error handling
   const createTodoMutation = useMutation({
     mutationFn: async (newTodo: any) => {
+      setActionError(null);
       return todoStorage.createTodo(newTodo);
+    },
+    onMutate: async (newTodo) => {
+      await queryClient.cancelQueries({ queryKey: ['todos-daily', selectedDate] });
+      const previousSchedule = queryClient.getQueryData<DailyScheduleResponse>(['todos-daily', selectedDate]);
+      if (previousSchedule) {
+        const optimisticItem: TodoItem = {
+          id: generateUUID(),
+          user_id: 'local-user',
+          title: newTodo.title,
+          description: newTodo.description || '',
+          category: newTodo.category || 'workout',
+          priority: newTodo.priority || 'medium',
+          event_type: 'task',
+          start_date: newTodo.start_date || selectedDate,
+          end_date: newTodo.end_date || selectedDate,
+          start_time: newTodo.start_time,
+          end_time: newTodo.end_time,
+          target_duration_minutes: newTodo.target_duration_minutes || 25,
+          total_spent_minutes: 0,
+          status: 'pending',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+        queryClient.setQueryData<DailyScheduleResponse>(['todos-daily', selectedDate], {
+          ...previousSchedule,
+          total_tasks: previousSchedule.total_tasks + 1,
+          todos: [optimisticItem, ...previousSchedule.todos],
+        });
+      }
+      return { previousSchedule };
+    },
+    onError: (err: any, _, context) => {
+      if (context?.previousSchedule) {
+        queryClient.setQueryData(['todos-daily', selectedDate], context.previousSchedule);
+      }
+      setActionError(err?.message || t('todo.taskError') || 'Ошибка при сохранении задачи');
     },
     onSuccess: () => {
       invalidateTodoQueries(queryClient);
       setIsCreateModalOpen(false);
+      setActionError(null);
     },
   });
 
   const updateTodoMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: any }) => {
+      setActionError(null);
       return todoStorage.updateTodo(id, data);
+    },
+    onError: (err: any) => {
+      setActionError(err?.message || t('todo.taskError') || 'Ошибка при обновлении задачи');
     },
     onSuccess: () => {
       invalidateTodoQueries(queryClient);
       setIsCreateModalOpen(false);
       setEditingTodo(null);
+      setActionError(null);
     },
   });
 
@@ -200,6 +273,10 @@ export const TodoCalendarPage: React.FC = () => {
     return toLocalDateKey(d);
   }, []);
 
+  const formattedDate = useMemo(() => {
+    return formatDate(selectedDate, language);
+  }, [selectedDate, language]);
+
   const todos = Array.isArray(schedule?.todos) ? schedule.todos : [];
   const completedTasks = schedule?.completed_tasks || 0;
   const totalTasks = schedule?.total_tasks || 0;
@@ -222,6 +299,25 @@ export const TodoCalendarPage: React.FC = () => {
 
   return (
     <div className="space-y-4 max-w-3xl mx-auto pb-16 animate-fade-in">
+      {/* Action Error Banner */}
+      {actionError && (
+        <div className="flex items-center justify-between p-3.5 bg-rose-500/15 border border-rose-500/30 rounded-2xl text-rose-300 text-xs animate-fade-in">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
+            <span className="font-semibold">{actionError}</span>
+          </div>
+          <Button
+            size="xs"
+            variant="ghost"
+            isIconOnly
+            onClick={() => setActionError(null)}
+            className="text-rose-300 hover:text-white"
+          >
+            <X className="w-3.5 h-3.5" />
+          </Button>
+        </div>
+      )}
+
       {/* 1. Header Card (Focused Single Responsibility: Day's Tasks) */}
       <Card className="bg-dark-900 border-dark-800 rounded-3xl shadow-xl">
         <CardContent className="p-4 sm:p-5 space-y-3.5">
@@ -236,7 +332,7 @@ export const TodoCalendarPage: React.FC = () => {
                   {t('todo.title') || 'План на день'}
                 </h1>
                 <p className="text-[11px] text-zinc-400 truncate">
-                  {isSelectedToday ? t('todo.today') || 'Сегодня' : selectedDate} • {t('todo.completedOf', { completed: completedTasks, total: totalTasks }) || `${completedTasks} из ${totalTasks} задач выполнено`}
+                  {isSelectedToday ? t('todo.today') || 'Сегодня' : formattedDate} • {t('todo.completedOf', { completed: completedTasks, total: totalTasks }) || `${completedTasks} из ${totalTasks} задач выполнено`}
                 </p>
               </div>
             </div>
@@ -277,7 +373,7 @@ export const TodoCalendarPage: React.FC = () => {
                 onClick={handleSetYesterday}
                 className="text-xs font-semibold px-2.5 py-1"
               >
-                Вчера
+                {t('todo.yesterday') || 'Вчера'}
               </Button>
               <Button
                 variant={isSelectedToday ? 'primary' : 'ghost'}
@@ -293,7 +389,7 @@ export const TodoCalendarPage: React.FC = () => {
                 onClick={handleSetTomorrow}
                 className="text-xs font-semibold px-2.5 py-1"
               >
-                Завтра
+                {t('todo.tomorrow') || 'Завтра'}
               </Button>
             </div>
 
@@ -359,7 +455,7 @@ export const TodoCalendarPage: React.FC = () => {
       )}
 
       {/* 5. Tasks List */}
-      {isLoadingDay ? (
+      {isLoadingDay && todos.length === 0 ? (
         <div className="space-y-2.5">
           <Skeleton className="h-20 w-full" variant="rounded" />
           <Skeleton className="h-20 w-full" variant="rounded" />
@@ -371,7 +467,7 @@ export const TodoCalendarPage: React.FC = () => {
             <ListTodo className="w-6 h-6" />
           </div>
           <h3 className="text-sm sm:text-base font-bold text-zinc-200">
-            {t('todo.noTasks', { date: selectedDate }) || `На ${selectedDate} нет запланированных задач.`}
+            {t('todo.noTasks', { date: formattedDate }) || `На ${formattedDate} нет запланированных задач.`}
           </h3>
           <p className="text-xs text-zinc-400 max-w-md mx-auto">
             {t('todo.noTasksDesc') || 'Создайте задачу с помощью формы быстрого добавления выше.'}
@@ -423,13 +519,37 @@ export const TodoCalendarPage: React.FC = () => {
         </div>
       )}
 
-      {/* 6. Day Activity Log (Transparent audit trail for this date) */}
+      {/* 6. Collapsible Day Activity Log (Hidden by default to keep the screen distraction-free) */}
       <div className="pt-2">
-        <TodoActivityLog
-          logs={activityLogs}
-          selectedDate={selectedDate}
-          onDeleteLog={(id) => setDeletingLogId(id)}
-        />
+        <button
+          type="button"
+          onClick={() => setIsActivityLogOpen((prev) => !prev)}
+          className="w-full flex items-center justify-between p-3.5 rounded-2xl bg-dark-900 border border-dark-800 hover:border-dark-700 text-xs text-zinc-400 hover:text-zinc-200 transition-all cursor-pointer shadow-sm group"
+        >
+          <div className="flex items-center gap-2 font-bold text-zinc-300">
+            <History className="w-4 h-4 text-brand-400 group-hover:scale-110 transition-transform" />
+            <span>{t('todo.activityLogToggle') || 'Журнал активности'}</span>
+            {activityLogs.length > 0 && (
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-brand-500/15 text-brand-400 border border-brand-500/30">
+                {t('todo.activityLogEntries', { count: activityLogs.length }) || `${activityLogs.length} зап.`}
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-1.5 text-zinc-500 text-[11px] font-semibold">
+            <span>{isActivityLogOpen ? (t('todo.hideActivityLog') || 'Скрыть') : (t('todo.showActivityLog') || 'Показать')}</span>
+            {isActivityLogOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+          </div>
+        </button>
+
+        {isActivityLogOpen && (
+          <div className="mt-3 animate-fade-in">
+            <TodoActivityLog
+              logs={activityLogs}
+              selectedDate={selectedDate}
+              onDeleteLog={(id) => setDeletingLogId(id)}
+            />
+          </div>
+        )}
       </div>
 
       {/* 7. Create / Edit Task Modal */}
