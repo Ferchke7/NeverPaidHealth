@@ -1,6 +1,18 @@
 import { useEffect } from 'react';
+import { useTranslation } from '../i18n/i18n.ts';
+
+export type SEOPageKey =
+  | 'workouts'
+  | 'exercises'
+  | 'nutrition'
+  | 'coach'
+  | 'todo'
+  | 'progress'
+  | 'programs'
+  | 'login';
 
 export interface PageSEOProps {
+  pageKey?: SEOPageKey;
   title?: string;
   description?: string;
   keywords?: string;
@@ -8,23 +20,47 @@ export interface PageSEOProps {
   ogImage?: string;
 }
 
-const DEFAULT_TITLE = 'duda.uz — Бесплатный трекер тренировок, AI-дневник питания и расчет блинов';
-const DEFAULT_DESC =
-  '100% бесплатная замена Hevy и Strong без подписок и рекламы. Журнал подходов, раскладка блинов на гриф, таймер отдыха, AI-подсчет калорий по фото и персональный тренер онлайн на duda.uz.';
-
 export function usePageSEO({
+  pageKey,
   title,
   description,
   keywords,
   canonicalPath = '',
   ogImage,
 }: PageSEOProps = {}) {
+  const { language, t } = useTranslation();
+
   useEffect(() => {
-    // 1. Update Document Title
-    const formattedTitle = title
-      ? `${title} | duda.uz — Бесплатный трекер тренировок`
-      : DEFAULT_TITLE;
+    // 1. Determine title and description based on pageKey or explicit overrides
+    let pageTitle = title;
+    let pageDesc = description;
+
+    if (pageKey) {
+      if (!pageTitle) {
+        pageTitle = t(`seo.${pageKey}Title`);
+      }
+      if (!pageDesc) {
+        pageDesc = t(`seo.${pageKey}Desc`);
+      }
+    }
+
+    const defaultTitle = t('seo.defaultTitle') || 'duda.uz — Free Workout Tracker & AI Calorie Counter';
+    const siteName = t('seo.siteName') || 'duda.uz';
+    const tagline = t('seo.tagline') || 'Free Workout Tracker';
+    const defaultDesc = t('seo.defaultDesc') || '100% free Hevy & Strong alternative without subscriptions or ads.';
+    const defaultKeywords = t('seo.defaultKeywords') || 'free workout tracker, gym log app, hevy alternative, plate calculator, ai calorie counter, duda.uz';
+
+    const formattedTitle = pageTitle
+      ? `${pageTitle} | ${siteName} — ${tagline}`
+      : defaultTitle;
+    const activeDesc = pageDesc || defaultDesc;
+    const activeKeywords = keywords || defaultKeywords;
+
+    // 2. Set Document Title & HTML Lang
     document.title = formattedTitle;
+    if (typeof document !== 'undefined' && document.documentElement) {
+      document.documentElement.lang = language || 'en';
+    }
 
     // Helper to safely set meta attribute content
     const setMetaTag = (selector: string, content: string) => {
@@ -43,24 +79,30 @@ export function usePageSEO({
       element.setAttribute('content', content);
     };
 
-    // 2. Meta Description & Title
-    const activeDesc = description || DEFAULT_DESC;
+    // 3. Primary Meta Tags
     setMetaTag('meta[name="description"]', activeDesc);
     setMetaTag('meta[name="title"]', formattedTitle);
+    setMetaTag('meta[name="keywords"]', activeKeywords);
 
-    // 3. OpenGraph Tags
+    // 4. OpenGraph Tags
     setMetaTag('meta[property="og:title"]', formattedTitle);
     setMetaTag('meta[property="og:description"]', activeDesc);
+    const localeMap: Record<string, string> = {
+      en: 'en_US',
+      ru: 'ru_RU',
+      uz: 'uz_UZ',
+    };
+    setMetaTag('meta[property="og:locale"]', localeMap[language] || 'en_US');
+
     if (ogImage) {
       setMetaTag('meta[property="og:image"]', ogImage);
     }
 
-    // 4. Keywords if provided
-    if (keywords) {
-      setMetaTag('meta[name="keywords"]', keywords);
-    }
+    // 5. Twitter Card Tags
+    setMetaTag('meta[name="twitter:title"]', formattedTitle);
+    setMetaTag('meta[name="twitter:description"]', activeDesc);
 
-    // 5. Canonical Link
+    // 6. Canonical Link
     const cleanPath = canonicalPath.startsWith('/') ? canonicalPath : `/${canonicalPath}`;
     const canonicalUrl = `https://duda.uz${cleanPath === '/' ? '' : cleanPath}`;
     let canonicalLink = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
@@ -70,5 +112,5 @@ export function usePageSEO({
       document.head.appendChild(canonicalLink);
     }
     canonicalLink.setAttribute('href', canonicalUrl);
-  }, [title, description, keywords, canonicalPath, ogImage]);
+  }, [pageKey, title, description, keywords, canonicalPath, ogImage, language, t]);
 }

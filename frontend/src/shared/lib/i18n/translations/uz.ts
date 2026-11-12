@@ -760,4 +760,35 @@ export const uz = {
   'nav.feedbackTitle': 'Fikr yoki xatolik haqida yozish',
   'todo.moveToTomorrowTitle': 'Ertaga qoldirish (+1 kun)',
   'todo.confirmDeleteMessage': '«{title}» vazifasini o‘chirishni xohlaysizmi?',
+
+  // Royal Trilingual SEO Keys
+  'seo.siteName': 'duda.uz',
+  'seo.tagline': 'Bepul mashqlar trekeri, AI ovqat kundaligi va tosh hisoblagich',
+  'seo.defaultTitle': 'duda.uz — Bepul mashqlar trekeri, AI ovqat kundaligi va tosh hisoblagich',
+  'seo.defaultDesc': 'Hevy va Strong-ning 100% bepul muqobili: hech qanday obuna va reklamalarsiz. Mashg‘ulotlar jurnali, shtanga toshlarini hisoblash, dam olish taymeri, AI foto kaloriya hisoblagich va shaxsiy AI murabbiy.',
+  'seo.defaultKeywords': 'bepul fitnes dasturi, mashqlar ilovasi, hevy muqobili, zalda mashq qilish, ovqat kaloriyasini hisoblash, shtanga toshlari kalkulyatori, ai fitnes murabbiy, bepul fitnes tracker, duda, duda.uz',
+
+  'seo.workoutsTitle': 'Bepul mashg‘ulotlar va setlar jurnali',
+  'seo.workoutsDesc': 'Mashg‘ulotlar kundaligini bepul yuriting: cheksiz dasturlar, shtanga toshlarini hisoblash, dam olish taymeri va o‘tgan setlar tarixi.',
+
+  'seo.exercisesTitle': 'Mashqlar bazasi va bajarish texnikasi',
+  'seo.exercisesDesc': 'Animatsiyalar, maqsadli mushak guruhlari va 1RM shaxsiy rekordlari bilan trenajyor zali mashqlari katalogi.',
+
+  'seo.nutritionTitle': 'Ovqatlanish kundaligi va AI foto kaloriya skaneri',
+  'seo.nutritionDesc': 'Gemini Vision yordamida ovqat rasmidan kaloriya va BJU-ni bir lahzada aniqlash. Obunasiz mutlaqo bepul kaloriya hisoblagich.',
+
+  'seo.coachTitle': 'Shaxsiy onlayn AI fitnes murabbiy',
+  'seo.coachDesc': 'duda.uz-dagi shaxsiy 24/7 AI murabbiyingizdan mashg‘ulotlar, tiklanish va to‘g‘ri ovqatlanish bo‘yicha ilmiy maslahatlar.',
+
+  'seo.todoTitle': 'Maqsadlar taqvimi va odatlar trekeri',
+  'seo.todoDesc': 'Mashg‘ulotlar, uyqu tartibi, suv ichish va qo‘shimchalarni Pomodoro diqqat taymeri bilan rejalashtiring.',
+
+  'seo.progressTitle': 'Progress tahlili va 1RM hisoblagichi',
+  'seo.progressDesc': 'Mashg‘ulot hajmi, kuch ko‘rsatkichlari dinamikasi va shaxsiy rekordlar grafigi.',
+
+  'seo.programsTitle': 'Mashg‘ulot dasturlari (PPL, Full Body, Splitlar)',
+  'seo.programsDesc': 'Jeff Nippard va yetakchi murabbiylarning ilmiy asoslangan tayyor mashg‘ulot dasturlari.',
+
+  'seo.loginTitle': 'duda.uz-ga kirish — Bepul fitnes dasturi',
+  'seo.loginDesc': 'duda.uz-ga qo‘shiling: obuna va reklamalarsiz 100% bepul fitnes jurnali va AI ovqat kundaligi.',
 };

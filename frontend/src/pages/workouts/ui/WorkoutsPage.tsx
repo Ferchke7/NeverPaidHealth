@@ -62,12 +62,7 @@ interface WorkoutsPageProps {
 }
 
 export const WorkoutsPage: React.FC<WorkoutsPageProps> = ({ onNavigateToPrograms }) => {
-  usePageSEO({
-    title: 'Бесплатный трекер тренировок и подходов',
-    description:
-      'Ведите дневник тренировок онлайн бесплатно: неограниченные программы, расчет блинов на гриф, таймер отдыха и история прошлых подходов.',
-    canonicalPath: '/workouts',
-  });
+  usePageSEO({ pageKey: 'workouts', canonicalPath: '/workouts' });
   const { t } = useTranslation();
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);

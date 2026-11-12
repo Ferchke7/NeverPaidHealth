@@ -20,7 +20,36 @@ interface I18nState {
 export const useI18nStore = create<I18nState>()(
   persist(
     (set, get) => ({
-      language: (typeof localStorage !== 'undefined' ? (localStorage.getItem('np_app_lang') as SupportedLanguage) : null) || 'ru',
+      language: (() => {
+        if (typeof window !== 'undefined') {
+          try {
+            const urlParams = new URLSearchParams(window.location.search);
+            const urlLang = urlParams.get('lang');
+            if (urlLang === 'en' || urlLang === 'ru' || urlLang === 'uz') {
+              localStorage.setItem('np_app_lang', urlLang);
+              if (typeof document !== 'undefined') document.documentElement.lang = urlLang;
+              return urlLang;
+            }
+            const stored = localStorage.getItem('np_app_lang') as SupportedLanguage;
+            if (stored === 'en' || stored === 'ru' || stored === 'uz') {
+              if (typeof document !== 'undefined') document.documentElement.lang = stored;
+              return stored;
+            }
+            const browserLang = (navigator.language || '').toLowerCase();
+            if (browserLang.startsWith('uz')) {
+              if (typeof document !== 'undefined') document.documentElement.lang = 'uz';
+              return 'uz';
+            }
+            if (browserLang.startsWith('en')) {
+              if (typeof document !== 'undefined') document.documentElement.lang = 'en';
+              return 'en';
+            }
+          } catch {
+            // fallback
+          }
+        }
+        return 'ru';
+      })(),
 
       setLanguage: (lang: SupportedLanguage) => {
         if (typeof localStorage !== 'undefined') {

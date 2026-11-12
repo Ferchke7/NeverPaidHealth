@@ -75,12 +75,7 @@ interface DailyNutritionSummary {
 }
 
 export const NutritionPage: React.FC = () => {
-  usePageSEO({
-    title: 'Дневник питания и AI-сканер калорий по фото',
-    description:
-      'Мгновенное распознавание еды и подсчет БЖУ по фотографии тарелки через Gemini Vision. Бесплатный калькулятор калорий без подписок.',
-    canonicalPath: '/nutrition',
-  });
+  usePageSEO({ pageKey: 'nutrition', canonicalPath: '/nutrition' });
   const { t, language } = useTranslation();
   const queryClient = useQueryClient();
   const user = useAuthStore((s) => s.user);

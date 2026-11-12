@@ -131,12 +131,7 @@ const MUSCLE_LABELS_UZ: Record<string, string> = {
 };
 
 export const AICoachPage: React.FC = () => {
-  usePageSEO({
-    title: 'Персональный AI Фитнес-Тренер онлайн',
-    description:
-      'Научно обоснованные рекомендации по тренировкам, восстановлению и питанию от вашего персонального AI коуча на duda.uz.',
-    canonicalPath: '/coach',
-  });
+  usePageSEO({ pageKey: 'coach', canonicalPath: '/coach' });
   const { t, language } = useTranslation();
   const user = useAuthStore((s) => s.user);
   const startWorkout = useStartWorkout();

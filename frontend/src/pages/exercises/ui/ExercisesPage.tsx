@@ -47,12 +47,7 @@ const EQUIPMENT_LIST: { value: Equipment | 'all'; key: string }[] = [
 ];
 
 export const ExercisesPage: React.FC<{ embedded?: boolean }> = ({ embedded = false }) => {
-  usePageSEO({
-    title: 'База упражнений и техника выполнения',
-    description:
-      'Каталог упражнений для тренажерного зала с видеоинструкциями, целевыми мышечными группами и персональными рекордами 1RM.',
-    canonicalPath: '/exercises',
-  });
+  usePageSEO({ pageKey: 'exercises', canonicalPath: '/exercises' });
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');

@@ -6,12 +6,7 @@ import { useTranslation } from '../../../shared/lib/i18n/i18n.ts';
 import { usePageSEO } from '../../../shared/lib/seo/usePageSEO.ts';
 
 export const LoginPage: React.FC = () => {
-  usePageSEO({
-    title: 'Вход в duda.uz — Бесплатный трекер тренировок',
-    description:
-      'Присоединяйтесь к duda.uz: 100% бесплатный фитнес-трекер и AI-дневник питания без подписок и рекламы.',
-    canonicalPath: '/login',
-  });
+  usePageSEO({ pageKey: 'login', canonicalPath: '/login' });
   const { t } = useTranslation();
 
   return (

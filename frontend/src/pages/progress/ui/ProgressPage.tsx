@@ -66,11 +66,7 @@ interface ExerciseHistoryResponse {
 }
 
 export const ProgressPage: React.FC = () => {
-  usePageSEO({
-    title: 'Аналитика прогресса и расчет 1RM',
-    description: 'Графики объема тренировок, силовых показателей и динамики личных рекордов.',
-    canonicalPath: '/progress',
-  });
+  usePageSEO({ pageKey: 'progress', canonicalPath: '/progress' });
   const navigate = useNavigate();
   const unitPref = useAuthStore((s) => s.unitPreference);
   const { language } = useTranslation();

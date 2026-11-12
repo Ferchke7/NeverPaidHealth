@@ -760,4 +760,35 @@ export const en = {
   'nav.feedbackTitle': 'Send feedback or bug report',
   'todo.moveToTomorrowTitle': 'Move to tomorrow (+1 day)',
   'todo.confirmDeleteMessage': 'Are you sure you want to delete "{title}"?',
+
+  // Royal Trilingual SEO Keys
+  'seo.siteName': 'duda.uz',
+  'seo.tagline': '100% Free Workout Tracker, Plate Calculator & AI Food Diary',
+  'seo.defaultTitle': 'duda.uz — Free Workout Tracker, Plate Calculator & AI Food Diary',
+  'seo.defaultDesc': '100% free Hevy & Strong alternative with zero subscriptions or ads. Log sets, auto-calculate barbell plates, rest timer, AI photo food scanner, and 24/7 personal coach.',
+  'seo.defaultKeywords': 'free workout tracker, gym log app, hevy alternative, strong app alternative, plate calculator, ai calorie counter, nutrition camera, offline gym pwa, personal ai fitness coach, duda, duda.uz',
+
+  'seo.workoutsTitle': 'Free Workout Tracker & Set Logger',
+  'seo.workoutsDesc': 'Log gym workouts online for free: unlimited routines, barbell plate calculator, rest timer, and previous set history without subscriptions.',
+
+  'seo.exercisesTitle': 'Exercise Directory & Execution Technique',
+  'seo.exercisesDesc': 'Gym exercise directory with animations, target muscle groups, and 1RM personal records.',
+
+  'seo.nutritionTitle': 'Nutrition Diary & AI Photo Calorie Scanner',
+  'seo.nutritionDesc': 'Instant food recognition and macro calculation from meal photos via Gemini Vision. Free calorie calculator without subscriptions.',
+
+  'seo.coachTitle': 'Personal AI Fitness Coach Online',
+  'seo.coachDesc': 'Evidence-based workout, recovery, and nutrition advice from your 24/7 personal AI coach on duda.uz.',
+
+  'seo.todoTitle': 'Habit Tracker & Fitness Goal Calendar',
+  'seo.todoDesc': 'Plan workouts, sleep schedule, water intake, and supplements with integrated Pomodoro focus timer.',
+
+  'seo.progressTitle': 'Progress Analytics & 1RM Calculator',
+  'seo.progressDesc': 'Track workout volume tonnage, strength progression, and personal record milestones.',
+
+  'seo.programsTitle': 'Workout Programs & Splits (PPL, Full Body, Upper/Lower)',
+  'seo.programsDesc': 'Evidence-based workout routines from Jeff Nippard and top strength coaches.',
+
+  'seo.loginTitle': 'Sign In to duda.uz — Free Workout Tracker',
+  'seo.loginDesc': 'Join duda.uz: 100% free workout tracker and AI food diary with no subscriptions or ads.',
 };

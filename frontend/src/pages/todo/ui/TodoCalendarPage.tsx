@@ -40,12 +40,7 @@ import { TodoActivityLog } from './TodoActivityLog.tsx';
 import { ConfirmDeleteModal } from './ConfirmDeleteModal.tsx';
 
 export const TodoCalendarPage: React.FC = () => {
-  usePageSEO({
-    title: 'Календарь целей и трекер привычек',
-    description:
-      'Планируйте тренировки, режим сна, прием воды и спортивных добавок с таймером фокуса Pomodoro.',
-    canonicalPath: '/todo',
-  });
+  usePageSEO({ pageKey: 'todo', canonicalPath: '/todo' });
   const { t, language } = useTranslation();
   const queryClient = useQueryClient();
 

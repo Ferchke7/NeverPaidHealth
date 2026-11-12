@@ -43,12 +43,7 @@ interface ProgramsPageProps {
 }
 
 export const ProgramsPage: React.FC<ProgramsPageProps> = ({ onNavigateToWorkouts, embedded = false }) => {
-  usePageSEO({
-    title: 'Программы тренировок (PPL, Full Body, Сплиты)',
-    description:
-      'Готовые научно доказанные шаблоны тренировок от Джеффа Ниппарда и профессиональных тренеров.',
-    canonicalPath: '/programs',
-  });
+  usePageSEO({ pageKey: 'programs', canonicalPath: '/programs' });
   const { t } = useTranslation();
   const queryClient = useQueryClient();
 
