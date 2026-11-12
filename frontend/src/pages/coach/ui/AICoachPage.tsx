@@ -27,6 +27,7 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import { apiClient } from '../../../shared/api/client.ts';
 import { useAuthStore } from '../../../entities/user/model/authStore.ts';
 import { useTranslation } from '../../../shared/lib/i18n/i18n.ts';
+import { usePageSEO } from '../../../shared/lib/seo/usePageSEO.ts';
 import {
   SmartPhotoPickerModal,
   CompressedPhoto,
@@ -130,6 +131,12 @@ const MUSCLE_LABELS_UZ: Record<string, string> = {
 };
 
 export const AICoachPage: React.FC = () => {
+  usePageSEO({
+    title: 'Персональный AI Фитнес-Тренер онлайн',
+    description:
+      'Научно обоснованные рекомендации по тренировкам, восстановлению и питанию от вашего персонального AI коуча на duda.uz.',
+    canonicalPath: '/coach',
+  });
   const { t, language } = useTranslation();
   const user = useAuthStore((s) => s.user);
   const startWorkout = useStartWorkout();

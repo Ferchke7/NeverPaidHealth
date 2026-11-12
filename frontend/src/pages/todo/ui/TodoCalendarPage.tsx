@@ -28,6 +28,7 @@ import { todoStorage } from '../../../entities/todo/api/todoStorage.ts';
 import { useFocusTimerStore } from '../../../features/focus-timer/model/focusTimerStore.ts';
 import { useAuthStore } from '../../../entities/user/model/authStore.ts';
 import { useTranslation } from '../../../shared/lib/i18n/i18n.ts';
+import { usePageSEO } from '../../../shared/lib/seo/usePageSEO.ts';
 import { toLocalDateKey, formatDate } from '../../../shared/lib/dates.ts';
 import { generateUUID } from '../../../shared/lib/uuid.ts';
 import { playTaskCompleteSound, playTaskUncheckSound } from '../../../shared/lib/audio/soundEffects.ts';
@@ -39,6 +40,12 @@ import { TodoActivityLog } from './TodoActivityLog.tsx';
 import { ConfirmDeleteModal } from './ConfirmDeleteModal.tsx';
 
 export const TodoCalendarPage: React.FC = () => {
+  usePageSEO({
+    title: 'Календарь целей и трекер привычек',
+    description:
+      'Планируйте тренировки, режим сна, прием воды и спортивных добавок с таймером фокуса Pomodoro.',
+    canonicalPath: '/todo',
+  });
   const { t, language } = useTranslation();
   const queryClient = useQueryClient();
 

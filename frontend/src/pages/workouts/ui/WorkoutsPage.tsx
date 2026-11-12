@@ -31,6 +31,7 @@ import { RoutineDetailModal } from '../../../features/routine-preview/ui/Routine
 import { ProgramDetailModal } from '../../../features/program-preview/ui/ProgramDetailModal.tsx';
 import { useStartWorkout } from '../../../features/start-workout/model/useStartWorkout.ts';
 import { useTranslation } from '../../../shared/lib/i18n/i18n.ts';
+import { usePageSEO } from '../../../shared/lib/seo/usePageSEO.ts';
 import {
   Program,
   ProgramDay,
@@ -61,6 +62,12 @@ interface WorkoutsPageProps {
 }
 
 export const WorkoutsPage: React.FC<WorkoutsPageProps> = ({ onNavigateToPrograms }) => {
+  usePageSEO({
+    title: 'Бесплатный трекер тренировок и подходов',
+    description:
+      'Ведите дневник тренировок онлайн бесплатно: неограниченные программы, расчет блинов на гриф, таймер отдыха и история прошлых подходов.',
+    canonicalPath: '/workouts',
+  });
   const { t } = useTranslation();
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);

@@ -3,8 +3,15 @@ import { GoogleSignInButton } from '../../../features/auth-google/ui/AuthButtons
 import { Dumbbell, ShieldCheck, Zap, Sparkles } from 'lucide-react';
 import { LanguageSwitchToggle } from '../../../features/switch-language/ui/LanguageSwitchToggle.tsx';
 import { useTranslation } from '../../../shared/lib/i18n/i18n.ts';
+import { usePageSEO } from '../../../shared/lib/seo/usePageSEO.ts';
 
 export const LoginPage: React.FC = () => {
+  usePageSEO({
+    title: 'Вход в duda.uz — Бесплатный трекер тренировок',
+    description:
+      'Присоединяйтесь к duda.uz: 100% бесплатный фитнес-трекер и AI-дневник питания без подписок и рекламы.',
+    canonicalPath: '/login',
+  });
   const { t } = useTranslation();
 
   return (

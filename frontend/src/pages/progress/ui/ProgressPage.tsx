@@ -26,6 +26,7 @@ import { useAuthStore } from '../../../entities/user/model/authStore.ts';
 import { Exercise } from '../../../entities/exercise/model/types.ts';
 import { WorkoutHistoryItem } from '../../../entities/workout/model/types.ts';
 import { useTranslation } from '../../../shared/lib/i18n/i18n.ts';
+import { usePageSEO } from '../../../shared/lib/seo/usePageSEO.ts';
 import {
   ExerciseProgressionChart,
   MuscleBalanceRadarChart,
@@ -65,6 +66,11 @@ interface ExerciseHistoryResponse {
 }
 
 export const ProgressPage: React.FC = () => {
+  usePageSEO({
+    title: 'Аналитика прогресса и расчет 1RM',
+    description: 'Графики объема тренировок, силовых показателей и динамики личных рекордов.',
+    canonicalPath: '/progress',
+  });
   const navigate = useNavigate();
   const unitPref = useAuthStore((s) => s.unitPreference);
   const { language } = useTranslation();

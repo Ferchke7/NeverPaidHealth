@@ -20,6 +20,7 @@ import { ExerciseThumbnail } from '../../../entities/exercise/ui/ExerciseThumbna
 import { ExerciseInfoModal } from '../../../features/exercise-detail/ui/ExerciseInfoModal.tsx';
 
 import { useTranslation } from '../../../shared/lib/i18n/i18n.ts';
+import { usePageSEO } from '../../../shared/lib/seo/usePageSEO.ts';
 
 const MUSCLE_GROUPS: { value: MuscleGroup | 'all'; key: string }[] = [
   { value: 'all', key: 'exercises.allMuscles' },
@@ -46,6 +47,12 @@ const EQUIPMENT_LIST: { value: Equipment | 'all'; key: string }[] = [
 ];
 
 export const ExercisesPage: React.FC<{ embedded?: boolean }> = ({ embedded = false }) => {
+  usePageSEO({
+    title: 'База упражнений и техника выполнения',
+    description:
+      'Каталог упражнений для тренажерного зала с видеоинструкциями, целевыми мышечными группами и персональными рекордами 1RM.',
+    canonicalPath: '/exercises',
+  });
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');

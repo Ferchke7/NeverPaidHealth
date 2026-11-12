@@ -1,0 +1,36 @@
+# robots.txt for duda.uz — Royal SEO & Crawler Guidance
+User-agent: *
+Allow: /
+Allow: /workouts
+Allow: /exercises
+Allow: /nutrition
+Allow: /coach
+Allow: /todo
+Allow: /progress
+Allow: /programs
+Allow: /body
+Allow: /icons/
+Allow: /images/
+
+# Disallow internal API and auth proxy endpoints from public indexing
+Disallow: /api/
+Disallow: /auth/
+
+# Dedicated Crawler specific rules
+User-agent: Googlebot
+Allow: /
+Allow: /assets/
+Allow: /images/
+
+User-agent: Yandex
+Allow: /
+Allow: /assets/
+Allow: /images/
+
+User-agent: Bingbot
+Allow: /
+Allow: /assets/
+Allow: /images/
+
+# XML Sitemap Location
+Sitemap: https://duda.uz/sitemap.xml

@@ -25,6 +25,7 @@ import { Input } from '../../../shared/ui/input.tsx';
 import { Tabs } from '../../../shared/ui/tabs.tsx';
 import { ExerciseThumbnail } from '../../../entities/exercise/ui/ExerciseThumbnail.tsx';
 import { useTranslation } from '../../../shared/lib/i18n/i18n.ts';
+import { usePageSEO } from '../../../shared/lib/seo/usePageSEO.ts';
 import {
   Program,
   ActiveProgramResponse,
@@ -42,6 +43,12 @@ interface ProgramsPageProps {
 }
 
 export const ProgramsPage: React.FC<ProgramsPageProps> = ({ onNavigateToWorkouts, embedded = false }) => {
+  usePageSEO({
+    title: 'Программы тренировок (PPL, Full Body, Сплиты)',
+    description:
+      'Готовые научно доказанные шаблоны тренировок от Джеффа Ниппарда и профессиональных тренеров.',
+    canonicalPath: '/programs',
+  });
   const { t } = useTranslation();
   const queryClient = useQueryClient();
 

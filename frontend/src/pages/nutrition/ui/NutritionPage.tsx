@@ -18,6 +18,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../../shared/api/client.ts';
 import { Card, Button, Input, Modal, ProgressBar } from '../../../shared/ui/index.ts';
 import { useTranslation } from '../../../shared/lib/i18n/i18n.ts';
+import { usePageSEO } from '../../../shared/lib/seo/usePageSEO.ts';
 import { useAuthStore } from '../../../entities/user/model/authStore.ts';
 import {
   SmartPhotoPickerModal,
@@ -74,6 +75,12 @@ interface DailyNutritionSummary {
 }
 
 export const NutritionPage: React.FC = () => {
+  usePageSEO({
+    title: 'Дневник питания и AI-сканер калорий по фото',
+    description:
+      'Мгновенное распознавание еды и подсчет БЖУ по фотографии тарелки через Gemini Vision. Бесплатный калькулятор калорий без подписок.',
+    canonicalPath: '/nutrition',
+  });
   const { t, language } = useTranslation();
   const queryClient = useQueryClient();
   const user = useAuthStore((s) => s.user);

@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
+  <!-- Homepage -->
+  <url>
+    <loc>https://duda.uz/</loc>
+    <lastmod>2026-11-12</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://duda.uz/"/>
+    <xhtml:link rel="alternate" hreflang="uz" href="https://duda.uz/?lang=uz"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://duda.uz/?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://duda.uz/"/>
+  </url>
+
+  <!-- Workouts Tracker & Log -->
+  <url>
+    <loc>https://duda.uz/workouts</loc>
+    <lastmod>2026-11-12</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.95</priority>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://duda.uz/workouts"/>
+    <xhtml:link rel="alternate" hreflang="uz" href="https://duda.uz/workouts?lang=uz"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://duda.uz/workouts?lang=en"/>
+  </url>
+
+  <!-- Exercise Library & Technique -->
+  <url>
+    <loc>https://duda.uz/exercises</loc>
+    <lastmod>2026-11-12</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.95</priority>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://duda.uz/exercises"/>
+    <xhtml:link rel="alternate" hreflang="uz" href="https://duda.uz/exercises?lang=uz"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://duda.uz/exercises?lang=en"/>
+  </url>
+
+  <!-- Smart Nutrition & AI Photo Scanner -->
+  <url>
+    <loc>https://duda.uz/nutrition</loc>
+    <lastmod>2026-11-12</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.90</priority>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://duda.uz/nutrition"/>
+    <xhtml:link rel="alternate" hreflang="uz" href="https://duda.uz/nutrition?lang=uz"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://duda.uz/nutrition?lang=en"/>
+  </url>
+
+  <!-- AI Fitness Coach -->
+  <url>
+    <loc>https://duda.uz/coach</loc>
+    <lastmod>2026-11-12</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://duda.uz/coach"/>
+    <xhtml:link rel="alternate" hreflang="uz" href="https://duda.uz/coach?lang=uz"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://duda.uz/coach?lang=en"/>
+  </url>
+
+  <!-- Fitness Todo & Goals Calendar -->
+  <url>
+    <loc>https://duda.uz/todo</loc>
+    <lastmod>2026-11-12</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://duda.uz/todo"/>
+    <xhtml:link rel="alternate" hreflang="uz" href="https://duda.uz/todo?lang=uz"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://duda.uz/todo?lang=en"/>
+  </url>
+
+  <!-- Progress Analytics & 1RM Calculator -->
+  <url>
+    <loc>https://duda.uz/progress</loc>
+    <lastmod>2026-11-12</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.80</priority>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://duda.uz/progress"/>
+    <xhtml:link rel="alternate" hreflang="uz" href="https://duda.uz/progress?lang=uz"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://duda.uz/progress?lang=en"/>
+  </url>
+
+  <!-- Workout Programs & Routine Templates -->
+  <url>
+    <loc>https://duda.uz/programs</loc>
+    <lastmod>2026-11-12</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.80</priority>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://duda.uz/programs"/>
+    <xhtml:link rel="alternate" hreflang="uz" href="https://duda.uz/programs?lang=uz"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://duda.uz/programs?lang=en"/>
+  </url>
+</urlset>
