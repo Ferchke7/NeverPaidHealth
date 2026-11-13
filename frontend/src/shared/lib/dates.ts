@@ -1,5 +1,7 @@
 export function formatDate(dateString: string, locale?: string): string {
-  const d = new Date(dateString);
+  const d = /^\d{4}-\d{2}-\d{2}$/.test(dateString)
+    ? new Date(`${dateString}T12:00:00`)
+    : new Date(dateString);
   if (isNaN(d.getTime())) return dateString;
   const loc = locale === 'uz' ? 'uz-UZ' : locale === 'ru' ? 'ru-RU' : locale === 'en' ? 'en-US' : undefined;
   return d.toLocaleDateString(loc, {
@@ -10,7 +12,8 @@ export function formatDate(dateString: string, locale?: string): string {
 }
 
 export function toLocalDateKey(date: Date | string | number): string {
-  const d = typeof date === 'object' && date instanceof Date ? date : new Date(date);
+  if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)) return date;
+  const d = date instanceof Date ? date : new Date(date);
   if (isNaN(d.getTime())) return '';
   const year = d.getFullYear();
   const month = String(d.getMonth() + 1).padStart(2, '0');

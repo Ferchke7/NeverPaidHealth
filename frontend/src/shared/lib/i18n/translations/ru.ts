@@ -1,4 +1,6 @@
 export const ru = {
+  'nutrition.selectedDate': 'Дата дневника',
+  'nutrition.remainingForDay': 'Осталось на этот день',
   // Навигация
   'nav.workouts': 'Тренировки',
   'nav.todo': 'Todo',

@@ -1,4 +1,6 @@
 export const uz = {
+  'nutrition.selectedDate': 'Kundalik sanasi',
+  'nutrition.remainingForDay': 'Shu kun uchun qolgan',
   // Navigatsiya
   'nav.workouts': 'Mashg‘ulotlar',
   'nav.todo': 'Todo',

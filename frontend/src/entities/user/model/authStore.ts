@@ -18,10 +18,11 @@ interface AuthState {
   setUnitPreference: (unit: UnitPreference) => void;
   updateUserStats: (stats: Partial<UserProfile>) => void;
   checkSession: () => Promise<boolean>;
+  clearSession: () => void;
   logout: () => Promise<void>;
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuthStore = create<AuthState>((set, get) => ({
   accessToken: null,
   user: null,
   unitPreference: 'kg',
@@ -70,25 +71,18 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
   },
 
+  clearSession: () => {
+    queryClient.clear();
+    set({ accessToken: null, user: null, isAuthenticated: false, isInitializing: false });
+  },
+
   logout: async () => {
     try {
       await apiClient('/auth/logout', { method: 'POST' });
     } catch {
-      // Continue cleanup even if network fails
+      // Local sign-out must also work offline.
+    } finally {
+      get().clearSession();
     }
-    queryClient.clear();
-    try {
-      localStorage.removeItem('neverpaid_auth_v1');
-      localStorage.removeItem('neverpaid_active_workout_v1');
-      localStorage.removeItem('neverpaid_active_workout_v2');
-      localStorage.removeItem('np_exercise_notes_v1');
-    } catch {}
-    set({
-      accessToken: null,
-      user: null,
-      isAuthenticated: false,
-      isInitializing: false,
-    });
   },
 }));
-

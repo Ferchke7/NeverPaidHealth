@@ -1,4 +1,6 @@
 export const en = {
+  'nutrition.selectedDate': 'Diary date',
+  'nutrition.remainingForDay': 'Remaining for this day',
   // Navigation
   'nav.workouts': 'Workouts',
   'nav.todo': 'Todo',

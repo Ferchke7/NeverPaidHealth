@@ -1,6 +1,5 @@
 import { SetType, WorkoutHistoryItem } from './types.ts';
 import { calculateE1RM } from '../../../shared/lib/units.ts';
-import { PreviousSetData } from '../ui/SetRow.tsx';
 
 export interface HistoricalSetRecord {
   workoutId: string;
@@ -34,8 +33,7 @@ export function normalizeExerciseName(name?: string): string {
 export function extractExerciseHistory(
   workouts: WorkoutHistoryItem[] | undefined,
   exerciseId?: string,
-  exerciseName?: string,
-  currentPreviousSets?: PreviousSetData[] | null
+  exerciseName?: string
 ): HistoricalSetRecord[] {
   const records: HistoricalSetRecord[] = [];
   const normTargetName = normalizeExerciseName(exerciseName);
@@ -75,60 +73,6 @@ export function extractExerciseHistory(
             }
           }
         }
-      }
-    }
-  }
-
-  // If no workouts found from history query, but we have currentPreviousSets from /workouts/previous:
-  if (records.length === 0 && currentPreviousSets && currentPreviousSets.length > 0) {
-    currentPreviousSets.forEach((ps, idx) => {
-      const weight = Number(ps.weightKg ?? ps.weight_kg ?? 0);
-      const reps = Number(ps.reps ?? 0);
-      if (weight > 0 || reps > 0) {
-        const e1rm = calculateE1RM(weight, reps) ?? weight;
-        records.push({
-          workoutId: 'previous-session-1',
-          workoutName: '1-я прошлая тренировка',
-          date: new Date(Date.now() - 3 * 86400000).toISOString(),
-          setNumber: idx + 1,
-          setType: 'normal',
-          weightKg: weight,
-          reps: reps,
-          e1rmKg: Math.round(e1rm * 10) / 10,
-          volumeKg: Math.round(weight * reps * 10) / 10,
-        });
-      }
-    });
-  }
-
-  // If still completely empty (brand new exercise or offline without history), generate 3 past workout sessions
-  if (records.length === 0) {
-    const baseWeight = 50;
-    const baseReps = 8;
-    const sessionDaysAgo = [3, 7, 12];
-    const sessionNames = ['Прошлая тренировка', '2-я прошлая тренировка', '3-я прошлая тренировка'];
-
-    for (let sessionIdx = 0; sessionIdx < 3; sessionIdx++) {
-      const days = sessionDaysAgo[sessionIdx];
-      const workoutDate = new Date(Date.now() - days * 86400000).toISOString();
-      const weightStep = sessionIdx * 2.5;
-
-      for (let setNum = 1; setNum <= 4; setNum++) {
-        const w = Math.max(20, baseWeight - weightStep);
-        const r = Math.max(6, baseReps - (setNum > 2 ? 1 : 0));
-        const e1rm = calculateE1RM(w, r) ?? w;
-
-        records.push({
-          workoutId: `benchmark-session-${sessionIdx + 1}`,
-          workoutName: sessionNames[sessionIdx],
-          date: workoutDate,
-          setNumber: setNum,
-          setType: 'normal',
-          weightKg: w,
-          reps: r,
-          e1rmKg: Math.round(e1rm * 10) / 10,
-          volumeKg: Math.round(w * r * 10) / 10,
-        });
       }
     }
   }

@@ -1,3 +1,4 @@
+import { toLocalDateKey } from '@/shared/lib/dates.ts';
 import React, { useState, useMemo, useEffect } from 'react';
 import {
   Zap,
@@ -245,7 +246,7 @@ export const BMICalculatorCard: React.FC<BMICalculatorCardProps> = ({
       }
 
       // 3. Log to backend body measurements if needed
-      const todayStr = new Date().toISOString().split('T')[0];
+      const todayStr = toLocalDateKey(new Date());
       await apiClient.post('/body/logs', {
         log_date: todayStr,
         weight_kg: numericWeightKg,

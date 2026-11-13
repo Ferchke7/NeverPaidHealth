@@ -58,7 +58,7 @@ export async function apiClient<T>(
     }
 
     if (response.status === 401) {
-      useAuthStore.getState().logout();
+      if (!endpoint.startsWith('/auth/')) useAuthStore.getState().clearSession();
     }
 
     throw new ApiError(problem);

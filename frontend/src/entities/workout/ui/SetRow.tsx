@@ -10,7 +10,7 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { ActiveSet, SetType } from '../model/types.ts';
-import { calculateE1RM, formatWeight } from '../../../shared/lib/units.ts';
+import { calculateE1RM, formatWeight, kgToLb, LB_TO_KG } from '../../../shared/lib/units.ts';
 import { useAuthStore } from '../../user/model/authStore.ts';
 import { HistoricalSetRecord, getLast3RecentForSet } from '../model/setHistory.ts';
 import { useTranslation } from '../../../shared/lib/i18n/i18n.ts';
@@ -48,6 +48,7 @@ export const SetRow: React.FC<SetRowProps> = ({
   const { t } = useTranslation();
   const unit = useAuthStore((s) => s.unitPreference);
   const e1rm = calculateE1RM(set.weightKg, set.reps);
+  const usesPounds = unit === 'lb' && measurementType !== 'distance_duration';
 
   const [isExpanded, setIsExpanded] = useState(false);
   const showExpanded = forceExpanded || isExpanded;
@@ -75,54 +76,8 @@ export const SetRow: React.FC<SetRowProps> = ({
     return getLast3RecentForSet(allExerciseHistory, set.setNumber);
   }, [allExerciseHistory, set.setNumber]);
 
-  // Fallback to previousSet and synthesize up to 3 records so the user ALWAYS sees 3 past results
-  const effectiveTopRecords = useMemo(() => {
-    const list = [...recentRecords];
-    if (list.length === 0) {
-      const seedWeight = prevWeight > 0 ? prevWeight : (set.weightKg > 0 ? set.weightKg : 50);
-      const seedReps = prevReps > 0 ? prevReps : (set.reps > 0 ? set.reps : 8);
-      const calc1RM = calculateE1RM(seedWeight, seedReps) ?? seedWeight;
-      list.push({
-        workoutId: 'prev-workout-1',
-        workoutName: '1-я прошлая тренировка',
-        date: new Date(Date.now() - 3 * 86400000).toISOString(),
-        setNumber: set.setNumber,
-        setType: set.setType,
-        weightKg: seedWeight,
-        reps: seedReps,
-        e1rmKg: Math.round(calc1RM * 10) / 10,
-        volumeKg: Math.round(seedWeight * seedReps * 10) / 10,
-      });
-    }
-
-    // Synthesize up to 3 records if fewer than 3 are present
-    if (list.length > 0 && list.length < 3) {
-      const first = list[0];
-      while (list.length < 3) {
-        const step = list.length;
-        const pastDays = (step + 1) * 4;
-        const pastWeight = Math.max(
-          0,
-          first.weightKg > 0 ? (first.weightKg > 20 ? first.weightKg - step * 2.5 : first.weightKg) : 0
-        );
-        const pastReps = Math.max(1, first.weightKg > 0 ? first.reps : Math.max(1, first.reps - step * 2));
-        const calc1RM = calculateE1RM(pastWeight, pastReps) ?? pastWeight;
-        list.push({
-          workoutId: `prev-synth-${step}`,
-          workoutName: `${step + 1}-я прошлая тренировка`,
-          date: new Date(Date.now() - pastDays * 86400000).toISOString(),
-          setNumber: set.setNumber,
-          setType: set.setType,
-          weightKg: pastWeight,
-          reps: pastReps,
-          e1rmKg: Math.round(calc1RM * 10) / 10,
-          volumeKg: Math.round(pastWeight * pastReps * 10) / 10,
-        });
-      }
-    }
-
-    return list;
-  }, [recentRecords, prevWeight, prevReps, set.weightKg, set.reps, set.setNumber, set.setType]);
+  // Only recorded performances belong in history; previous values remain input hints.
+  const effectiveTopRecords = recentRecords;
 
   const previousText = useMemo(() => {
     if (hasPrevious) {
@@ -215,7 +170,7 @@ export const SetRow: React.FC<SetRowProps> = ({
               <ChevronUp className="w-2.5 h-2.5 text-brand-400 shrink-0" />
             ) : (
               <span className="text-[8px] text-brand-400/90 font-bold ml-0.5 font-mono inline-flex items-center">
-                3<ChevronDown className="w-2 h-2 ml-0.5 inline shrink-0" />
+                {effectiveTopRecords.length}<ChevronDown className="w-2 h-2 ml-0.5 inline shrink-0" />
               </span>
             )}
           </button>
@@ -228,17 +183,20 @@ export const SetRow: React.FC<SetRowProps> = ({
               type="number"
               step="0.5"
               min="0"
-              value={set.weightKg === 0 ? '' : set.weightKg}
+              value={set.weightKg === 0 ? '' : usesPounds ? kgToLb(set.weightKg) : set.weightKg}
               placeholder={
                 prevWeight > 0
-                  ? `${prevWeight}`
+                  ? `${usesPounds ? kgToLb(prevWeight) : prevWeight}`
                   : measurementType === 'distance_duration'
                   ? 'km'
                   : measurementType === 'bodyweight_reps'
                   ? '+0'
                   : '0'
               }
-              onChange={(e) => onUpdate({ weightKg: parseFloat(e.target.value) || 0 })}
+              onChange={(e) => {
+                const weight = Math.max(0, Number(e.target.value) || 0);
+                onUpdate({ weightKg: usesPounds ? weight * LB_TO_KG : weight });
+              }}
               className={`w-full bg-dark-900 border rounded-xl py-1.5 px-1 sm:px-2 text-center text-xs sm:text-sm font-mono font-bold transition-all focus:outline-none focus:ring-1 focus:ring-brand-500 ${
                 set.completed
                   ? 'border-emerald-500/40 text-emerald-200'

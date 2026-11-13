@@ -137,7 +137,12 @@ func (s *CoachService) SaveMeal(ctx context.Context, meal coach.MealLog) error {
 }
 
 func (s *CoachService) GetTodayNutrition(ctx context.Context, userID uuid.UUID) (coach.DailyNutritionSummary, error) {
-	meals, err := s.meals.GetTodayMeals(ctx, userID)
+	start, end, _ := coach.NutritionDayBounds("", "UTC", time.Now())
+	return s.GetDailyNutrition(ctx, userID, start, end)
+}
+
+func (s *CoachService) GetDailyNutrition(ctx context.Context, userID uuid.UUID, start, end time.Time) (coach.DailyNutritionSummary, error) {
+	meals, err := s.meals.GetMealsBetween(ctx, userID, start, end)
 	if err != nil {
 		return coach.DailyNutritionSummary{}, err
 	}
@@ -154,9 +159,8 @@ func (s *CoachService) GetTodayNutrition(ctx context.Context, userID uuid.UUID) 
 		totFat += m.FatG
 	}
 
-	now := time.Now().UTC()
 	return coach.DailyNutritionSummary{
-		Date:           now.Format("2006-01-02"),
+		Date:           start.Format("2006-01-02"),
 		TotalCalories:  totCals,
 		TotalProteinG:  totProtein,
 		TotalCarbsG:    totCarbs,

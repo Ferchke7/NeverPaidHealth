@@ -1,0 +1,122 @@
+openapi: 3.1.0
+info:
+  title: duda Nutrition API
+  version: 1.0.0
+  license: {name: MIT, identifier: MIT}
+servers:
+  - url: /api/v1
+security:
+  - BearerAuth: []
+paths:
+  /nutrition/today:
+    get:
+      security:
+        - BearerAuth: []
+      operationId: getDailyNutrition
+      summary: Read nutrition for a local calendar day
+      parameters:
+        - name: date
+          in: query
+          description: Selected day. Defaults to today in the requested timezone.
+          schema: {type: string, format: date}
+        - name: timezone
+          in: query
+          description: IANA timezone, including DST rules. Defaults to UTC for older clients.
+          schema: {type: string, default: UTC, example: Europe/Moscow}
+      responses:
+        '200':
+          description: Daily totals and meals
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/DailyNutritionSummary'}
+        '400': {description: Invalid date or timezone}
+        '401': {description: Authentication required}
+  /nutrition/meals:
+    post:
+      security:
+        - BearerAuth: []
+      operationId: saveMeal
+      summary: Save a meal at its actual or selected-day timestamp
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/SaveMeal'}
+      responses:
+        '201':
+          description: Saved meal with populated timestamp
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Meal'}
+        '400': {description: Invalid meal or timestamp}
+        '401': {description: Authentication required}
+  /nutrition/meals/{id}:
+    delete:
+      security:
+        - BearerAuth: []
+      operationId: deleteMeal
+      summary: Delete the current user's meal
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+      responses:
+        '204': {description: Deleted}
+        '401': {description: Authentication required}
+components:
+  securitySchemes:
+    BearerAuth: {type: http, scheme: bearer, bearerFormat: JWT}
+  schemas:
+    MealItem:
+      type: object
+      properties:
+        name: {type: string}
+        portion: {type: string}
+        calories: {type: integer, minimum: 0}
+        protein_g: {type: number, minimum: 0}
+        carbs_g: {type: number, minimum: 0}
+        fat_g: {type: number, minimum: 0}
+    SaveMeal:
+      type: object
+      required: [name, meal_type, calories, protein_g, carbs_g, fat_g]
+      properties:
+        id: {type: string, format: uuid}
+        name: {type: string}
+        meal_type: {type: string}
+        calories: {type: integer, minimum: 0}
+        protein_g: {type: number, minimum: 0}
+        carbs_g: {type: number, minimum: 0}
+        fat_g: {type: number, minimum: 0}
+        photo_url: {type: string}
+        logged_at:
+          type: string
+          format: date-time
+          description: RFC3339 timestamp; omitted means the current instant.
+        items:
+          type: array
+          items: {$ref: '#/components/schemas/MealItem'}
+    Meal:
+      allOf:
+        - {$ref: '#/components/schemas/SaveMeal'}
+        - type: object
+          required: [id, logged_at]
+          properties:
+            user_id: {type: string, format: uuid}
+            created_at: {type: string, format: date-time}
+    DailyNutritionSummary:
+      type: object
+      required: [date, meals, total_calories, total_protein_g, total_carbs_g, total_fat_g]
+      properties:
+        date: {type: string, format: date}
+        total_calories: {type: integer}
+        total_protein_g: {type: number}
+        total_carbs_g: {type: number}
+        total_fat_g: {type: number}
+        target_calories: {type: integer}
+        target_protein_g: {type: number}
+        target_carbs_g: {type: number}
+        target_fat_g: {type: number}
+        meals:
+          type: array
+          items: {$ref: '#/components/schemas/Meal'}

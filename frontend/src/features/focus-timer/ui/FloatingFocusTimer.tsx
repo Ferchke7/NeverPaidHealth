@@ -146,7 +146,7 @@ export const FloatingFocusTimer: React.FC = () => {
     return (
       <div
         className={`fixed ${
-          hasFloatingWorkoutPill ? 'bottom-36 md:bottom-24' : 'bottom-20 md:bottom-6'
+          hasFloatingWorkoutPill ? 'bottom-36 2xl:bottom-24' : 'bottom-20 2xl:bottom-6'
         } right-3 sm:right-4 md:right-6 z-50 animate-in slide-in-from-bottom-5 transition-all`}
       >
         <div

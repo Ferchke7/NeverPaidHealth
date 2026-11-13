@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import { readNutritionNumber } from '@/entities/nutrition';
+import { toLocalDateKey } from '@/shared/lib/dates.ts';
+import React, { useState, useEffect } from 'react';
 import {
   Camera,
   Plus,
@@ -81,11 +83,18 @@ export const NutritionPage: React.FC = () => {
   const user = useAuthStore((s) => s.user);
 
   // Water Tracker State
-  const todayKey = new Date().toISOString().slice(0, 10);
+  const [selectedDate, setSelectedDate] = useState(() => toLocalDateKey(new Date()));
+  const todayKey = selectedDate;
+  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
   const waterStorageKey = user?.id ? `np_water_${user.id}_${todayKey}` : `np_water_${todayKey}`;
   const [waterMl, setWaterMl] = useState<number>(() => {
-    return Number(localStorage.getItem(waterStorageKey) || '0');
+    const stored = Number(localStorage.getItem(waterStorageKey) || '0');
+    return Number.isFinite(stored) ? Math.max(0, stored) : 0;
   });
+  useEffect(() => {
+    const stored = Number(localStorage.getItem(waterStorageKey) || '0');
+    setWaterMl(Number.isFinite(stored) ? Math.max(0, stored) : 0);
+  }, [waterStorageKey]);
   const targetWaterMl = 2500;
   const waterPct = Math.min(100, Math.round((waterMl / targetWaterMl) * 100));
 
@@ -127,8 +136,8 @@ export const NutritionPage: React.FC = () => {
 
   // Fetch today's nutrition
   const { data: summary, isLoading } = useQuery<DailyNutritionSummary>({
-    queryKey: ['nutrition', 'today'],
-    queryFn: () => apiClient.get('/nutrition/today'),
+    queryKey: ['nutrition', 'day', user?.id, selectedDate, timezone],
+    queryFn: () => apiClient.get(`/nutrition/today?${new URLSearchParams({ date: selectedDate, timezone })}`),
   });
 
   // Analyze Photo Mutation
@@ -170,7 +179,7 @@ export const NutritionPage: React.FC = () => {
     mutationFn: (mealData: Partial<MealLog>) =>
       apiClient.post<MealLog>('/nutrition/meals', mealData),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['nutrition', 'today'] });
+      void queryClient.invalidateQueries({ queryKey: ['nutrition'] });
       void queryClient.invalidateQueries({ queryKey: ['coach-insights'] });
       setIsLogModalOpen(false);
       setSelectedImage(null);
@@ -191,7 +200,7 @@ export const NutritionPage: React.FC = () => {
   const deleteMealMutation = useMutation({
     mutationFn: (mealId: string) => apiClient.delete(`/nutrition/meals/${mealId}`),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['nutrition', 'today'] });
+      void queryClient.invalidateQueries({ queryKey: ['nutrition'] });
       void queryClient.invalidateQueries({ queryKey: ['coach-insights'] });
     },
   });
@@ -211,42 +220,20 @@ export const NutritionPage: React.FC = () => {
   };
 
   const handleSaveMeal = () => {
-    const mealName =
-      editMealName.trim() ||
-      (activeLogTab === 'manual' ? manualName.trim() : null) ||
-      scanResult?.meal_name ||
-      textResult?.meal_name ||
-      'Meal';
-
-    const cals =
-      parseInt(editCalories, 10) ||
-      (activeLogTab === 'manual' ? parseInt(manualCalories, 10) : 0) ||
-      scanResult?.total_calories ||
-      textResult?.total_calories ||
-      0;
-
-    const protein =
-      parseFloat(editProtein) ||
-      (activeLogTab === 'manual' ? parseFloat(manualProtein) : 0) ||
-      scanResult?.total_protein_g ||
-      textResult?.total_protein_g ||
-      0;
-
-    const carbs =
-      parseFloat(editCarbs) ||
-      (activeLogTab === 'manual' ? parseFloat(manualCarbs) : 0) ||
-      scanResult?.total_carbs_g ||
-      textResult?.total_carbs_g ||
-      0;
-
-    const fat =
-      parseFloat(editFat) ||
-      (activeLogTab === 'manual' ? parseFloat(manualFat) : 0) ||
-      scanResult?.total_fat_g ||
-      textResult?.total_fat_g ||
-      0;
+    // Each tab owns its values. Zero is a valid correction to an AI estimate.
+    const manual = activeLogTab === 'manual';
+    const result = manual ? null : activeLogTab === 'photo' ? scanResult : textResult;
+    const mealName = (manual ? manualName : editMealName).trim() || result?.meal_name || t('nutrition.logMeal');
+    const cals = Math.round(readNutritionNumber(manual ? manualCalories : editCalories, manual ? 0 : result?.total_calories));
+    const protein = readNutritionNumber(manual ? manualProtein : editProtein, manual ? 0 : result?.total_protein_g);
+    const carbs = readNutritionNumber(manual ? manualCarbs : editCarbs, manual ? 0 : result?.total_carbs_g);
+    const fat = readNutritionNumber(manual ? manualFat : editFat, manual ? 0 : result?.total_fat_g);
+    const loggedAt = selectedDate === toLocalDateKey(new Date())
+      ? new Date().toISOString()
+      : new Date(`${selectedDate}T12:00:00`).toISOString();
 
     saveMealMutation.mutate({
+      logged_at: loggedAt,
       meal_type: selectedMealType,
       name: mealName,
       calories: cals,
@@ -351,6 +338,16 @@ export const NutritionPage: React.FC = () => {
         </div>
       </div>
 
+      <Input
+        type="date"
+        aria-label={t('nutrition.selectedDate')}
+        label={t('nutrition.selectedDate')}
+        value={selectedDate}
+        onChange={(event) => {
+          if (/^\d{4}-\d{2}-\d{2}$/.test(event.target.value)) setSelectedDate(event.target.value);
+        }}
+      />
+
       {/* 2. Top Hero: Macro & Calorie Dashboard */}
       <Card className="p-4 sm:p-5 bg-gradient-to-br from-dark-850 via-dark-850 to-brand-950/20 border-dark-700/80 shadow-xl space-y-4 rounded-2xl">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-dark-750">
@@ -358,7 +355,7 @@ export const NutritionPage: React.FC = () => {
             <div className="flex items-center gap-1.5">
               <Target className="w-3.5 h-3.5 text-brand-400" />
               <h2 className="text-[11px] font-bold uppercase tracking-wider text-zinc-400">
-                {t('nutrition.remainingToday')}
+                {t('nutrition.remainingForDay')}
               </h2>
             </div>
             <div className="flex items-baseline gap-2 mt-1">

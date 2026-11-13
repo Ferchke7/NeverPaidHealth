@@ -64,6 +64,7 @@ export const ActiveWorkoutSheet: React.FC = () => {
   const saveNoteForNextWorkout = useExerciseNotesStore((s) => s.saveNoteForNextWorkout);
   const markNoteAsRead = useExerciseNotesStore((s) => s.markNoteAsRead);
 
+  const userId = useAuthStore((s) => s.user?.id);
   const unitPref = useAuthStore((s) => s.unitPreference);
 
   const isRestTimerActive = useRestTimerStore((s) => s.isActive);
@@ -515,7 +516,7 @@ export const ActiveWorkoutSheet: React.FC = () => {
       // Save locally to workoutHistoryStorage immediately
       const finishedItem: WorkoutHistoryItem = {
         id: workout.id,
-        user_id: 'local-user',
+        user_id: userId,
         name: workout.name,
         started_at: new Date(Date.now() - elapsedSeconds * 1000).toISOString(),
         ended_at: new Date().toISOString(),
@@ -1026,8 +1027,7 @@ export const ActiveWorkoutSheet: React.FC = () => {
                         const exerciseHistory = extractExerciseHistory(
                           allWorkoutsHistory,
                           exercise.exerciseId,
-                          exercise.exerciseName,
-                          Array.isArray(prevList) ? prevList : null
+                          exercise.exerciseName
                         );
 
                         return exercise.sets.map((set, sIdx) => {
