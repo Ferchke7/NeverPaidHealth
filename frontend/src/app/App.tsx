@@ -1,3 +1,7 @@
+import { useActiveWorkoutStore } from '@/entities/workout/model/activeWorkoutStore.ts';
+import { useRestTimerStore } from '@/entities/workout/model/restTimerStore.ts';
+import { useExerciseNotesStore } from '@/entities/workout/model/exerciseNotesStore.ts';
+import { useFocusTimerStore } from '@/features/focus-timer/model/focusTimerStore.ts';
 import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../entities/user/model/authStore.ts';
@@ -73,6 +77,23 @@ export const App: React.FC = () => {
   React.useEffect(() => {
     void checkSession();
   }, [checkSession]);
+
+  const wasAuthenticated = React.useRef(isAuthenticated);
+  React.useEffect(() => {
+    if (wasAuthenticated.current && !isInitializing && !isAuthenticated) {
+      useActiveWorkoutStore.getState().discardWorkout();
+      useRestTimerStore.getState().stopTimer();
+      useFocusTimerStore.getState().discard();
+      useExerciseNotesStore.setState({ savedNotes: {}, readSignatures: {} });
+      try {
+        localStorage.removeItem('np_exercise_notes_v1');
+        localStorage.removeItem('neverpaid_auth_v1');
+      } catch {
+        // In-memory sign-out also works when browser storage is unavailable.
+      }
+    }
+    wasAuthenticated.current = isAuthenticated;
+  }, [isAuthenticated, isInitializing]);
 
   if (isInitializing) {
     return (

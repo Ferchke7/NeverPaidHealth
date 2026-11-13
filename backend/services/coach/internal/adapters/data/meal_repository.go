@@ -99,13 +99,14 @@ func (r *MealRepository) SaveMeal(ctx context.Context, meal coach.MealLog) error
 }
 
 func (r *MealRepository) GetTodayMeals(ctx context.Context, userID uuid.UUID) ([]coach.MealLog, error) {
+	start, end, _ := coach.NutritionDayBounds("", "UTC", time.Now())
+	return r.GetMealsBetween(ctx, userID, start, end)
+}
+
+func (r *MealRepository) GetMealsBetween(ctx context.Context, userID uuid.UUID, startOfDay, endOfDay time.Time) ([]coach.MealLog, error) {
 	if r.pool == nil {
 		return []coach.MealLog{}, nil
 	}
-
-	now := time.Now().UTC()
-	startOfDay := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
-	endOfDay := startOfDay.Add(24 * time.Hour)
 
 	query := `
 		SELECT id, user_id, meal_type, name, calories, protein_g, carbs_g, fat_g, COALESCE(photo_url, ''), items, logged_at, created_at

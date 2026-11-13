@@ -199,7 +199,7 @@ export const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workouts }) =>
     const runner = new Date(start);
 
     for (let i = 0; i < 52 * 7; i++) {
-      const dateKey = runner.toISOString().slice(0, 10);
+      const dateKey = toLocalDateKey(runner);
       const count = workoutsByDate[dateKey]?.length || 0;
       const level = count === 0 ? 0 : count === 1 ? 1 : count === 2 ? 2 : 3;
 
@@ -339,7 +339,7 @@ export const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workouts }) =>
             const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`;
             const dayWorkouts = workoutsByDate[dateKey] || [];
             const isSelected = selectedDateStr === dateKey;
-            const isToday = new Date().toISOString().slice(0, 10) === dateKey;
+            const isToday = toLocalDateKey(new Date()) === dateKey;
 
             return (
               <div

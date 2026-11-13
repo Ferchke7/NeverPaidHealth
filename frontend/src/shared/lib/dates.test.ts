@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { toLocalDateKey } from './dates.ts';
+import { toLocalDateKey, formatDate } from './dates.ts';
 
 describe('Date utilities', () => {
   it('toLocalDateKey formats date according to local timezone components', () => {
@@ -15,4 +15,9 @@ describe('Date utilities', () => {
     const key = toLocalDateKey('2026-10-15T12:00:00Z');
     expect(key).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   });
+  it('preserves a date-only diary key in every timezone', () => {
+    expect(toLocalDateKey('2026-11-13')).toBe('2026-11-13');
+    expect(formatDate('2026-11-13', 'en')).toContain('13');
+  });
+
 });

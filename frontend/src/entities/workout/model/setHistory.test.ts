@@ -163,4 +163,20 @@ describe('setHistory logic', () => {
     expect(recentRecords[2].weightKg).toBe(20);
     expect(recentRecords[2].reps).toBe(12);
   });
+  it('keeps empty history empty instead of fabricating performance', () => {
+    expect(extractExerciseHistory([], 'new-exercise', 'New exercise')).toEqual([]);
+    expect(extractExerciseHistory(undefined, 'new-exercise')).toEqual([]);
+  });
+
+  it('excludes uncompleted sets and unfinished workouts', () => {
+    const unfinished = { ...mockWorkouts[0], status: 'in_progress' };
+    const unchecked: WorkoutHistoryItem = {
+      ...mockWorkouts[0],
+      exercises: [{ ...mockWorkouts[0].exercises![0], sets: [
+        { set_number: 1, set_type: 'normal', weight_kg: 200, reps: 5, completed: false },
+      ] }],
+    };
+    expect(extractExerciseHistory([unfinished, unchecked], 'ex-pullup')).toEqual([]);
+  });
+
 });

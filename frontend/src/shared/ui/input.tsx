@@ -26,10 +26,14 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
       startContent,
       endContent,
       disabled,
+      id,
       ...props
     },
     ref
   ) => {
+    const generatedId = React.useId();
+    const inputId = id || generatedId;
+    const messageId = `${inputId}-message`;
     const isError = isInvalid || !!error || !!errorMessage;
     const activeError = errorMessage || error;
 
@@ -49,7 +53,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
     return (
       <div className="w-full space-y-1">
         {label && (
-          <label className="block text-xs font-bold uppercase tracking-wider text-zinc-300">
+          <label htmlFor={inputId} className="block text-xs font-bold uppercase tracking-wider text-zinc-300">
             {label}
           </label>
         )}
@@ -68,6 +72,9 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
           )}
 
           <input
+            id={inputId}
+            aria-invalid={isError || undefined}
+            aria-describedby={activeError || description ? messageId : props['aria-describedby']}
             ref={ref}
             disabled={disabled}
             className={`w-full bg-transparent text-zinc-100 placeholder-zinc-500 focus:outline-none font-medium ${sizeStyles} ${className}`}
@@ -82,11 +89,11 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
         </div>
 
         {description && !activeError && (
-          <p className="text-[11px] text-zinc-400 leading-tight">{description}</p>
+          <p id={messageId} className="text-[11px] text-zinc-400 leading-tight">{description}</p>
         )}
 
         {activeError && (
-          <p className="text-xs text-red-400 font-medium flex items-center gap-1 animate-fade-in">
+          <p id={messageId} className="text-xs text-red-400 font-medium flex items-center gap-1 animate-fade-in">
             <span>{activeError}</span>
           </p>
         )}
@@ -117,10 +124,14 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
       isInvalid = false,
       variant = 'bordered',
       disabled,
+      id,
       ...props
     },
     ref
   ) => {
+    const generatedId = React.useId();
+    const inputId = id || generatedId;
+    const messageId = `${inputId}-message`;
     const isError = isInvalid || !!error || !!errorMessage;
     const activeError = errorMessage || error;
 
@@ -133,12 +144,15 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
     return (
       <div className="w-full space-y-1">
         {label && (
-          <label className="block text-xs font-bold uppercase tracking-wider text-zinc-300">
+          <label htmlFor={inputId} className="block text-xs font-bold uppercase tracking-wider text-zinc-300">
             {label}
           </label>
         )}
 
         <textarea
+          id={inputId}
+          aria-invalid={isError || undefined}
+          aria-describedby={activeError || description ? messageId : props['aria-describedby']}
           ref={ref}
           disabled={disabled}
           className={`w-full rounded-xl p-3 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none font-medium transition-all duration-150 resize-none ${variantStyles} ${
@@ -148,11 +162,11 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
         />
 
         {description && !activeError && (
-          <p className="text-[11px] text-zinc-400 leading-tight">{description}</p>
+          <p id={messageId} className="text-[11px] text-zinc-400 leading-tight">{description}</p>
         )}
 
         {activeError && (
-          <p className="text-xs text-red-400 font-medium flex items-center gap-1 animate-fade-in">
+          <p id={messageId} className="text-xs text-red-400 font-medium flex items-center gap-1 animate-fade-in">
             <span>{activeError}</span>
           </p>
         )}

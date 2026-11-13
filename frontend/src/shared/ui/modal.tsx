@@ -52,52 +52,53 @@ export const Modal: React.FC<ModalProps> = ({
         if (!open) onClose();
       }}
     >
-      <HeroModal.Backdrop className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 animate-in fade-in duration-200" />
-      <HeroModal.Container className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-y-auto">
-        <HeroModal.Dialog
-          className={`relative w-full ${sizeStyles} bg-dark-850 border border-dark-700/80 rounded-t-3xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[90dvh] sm:max-h-[85dvh] pb-[env(safe-area-inset-bottom)] sm:pb-0 overflow-hidden ${className}`}
-        >
-          {(title || effectiveIcon) && (
-            <HeroModal.Header className="px-4 sm:px-6 py-3.5 border-b border-dark-700/70 flex items-center justify-between gap-3 shrink-0 bg-dark-900/40">
-              <div className="flex items-center gap-3 min-w-0">
-                {effectiveIcon && <div className="shrink-0">{effectiveIcon}</div>}
-                <div className="min-w-0">
-                  {title && (
-                    <HeroModal.Heading className="text-base sm:text-lg font-bold text-white tracking-tight truncate">
-                      {title}
-                    </HeroModal.Heading>
-                  )}
-                  {effectiveSubtitle && (
-                    <p className="text-xs text-zinc-400 mt-0.5 truncate">{effectiveSubtitle}</p>
-                  )}
+      <HeroModal.Backdrop className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 animate-in fade-in duration-200">
+        <HeroModal.Container className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-y-auto">
+          <HeroModal.Dialog
+            className={`relative w-full ${sizeStyles} bg-dark-850 border border-dark-700/80 rounded-t-3xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[90dvh] sm:max-h-[85dvh] pb-[env(safe-area-inset-bottom)] sm:pb-0 overflow-hidden ${className}`}
+          >
+            {(title || effectiveIcon) && (
+              <HeroModal.Header className="px-4 sm:px-6 py-3.5 border-b border-dark-700/70 flex items-center justify-between gap-3 shrink-0 bg-dark-900/40">
+                <div className="flex items-center gap-3 min-w-0">
+                  {effectiveIcon && <div className="shrink-0">{effectiveIcon}</div>}
+                  <div className="min-w-0">
+                    {title && (
+                      <HeroModal.Heading className="text-base sm:text-lg font-bold text-white tracking-tight truncate">
+                        {title}
+                      </HeroModal.Heading>
+                    )}
+                    {effectiveSubtitle && (
+                      <p className="text-xs text-zinc-400 mt-0.5 truncate">{effectiveSubtitle}</p>
+                    )}
+                  </div>
                 </div>
-              </div>
-              {!hideCloseButton && (
-                <Button
-                  isIconOnly
-                  size="xs"
-                  variant="ghost"
-                  onClick={onClose}
-                  className="text-zinc-400 hover:text-white shrink-0"
-                  aria-label={t('common.close')}
-                >
-                  <X className="w-4 h-4" />
-                </Button>
-              )}
-            </HeroModal.Header>
-          )}
+                {!hideCloseButton && (
+                  <Button
+                    isIconOnly
+                    size="xs"
+                    variant="ghost"
+                    onClick={onClose}
+                    className="text-zinc-400 hover:text-white shrink-0"
+                    aria-label={t('common.close')}
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                )}
+              </HeroModal.Header>
+            )}
 
-          <HeroModal.Body className="flex-1 overflow-y-auto p-4 sm:p-6 overscroll-contain">
-            {children}
-          </HeroModal.Body>
+            <HeroModal.Body className="flex-1 overflow-y-auto p-4 sm:p-6 overscroll-contain">
+              {children}
+            </HeroModal.Body>
 
-          {footer && (
-            <HeroModal.Footer className="px-4 sm:px-6 py-3 bg-dark-900/80 border-t border-dark-700/70 flex items-center justify-end gap-2.5 shrink-0">
-              {footer}
-            </HeroModal.Footer>
-          )}
-        </HeroModal.Dialog>
-      </HeroModal.Container>
+            {footer && (
+              <HeroModal.Footer className="px-4 sm:px-6 py-3 bg-dark-900/80 border-t border-dark-700/70 flex items-center justify-end gap-2.5 shrink-0">
+                {footer}
+              </HeroModal.Footer>
+            )}
+          </HeroModal.Dialog>
+        </HeroModal.Container>
+      </HeroModal.Backdrop>
     </HeroModal.Root>
   );
 };

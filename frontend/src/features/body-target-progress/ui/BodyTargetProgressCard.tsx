@@ -1,3 +1,4 @@
+import { toLocalDateKey } from '@/shared/lib/dates.ts';
 import React, { useState, useMemo } from 'react';
 import {
   Scale,
@@ -125,7 +126,7 @@ export const BodyTargetProgressCard: React.FC<BodyTargetProgressCardProps> = ({
   // Quick Log Today's Weight Mutation
   const logWeightMutation = useMutation({
     mutationFn: async (weightValueKg: number) => {
-      const todayStr = new Date().toISOString().split('T')[0];
+      const todayStr = toLocalDateKey(new Date());
       return apiClient.post('/body/logs', {
         log_date: todayStr,
         weight_kg: weightValueKg,

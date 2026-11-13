@@ -3,6 +3,7 @@ package http
 import (
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/neverpaidhealth/backend/pkg/httpx"
@@ -22,6 +23,7 @@ type estimateTextReq struct {
 }
 
 type saveMealReq struct {
+	LoggedAt *time.Time       `json:"logged_at,omitempty"`
 	ID       *uuid.UUID       `json:"id,omitempty"`
 	MealType string           `json:"meal_type"`
 	Name     string           `json:"name"`
@@ -84,7 +86,12 @@ func (h *Handler) handleEstimateText(w http.ResponseWriter, r *http.Request, use
 }
 
 func (h *Handler) handleGetTodayNutrition(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
-	summary, err := h.coachService.GetTodayNutrition(r.Context(), userID)
+	start, end, err := coach.NutritionDayBounds(r.URL.Query().Get("date"), r.URL.Query().Get("timezone"), time.Now())
+	if err != nil {
+		httpx.WriteProblem(w, http.StatusBadRequest, "Invalid date", err.Error(), "ERR_INVALID_DATE")
+		return
+	}
+	summary, err := h.coachService.GetDailyNutrition(r.Context(), userID, start, end)
 	if err != nil {
 		httpx.WriteProblem(w, http.StatusInternalServerError, "Internal Server Error", err.Error(), "ERR_INTERNAL")
 		return
@@ -111,17 +118,27 @@ func (h *Handler) handleSaveMeal(w http.ResponseWriter, r *http.Request, userID 
 		mealID = *req.ID
 	}
 
+	if req.Calories < 0 || req.ProteinG < 0 || req.CarbsG < 0 || req.FatG < 0 {
+		httpx.WriteProblem(w, http.StatusBadRequest, "Invalid meal", "Nutrition values cannot be negative", "ERR_INVALID_MEAL")
+		return
+	}
+	loggedAt := time.Now().UTC()
+	if req.LoggedAt != nil && !req.LoggedAt.IsZero() {
+		loggedAt = *req.LoggedAt
+	}
 	meal := coach.MealLog{
-		ID:       mealID,
-		UserID:   userID,
-		MealType: req.MealType,
-		Name:     req.Name,
-		Calories: req.Calories,
-		ProteinG: req.ProteinG,
-		CarbsG:   req.CarbsG,
-		FatG:     req.FatG,
-		PhotoURL: req.PhotoURL,
-		Items:    req.Items,
+		LoggedAt:  loggedAt,
+		CreatedAt: time.Now().UTC(),
+		ID:        mealID,
+		UserID:    userID,
+		MealType:  req.MealType,
+		Name:      req.Name,
+		Calories:  req.Calories,
+		ProteinG:  req.ProteinG,
+		CarbsG:    req.CarbsG,
+		FatG:      req.FatG,
+		PhotoURL:  req.PhotoURL,
+		Items:     req.Items,
 	}
 
 	if err := h.coachService.SaveMeal(r.Context(), meal); err != nil {

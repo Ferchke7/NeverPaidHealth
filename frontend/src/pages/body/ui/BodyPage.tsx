@@ -1,3 +1,4 @@
+import { toLocalDateKey } from '@/shared/lib/dates.ts';
 import React, { useState, useEffect } from 'react';
 import {
   Scale,
@@ -57,7 +58,7 @@ export const BodyPage: React.FC = () => {
   const unitPref = useAuthStore((s) => s.unitPreference);
   const updateUserStats = useAuthStore((s) => s.updateUserStats);
 
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = toLocalDateKey(new Date());
   const [logDate, setLogDate] = useState(todayStr);
   const [weightInput, setWeightInput] = useState('');
   const [heightCm, setHeightCm] = useState<string>(() => {

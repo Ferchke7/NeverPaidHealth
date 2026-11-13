@@ -42,6 +42,12 @@ tags:
     description: CNS recovery modeling, progressive overload prescriptions, and interactive sports science consultations.
 
 paths:
+  /nutrition/today:
+    $ref: './nutrition.yaml#/paths/~1nutrition~1today'
+  /nutrition/meals:
+    $ref: './nutrition.yaml#/paths/~1nutrition~1meals'
+  /nutrition/meals/{id}:
+    $ref: './nutrition.yaml#/paths/~1nutrition~1meals~1{id}'
   # =========================================================================
   # 1. AUTH & IDENTITY
   # =========================================================================

@@ -131,7 +131,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           </button>
 
           {/* Desktop Clean Navigation Links (1 page = 1 item) */}
-          <nav className="hidden xl:flex items-center gap-1 min-w-0">
+          <nav className="hidden 2xl:flex items-center gap-1 min-w-0">
             {desktopNavItems.map((item) => {
               const isActive = currentTab === item.id;
               return (
@@ -151,26 +151,6 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
             })}
           </nav>
 
-          {/* Medium Desktop (lg) Compact Nav */}
-          <nav className="hidden md:flex xl:hidden items-center gap-1 min-w-0">
-            {desktopNavItems.slice(0, 6).map((item) => {
-              const isActive = currentTab === item.id;
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => handleNavClick(item.id)}
-                  className={`px-2 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer ${
-                    isActive
-                      ? 'bg-brand-500/15 text-brand-400 border border-brand-500/30 font-bold'
-                      : 'text-zinc-400 hover:text-zinc-200 hover:bg-dark-800/60'
-                  }`}
-                >
-                  {item.icon}
-                  <span>{item.label}</span>
-                </button>
-              );
-            })}
-          </nav>
         </div>
 
         {/* Right Header Utilities: Feedback, Language, Profile */}
@@ -221,7 +201,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
 
       {/* Secondary Mobile Quick-Pill Bar (For mobile discovery of Programs, Exercises, History, Body) */}
       {!isCoachView && (
-        <div className="md:hidden border-b border-dark-800/60 bg-dark-900/60 px-3 py-1.5 overflow-x-auto flex items-center gap-1.5 scrollbar-none">
+        <div className="2xl:hidden border-b border-dark-800/60 bg-dark-900/60 px-3 py-1.5 overflow-x-auto flex items-center gap-1.5 scrollbar-none">
           {secondaryMobilePills.map((pill) => {
             const isActive = currentTab === pill.id;
             return (
@@ -245,7 +225,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
         className={
           isCoachView
             ? 'flex-1 min-h-0 w-full max-w-5xl mx-auto flex flex-col p-0 md:py-2 md:px-4 overflow-hidden relative'
-            : 'flex-1 max-w-4xl w-full mx-auto p-3.5 sm:p-6 pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))] md:pb-12'
+            : 'flex-1 max-w-4xl w-full mx-auto p-3.5 sm:p-6 pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))] 2xl:pb-12'
         }
       >
         {!isCoachView && <PWAInstallBanner />}
@@ -256,7 +236,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
       <nav
         className={`${
           isCoachView ? 'shrink-0' : 'fixed bottom-0 left-0 right-0'
-        } z-40 bg-dark-900/95 backdrop-blur-lg border-t border-dark-800/80 md:hidden flex items-center justify-around py-1.5 px-1.5 pb-[calc(0.375rem+env(safe-area-inset-bottom,0px))]`}
+        } z-40 bg-dark-900/95 backdrop-blur-lg border-t border-dark-800/80 2xl:hidden flex items-center justify-around py-1.5 px-1.5 pb-[calc(0.375rem+env(safe-area-inset-bottom,0px))]`}
       >
         {mobileBottomItems.map((item) => {
           const isActive = currentTab === item.id;
