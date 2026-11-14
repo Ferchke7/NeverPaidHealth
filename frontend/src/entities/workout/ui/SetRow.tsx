@@ -28,6 +28,9 @@ export interface SetRowProps {
   measurementType?: string;
   allExerciseHistory?: HistoricalSetRecord[];
   forceExpanded?: boolean;
+  isSelected?: boolean;
+  showPlateMath?: boolean;
+  onSelectSet?: () => void;
   onOpenHistoryMenu?: (setNumber: number) => void;
   onUpdate: (updates: Partial<ActiveSet>) => void;
   onDelete: () => void;
@@ -40,6 +43,9 @@ export const SetRow: React.FC<SetRowProps> = ({
   measurementType = 'weight_reps',
   allExerciseHistory = [],
   forceExpanded = false,
+  isSelected = false,
+  showPlateMath = false,
+  onSelectSet,
   onOpenHistoryMenu,
   onUpdate,
   onDelete,
@@ -91,11 +97,6 @@ export const SetRow: React.FC<SetRowProps> = ({
     return '—';
   }, [hasPrevious, prevWeight, prevReps, unit, effectiveTopRecords]);
 
-  // Quick 3 rep suggestions
-  const quickRepsSuggestions = useMemo(() => {
-    return effectiveTopRecords.slice(0, 3).map((r) => r.reps);
-  }, [effectiveTopRecords]);
-
   // Plate math (e.g. 50kg -> (20+15кг), 25kg -> (20+2.5кг))
   const currentOrPrevWeight = set.weightKg > 0 ? set.weightKg : prevWeight;
   const plateText = useMemo(() => {
@@ -117,32 +118,35 @@ export const SetRow: React.FC<SetRowProps> = ({
   };
 
   return (
-    <div className="flex flex-col">
-      {/* Set Row 12-Column Grid */}
-      <div
-        className={`group grid grid-cols-12 gap-1.5 sm:gap-2 items-center py-1.5 sm:py-2 px-2 sm:px-2.5 rounded-xl border transition-all duration-200 ${
-          showExpanded
-            ? 'bg-dark-800/95 border-brand-500/40 ring-1 ring-brand-500/30'
-            : set.completed
-            ? 'bg-emerald-950/25 border-emerald-500/40 shadow-sm shadow-emerald-950/40'
-            : 'bg-dark-800/60 border-dark-700/60 hover:border-dark-600 hover:bg-dark-800/90'
-        }`}
-      >
-        {/* 1. SET Type Badge (col-span-1) */}
-        <div className="col-span-1 flex items-center justify-center">
+    <div
+      onClick={() => onSelectSet?.()}
+      className={`py-2.5 border-b border-[#262626] last:border-b-0 transition-colors ${
+        isSelected ? 'bg-[#0a0a0a]/40 -mx-2 px-2 rounded-[10px]' : ''
+      }`}
+    >
+      {/* Top 4-Column Row: № | Вес, кг | Повторы | ✓ */}
+      <div className="grid grid-cols-[28px_1fr_1fr_44px] gap-2.5 items-center">
+        {/* 1. SET Type / Number Badge */}
+        <div className="flex items-center justify-center">
           <button
             type="button"
-            onClick={cycleSetType}
-            className={`w-6 h-6 sm:w-7 sm:h-7 rounded-lg font-mono font-bold text-xs flex items-center justify-center transition-all active:scale-90 shadow-sm shrink-0 cursor-pointer ${
+            onClick={(e) => {
+              e.stopPropagation();
+              onSelectSet?.();
+              cycleSetType();
+            }}
+            className={`w-7 h-7 rounded-md font-semibold text-xs tabular-nums flex items-center justify-center transition-colors shrink-0 cursor-pointer border ${
               set.setType === 'warmup'
-                ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40'
+                ? 'bg-[#0a0a0a] text-amber-400 border-amber-500/40'
                 : set.setType === 'drop'
-                ? 'bg-sky-500/20 text-sky-400 border border-sky-500/40'
+                ? 'bg-[#0a0a0a] text-sky-400 border-sky-500/40'
                 : set.setType === 'failure'
-                ? 'bg-rose-500/20 text-rose-400 border border-rose-500/40'
+                ? 'bg-[#0a0a0a] text-rose-400 border-rose-500/40'
                 : set.completed
-                ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                : 'bg-dark-700 text-zinc-300 hover:bg-dark-600 border border-dark-600'
+                ? 'bg-[#022c22] text-[#34d399] border-[#064e3b]'
+                : isSelected
+                ? 'bg-[#171717] text-[#fafafa] border-[#34d399]/60'
+                : 'bg-transparent text-[#fafafa] border-transparent hover:bg-[#0a0a0a] hover:border-[#404040]'
             }`}
             title="Click to toggle set type: Normal (1,2...), Warmup (W), Drop Set (D), Failure (F)"
           >
@@ -150,80 +154,37 @@ export const SetRow: React.FC<SetRowProps> = ({
           </button>
         </div>
 
-        {/* 2. PREVIOUS Performance (col-span-3) - Click to expand top 3 records */}
-        <div className="col-span-3 flex items-center justify-center overflow-hidden">
-          <button
-            type="button"
-            onClick={() => setIsExpanded(!isExpanded)}
-            className={`w-full text-center px-1 py-1 rounded-lg text-[10px] sm:text-xs font-mono font-semibold transition-all flex items-center justify-center gap-0.5 group/prev border truncate cursor-pointer ${
-              showExpanded
-                ? 'bg-brand-500/15 text-brand-300 border-brand-500/40 ring-1 ring-brand-500/30'
-                : hasPrevious
-                ? 'bg-dark-800/70 text-zinc-300 hover:text-brand-300 hover:bg-dark-700/80 border-dark-700 hover:border-brand-500/30'
-                : 'text-zinc-600 hover:text-zinc-400 hover:bg-dark-700/50 border-transparent'
+        {/* 2. WEIGHT Input */}
+        <div>
+          <input
+            type="number"
+            step="0.5"
+            min="0"
+            value={set.weightKg === 0 ? '' : usesPounds ? kgToLb(set.weightKg) : set.weightKg}
+            placeholder={
+              prevWeight > 0
+                ? `${usesPounds ? kgToLb(prevWeight) : prevWeight}`
+                : measurementType === 'distance_duration'
+                ? 'km'
+                : measurementType === 'bodyweight_reps'
+                ? '+0'
+                : '0'
+            }
+            onFocus={() => onSelectSet?.()}
+            onChange={(e) => {
+              const weight = Math.max(0, Number(e.target.value) || 0);
+              onUpdate({ weightKg: usesPounds ? weight * LB_TO_KG : weight });
+            }}
+            className={`w-full h-11 bg-[#0a0a0a] border rounded-[10px] px-3 text-left text-sm font-medium tabular-nums transition-colors focus:outline-none ${
+              set.completed
+                ? 'border-[#064e3b] text-[#34d399] focus:border-[#34d399]'
+                : 'border-[#404040] text-[#fafafa] placeholder:text-[#737373] focus:border-[#34d399]'
             }`}
-            title={t('activeWorkout.historyHint')}
-          >
-            <History className="w-2.5 h-2.5 text-zinc-400 group-hover/prev:text-brand-400 shrink-0" />
-            <span className="truncate">{previousText}</span>
-            {showExpanded ? (
-              <ChevronUp className="w-2.5 h-2.5 text-brand-400 shrink-0" />
-            ) : (
-              <span className="text-[8px] text-brand-400/90 font-bold ml-0.5 font-mono inline-flex items-center">
-                {effectiveTopRecords.length}<ChevronDown className="w-2 h-2 ml-0.5 inline shrink-0" />
-              </span>
-            )}
-          </button>
+          />
         </div>
 
-        {/* 3. WEIGHT Input (col-span-3) */}
-        <div className="col-span-3">
-          <div className="relative">
-            <input
-              type="number"
-              step="0.5"
-              min="0"
-              value={set.weightKg === 0 ? '' : usesPounds ? kgToLb(set.weightKg) : set.weightKg}
-              placeholder={
-                prevWeight > 0
-                  ? `${usesPounds ? kgToLb(prevWeight) : prevWeight}`
-                  : measurementType === 'distance_duration'
-                  ? 'km'
-                  : measurementType === 'bodyweight_reps'
-                  ? '+0'
-                  : '0'
-              }
-              onChange={(e) => {
-                const weight = Math.max(0, Number(e.target.value) || 0);
-                onUpdate({ weightKg: usesPounds ? weight * LB_TO_KG : weight });
-              }}
-              className={`w-full bg-dark-900 border rounded-xl py-1.5 px-1 sm:px-2 text-center text-xs sm:text-sm font-mono font-bold transition-all focus:outline-none focus:ring-1 focus:ring-brand-500 ${
-                set.completed
-                  ? 'border-emerald-500/40 text-emerald-200'
-                  : 'border-dark-700 text-white focus:border-brand-500'
-              }`}
-            />
-          </div>
-          {plateText ? (
-            <div
-              className="text-[8px] sm:text-[9px] text-zinc-500 text-center mt-0.5 font-mono leading-none truncate"
-              title={
-                currentOrPrevWeight >= 20
-                  ? `Гриф 20 кг + ${((currentOrPrevWeight - 20) / 2).toFixed(1).replace('.0', '')} кг с каждой стороны`
-                  : undefined
-              }
-            >
-              {plateText}
-            </div>
-          ) : e1rm !== null && e1rm > 0 && measurementType === 'weight_reps' ? (
-            <div className="text-[8px] sm:text-[9px] text-zinc-500 text-center mt-0.5 font-mono leading-none truncate">
-              1RM: {formatWeight(e1rm, unit)}
-            </div>
-          ) : null}
-        </div>
-
-        {/* 4. REPS Input (col-span-3) - Clicking/Focusing reveals previous 3 */}
-        <div className="col-span-3 flex flex-col items-center">
+        {/* 3. REPS Input */}
+        <div>
           <input
             type="number"
             min="1"
@@ -236,47 +197,23 @@ export const SetRow: React.FC<SetRowProps> = ({
                 ? '60s'
                 : '10'
             }
-            onFocus={() => {
-              if (!isExpanded) setIsExpanded(true);
-            }}
-            onClick={() => {
-              setIsExpanded(true);
-            }}
+            onFocus={() => onSelectSet?.()}
             onChange={(e) => onUpdate({ reps: parseInt(e.target.value, 10) || 0 })}
-            className={`w-full bg-dark-900 border rounded-xl py-1.5 px-1 sm:px-2 text-center text-xs sm:text-sm font-mono font-bold transition-all focus:outline-none focus:ring-1 focus:ring-brand-500 cursor-pointer ${
+            className={`w-full h-11 bg-[#0a0a0a] border rounded-[10px] px-3 text-left text-sm font-medium tabular-nums transition-colors focus:outline-none ${
               set.completed
-                ? 'border-emerald-500/40 text-emerald-200'
-                : 'border-dark-700 text-white focus:border-brand-500'
+                ? 'border-[#064e3b] text-[#34d399] focus:border-[#34d399]'
+                : 'border-[#404040] text-[#fafafa] placeholder:text-[#737373] focus:border-[#34d399]'
             }`}
-            title="Нажмите, чтобы ввести повторения или посмотреть 3 прошлых результата"
           />
-          {quickRepsSuggestions.length > 0 && (
-            <div
-              className="flex items-center justify-center gap-1 mt-0.5 overflow-hidden"
-              title="3 прошлых повторения (нажмите, чтобы выбрать)"
-            >
-              {quickRepsSuggestions.map((qReps, idx) => (
-                <button
-                  key={`${qReps}-${idx}`}
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onUpdate({ reps: qReps });
-                  }}
-                  className="px-1 py-0.2 rounded text-[8px] font-mono font-bold bg-dark-750 hover:bg-brand-500 hover:text-dark-950 text-zinc-400 hover:border-brand-400 border border-dark-650 transition-colors cursor-pointer"
-                >
-                  {qReps}
-                </button>
-              ))}
-            </div>
-          )}
         </div>
 
-        {/* 5. COMPLETE Checkmark & Action (col-span-2) */}
-        <div className="col-span-2 flex items-center justify-center gap-1">
+        {/* 4. COMPLETE Checkbox (44x44 tap target, 22x22 visual square) */}
+        <div className="flex items-center justify-center">
           <button
             type="button"
-            onClick={() => {
+            onClick={(e) => {
+              e.stopPropagation();
+              onSelectSet?.();
               if (!set.completed && set.weightKg === 0 && set.reps === 0 && hasPrevious) {
                 onUpdate({
                   weightKg: prevWeight,
@@ -285,34 +222,70 @@ export const SetRow: React.FC<SetRowProps> = ({
               }
               onCompleteToggle();
             }}
-            className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center transition-all duration-200 active:scale-90 shrink-0 cursor-pointer ${
-              set.completed
-                ? 'bg-emerald-500 text-dark-950 shadow-md shadow-emerald-500/30'
-                : 'bg-dark-700 text-zinc-400 hover:text-white hover:bg-dark-600 border border-dark-600/80'
-            }`}
+            className="w-11 h-11 rounded-[10px] flex items-center justify-center cursor-pointer transition-colors hover:bg-[#0a0a0a]"
             title={set.completed ? 'Mark set incomplete' : 'Mark set complete (starts rest timer)'}
+            aria-label={set.completed ? 'Mark set incomplete' : 'Mark set complete'}
           >
-            <Check className="w-4 h-4 stroke-[3]" />
-          </button>
-
-          <button
-            type="button"
-            onClick={onDelete}
-            className="p-1 rounded-lg text-zinc-600 hover:text-red-400 hover:bg-dark-700 transition-colors shrink-0 cursor-pointer"
-            title="Delete set"
-          >
-            <Trash2 className="w-3.5 h-3.5" />
+            <span
+              className={`w-[22px] h-[22px] rounded-[6px] border flex items-center justify-center transition-colors ${
+                set.completed
+                  ? 'bg-[#34d399] border-[#34d399] text-[#0a0a0a]'
+                  : 'bg-[#0a0a0a] border-[#404040] text-transparent hover:border-[#737373]'
+              }`}
+            >
+              <Check className="w-3.5 h-3.5 stroke-[3]" />
+            </span>
           </button>
         </div>
       </div>
 
-      {/* Expanded Section: Last 3 Results (3 последних результата для этого сета) */}
+      {/* Subtle Secondary Row: "Ранее: ..." + Plate/1RM + Delete */}
+      <div className="flex items-center justify-between gap-2 mt-1.5 pl-[38px] pr-1">
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onSelectSet?.();
+            setIsExpanded(!isExpanded);
+          }}
+          className="text-[11px] text-[#737373] hover:text-[#34d399] transition-colors flex items-center gap-1.5 min-w-0 truncate cursor-pointer"
+          title={t('activeWorkout.historyHint')}
+        >
+          <span className="truncate">
+            {t('activeWorkout.earlierPrefix', { value: previousText })}
+          </span>
+          {showPlateMath && plateText ? (
+            <span className="text-[#34d399] font-medium shrink-0">· {plateText}</span>
+          ) : !showPlateMath && e1rm !== null && e1rm > 0 && measurementType === 'weight_reps' && set.weightKg > 0 ? (
+            <span className="text-[#737373] shrink-0 hidden sm:inline">· 1RM {formatWeight(e1rm, unit)}</span>
+          ) : null}
+          {showExpanded ? (
+            <ChevronUp className="w-3 h-3 text-[#34d399] shrink-0" />
+          ) : (
+            <ChevronDown className="w-3 h-3 text-[#737373] shrink-0" />
+          )}
+        </button>
+
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete();
+          }}
+          className="p-1 text-[#737373] hover:text-rose-400 transition-colors cursor-pointer shrink-0 rounded-md hover:bg-[#0a0a0a]"
+          title="Delete set"
+          aria-label="Delete set"
+        >
+          <Trash2 className="w-3.5 h-3.5" />
+        </button>
+      </div>
+
+      {/* Expanded Section: Last 3 Results */}
       {showExpanded && (
-        <div className="mt-1.5 p-2.5 sm:p-3 rounded-2xl bg-dark-900/95 border border-brand-500/35 shadow-xl space-y-2 animate-in fade-in slide-in-from-top-1 duration-200">
-          {/* Header */}
-          <div className="flex items-center justify-between border-b border-dark-800 pb-1.5">
-            <div className="flex items-center gap-1.5 text-xs font-bold text-amber-300">
-              <History className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+        <div className="mt-2 p-3 rounded-[12px] bg-[#0a0a0a] border border-[#404040] space-y-2.5">
+          <div className="flex items-center justify-between border-b border-[#262626] pb-2">
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-[#fafafa]">
+              <History className="w-3.5 h-3.5 text-[#34d399] shrink-0" />
               <span className="truncate">
                 {isFallback
                   ? t('activeWorkout.setRecordsFallbackTitle') || 'Последние результаты'
@@ -322,17 +295,19 @@ export const SetRow: React.FC<SetRowProps> = ({
 
             <button
               type="button"
-              onClick={() => setIsExpanded(false)}
-              className="p-1 text-zinc-400 hover:text-white rounded-lg hover:bg-dark-800 transition-colors cursor-pointer"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsExpanded(false);
+              }}
+              className="p-1 text-[#a3a3a3] hover:text-[#fafafa] rounded-md hover:bg-[#171717] transition-colors cursor-pointer"
               title="Свернуть"
             >
               <ChevronUp className="w-3.5 h-3.5" />
             </button>
           </div>
 
-          {/* List of 3 Recent Performances */}
           {effectiveTopRecords.length === 0 ? (
-            <div className="py-2.5 text-center text-zinc-500 text-[11px]">
+            <div className="py-2 text-center text-[#737373] text-xs">
               {t('activeWorkout.noRecordsYet')}
             </div>
           ) : (
@@ -344,46 +319,47 @@ export const SetRow: React.FC<SetRowProps> = ({
                 return (
                   <div
                     key={uniqueKey}
-                    className="p-2 rounded-xl bg-dark-850/90 border border-dark-750 hover:border-dark-600 flex items-center justify-between gap-2 transition-all"
+                    className="p-2.5 rounded-[10px] bg-[#171717] border border-[#262626] flex items-center justify-between gap-2"
                   >
-                    {/* Left: Number + Performance */}
                     <div className="flex items-center gap-2.5 min-w-0">
-                      <span className="w-5 h-5 rounded-md bg-dark-800 text-zinc-300 text-xs font-mono font-bold flex items-center justify-center shrink-0">
+                      <span className="w-5 h-5 rounded-md bg-[#0a0a0a] border border-[#262626] text-[#a3a3a3] text-[11px] font-semibold tabular-nums flex items-center justify-center shrink-0">
                         {rIdx + 1}
                       </span>
                       <div className="min-w-0">
-                        <div className="flex items-baseline gap-1.5">
-                          <span className="text-xs sm:text-sm font-mono font-extrabold text-white">
+                        <div className="flex items-baseline gap-1.5 flex-wrap">
+                          <span className="text-xs font-semibold tabular-nums text-[#fafafa]">
                             {formatWeight(rec.weightKg, unit)} × {rec.reps}
                           </span>
                           {rec.e1rmKg > 0 && (
-                            <span className="text-[9px] font-mono font-semibold text-brand-400 bg-brand-500/10 px-1 py-0.2 rounded border border-brand-500/20">
+                            <span className="text-[10px] font-medium tabular-nums text-[#34d399] bg-[#022c22] px-1.5 py-0.5 rounded border border-[#064e3b]">
                               1RM: {formatWeight(rec.e1rmKg, unit)}
                             </span>
                           )}
                         </div>
 
-                        <div className="text-[10px] text-zinc-400 flex items-center gap-1 truncate mt-0.5">
-                          <Calendar className="w-2.5 h-2.5 text-zinc-500 inline shrink-0" />
+                        <div className="text-[10px] text-[#737373] flex items-center gap-1 truncate mt-0.5">
+                          <Calendar className="w-2.5 h-2.5 inline shrink-0" />
                           <span>{formatDate(rec.date)}</span>
                           {rec.workoutName && (
                             <>
-                              <span>•</span>
-                              <span className="truncate text-zinc-500">{rec.workoutName}</span>
+                              <span>·</span>
+                              <span className="truncate">{rec.workoutName}</span>
                             </>
                           )}
                         </div>
                       </div>
                     </div>
 
-                    {/* Right: Apply Record to Current Set */}
                     <button
                       type="button"
-                      onClick={() => handleApply(rec, uniqueKey)}
-                      className={`py-1 px-2.5 rounded-lg text-[11px] font-bold transition-all flex items-center gap-1 shrink-0 active:scale-95 cursor-pointer ${
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleApply(rec, uniqueKey);
+                      }}
+                      className={`h-8 px-2.5 rounded-[8px] text-[11px] font-semibold transition-colors flex items-center gap-1 shrink-0 cursor-pointer border ${
                         isApplied
-                          ? 'bg-emerald-500 text-dark-950 font-extrabold shadow-sm'
-                          : 'bg-dark-750 hover:bg-brand-500 hover:text-dark-950 text-zinc-200 border border-dark-600 hover:border-brand-400'
+                          ? 'bg-[#34d399] text-[#0a0a0a] border-[#34d399]'
+                          : 'bg-[#0a0a0a] hover:bg-[#022c22] hover:text-[#34d399] text-[#fafafa] border-[#404040]'
                       }`}
                       title={t('activeWorkout.useValues')}
                     >
@@ -405,16 +381,18 @@ export const SetRow: React.FC<SetRowProps> = ({
             </div>
           )}
 
-          {/* Separate Menu Trigger Button */}
           {onOpenHistoryMenu && (
             <button
               type="button"
-              onClick={() => onOpenHistoryMenu(set.setNumber)}
-              className="w-full py-2 px-3 rounded-xl bg-dark-800 hover:bg-dark-750 text-brand-400 hover:text-brand-300 border border-brand-500/25 hover:border-brand-500/40 text-[11px] sm:text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm active:scale-[0.99] cursor-pointer mt-1"
+              onClick={(e) => {
+                e.stopPropagation();
+                onOpenHistoryMenu(set.setNumber);
+              }}
+              className="w-full h-9 px-3 rounded-[10px] bg-[#171717] hover:bg-[#022c22] text-[#34d399] border border-[#404040] hover:border-[#064e3b] text-xs font-medium flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
             >
-              <History className="w-3.5 h-3.5 text-brand-400 shrink-0" />
+              <History className="w-3.5 h-3.5 shrink-0" />
               <span className="truncate">{t('activeWorkout.openHistoryMenu')}</span>
-              <ExternalLink className="w-3 h-3 ml-0.5 opacity-70 shrink-0" />
+              <ExternalLink className="w-3 h-3 opacity-70 shrink-0" />
             </button>
           )}
         </div>

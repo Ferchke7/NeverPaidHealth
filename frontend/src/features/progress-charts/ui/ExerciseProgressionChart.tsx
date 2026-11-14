@@ -1,9 +1,9 @@
 import React, { useState, useMemo } from 'react';
 import * as echarts from 'echarts';
-import { Trophy, TrendingUp, Calendar, Layers, Dumbbell } from 'lucide-react';
 import { EChartsReact } from '../../../shared/ui/EChartsReact.tsx';
 import { formatWeight, kgToLb } from '../../../shared/lib/units.ts';
 import { formatDate } from '../../../shared/lib/dates.ts';
+import { useTranslation } from '../../../shared/lib/i18n/i18n.ts';
 
 export interface HistoryDataPoint {
   workout_id: string;
@@ -25,12 +25,55 @@ type TimeRange = '1m' | '3m' | 'all';
 
 export const ExerciseProgressionChart: React.FC<ExerciseProgressionChartProps> = ({
   dataPoints,
-  exerciseName,
   unitPref,
   className = '',
 }) => {
+  const { language } = useTranslation();
   const [metricMode, setMetricMode] = useState<MetricMode>('weight');
   const [timeRange, setTimeRange] = useState<TimeRange>('all');
+
+  const lbl = useMemo(() => {
+    if (language === 'uz') {
+      return {
+        weight: 'Snaryad vazni',
+        e1rm: 'Hisoblangan 1RM',
+        volume: 'Hajm',
+        m1: '1 oy',
+        m3: '3 oy',
+        all: 'Barchasi',
+        noData: 'Grafik uchun ma’lumot yo‘q',
+        currentPR: 'Joriy rekord',
+        growth: 'Davr boshidan',
+        startWeight: 'Boshlang‘ich vazn',
+      };
+    }
+    if (language === 'en') {
+      return {
+        weight: 'Working Weight',
+        e1rm: 'Est. 1RM',
+        volume: 'Volume',
+        m1: '1 mo',
+        m3: '3 mo',
+        all: 'All',
+        noData: 'No records for chart',
+        currentPR: 'Current PR',
+        growth: 'Since start',
+        startWeight: 'Starting weight',
+      };
+    }
+    return {
+      weight: 'Вес снаряда',
+      e1rm: 'Расчётный 1RM',
+      volume: 'Объём',
+      m1: '1 мес',
+      m3: '3 мес',
+      all: 'Все',
+      noData: 'Нет записей для графика',
+      currentPR: 'Текущий рекорд',
+      growth: 'От начала периода',
+      startWeight: 'Стартовый вес',
+    };
+  }, [language]);
 
   // Filter & sort chronologically
   const filteredPoints = useMemo(() => {
@@ -50,7 +93,6 @@ export const ExerciseProgressionChart: React.FC<ExerciseProgressionChartProps> =
     return filtered.length > 0 ? filtered : sorted.slice(-5);
   }, [dataPoints, timeRange]);
 
-  // Overall metrics & insights
   const stats = useMemo(() => {
     if (filteredPoints.length === 0) {
       return { pr: 0, initial: 0, growthPct: 0, count: 0 };
@@ -74,23 +116,22 @@ export const ExerciseProgressionChart: React.FC<ExerciseProgressionChartProps> =
     };
   }, [filteredPoints, metricMode]);
 
-  // ECharts Option
   const option = useMemo<echarts.EChartsOption>(() => {
     if (filteredPoints.length === 0) {
       return {
         backgroundColor: 'transparent',
         title: {
-          text: 'Нет записей для графика',
+          text: lbl.noData,
           left: 'center',
           top: 'center',
-          textStyle: { color: '#64748b', fontSize: 13, fontFamily: 'monospace' },
+          textStyle: { color: '#737373', fontSize: 12 },
         },
       };
     }
 
     const dates = filteredPoints.map((p) => {
       const d = new Date(p.date);
-      return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+      return `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}`;
     });
 
     const values = filteredPoints.map((p) => {
@@ -101,85 +142,37 @@ export const ExerciseProgressionChart: React.FC<ExerciseProgressionChartProps> =
       return Math.round(converted * 10) / 10;
     });
 
-    const unitLabel = unitPref.toUpperCase();
+    const unitLabel = unitPref === 'lb' ? 'lb' : 'кг';
     const metricTitle =
-      metricMode === 'weight'
-        ? 'Лучший рабочий вес'
-        : metricMode === 'e1rm'
-        ? 'Расчётный 1RM'
-        : 'Объём сессии (Тоннаж)';
-
-    // Theme color based on metric
-    const colorHex =
-      metricMode === 'weight'
-        ? '#22c55e'
-        : metricMode === 'e1rm'
-        ? '#f59e0b'
-        : '#38bdf8';
-
-    const areaColor =
-      metricMode === 'weight'
-        ? 'rgba(34, 197, 94, '
-        : metricMode === 'e1rm'
-        ? 'rgba(245, 158, 11, '
-        : 'rgba(56, 189, 248, ';
+      metricMode === 'weight' ? lbl.weight : metricMode === 'e1rm' ? lbl.e1rm : lbl.volume;
 
     return {
       backgroundColor: 'transparent',
-      animationDuration: 900,
-      animationEasing: 'cubicOut',
+      animationDuration: 500,
       tooltip: {
         trigger: 'axis',
-        backgroundColor: 'rgba(15, 23, 42, 0.94)',
-        borderColor: 'rgba(255, 255, 255, 0.12)',
+        backgroundColor: '#171717',
+        borderColor: '#404040',
         borderWidth: 1,
-        borderRadius: 14,
-        padding: [10, 14],
-        extraCssText: 'box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6); backdrop-filter: blur(12px);',
+        borderRadius: 10,
+        padding: [10, 12],
+        textStyle: { color: '#fafafa', fontSize: 12 },
         axisPointer: {
-          type: 'cross',
-          crossStyle: { color: '#3b82f6', width: 1, type: 'dashed' },
-          label: {
-            backgroundColor: '#1e293b',
-            color: '#f8fafc',
-            fontFamily: 'monospace',
-            borderRadius: 6,
-          },
+          type: 'line',
+          lineStyle: { color: '#404040', width: 1, type: 'dashed' },
         },
         formatter: (params: any) => {
           if (!Array.isArray(params) || params.length === 0) return '';
           const item = params[0];
           const rawPoint = filteredPoints[item.dataIndex];
           const curVal = item.value;
-          const prevVal = item.dataIndex > 0 ? values[item.dataIndex - 1] : null;
-          const diff = prevVal !== null ? Math.round((curVal - prevVal) * 10) / 10 : null;
-
-          let diffHtml = '';
-          if (diff !== null) {
-            const isPos = diff >= 0;
-            diffHtml = `
-              <div style="font-size: 11px; font-weight: bold; margin-top: 4px; color: ${
-                isPos ? '#4ade80' : '#f87171'
-              }; font-family: monospace;">
-                ${isPos ? '▲ +' : '▼ '}${diff} ${unitLabel} (${isPos ? '+' : ''}${Math.round(
-              (diff / (prevVal || 1)) * 100
-            )}%)
-              </div>
-            `;
-          }
-
           return `
-            <div style="font-family: inherit; min-width: 140px;">
-              <div style="font-size: 11px; color: #94a3b8; font-weight: 600; margin-bottom: 4px;">
-                ${formatDate(rawPoint.date)}
+            <div style="min-width:130px;">
+              <div style="font-size:11px;color:#a3a3a3;margin-bottom:4px;">${formatDate(rawPoint.date)}</div>
+              <div style="display:flex;justify-content:space-between;gap:12px;">
+                <span style="font-size:12px;color:#a3a3a3;">${metricTitle}:</span>
+                <span style="font-size:13px;font-weight:700;color:#34d399;">${curVal} ${unitLabel}</span>
               </div>
-              <div style="display: flex; items-center; justify-content: space-between; gap: 12px;">
-                <span style="font-size: 11px; color: #cbd5e1;">${metricTitle}:</span>
-                <span style="font-size: 13px; font-weight: 800; color: ${colorHex}; font-family: monospace;">
-                  ${curVal} ${unitLabel}
-                </span>
-              </div>
-              ${diffHtml}
             </div>
           `;
         },
@@ -187,20 +180,19 @@ export const ExerciseProgressionChart: React.FC<ExerciseProgressionChartProps> =
       grid: {
         left: '2%',
         right: '3%',
-        bottom: '4%',
-        top: '12%',
+        bottom: '6%',
+        top: '14%',
         containLabel: true,
       },
       xAxis: {
         type: 'category',
         data: dates,
         boundaryGap: false,
-        axisLine: { lineStyle: { color: '#334155' } },
+        axisLine: { lineStyle: { color: '#262626' } },
         axisTick: { show: false },
         axisLabel: {
-          color: '#94a3b8',
-          fontSize: 10,
-          fontFamily: 'monospace',
+          color: '#737373',
+          fontSize: 11,
           margin: 10,
         },
       },
@@ -210,15 +202,13 @@ export const ExerciseProgressionChart: React.FC<ExerciseProgressionChartProps> =
         axisLine: { show: false },
         axisTick: { show: false },
         axisLabel: {
-          color: '#64748b',
-          fontSize: 10,
-          fontFamily: 'monospace',
-          formatter: `{value} ${unitLabel}`,
+          color: '#737373',
+          fontSize: 11,
         },
         splitLine: {
           lineStyle: {
-            color: 'rgba(255, 255, 255, 0.05)',
-            type: 'dashed',
+            color: '#262626',
+            type: 'solid',
           },
         },
       },
@@ -227,178 +217,106 @@ export const ExerciseProgressionChart: React.FC<ExerciseProgressionChartProps> =
           name: metricTitle,
           type: 'line',
           data: values,
-          smooth: 0.35,
+          smooth: false,
           showSymbol: true,
           symbol: 'circle',
-          symbolSize: (val) => {
-            // Highlight all-time peak with bigger symbol
-            const isMax = val === Math.max(...values);
-            return isMax ? 10 : 6;
-          },
+          symbolSize: 7,
           itemStyle: {
-            color: colorHex,
+            color: '#34d399',
             borderWidth: 2,
-            borderColor: '#0f172a',
+            borderColor: '#0a0a0a',
           },
           lineStyle: {
-            width: 3.5,
-            color: colorHex,
-            shadowColor: `${areaColor} 0.5)`,
-            shadowBlur: 14,
-            shadowOffsetY: 4,
+            width: 2.5,
+            color: '#34d399',
           },
-          areaStyle: {
-            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-              { offset: 0, color: `${areaColor} 0.35)` },
-              { offset: 0.8, color: `${areaColor} 0.04)` },
-              { offset: 1, color: `${areaColor} 0.0)` },
-            ]),
-          },
-          markPoint: {
-            symbol: 'pin',
-            symbolSize: 42,
-            data: [{ type: 'max', name: 'PR' }],
-            itemStyle: {
-              color: '#f59e0b',
-              shadowColor: 'rgba(245, 158, 11, 0.5)',
-              shadowBlur: 10,
-            },
-            label: {
-              formatter: 'PR',
-              fontSize: 10,
-              fontWeight: 'bold',
-              color: '#0f172a',
-            },
+          label: {
+            show: true,
+            position: 'top',
+            color: '#d4d4d4',
+            fontSize: 11,
           },
         },
       ],
     };
-  }, [filteredPoints, metricMode, timeRange, unitPref]);
+  }, [filteredPoints, metricMode, unitPref, lbl]);
 
   return (
     <div className={`space-y-4 ${className}`}>
-      {/* Top Filter and Switcher Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        {/* Metric Modes: Weight vs 1RM vs Volume */}
-        <div className="flex items-center gap-1 bg-dark-900/90 p-1 rounded-xl border border-dark-750">
-          <button
-            type="button"
-            onClick={() => setMetricMode('weight')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-              metricMode === 'weight'
-                ? 'bg-emerald-500/15 border border-emerald-500/40 text-emerald-400 shadow-sm'
-                : 'text-zinc-400 hover:text-white'
-            }`}
-          >
-            <Dumbbell className="w-3.5 h-3.5" />
-            <span>Вес снаряда</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setMetricMode('e1rm')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-              metricMode === 'e1rm'
-                ? 'bg-amber-500/15 border border-amber-500/40 text-amber-400 shadow-sm'
-                : 'text-zinc-400 hover:text-white'
-            }`}
-          >
-            <Trophy className="w-3.5 h-3.5" />
-            <span>Расчётный 1RM</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setMetricMode('volume')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-              metricMode === 'volume'
-                ? 'bg-sky-500/15 border border-sky-500/40 text-sky-400 shadow-sm'
-                : 'text-zinc-400 hover:text-white'
-            }`}
-          >
-            <Layers className="w-3.5 h-3.5" />
-            <span>Объём (Тоннаж)</span>
-          </button>
+      {/* Metric & Time Range Controls matching Figma 06 */}
+      <div className="space-y-2.5">
+        <div className="flex flex-wrap items-center gap-1.5">
+          {(
+            [
+              { id: 'weight', label: lbl.weight },
+              { id: 'e1rm', label: lbl.e1rm },
+              { id: 'volume', label: lbl.volume },
+            ] as { id: MetricMode; label: string }[]
+          ).map((mode) => (
+            <button
+              key={mode.id}
+              type="button"
+              onClick={() => setMetricMode(mode.id)}
+              className={`min-h-[44px] px-3.5 rounded-[10px] text-xs font-semibold transition-colors cursor-pointer ${
+                metricMode === mode.id
+                  ? 'bg-[#022c22] text-[#34d399] border border-[#064e3b]'
+                  : 'bg-transparent text-[#a3a3a3] hover:text-[#fafafa] border border-transparent'
+              }`}
+            >
+              {mode.label}
+            </button>
+          ))}
         </div>
 
-        {/* Time Range Selector */}
-        <div className="flex items-center gap-1 bg-dark-900/90 p-1 rounded-xl border border-dark-750 self-start sm:self-auto">
+        <div className="flex items-center gap-1.5">
           {(['1m', '3m', 'all'] as TimeRange[]).map((r) => (
             <button
               key={r}
               type="button"
               onClick={() => setTimeRange(r)}
-              className={`px-2.5 py-1 rounded-lg text-[11px] font-mono font-bold transition-all cursor-pointer ${
+              className={`min-h-[44px] px-3 rounded-[8px] text-xs font-semibold transition-colors cursor-pointer ${
                 timeRange === r
-                  ? 'bg-dark-750 text-white border border-dark-600 shadow-sm'
-                  : 'text-zinc-500 hover:text-zinc-300'
+                  ? 'bg-[#022c22] text-[#34d399] border border-[#064e3b]'
+                  : 'bg-transparent text-[#a3a3a3] hover:text-[#fafafa] border border-transparent'
               }`}
             >
-              {r === '1m' ? '1 мес' : r === '3m' ? '3 мес' : 'Все'}
+              {r === '1m' ? lbl.m1 : r === '3m' ? lbl.m3 : lbl.all}
             </button>
           ))}
         </div>
       </div>
 
-      {/* Main ECharts Canvas Card */}
-      <div className="bg-dark-950/80 rounded-2xl border border-dark-750 p-4 shadow-xl relative overflow-hidden">
-        {/* Subtle decorative glow */}
-        <div className="absolute top-0 right-0 w-72 h-72 bg-brand-500/5 rounded-full blur-3xl pointer-events-none" />
-
-        <div className="flex items-center justify-between pb-1 border-b border-dark-800/80 mb-2">
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <h4 className="text-xs font-extrabold uppercase tracking-wider text-zinc-300">
-              {exerciseName}
-            </h4>
-          </div>
-
-          <span className="text-[11px] font-mono text-zinc-500">
-            {stats.count} {stats.count === 1 ? 'сессия' : 'сессий'}
-          </span>
-        </div>
-
-        {/* ECharts Component */}
+      {/* ECharts Line Canvas */}
+      <div className="w-full pt-1">
         <EChartsReact
           option={option}
-          style={{ height: '310px', width: '100%' }}
+          style={{ height: '260px', width: '100%' }}
         />
+      </div>
 
-        {/* Micro KPI Strip Below Chart */}
-        <div className="grid grid-cols-3 gap-2 pt-3 border-t border-dark-800/80">
-          <div className="p-2.5 rounded-xl bg-dark-900/70 border border-dark-750/70 flex items-center justify-between">
-            <div className="space-y-0.5">
-              <div className="text-[10px] uppercase font-bold text-zinc-500">Рекорд (PR)</div>
-              <div className="text-sm font-mono font-black text-amber-400">
-                {stats.pr > 0 ? formatWeight(stats.pr, unitPref) : '—'}
-              </div>
-            </div>
-            <Trophy className="w-4 h-4 text-amber-400/50" />
+      {/* Bottom 3 Metrics matching Figma 06 */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-3 border-t border-[#262626]">
+        <div>
+          <div className="text-xl sm:text-2xl font-bold tabular-nums text-[#fafafa]">
+            {stats.pr > 0 ? formatWeight(stats.pr, unitPref) : '—'}
           </div>
-
-          <div className="p-2.5 rounded-xl bg-dark-900/70 border border-dark-750/70 flex items-center justify-between">
-            <div className="space-y-0.5">
-              <div className="text-[10px] uppercase font-bold text-zinc-500">Прирост</div>
-              <div
-                className={`text-sm font-mono font-black ${
-                  stats.growthPct >= 0 ? 'text-emerald-400' : 'text-rose-400'
-                }`}
-              >
-                {stats.growthPct >= 0 ? `+${stats.growthPct}%` : `${stats.growthPct}%`}
-              </div>
-            </div>
-            <TrendingUp className="w-4 h-4 text-emerald-400/50" />
+          <div className="text-xs text-[#a3a3a3] mt-0.5">{lbl.currentPR}</div>
+        </div>
+        <div>
+          <div
+            className={`text-xl sm:text-2xl font-bold tabular-nums ${
+              stats.growthPct >= 0 ? 'text-[#34d399]' : 'text-rose-400'
+            }`}
+          >
+            {stats.growthPct >= 0 ? `+${stats.growthPct}%` : `${stats.growthPct}%`}
           </div>
-
-          <div className="p-2.5 rounded-xl bg-dark-900/70 border border-dark-750/70 flex items-center justify-between">
-            <div className="space-y-0.5">
-              <div className="text-[10px] uppercase font-bold text-zinc-500">Старт</div>
-              <div className="text-sm font-mono font-black text-zinc-300">
-                {stats.initial > 0 ? formatWeight(stats.initial, unitPref) : '—'}
-              </div>
-            </div>
-            <Calendar className="w-4 h-4 text-zinc-500" />
+          <div className="text-xs text-[#a3a3a3] mt-0.5">{lbl.growth}</div>
+        </div>
+        <div>
+          <div className="text-xl sm:text-2xl font-bold tabular-nums text-[#fafafa]">
+            {stats.initial > 0 ? formatWeight(stats.initial, unitPref) : '—'}
           </div>
+          <div className="text-xs text-[#a3a3a3] mt-0.5">{lbl.startWeight}</div>
         </div>
       </div>
     </div>

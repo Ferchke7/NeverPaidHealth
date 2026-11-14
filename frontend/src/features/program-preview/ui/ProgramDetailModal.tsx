@@ -3,12 +3,9 @@ import {
   Play,
   HelpCircle,
   Edit3,
-  Calendar,
-  Layers,
   Check,
   Users,
   Award,
-  Sparkles,
   MessageCircle,
   Heart,
 } from 'lucide-react';
@@ -22,7 +19,7 @@ import { useTranslation } from '../../../shared/lib/i18n/i18n.ts';
 import { Program, ProgramDay } from '../../../entities/program/model/types.ts';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../../shared/api/client.ts';
-import { useAuthStore } from '../../../entities/user/model/authStore.ts';
+
 import { useStartWorkout } from '../../start-workout/model/useStartWorkout.ts';
 import { InstagramCommentsModal } from './InstagramCommentsModal.tsx';
 import { AthleteAvatar } from '../../../entities/user/ui/AthleteAvatar.tsx';
@@ -50,7 +47,6 @@ export const ProgramDetailModal: React.FC<ProgramDetailModalProps> = ({
   onSelectProgram,
 }) => {
   const { t } = useTranslation();
-  const user = useAuthStore((s) => s.user);
   const queryClient = useQueryClient();
   const [selectedDayIndex, setSelectedDayIndex] = useState(0);
   const [isCommentsOpen, setIsCommentsOpen] = useState(false);
@@ -268,27 +264,24 @@ export const ProgramDetailModal: React.FC<ProgramDetailModalProps> = ({
         }
       >
         <div className="space-y-4">
-          {/* Program Description */}
           {program.description && (
-            <div className="bg-dark-800/80 p-3 rounded-xl border border-dark-700/80 text-xs text-zinc-300 italic flex items-start gap-2">
-              <Sparkles className="w-4 h-4 text-brand-400 shrink-0 mt-0.5" />
-              <p className="not-italic">{program.description}</p>
+            <div className="bg-[#0a0a0a] p-3.5 rounded-[10px] border border-[#262626] text-[13px] text-[#a3a3a3]">
+              <p>{program.description}</p>
             </div>
           )}
 
           {/* Days Tabs Header */}
           <div className="space-y-2.5">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
-                <Calendar className="w-3.5 h-3.5 text-brand-400" />
-                <span>{t('programs.splitDaysOverview')}</span>
+              <span className="text-[12px] font-semibold uppercase tracking-wider text-[#a3a3a3]">
+                {t('programs.splitDaysOverview')}
               </span>
-              <span className="text-xs text-zinc-500 font-mono">
+              <span className="text-[12px] text-[#a3a3a3] font-mono">
                 {days.length} {t('programs.daysCount')}
               </span>
             </div>
 
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
               {days.map((d, idx) => {
                 const isSelected = idx === selectedDayIndex;
                 return (
@@ -296,15 +289,15 @@ export const ProgramDetailModal: React.FC<ProgramDetailModalProps> = ({
                     key={idx}
                     type="button"
                     onClick={() => setSelectedDayIndex(idx)}
-                    className={`text-xs px-3.5 py-2 rounded-xl font-medium transition-all whitespace-nowrap flex items-center gap-2 ${
+                    className={`h-[44px] px-3.5 rounded-[10px] text-[13px] font-medium transition-colors whitespace-nowrap flex items-center gap-2 cursor-pointer ${
                       isSelected
-                        ? 'bg-dark-700 text-brand-400 border border-brand-500/50 font-bold shadow-md'
-                        : 'bg-dark-900 text-zinc-400 hover:text-zinc-200 hover:bg-dark-800 border border-dark-800'
+                        ? 'bg-[#022c22] text-[#34d399]'
+                        : 'bg-[#0a0a0a] text-[#a3a3a3] hover:text-[#fafafa] border border-[#404040]'
                     }`}
                   >
-                    <span className="font-mono text-brand-400">#{idx + 1}</span>
+                    <span>#{idx + 1}</span>
                     <span className="truncate max-w-[140px]">{d.name}</span>
-                    <span className="text-[10px] text-zinc-500 font-mono">
+                    <span className="text-[11px] opacity-75">
                       ({d.exercises?.length || 0})
                     </span>
                   </button>
@@ -315,27 +308,23 @@ export const ProgramDetailModal: React.FC<ProgramDetailModalProps> = ({
 
           {/* Current Day Exercise List */}
           {currentDay && (
-            <div className="bg-dark-900/90 border border-dark-750 p-4 rounded-2xl space-y-3">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 border-b border-dark-800 pb-2.5">
+            <div className="bg-[#0a0a0a] border border-[#404040] p-4 rounded-[14px] space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 border-b border-[#262626] pb-3">
                 <div>
-                  <h4 className="text-sm font-bold text-white flex items-center gap-2">
-                    <span className="text-brand-400 font-mono">Day {selectedDayIndex + 1}:</span>
-                    <span>{currentDay.name}</span>
+                  <h4 className="text-[15px] font-semibold text-[#fafafa]">
+                    {t('programs.dayShort')} {selectedDayIndex + 1} · {currentDay.name}
                   </h4>
                   {currentDay.notes && (
-                    <p className="text-xs text-zinc-400 mt-0.5 italic">"{currentDay.notes}"</p>
+                    <p className="text-[12px] text-[#a3a3a3] mt-0.5">{currentDay.notes}</p>
                   )}
                 </div>
 
-                <div className="flex items-center gap-2 text-xs text-zinc-400 font-mono">
-                  <span className="flex items-center gap-1">
-                    <Layers className="w-3.5 h-3.5 text-zinc-500" />
-                    {currentDay.exercises?.length || 0} {t('programs.exercises')}
-                  </span>
+                <div className="text-[12px] text-[#a3a3a3]">
+                  {currentDay.exercises?.length || 0} {t('programs.exercises')}
                 </div>
               </div>
 
-              <div className="space-y-2 divide-y divide-dark-800">
+              <div className="divide-y divide-[#262626]">
                 {currentDay.exercises && currentDay.exercises.length > 0 ? (
                   currentDay.exercises.map((ex, exIdx) => {
                     const exName = ex.exercise_name || 'Exercise';
@@ -346,9 +335,10 @@ export const ProgramDetailModal: React.FC<ProgramDetailModalProps> = ({
                     return (
                       <div
                         key={ex.exercise_id || exIdx}
-                        className="pt-2.5 first:pt-0 flex items-center justify-between gap-3 group"
+                        className="py-2.5 first:pt-0 last:pb-0 flex items-center justify-between gap-3 group"
                       >
-                        <div
+                        <button
+                          type="button"
                           className="cursor-pointer shrink-0"
                           onClick={() =>
                             setInspectingExercise({
@@ -362,60 +352,55 @@ export const ProgramDetailModal: React.FC<ProgramDetailModalProps> = ({
                             exerciseName={exName}
                             fallbackMuscle={primaryMuscle}
                             size="md"
-                            className="rounded-xl border border-dark-700/80 group-hover:border-brand-500/60 transition-colors shadow-sm"
+                            className="rounded-[10px] border border-[#404040]"
                           />
-                        </div>
-
-                        <div
-                          className="flex-1 min-w-0 cursor-pointer"
-                          onClick={() =>
-                            setInspectingExercise({
-                              name: exName,
-                              muscle: primaryMuscle,
-                            })
-                          }
-                        >
-                          <div className="text-sm font-bold text-zinc-100 group-hover:text-brand-400 transition-colors truncate">
-                            <span className="text-brand-400 font-extrabold mr-1.5">
-                              {targetSets} ×
-                            </span>
-                            <span>{exName}</span>
-                          </div>
-                          <div className="text-xs text-zinc-400 capitalize mt-0.5 flex items-center gap-2">
-                            <span className="text-zinc-300 font-medium">{primaryMuscle}</span>
-                            {ex.target_reps_min && (
-                              <>
-                                <span className="text-zinc-600">•</span>
-                                <span className="text-zinc-400 font-mono text-[11px]">
-                                  {ex.target_reps_min}
-                                  {ex.target_reps_max && ex.target_reps_max !== ex.target_reps_min
-                                    ? `-${ex.target_reps_max}`
-                                    : ''}{' '}
-                                  {t('activeWorkout.reps')}
-                                </span>
-                              </>
-                            )}
-                          </div>
-                        </div>
+                        </button>
 
                         <button
                           type="button"
+                          className="flex-1 min-w-0 text-left cursor-pointer"
                           onClick={() =>
                             setInspectingExercise({
                               name: exName,
                               muscle: primaryMuscle,
                             })
                           }
-                          className="w-8 h-8 rounded-xl border border-dark-700 text-zinc-400 hover:text-white hover:border-dark-600 hover:bg-dark-800 flex items-center justify-center transition-all shrink-0 cursor-pointer"
+                        >
+                          <div className="text-[14px] font-medium text-[#fafafa] group-hover:text-[#34d399] transition-colors truncate">
+                            {targetSets} × {exName}
+                          </div>
+                          <div className="text-[12px] text-[#a3a3a3] mt-0.5">
+                            {primaryMuscle}
+                            {ex.target_reps_min
+                              ? ` · ${ex.target_reps_min}${
+                                  ex.target_reps_max && ex.target_reps_max !== ex.target_reps_min
+                                    ? `–${ex.target_reps_max}`
+                                    : ''
+                                } ${t('activeWorkout.reps')}`
+                              : ''}
+                          </div>
+                        </button>
+
+                        <Button
+                          isIconOnly
+                          size="sm"
+                          variant="outline"
+                          onClick={() =>
+                            setInspectingExercise({
+                              name: exName,
+                              muscle: primaryMuscle,
+                            })
+                          }
                           title={t('routines.techniqueTooltip')}
+                          aria-label={t('routines.techniqueTooltip')}
                         >
                           <HelpCircle className="w-4 h-4" />
-                        </button>
+                        </Button>
                       </div>
                     );
                   })
                 ) : (
-                  <div className="text-center py-6 text-xs text-zinc-500">
+                  <div className="text-center py-6 text-[13px] text-[#a3a3a3]">
                     {t('programs.noExercisesInDay')}
                   </div>
                 )}
@@ -423,115 +408,73 @@ export const ProgramDetailModal: React.FC<ProgramDetailModalProps> = ({
             </div>
           )}
 
-          {/* Instagram-Style Social Action Bar (At the Bottom after exercises) */}
-          <div className="bg-dark-900/90 border border-dark-750 p-3.5 rounded-2xl space-y-2.5 shadow-sm">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                {/* Heart / Like button */}
-                <button
-                  type="button"
+          {/* Discussion & Likes Bar (Screen 14 Discussion) */}
+          <div className="bg-[#0a0a0a] border border-[#404040] p-4 rounded-[14px] space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <Button
+                  variant={hasLiked ? 'flat' : 'outline'}
+                  size="sm"
                   onClick={() => toggleLikeMutation.mutate()}
-                  className="flex items-center gap-1.5 text-xs font-bold transition-transform active:scale-125 cursor-pointer group"
-                  title="Нравится"
                 >
                   <Heart
-                    className={`w-5 h-5 transition-colors ${
-                      hasLiked
-                        ? 'fill-rose-500 text-rose-500'
-                        : 'text-zinc-400 group-hover:text-rose-400'
+                    className={`w-4 h-4 ${
+                      hasLiked ? 'fill-[#34d399] text-[#34d399]' : ''
                     }`}
                   />
-                  <span
-                    className={`font-mono text-xs ${
-                      hasLiked ? 'text-rose-400 font-bold' : 'text-zinc-300'
-                    }`}
-                  >
-                    {program.likes_count || 0}
-                  </span>
-                </button>
+                  <span>{program.likes_count || 0}</span>
+                </Button>
 
-                {/* Comment button -> Opens separate Instagram Comments popup */}
-                <button
-                  type="button"
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={() => setIsCommentsOpen(true)}
-                  className="flex items-center gap-1.5 text-xs font-bold text-zinc-400 hover:text-white transition-colors cursor-pointer group"
-                  title="Открыть комментарии"
                 >
-                  <MessageCircle className="w-5 h-5 text-zinc-400 group-hover:text-brand-400 transition-colors" />
-                  <span className="font-mono text-xs text-zinc-300">
-                    {comments.length}
-                  </span>
-                </button>
+                  <MessageCircle className="w-4 h-4" />
+                  <span>{comments.length}</span>
+                </Button>
               </div>
 
-              {/* Install badge or button on right */}
               {isActiveProgram ? (
-                <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2.5 py-1 rounded-full flex items-center gap-1">
-                  <Check className="w-3 h-3" />
-                  Активен
+                <span className="text-[12px] font-medium text-[#34d399] bg-[#022c22] px-3 py-1.5 rounded-[8px]">
+                  {t('programs.active')}
                 </span>
               ) : (
-                <button
-                  type="button"
+                <Button
+                  variant="primary"
+                  size="sm"
                   onClick={() => installMutation.mutate({ setActive: true })}
                   disabled={installMutation.isPending}
-                  className="text-[11px] font-bold text-brand-400 hover:text-brand-300 bg-brand-500/10 border border-brand-500/30 px-3 py-1 rounded-full transition-all cursor-pointer flex items-center gap-1.5"
                 >
-                  <Award className="w-3.5 h-3.5" />
-                  <span>{isInstalled ? 'Активировать' : 'Установить'}</span>
-                </button>
+                  {isInstalled ? t('programs.setActive') : t('programs.installShort')}
+                </Button>
               )}
             </div>
 
-            {/* Likes count & Instagram Comments trigger */}
-            <div className="text-xs space-y-1.5 pt-2 border-t border-dark-800/80">
-              <div className="text-zinc-400 font-medium text-[11px]">
-                {program.likes_count > 0 ? (
-                  <span>
-                    Отметок «Нравится»: <strong className="text-white font-mono">{program.likes_count}</strong>
-                  </span>
-                ) : (
-                  <span className="text-zinc-500">Поставьте первый лайк программе</span>
-                )}
-              </div>
+            <div className="space-y-2 pt-2 border-t border-[#262626]">
+              {comments[0] && (
+                <button
+                  type="button"
+                  onClick={() => setIsCommentsOpen(true)}
+                  className="text-[12px] text-[#a3a3a3] hover:text-[#fafafa] text-left truncate block w-full cursor-pointer"
+                >
+                  <strong className="text-[#fafafa]">@{comments[0].author_name}:</strong>{' '}
+                  {comments[0].content}
+                </button>
+              )}
 
-              {/* Tap to open comments in popup */}
               <button
                 type="button"
                 onClick={() => setIsCommentsOpen(true)}
-                className="w-full text-left text-zinc-500 hover:text-zinc-300 font-medium text-xs transition-colors cursor-pointer block"
+                className="w-full h-[40px] bg-[#171717] border border-[#404040] hover:border-[#525252] rounded-[10px] px-3.5 text-[13px] text-[#a3a3a3] flex items-center justify-between transition-colors cursor-pointer"
               >
-                {comments.length > 0
-                  ? `Посмотреть все комментарии (${comments.length})...`
-                  : 'Оставить первый комментарий...'}
+                <span>
+                  {comments.length > 0
+                    ? `Посмотреть все комментарии (${comments.length})...`
+                    : 'Оставить первый комментарий...'}
+                </span>
+                <span className="text-[#34d399] font-medium text-[12px]">Открыть</span>
               </button>
-
-              {/* Latest comment preview */}
-              {comments[0] && (
-                <div
-                  onClick={() => setIsCommentsOpen(true)}
-                  className="text-[11px] text-zinc-400 truncate cursor-pointer hover:text-zinc-300 transition-colors"
-                >
-                  <strong className="text-zinc-300">@{comments[0].author_name}:</strong> {comments[0].content}
-                </div>
-              )}
-
-              {/* Quick comment input strip (Clicking opens comments modal with focus) */}
-              <div
-                onClick={() => setIsCommentsOpen(true)}
-                className="flex items-center gap-2 pt-1.5 cursor-pointer group"
-              >
-                <AthleteAvatar
-                  name={user?.display_name || 'А'}
-                  avatarUrl={user?.avatar_url}
-                  size="xs"
-                  className="w-6 h-6"
-                />
-                <div className="flex-1 bg-dark-950/60 border border-dark-750 group-hover:border-dark-600 rounded-full px-3 py-1.5 text-xs text-zinc-500 transition-colors flex items-center justify-between">
-                  <span>Добавьте комментарий...</span>
-                  <span className="text-[10px] text-brand-400 font-bold group-hover:underline">Открыть</span>
-                </div>
-              </div>
             </div>
           </div>
         </div>

@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Plus } from 'lucide-react';
 import { Button } from '../../../shared/ui/button.tsx';
-import { Chip } from '../../../shared/ui/card.tsx';
 import { TodoCategory } from '../../../entities/todo/model/types.ts';
 import { useTranslation } from '../../../shared/lib/i18n/i18n.ts';
 
@@ -24,7 +23,7 @@ export const TodoQuickAdd: React.FC<TodoQuickAddProps> = ({ onAdd, isLoading = f
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState<TodoCategory>('work');
 
-  const handleSubmit = (e?: React.SyntheticEvent | any) => {
+  const handleSubmit = (e?: React.SyntheticEvent) => {
     if (e && typeof e.preventDefault === 'function') {
       e.preventDefault();
     }
@@ -37,7 +36,7 @@ export const TodoQuickAdd: React.FC<TodoQuickAddProps> = ({ onAdd, isLoading = f
   return (
     <form
       onSubmit={handleSubmit}
-      className="bg-dark-900 border border-dark-800 rounded-2xl p-2 sm:p-2.5 shadow-sm space-y-2"
+      className="bg-[#0a0a0a] border border-[#404040] rounded-[10px] p-3 space-y-2.5"
     >
       <div className="flex items-center gap-2">
         <input
@@ -46,26 +45,26 @@ export const TodoQuickAdd: React.FC<TodoQuickAddProps> = ({ onAdd, isLoading = f
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           disabled={isLoading}
-          className="bg-transparent flex-1 text-xs sm:text-sm text-white placeholder-zinc-500 focus:outline-none px-2 font-medium"
+          className="bg-transparent flex-1 min-h-[44px] text-[14px] text-[#fafafa] placeholder-[#737373] focus:outline-none px-2"
         />
 
         <Button
-          size="sm"
+          size="md"
           variant="primary"
           type="submit"
           disabled={!title.trim() || isLoading}
           isLoading={isLoading}
-          className="rounded-xl px-3 py-1.5 text-xs font-bold shrink-0"
+          className="shrink-0 font-semibold"
         >
-          <Plus className="w-3.5 h-3.5 sm:mr-1" />
+          <Plus className="w-4 h-4 sm:mr-1.5" />
           <span className="hidden sm:inline">{t('common.add') || 'Добавить'}</span>
         </Button>
       </div>
 
       {/* Category Pills Selector */}
-      <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pt-1 border-t border-dark-800/60">
-        <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-bold shrink-0 mr-1">
-          {t('todo.category') || 'Категория'}:
+      <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 pt-2 border-t border-[#262626]">
+        <span className="text-[11px] text-[#737373] font-medium shrink-0 mr-1">
+          {t('todo.categoryLabel') || 'Категория'}:
         </span>
         {CATEGORIES.map((c) => {
           const isSelected = category === c.id;
@@ -74,15 +73,13 @@ export const TodoQuickAdd: React.FC<TodoQuickAddProps> = ({ onAdd, isLoading = f
               key={c.id}
               type="button"
               onClick={() => setCategory(c.id)}
-              className="cursor-pointer"
+              className={`min-h-[44px] px-3 rounded-[10px] text-[12px] font-medium border whitespace-nowrap shrink-0 transition-colors cursor-pointer ${
+                isSelected
+                  ? 'bg-[#022c22] text-[#34d399] border-[#064e3b]'
+                  : 'bg-[#171717] text-[#a3a3a3] border-[#404040] hover:text-[#fafafa]'
+              }`}
             >
-              <Chip
-                variant={isSelected ? 'solid' : 'bordered'}
-                color={isSelected ? 'primary' : 'default'}
-                className="text-[10px] cursor-pointer"
-              >
-                {t(c.labelKey) || c.id}
-              </Chip>
+              {t(c.labelKey as Parameters<typeof t>[0]) || c.id}
             </button>
           );
         })}

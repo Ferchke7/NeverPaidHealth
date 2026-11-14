@@ -1,5 +1,5 @@
 import React from 'react';
-import { Trophy, Clock, Flame, Dumbbell, CheckCircle } from 'lucide-react';
+import { Trophy, CheckCircle } from 'lucide-react';
 import { Button } from '../../../shared/ui/button.tsx';
 import { Modal } from '../../../shared/ui/modal.tsx';
 import { formatDuration } from '../../../shared/lib/dates.ts';
@@ -14,6 +14,11 @@ export interface FinishedWorkoutSummary {
   totalVolumeKg: number;
   completedSetsCount: number;
   exerciseCount: number;
+  exercises?: {
+    exerciseName: string;
+    setsCount: number;
+    volumeKg: number;
+  }[];
   prs?: {
     exerciseName: string;
     prType: string;
@@ -24,77 +29,96 @@ export interface FinishedWorkoutSummary {
 interface WorkoutSummaryModalProps {
   summary: FinishedWorkoutSummary | null;
   onClose: () => void;
+  onViewHistory?: () => void;
 }
 
 export const WorkoutSummaryModal: React.FC<WorkoutSummaryModalProps> = ({
   summary,
   onClose,
+  onViewHistory,
 }) => {
   const { t } = useTranslation();
   const unitPref = useAuthStore((s) => s.unitPreference);
 
   if (!summary) return null;
 
+  const formattedCompactVolume =
+    unitPref !== 'lb' && summary.totalVolumeKg >= 1000
+      ? `${(summary.totalVolumeKg / 1000).toFixed(2).replace('.', ',')} т`
+      : formatWeight(summary.totalVolumeKg, unitPref);
+
   return (
     <Modal
       isOpen={!!summary}
       onClose={onClose}
       size="md"
-      icon={
-        <div className="w-10 h-10 rounded-2xl bg-brand-500/20 border border-brand-500/40 text-brand-400 flex items-center justify-center shadow-lg shadow-brand-500/10">
-          <Trophy className="w-5 h-5" />
-        </div>
-      }
-      title={t('summary.workoutFinished')}
-      subtitle={summary.name}
+      title={t('summary.wellDoneTitle')}
+      subtitle={`${summary.name} · ${summary.exerciseCount} · ${summary.completedSetsCount}`}
       footer={
-        <Button
-          variant="primary"
-          className="w-full font-bold shadow-lg shadow-brand-500/20"
-          onClick={onClose}
-        >
-          {t('summary.awesome')}
-        </Button>
+        <div className="flex flex-wrap items-center gap-2.5 w-full">
+          <Button variant="primary" size="md" className="flex-1" onClick={onClose}>
+            {t('summary.done')}
+          </Button>
+          {onViewHistory && (
+            <Button variant="outline" size="md" className="flex-1" onClick={onViewHistory}>
+              {t('summary.viewHistory')}
+            </Button>
+          )}
+        </div>
       }
     >
       <div className="space-y-4">
-        {/* Stats Grid */}
-        <div className="grid grid-cols-3 gap-2.5">
-          <div className="bg-dark-900 border border-dark-750 rounded-2xl p-3 text-center">
-            <div className="flex items-center justify-center text-blue-400 mb-1">
-              <Clock className="w-4 h-4" />
-            </div>
-            <span className="text-[11px] text-zinc-400 block">{t('summary.time')}</span>
-            <span className="text-sm font-black font-mono text-white">
+        <div className="text-[11px] font-semibold uppercase tracking-wider text-[#34d399]">
+          {t('summary.finishEyebrow')}
+        </div>
+
+        {/* 2 Primary KPI Blocks (1:1 Figma 15 State Card 02) */}
+        <div className="grid grid-cols-2 gap-3 pb-3 border-b border-[#262626]">
+          <div className="bg-[#0a0a0a] border border-[#262626] rounded-[12px] p-3.5">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-[#a3a3a3] block">
+              {t('summary.totalVolume')}
+            </span>
+            <span className="text-2xl font-bold tabular-nums text-[#fafafa] block mt-1">
+              {formattedCompactVolume}
+            </span>
+            <span className="text-[11px] text-[#737373] block mt-1">
+              {t('summary.exactVolume', { volume: formatWeight(summary.totalVolumeKg, unitPref) })}
+            </span>
+          </div>
+
+          <div className="bg-[#0a0a0a] border border-[#262626] rounded-[12px] p-3.5">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-[#a3a3a3] block">
+              {t('summary.time')}
+            </span>
+            <span className="text-2xl font-bold tabular-nums text-[#fafafa] block mt-1">
               {formatDuration(summary.durationSeconds)}
             </span>
-          </div>
-
-          <div className="bg-dark-900 border border-dark-750 rounded-2xl p-3 text-center">
-            <div className="flex items-center justify-center text-emerald-400 mb-1">
-              <Flame className="w-4 h-4" />
-            </div>
-            <span className="text-[11px] text-zinc-400 block">{t('summary.totalVolume')}</span>
-            <span className="text-sm font-black font-mono text-white">
-              {formatWeight(summary.totalVolumeKg, unitPref)}
-            </span>
-          </div>
-
-          <div className="bg-dark-900 border border-dark-750 rounded-2xl p-3 text-center">
-            <div className="flex items-center justify-center text-brand-400 mb-1">
-              <Dumbbell className="w-4 h-4" />
-            </div>
-            <span className="text-[11px] text-zinc-400 block">{t('summary.sets')}</span>
-            <span className="text-sm font-black font-mono text-white">
-              {summary.completedSetsCount}
+            <span className="text-[11px] text-[#737373] block mt-1">
+              {t('summary.sets')}: {summary.completedSetsCount}
             </span>
           </div>
         </div>
 
+        {/* Exercise Breakdown Rows */}
+        {summary.exercises && summary.exercises.length > 0 && (
+          <div className="divide-y divide-[#262626]">
+            {summary.exercises.map((ex, idx) => (
+              <div key={idx} className="py-2.5 flex items-center justify-between gap-3">
+                <span className="text-sm font-medium text-[#fafafa] truncate">
+                  {ex.exerciseName}
+                </span>
+                <span className="text-xs text-[#a3a3a3] tabular-nums shrink-0">
+                  {ex.setsCount} · {formatWeight(ex.volumeKg, unitPref)}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+
         {/* PRs Section */}
         {summary.prs && summary.prs.length > 0 && (
-          <div className="bg-brand-950/30 border border-brand-800/40 rounded-2xl p-3.5 space-y-2">
-            <div className="flex items-center gap-2 text-brand-400 font-bold text-xs uppercase tracking-wider">
+          <div className="bg-[#0a0a0a] border border-[#064e3b] rounded-[12px] p-3.5 space-y-2">
+            <div className="flex items-center gap-2 text-[#34d399] font-semibold text-xs uppercase tracking-wider">
               <Trophy className="w-4 h-4" />
               {t('summary.newPRs', { count: summary.prs.length })}
             </div>
@@ -102,18 +126,18 @@ export const WorkoutSummaryModal: React.FC<WorkoutSummaryModalProps> = ({
               {summary.prs.map((pr, idx) => (
                 <div
                   key={idx}
-                  className="flex items-center justify-between text-xs bg-dark-900/80 p-2 rounded-xl border border-dark-800"
+                  className="flex items-center justify-between text-xs bg-[#171717] p-2.5 rounded-[10px] border border-[#262626]"
                 >
-                  <span className="text-zinc-200 font-medium">{pr.exerciseName}</span>
-                  <span className="text-brand-400 font-bold font-mono">{pr.value}</span>
+                  <span className="text-[#fafafa] font-medium">{pr.exerciseName}</span>
+                  <span className="text-[#34d399] font-semibold tabular-nums">{pr.value}</span>
                 </div>
               ))}
             </div>
           </div>
         )}
 
-        <div className="flex items-center justify-center gap-2 text-xs text-zinc-400 bg-dark-900/60 py-2.5 px-4 rounded-2xl border border-dark-750">
-          <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
+        <div className="flex items-center gap-2 text-xs text-[#a3a3a3] bg-[#0a0a0a] py-2.5 px-3.5 rounded-[12px] border border-[#262626]">
+          <CheckCircle className="w-4 h-4 text-[#34d399] shrink-0" />
           <span>{t('summary.savedStats')}</span>
         </div>
       </div>

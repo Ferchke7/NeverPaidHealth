@@ -22,7 +22,7 @@ export const FormattedChatMessage: React.FC<FormattedChatMessageProps> = ({ cont
         return (
           <span
             key={idx}
-            className="px-1.5 py-0.5 mx-0.5 rounded-md bg-dark-750 text-brand-300 font-mono text-[11px] sm:text-xs border border-dark-700 font-medium break-all inline-block"
+            className="px-1.5 py-0.5 mx-0.5 rounded-[6px] bg-[#171717] text-[#34d399] font-mono text-[11px] sm:text-xs border border-[#262626] font-medium break-all inline-block"
           >
             {inner}
           </span>
@@ -72,7 +72,7 @@ export const FormattedChatMessage: React.FC<FormattedChatMessageProps> = ({ cont
       renderedElements.push(
         <h4
           key={`header-${index}`}
-          className="font-bold text-xs sm:text-sm mt-2 mb-1 flex items-center gap-1.5 text-brand-400 first:mt-0 tracking-tight"
+          className="font-semibold text-xs sm:text-sm mt-2.5 mb-1 flex items-center gap-1.5 text-[#34d399] first:mt-0 tracking-tight"
         >
           {parseInlineFormatting(headerText)}
         </h4>
@@ -87,7 +87,7 @@ export const FormattedChatMessage: React.FC<FormattedChatMessageProps> = ({ cont
       renderedElements.push(
         <div
           key={`quote-${index}`}
-          className="border-l-2 border-brand-500 bg-brand-500/10 px-2.5 py-1 rounded-r-xl my-1.5 text-zinc-300 text-xs sm:text-sm leading-snug"
+          className="border-l-2 border-[#34d399] bg-[#022c22]/60 px-2.5 py-1.5 rounded-r-[8px] my-1.5 text-[#a3a3a3] text-xs sm:text-sm leading-snug"
         >
           {parseInlineFormatting(quoteText)}
         </div>
@@ -105,8 +105,8 @@ export const FormattedChatMessage: React.FC<FormattedChatMessageProps> = ({ cont
       const num = numberedMatch[1];
       const text = numberedMatch[2];
       currentListItems.push(
-        <li key={`num-item-${index}`} className="flex items-start gap-2 text-zinc-200">
-          <span className="w-4 h-4 rounded bg-dark-750 text-brand-400 text-[10px] font-mono font-bold flex items-center justify-center shrink-0 mt-0.5 border border-dark-700">
+        <li key={`num-item-${index}`} className="flex items-start gap-2 text-[#fafafa]">
+          <span className="w-4 h-4 rounded-[4px] bg-[#171717] text-[#34d399] text-[10px] font-mono tabular-nums font-semibold flex items-center justify-center shrink-0 mt-0.5 border border-[#262626]">
             {num}
           </span>
           <div className="flex-1 leading-snug break-words">{parseInlineFormatting(text)}</div>
@@ -123,8 +123,8 @@ export const FormattedChatMessage: React.FC<FormattedChatMessageProps> = ({ cont
       isOrderedList = false;
       const text = line.replace(/^[-*•]\s+/, '');
       currentListItems.push(
-        <li key={`bullet-item-${index}`} className="flex items-start gap-2 text-zinc-200">
-          <span className="w-1.5 h-1.5 rounded-full bg-brand-400 shrink-0 mt-1.5 ring-2 ring-brand-500/25" />
+        <li key={`bullet-item-${index}`} className="flex items-start gap-2 text-[#fafafa]">
+          <span className="w-1.5 h-1.5 rounded-full bg-[#34d399] shrink-0 mt-1.5" />
           <div className="flex-1 leading-snug break-words">{parseInlineFormatting(text)}</div>
         </li>
       );
@@ -134,7 +134,7 @@ export const FormattedChatMessage: React.FC<FormattedChatMessageProps> = ({ cont
     // Regular Paragraph Line
     flushList(index);
     renderedElements.push(
-      <p key={`p-${index}`} className="leading-snug text-zinc-200 my-0.5 break-words">
+      <p key={`p-${index}`} className="leading-snug text-[#fafafa] my-0.5 break-words">
         {parseInlineFormatting(line)}
       </p>
     );

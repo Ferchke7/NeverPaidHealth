@@ -26,9 +26,9 @@ export const Tabs: React.FC<TabsProps> = ({
   className = '',
 }) => {
   const sizeClass = {
-    sm: 'text-xs py-1 px-2.5',
-    md: 'text-xs py-1.5 px-3.5',
-    lg: 'text-sm py-2 px-4',
+    sm: 'text-[13px] min-h-[38px] py-1.5 px-3',
+    md: 'text-[14px] min-h-[44px] py-2 px-4',
+    lg: 'text-[14px] min-h-[44px] py-2 px-5',
   }[size];
 
   return (
@@ -39,29 +39,32 @@ export const Tabs: React.FC<TabsProps> = ({
       className={className}
     >
       <HeroTabs.ListContainer className="overflow-x-auto no-scrollbar max-w-full">
-        <HeroTabs.List aria-label="Navigation Tabs" className="bg-dark-900 border border-dark-700/80 p-1 rounded-2xl">
+        <HeroTabs.List
+          aria-label="Navigation Tabs"
+          className="bg-[#0a0a0a] border border-[#404040] p-1 rounded-[12px] gap-1"
+        >
           {tabs.map((tab) => {
             const isSelected = selectedKey === tab.id;
             return (
               <HeroTabs.Tab
                 key={tab.id}
                 id={tab.id}
-                className={`flex items-center gap-1.5 whitespace-nowrap rounded-xl font-semibold cursor-pointer ${sizeClass} ${
-                  isSelected ? 'text-dark-950 font-bold' : 'text-zinc-400 hover:text-zinc-200'
+                className={`flex items-center gap-2 whitespace-nowrap rounded-[10px] font-medium cursor-pointer transition-colors ${sizeClass} ${
+                  isSelected ? 'text-[#34d399]' : 'text-[#a3a3a3] hover:text-[#fafafa]'
                 }`}
               >
                 {tab.icon && <span className="shrink-0 relative z-10">{tab.icon}</span>}
                 <span className="relative z-10">{tab.label}</span>
                 {tab.badge !== undefined && (
                   <span
-                    className={`relative z-10 text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
-                      isSelected ? 'bg-dark-950/20 text-dark-950' : 'bg-dark-700 text-zinc-300'
+                    className={`relative z-10 text-[11px] px-1.5 py-0.5 rounded-[6px] font-mono ${
+                      isSelected ? 'bg-[#34d399]/15 text-[#34d399]' : 'bg-[#262626] text-[#a3a3a3]'
                     }`}
                   >
                     {tab.badge}
                   </span>
                 )}
-                <HeroTabs.Indicator className="bg-brand-500 rounded-xl shadow-sm" />
+                <HeroTabs.Indicator className="bg-[#022c22] rounded-[10px] shadow-none" />
               </HeroTabs.Tab>
             );
           })}

@@ -1,4 +1,4 @@
-import { useActiveWorkoutStore } from '@/entities/workout/model/activeWorkoutStore.ts';
+import { useActiveWorkoutStore } from '../entities/workout/model/activeWorkoutStore.ts';
 import { useRestTimerStore } from '@/entities/workout/model/restTimerStore.ts';
 import { useExerciseNotesStore } from '@/entities/workout/model/exerciseNotesStore.ts';
 import { useFocusTimerStore } from '@/features/focus-timer/model/focusTimerStore.ts';
@@ -25,12 +25,13 @@ const ProfilePage = lazy(() => import('../pages/profile/ui/ProfilePage.tsx'));
 
 const PageFallback: React.FC = () => (
   <div className="flex items-center justify-center min-h-[50vh]">
-    <div className="w-8 h-8 rounded-full border-2 border-brand-500 border-t-transparent animate-spin" />
+    <div className="w-8 h-8 rounded-full border-2 border-[#34d399] border-t-transparent animate-spin" />
   </div>
 );
 
 const ProtectedLayout: React.FC = () => {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const isWorkoutOpen = useActiveWorkoutStore((s) => Boolean(s.workout && s.isOpen));
   const navigate = useNavigate();
 
   if (!isAuthenticated) {
@@ -40,26 +41,28 @@ const ProtectedLayout: React.FC = () => {
   return (
     <ErrorBoundary>
       <DashboardLayout>
-        <ErrorBoundary>
-          <Suspense fallback={<PageFallback />}>
-            <Routes>
-              <Route path="/" element={<Navigate to="/workouts" replace />} />
-              <Route path="/workouts" element={<WorkoutsPage onNavigateToPrograms={() => navigate('/programs')} />} />
-              <Route path="/todo" element={<TodoCalendarPage />} />
-              <Route path="/programs" element={<ProgramsPage onNavigateToWorkouts={() => navigate('/workouts')} />} />
-              <Route path="/nutrition" element={<NutritionPage />} />
-              <Route path="/coach" element={<AICoachPage />} />
-              <Route path="/history" element={<HistoryPage />} />
-              <Route path="/progress" element={<ProgressPage />} />
-              <Route path="/exercises" element={<ExercisesPage />} />
-              <Route path="/body" element={<BodyPage />} />
-              <Route path="/profile" element={<ProfilePage onNavigateToBody={() => navigate('/body')} />} />
-              <Route path="*" element={<Navigate to="/workouts" replace />} />
-            </Routes>
-          </Suspense>
-        </ErrorBoundary>
+        <div className={isWorkoutOpen ? 'hidden' : ''}>
+          <ErrorBoundary>
+            <Suspense fallback={<PageFallback />}>
+              <Routes>
+                <Route path="/" element={<Navigate to="/workouts" replace />} />
+                <Route path="/workouts" element={<WorkoutsPage onNavigateToPrograms={() => navigate('/programs')} />} />
+                <Route path="/todo" element={<TodoCalendarPage />} />
+                <Route path="/programs" element={<ProgramsPage onNavigateToWorkouts={() => navigate('/workouts')} />} />
+                <Route path="/nutrition" element={<NutritionPage />} />
+                <Route path="/coach" element={<AICoachPage />} />
+                <Route path="/history" element={<HistoryPage />} />
+                <Route path="/progress" element={<ProgressPage />} />
+                <Route path="/exercises" element={<ExercisesPage />} />
+                <Route path="/body" element={<BodyPage />} />
+                <Route path="/profile" element={<ProfilePage onNavigateToBody={() => navigate('/body')} />} />
+                <Route path="*" element={<Navigate to="/workouts" replace />} />
+              </Routes>
+            </Suspense>
+          </ErrorBoundary>
+        </div>
 
-        {/* Global floating active workout sheet */}
+        {/* Global active workout workspace / floating pill */}
         <ActiveWorkoutSheet />
 
         {/* Global floating / fullscreen Pomodoro & Focus Timer */}
@@ -98,7 +101,7 @@ export const App: React.FC = () => {
   if (isInitializing) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="w-8 h-8 rounded-full border-2 border-brand-500 border-t-transparent animate-spin" />
+        <div className="w-8 h-8 rounded-full border-2 border-[#34d399] border-t-transparent animate-spin" />
       </div>
     );
   }

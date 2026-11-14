@@ -23,7 +23,7 @@ export const PWAInstallModal: React.FC<PWAInstallModalProps> = ({
       onClose={onClose}
       size="md"
       icon={
-        <div className="w-10 h-10 rounded-xl bg-dark-800 border border-brand-500/30 p-1.5 flex items-center justify-center shadow-lg">
+        <div className="w-10 h-10 rounded-[10px] bg-[#0a0a0a] border border-[#404040] p-1.5 flex items-center justify-center">
           <img src="/icons/icon.svg" alt="duda.uz" className="w-full h-full" />
         </div>
       }
@@ -32,7 +32,7 @@ export const PWAInstallModal: React.FC<PWAInstallModalProps> = ({
       footer={
         <Button
           variant="primary"
-          className="w-full font-bold shadow-md shadow-brand-500/20"
+          className="w-full font-semibold"
           onClick={onClose}
         >
           {t('common.done')}
@@ -42,59 +42,59 @@ export const PWAInstallModal: React.FC<PWAInstallModalProps> = ({
       <div className="space-y-4">
         {/* Step by step for iOS */}
         {isIOS ? (
-          <div className="space-y-3 bg-dark-900/80 p-4 rounded-2xl border border-dark-750">
+          <div className="space-y-3 bg-[#0a0a0a] p-4 rounded-[12px] border border-[#262626]">
             <div className="flex items-start gap-3">
-              <div className="w-8 h-8 rounded-xl bg-brand-500/10 text-brand-400 flex items-center justify-center shrink-0 mt-0.5 border border-brand-500/20">
+              <div className="w-8 h-8 rounded-[10px] bg-[#022c22] text-[#34d399] flex items-center justify-center shrink-0 mt-0.5 border border-[#064e3b]">
                 <Share className="w-4 h-4" />
               </div>
               <div className="text-xs">
-                <div className="font-bold text-zinc-100">{t('pwa.iosStep1')}</div>
-                <div className="text-zinc-400 mt-0.5">{t('pwa.iosStep1Desc')}</div>
+                <div className="font-semibold text-[#fafafa]">{t('pwa.iosStep1')}</div>
+                <div className="text-[#a3a3a3] mt-0.5">{t('pwa.iosStep1Desc')}</div>
               </div>
             </div>
 
             <div className="flex items-start gap-3">
-              <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center shrink-0 mt-0.5 border border-emerald-500/20">
+              <div className="w-8 h-8 rounded-[10px] bg-[#022c22] text-[#34d399] flex items-center justify-center shrink-0 mt-0.5 border border-[#064e3b]">
                 <PlusSquare className="w-4 h-4" />
               </div>
               <div className="text-xs">
-                <div className="font-bold text-zinc-100">{t('pwa.iosStep2')}</div>
-                <div className="text-zinc-400 mt-0.5">{t('pwa.iosStep2Desc')}</div>
+                <div className="font-semibold text-[#fafafa]">{t('pwa.iosStep2')}</div>
+                <div className="text-[#a3a3a3] mt-0.5">{t('pwa.iosStep2Desc')}</div>
               </div>
             </div>
 
             <div className="flex items-start gap-3">
-              <div className="w-8 h-8 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center shrink-0 mt-0.5 border border-blue-500/20">
+              <div className="w-8 h-8 rounded-[10px] bg-[#022c22] text-[#34d399] flex items-center justify-center shrink-0 mt-0.5 border border-[#064e3b]">
                 <CheckCircle className="w-4 h-4" />
               </div>
               <div className="text-xs">
-                <div className="font-bold text-zinc-100">{t('pwa.iosStep3')}</div>
-                <div className="text-zinc-400 mt-0.5">{t('pwa.iosStep3Desc')}</div>
+                <div className="font-semibold text-[#fafafa]">{t('pwa.iosStep3')}</div>
+                <div className="text-[#a3a3a3] mt-0.5">{t('pwa.iosStep3Desc')}</div>
               </div>
             </div>
           </div>
         ) : (
-          <div className="bg-dark-900/80 p-4 rounded-2xl border border-dark-750 text-xs text-zinc-300">
-            <div className="flex items-center gap-2 mb-2 text-brand-400 font-bold">
+          <div className="bg-[#0a0a0a] p-4 rounded-[12px] border border-[#262626] text-xs text-[#a3a3a3]">
+            <div className="flex items-center gap-2 mb-2 text-[#34d399] font-semibold">
               <Smartphone className="w-4 h-4" />
               <span>Android / Chrome</span>
             </div>
-            <p className="text-zinc-400">{t('pwa.androidPrompt')}</p>
+            <p className="text-[#a3a3a3]">{t('pwa.androidPrompt')}</p>
           </div>
         )}
 
         {/* Benefits */}
-        <div className="grid grid-cols-2 gap-2 text-[11px] text-zinc-400">
-          <div className="bg-dark-900/60 p-2.5 rounded-xl flex items-center gap-1.5 border border-dark-750">
+        <div className="grid grid-cols-2 gap-2 text-[11px] text-[#a3a3a3]">
+          <div className="bg-[#0a0a0a] p-2.5 rounded-[10px] flex items-center gap-1.5 border border-[#262626]">
             <span className="text-emerald-400 font-bold">✓</span> {t('pwa.featureNoAddressBar')}
           </div>
-          <div className="bg-dark-900/60 p-2.5 rounded-xl flex items-center gap-1.5 border border-dark-750">
+          <div className="bg-[#0a0a0a] p-2.5 rounded-[10px] flex items-center gap-1.5 border border-[#262626]">
             <span className="text-emerald-400 font-bold">✓</span> {t('pwa.featureOffline')}
           </div>
-          <div className="bg-dark-900/60 p-2.5 rounded-xl flex items-center gap-1.5 border border-dark-750">
+          <div className="bg-[#0a0a0a] p-2.5 rounded-[10px] flex items-center gap-1.5 border border-[#262626]">
             <span className="text-emerald-400 font-bold">✓</span> {t('pwa.featureInstant')}
           </div>
-          <div className="bg-dark-900/60 p-2.5 rounded-xl flex items-center gap-1.5 border border-dark-750">
+          <div className="bg-[#0a0a0a] p-2.5 rounded-[10px] flex items-center gap-1.5 border border-[#262626]">
             <span className="text-emerald-400 font-bold">✓</span> {t('pwa.featureFullscreen')}
           </div>
         </div>

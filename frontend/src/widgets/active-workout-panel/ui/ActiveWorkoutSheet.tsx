@@ -1,25 +1,17 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   ChevronDown,
   ChevronUp,
-  Clock,
   Plus,
-  Trash2,
   Dumbbell,
-  Timer,
-  AlertTriangle,
-  Trophy,
-  CheckCircle2,
-  Flame,
-  ArrowLeftRight,
-  MessageSquare,
-  Sparkles,
+  HelpCircle,
 } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useActiveWorkoutStore } from '../../../entities/workout/model/activeWorkoutStore.ts';
 import { useRestTimerStore } from '../../../entities/workout/model/restTimerStore.ts';
 import { useExerciseNotesStore } from '../../../entities/workout/model/exerciseNotesStore.ts';
-import { PreviousExerciseNote, WorkoutHistoryItem } from '../../../entities/workout/model/types.ts';
+import { PreviousExerciseNote, SetType, WorkoutHistoryItem } from '../../../entities/workout/model/types.ts';
 import { SetRow, PreviousSetData } from '../../../entities/workout/ui/SetRow.tsx';
 import { ExerciseSetHistoryModal } from '../../../entities/workout/ui/ExerciseSetHistoryModal.tsx';
 import { extractExerciseHistory, normalizeExerciseName, HistoricalSetRecord } from '../../../entities/workout/model/setHistory.ts';
@@ -27,21 +19,21 @@ import { ExercisePickerModal } from '../../../features/exercise-picker/ui/Exerci
 import { Exercise } from '../../../entities/exercise/model/types.ts';
 import { Button } from '../../../shared/ui/button.tsx';
 import { Modal } from '../../../shared/ui/modal.tsx';
+import { ProgressBar } from '../../../shared/ui/progress.tsx';
 import { formatDate, formatDuration } from '../../../shared/lib/dates.ts';
 import { formatWeight } from '../../../shared/lib/units.ts';
 import { workoutHistoryStorage } from '../../../entities/workout/api/workoutHistoryStorage.ts';
 import { useAuthStore } from '../../../entities/user/model/authStore.ts';
 import { apiClient } from '../../../shared/api/client.ts';
 import { WorkoutSummaryModal, FinishedWorkoutSummary } from '../../workout-summary-modal/ui/WorkoutSummaryModal.tsx';
-import { ExerciseThumbnail } from '../../../entities/exercise/ui/ExerciseThumbnail.tsx';
 import { ExerciseInfoModal } from '../../../features/exercise-detail/ui/ExerciseInfoModal.tsx';
-import { HelpCircle } from 'lucide-react';
 import { useTranslation } from '../../../shared/lib/i18n/i18n.ts';
 import { FloatingActiveWorkoutPill } from './FloatingActiveWorkoutPill.tsx';
 import { playSetCompleteSound, playTaskUncheckSound } from '../../../shared/lib/audio/soundEffects.ts';
 
 export const ActiveWorkoutSheet: React.FC = () => {
   const { t, language } = useTranslation();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const workout = useActiveWorkoutStore((s) => s.workout);
   const isOpen = useActiveWorkoutStore((s) => s.isOpen);
@@ -68,6 +60,8 @@ export const ActiveWorkoutSheet: React.FC = () => {
   const unitPref = useAuthStore((s) => s.unitPreference);
 
   const isRestTimerActive = useRestTimerStore((s) => s.isActive);
+  const totalRestDuration = useRestTimerStore((s) => s.totalDurationSeconds);
+  const startRestTimer = useRestTimerStore((s) => s.startTimer);
   const stopRestTimer = useRestTimerStore((s) => s.stopTimer);
   const addRestSeconds = useRestTimerStore((s) => s.addSeconds);
   const getRemainingSeconds = useRestTimerStore((s) => s.getRemainingSeconds);
@@ -77,12 +71,16 @@ export const ActiveWorkoutSheet: React.FC = () => {
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [replacingInstanceId, setReplacingInstanceId] = useState<string | null>(null);
   const [isDiscardConfirmOpen, setIsDiscardConfirmOpen] = useState(false);
+  const [isUnfinishedModalOpen, setIsUnfinishedModalOpen] = useState(false);
+  const [isEmptySetWarningOpen, setIsEmptySetWarningOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [summary, setSummary] = useState<FinishedWorkoutSummary | null>(null);
   const [inspectingExerciseName, setInspectingExerciseName] = useState<string | null>(null);
   const [expandedNoteIds, setExpandedNoteIds] = useState<Record<string, boolean>>({});
   const [isWorkoutNoteOpen, setIsWorkoutNoteOpen] = useState(false);
-  const [expandedHistoryExerciseId, setExpandedHistoryExerciseId] = useState<string | null>(null);
+  const [showAllExercises, setShowAllExercises] = useState(false);
+  const [selectedSetByInstance, setSelectedSetByInstance] = useState<Record<string, string>>({});
+  const [plateMathInstances, setPlateMathInstances] = useState<Record<string, boolean>>({});
 
   const noteLabels = {
     unreadBanner:
@@ -441,27 +439,14 @@ export const ActiveWorkoutSheet: React.FC = () => {
     }
   };
 
-  const handleFinishWorkout = async () => {
+  const commitFinishWorkout = async () => {
     if (!workout) return;
+    setIsUnfinishedModalOpen(false);
 
-    const totalSets = workout.exercises.reduce((sum, e) => sum + e.sets.length, 0);
     const completedSets = workout.exercises.reduce(
       (sum, e) => sum + e.sets.filter((s) => s.completed).length,
       0
     );
-
-    if (completedSets === 0) {
-      alert(t('activeWorkout.atLeastOneCompletedSet') || 'Please complete at least one set before finishing.');
-      return;
-    }
-
-    if (completedSets < totalSets) {
-      const confirmFinish = window.confirm(
-        t('activeWorkout.uncompletedSetsWarning') ||
-          'Some sets are not marked completed. Finishing now will save only completed sets. Continue?'
-      );
-      if (!confirmFinish) return;
-    }
 
     setIsSubmitting(true);
     try {
@@ -557,6 +542,11 @@ export const ActiveWorkoutSheet: React.FC = () => {
         totalVolumeKg: liveVolume,
         completedSetsCount: completedSets,
         exerciseCount: payloadExercises.length,
+        exercises: payloadExercises.map((e) => ({
+          exerciseName: e.exercise_name,
+          setsCount: e.sets.length,
+          volumeKg: e.sets.reduce((acc, s) => acc + s.weight_kg * s.reps, 0),
+        })),
       });
 
       stopRestTimer();
@@ -572,6 +562,28 @@ export const ActiveWorkoutSheet: React.FC = () => {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleFinishWorkout = async () => {
+    if (!workout) return;
+
+    const totalSets = workout.exercises.reduce((sum, e) => sum + e.sets.length, 0);
+    const completedSets = workout.exercises.reduce(
+      (sum, e) => sum + e.sets.filter((s) => s.completed).length,
+      0
+    );
+
+    if (completedSets === 0) {
+      setIsEmptySetWarningOpen(true);
+      return;
+    }
+
+    if (completedSets < totalSets) {
+      setIsUnfinishedModalOpen(true);
+      return;
+    }
+
+    await commitFinishWorkout();
   };
 
   const handleDiscard = async () => {
@@ -601,8 +613,24 @@ export const ActiveWorkoutSheet: React.FC = () => {
       setReplacingInstanceId(null);
     } else {
       addExercise(exercise.id, exercise.name, measType);
+      setShowAllExercises(true);
     }
   };
+
+  const defaultRestSecs =
+    typeof window !== 'undefined' ? Number(localStorage.getItem('np_default_rest_secs')) || 90 : 90;
+
+  const restProgressValue =
+    totalRestDuration > 0
+      ? Math.max(0, Math.min(100, Math.round((restRemaining / totalRestDuration) * 100)))
+      : 0;
+
+  const visibleExercises = workout
+    ? showAllExercises || workout.exercises.length <= 2
+      ? workout.exercises
+      : workout.exercises.slice(0, 2)
+    : [];
+  const hiddenExerciseCount = workout ? Math.max(0, workout.exercises.length - visibleExercises.length) : 0;
 
   return (
     <>
@@ -620,109 +648,114 @@ export const ActiveWorkoutSheet: React.FC = () => {
         />
       )}
 
-      {/* 2. Full-Screen Workout Sheet */}
+      {/* 2. Workspace Active Workout View (renders inline inside DashboardLayout) */}
       {workout && isOpen && (
-        <div className="fixed inset-0 z-50 bg-[#09090b] flex flex-col animate-in slide-in-from-bottom duration-300 overflow-hidden">
-          {/* Top Sticky Header */}
-          <header className="sticky top-0 z-20 bg-dark-900/95 backdrop-blur-md border-b border-dark-800 px-3 py-2.5 sm:px-4 sm:py-3 pt-[calc(0.625rem+env(safe-area-inset-top,0px))] shadow-lg">
-            <div className="flex items-center justify-between gap-2 max-w-3xl mx-auto">
-              {/* Left: Minimize & Title */}
-              <div className="flex items-center gap-2 min-w-0 flex-1">
-                <button
-                  onClick={closeSheet}
-                  className="w-8 h-8 rounded-xl bg-dark-800 hover:bg-dark-700 text-zinc-400 hover:text-white flex items-center justify-center transition-colors shrink-0"
-                  title="Minimize workout"
-                >
-                  <ChevronDown className="w-5 h-5" />
-                </button>
-                <div className="min-w-0">
-                  <div className="flex items-center gap-1.5 min-w-0">
-                    <h1 className="text-sm sm:text-base font-extrabold text-white tracking-tight leading-tight truncate">
-                      {workout.name}
-                    </h1>
-                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
-                  </div>
+        <div className="space-y-6 pb-8">
+          {/* Page Header */}
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <h1 className="text-[28px] sm:text-[30px] font-bold tracking-[-0.02em] text-[#fafafa] leading-tight">
+                {t('activeWorkout.sessionHeading')}
+              </h1>
+              <p className="text-sm text-[#a3a3a3] mt-1 truncate">
+                {workout.name}
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              size="md"
+              onClick={closeSheet}
+              className="shrink-0 flex items-center gap-1.5"
+              title="Minimize workout"
+            >
+              <ChevronDown className="w-4 h-4" />
+              <span className="hidden sm:inline">{t('activeWorkout.minimizeBtn')}</span>
+            </Button>
+          </div>
+
+          {/* Session Telemetry & Actions Card */}
+          <section className="bg-[#171717] border border-[#404040] rounded-[14px] p-5 space-y-5">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 sm:gap-6">
+              <div>
+                <div className="text-[11px] font-semibold uppercase tracking-wider text-[#a3a3a3]">
+                  {t('activeWorkout.duration').toUpperCase()}
+                </div>
+                <div className="text-2xl font-bold tabular-nums text-[#fafafa] mt-1">
+                  {formatDuration(elapsedSeconds)}
                 </div>
               </div>
-
-              {/* Right: Actions */}
-              <div className="flex items-center gap-1.5 shrink-0">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-red-400 hover:text-red-300 hover:bg-red-950/30 text-xs px-2.5 sm:px-3 h-8"
-                  onClick={() => setIsDiscardConfirmOpen(true)}
-                >
-                  {t('common.discard')}
-                </Button>
-                <Button
-                  variant="primary"
-                  size="sm"
-                  className="font-extrabold text-xs px-3 sm:px-5 h-8 shadow-lg shadow-brand-500/25 bg-emerald-500 hover:bg-emerald-400 text-dark-950 flex items-center gap-1 shrink-0"
-                  isLoading={isSubmitting}
-                  onClick={handleFinishWorkout}
-                >
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                  <span>{t('common.done')}</span>
-                </Button>
+              <div>
+                <div className="text-[11px] font-semibold uppercase tracking-wider text-[#a3a3a3]">
+                  {t('activeWorkout.volumeLabel')}
+                </div>
+                <div className="text-2xl font-bold tabular-nums text-[#fafafa] mt-1">
+                  {formatWeight(liveVolume, unitPref)}
+                </div>
+              </div>
+              <div className="col-span-2 sm:col-span-1">
+                <div className="text-[11px] font-semibold uppercase tracking-wider text-[#a3a3a3]">
+                  {t('activeWorkout.exercisesLabel')}
+                </div>
+                <div className="text-2xl font-bold tabular-nums text-[#fafafa] mt-1">
+                  {workout.exercises.length}
+                </div>
               </div>
             </div>
 
-            {/* Stats Sub-Bar + Workout Note Trigger */}
-            <div className="flex items-center justify-between gap-2 mt-1.5 pl-10 max-w-3xl mx-auto">
-              <div className="flex items-center gap-2.5 text-[11px] sm:text-xs text-zinc-400 font-mono overflow-x-auto scrollbar-none whitespace-nowrap">
-                <span className="flex items-center gap-1 text-emerald-400 font-bold shrink-0">
-                  <Clock className="w-3 h-3" />
-                  {formatDuration(elapsedSeconds)}
-                </span>
-                <span className="text-zinc-600">•</span>
-                <span className="text-zinc-300 shrink-0">{formatWeight(liveVolume, unitPref)} volume</span>
-                <span className="text-zinc-600">•</span>
-                <span className="text-zinc-400 shrink-0">{workout.exercises.length} exercises</span>
-              </div>
-
-              <button
-                type="button"
-                onClick={handleToggleWorkoutNote}
-                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[11px] font-bold transition-all cursor-pointer shrink-0 ${
-                  isWorkoutNoteUnread
-                    ? 'bg-amber-500/20 text-amber-300 border border-amber-400/60 shadow-[0_0_14px_rgba(245,158,11,0.35)] animate-pulse'
-                    : prevWorkoutNote?.note || workout.workoutNotes?.trim()
-                    ? 'bg-brand-500/15 text-brand-300 border border-brand-500/35'
-                    : 'bg-dark-800/90 text-zinc-400 hover:text-zinc-200 border border-dark-700'
-                }`}
+            <div className="flex flex-wrap items-center gap-2.5">
+              <Button
+                variant="primary"
+                size="md"
+                isLoading={isSubmitting}
+                onClick={handleFinishWorkout}
               >
-                <MessageSquare className="w-3 h-3" />
-                <span className="hidden sm:inline">{noteLabels.workoutNoteBtn}</span>
+                {t('activeWorkout.finishBtn')}
+              </Button>
+              <Button
+                variant="outline"
+                size="md"
+                onClick={() => setIsDiscardConfirmOpen(true)}
+              >
+                {t('common.discard')}
+              </Button>
+              <Button
+                variant="outline"
+                size="md"
+                onClick={handleToggleWorkoutNote}
+                className={
+                  isWorkoutNoteUnread || isWorkoutNoteOpen
+                    ? 'border-[#34d399] text-[#34d399]'
+                    : undefined
+                }
+              >
+                <span>{t('activeWorkout.sessionNoteBtn')}</span>
                 {isWorkoutNoteUnread && (
-                  <span className="px-1.5 py-0.2 rounded-full bg-amber-400 text-dark-950 text-[9px] font-extrabold">
+                  <span className="ml-1.5 inline-flex items-center justify-center px-1.5 py-0.5 rounded bg-[#022c22] text-[#34d399] text-[10px] font-bold">
                     1
                   </span>
                 )}
-              </button>
+              </Button>
             </div>
 
-            {/* Collapsible Workout-Level Note Drawer */}
             {isWorkoutNoteOpen && (
-              <div className="max-w-3xl mx-auto mt-2.5 p-3 rounded-2xl bg-dark-850/95 border border-dark-700 space-y-2.5 animate-in fade-in duration-150">
+              <div className="p-4 rounded-[12px] bg-[#0a0a0a] border border-[#262626] space-y-3">
                 {prevWorkoutNote?.note && (
-                  <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/25 space-y-1">
-                    <div className="flex items-center justify-between gap-2 text-[10px] font-bold text-amber-300">
-                      <span className="flex items-center gap-1">
-                        <Sparkles className="w-3 h-3 text-amber-400" />
+                  <div className="p-3 rounded-[10px] bg-[#171717] border border-[#262626] space-y-1">
+                    <div className="flex items-center justify-between gap-2 text-[11px] font-semibold text-[#34d399]">
+                      <span>
                         {noteLabels.fromPrevWorkout}
-                        {prevWorkoutNote.started_at ? ` • ${formatDate(prevWorkoutNote.started_at)}` : ''}
+                        {prevWorkoutNote.started_at ? ` · ${formatDate(prevWorkoutNote.started_at)}` : ''}
                       </span>
-                      <span className="text-emerald-400 font-mono">{noteLabels.readBadge}</span>
+                      <span>{noteLabels.readBadge}</span>
                     </div>
-                    <p className="text-xs text-zinc-100 leading-relaxed whitespace-pre-wrap">
+                    <p className="text-xs text-[#fafafa] leading-relaxed whitespace-pre-wrap">
                       {prevWorkoutNote.note}
                     </p>
                   </div>
                 )}
 
-                <div className="space-y-1">
-                  <label className="text-[11px] font-bold text-zinc-300 block">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-[#a3a3a3] block">
                     {noteLabels.leaveForNext}
                   </label>
                   <textarea
@@ -730,57 +763,68 @@ export const ActiveWorkoutSheet: React.FC = () => {
                     value={workout.workoutNotes || ''}
                     onChange={(e) => updateWorkoutNotes(e.target.value)}
                     placeholder={noteLabels.workoutNotePlaceholder}
-                    className="w-full rounded-xl bg-dark-900 border border-dark-700 focus:border-brand-500/60 focus:outline-none px-3 py-2 text-xs text-white placeholder:text-zinc-500 resize-none"
+                    className="w-full rounded-[10px] bg-[#171717] border border-[#404040] focus:border-[#34d399] focus:outline-none px-3 py-2.5 text-sm text-[#fafafa] placeholder:text-[#737373] resize-none"
                   />
                 </div>
               </div>
             )}
-          </header>
+          </section>
 
-          {/* Active Rest Timer Banner */}
+          {/* Active Rest Timer Card (Matches 15 · 01 / ОТДЫХ) */}
           {isRestTimerActive && (
-            <div className="bg-amber-500/15 border-b border-amber-500/30 px-3 sm:px-4 py-2 flex items-center justify-between shadow-inner">
-              <div className="flex items-center gap-2">
-                <Timer className="w-4 h-4 text-amber-400 animate-spin" />
-                <span className="text-xs font-semibold text-amber-300">
-                  Rest Timer: <strong className="font-mono text-sm ml-1 text-white">{restRemaining}s</strong>
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => addRestSeconds(30)}
-                  className="text-xs bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 font-bold px-2.5 py-1 rounded-lg transition-colors border border-amber-500/30"
-                >
-                  +30s
-                </button>
-                <button
-                  onClick={stopRestTimer}
-                  className="text-xs text-zinc-400 hover:text-white px-2 py-1 rounded transition-colors"
-                >
-                  Skip
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Main Scrollable Exercise List */}
-          <main className="flex-1 overflow-y-auto p-2.5 sm:p-4 max-w-3xl w-full mx-auto space-y-4 pb-36">
-            {workout.exercises.length === 0 ? (
-              <div className="text-center py-20 border-2 border-dashed border-dark-800 rounded-3xl p-8 bg-dark-900/30">
-                <div className="w-14 h-14 rounded-2xl bg-dark-800 text-zinc-500 flex items-center justify-center mx-auto mb-3">
-                  <Dumbbell className="w-7 h-7" />
+            <section className="bg-[#171717] border border-[#404040] rounded-[14px] p-5 space-y-4">
+              <div className="space-y-1">
+                <div className="text-[11px] font-semibold uppercase tracking-wider text-[#34d399]">
+                  {t('activeWorkout.restEyebrow')}
                 </div>
-                <h3 className="text-base font-bold text-zinc-200">No exercises yet</h3>
-                <p className="text-xs text-zinc-400 max-w-sm mx-auto mt-1 mb-5">
-                  Select exercises from the comprehensive movement catalog to start tracking weights, sets, and reps.
+                <h2 className="text-lg font-bold text-[#fafafa]">
+                  {t('activeWorkout.restTitle')}
+                </h2>
+              </div>
+
+              <div className="space-y-2">
+                <div className="text-[36px] sm:text-[40px] font-bold leading-none tabular-nums text-[#fafafa]">
+                  {formatDuration(restRemaining)}
+                </div>
+                <p className="text-xs text-[#a3a3a3]">
+                  {t('activeWorkout.restRemainingSec', { sec: restRemaining })}
                 </p>
-                <Button variant="primary" size="md" onClick={() => setIsPickerOpen(true)} className="gap-2 font-bold text-xs">
-                  <Plus className="w-4 h-4" />
-                  Add First Exercise
+                <ProgressBar value={restProgressValue} />
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2.5">
+                <Button variant="outline" size="md" onClick={() => addRestSeconds(-15)}>
+                  {t('activeWorkout.minus15s')}
+                </Button>
+                <Button variant="outline" size="md" onClick={() => addRestSeconds(30)}>
+                  {t('activeWorkout.plus30s')}
+                </Button>
+                <Button variant="outline" size="md" onClick={stopRestTimer}>
+                  {t('activeWorkout.skipRest')}
                 </Button>
               </div>
-            ) : (
-              workout.exercises.map((exercise, exIndex) => {
+            </section>
+          )}
+
+          {/* Exercise Grid (2-col on Desktop, 1-col on Mobile) */}
+          {workout.exercises.length === 0 ? (
+            <div className="bg-[#171717] border border-[#404040] rounded-[14px] p-8 text-center space-y-4">
+              <div className="w-12 h-12 rounded-[12px] bg-[#0a0a0a] border border-[#262626] text-[#a3a3a3] flex items-center justify-center mx-auto">
+                <Dumbbell className="w-6 h-6" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-base font-semibold text-[#fafafa]">
+                  {t('activeWorkout.emptyWorkoutWarning')}
+                </h3>
+              </div>
+              <Button variant="primary" size="md" onClick={() => setIsPickerOpen(true)}>
+                <Plus className="w-4 h-4 mr-1.5" />
+                {t('activeWorkout.addExercise')}
+              </Button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
+              {visibleExercises.map((exercise, exIndex) => {
                 const keyId = exercise.exerciseId?.toLowerCase().trim();
                 const keyName = exercise.exerciseName?.toLowerCase().trim();
                 const cleanKeyName = keyName ? keyName.replace(/[^a-z0-9а-яё]/gi, '') : null;
@@ -810,232 +854,259 @@ export const ActiveWorkoutSheet: React.FC = () => {
                 const noteLookupKeys = [keyId, keyName, cleanKeyName, baseKeyName];
                 const hasUnreadNote = checkIsUnread(noteLookupKeys, prevNote?.note);
                 const isNoteExpanded = Boolean(expandedNoteIds[exercise.instanceId]);
-                const hasAnyNote = Boolean(prevNote?.note || exercise.notes?.trim());
+                const noteTextareaId = `exercise-note-${exercise.instanceId}`;
+                const showPlateMath = Boolean(plateMathInstances[exercise.instanceId]);
+
+                const exerciseHistory = extractExerciseHistory(
+                  allWorkoutsHistory,
+                  exercise.exerciseId,
+                  exercise.exerciseName
+                );
+
+                const activeSetId =
+                  selectedSetByInstance[exercise.instanceId] &&
+                  exercise.sets.some((s) => s.id === selectedSetByInstance[exercise.instanceId])
+                    ? selectedSetByInstance[exercise.instanceId]
+                    : exercise.sets[0]?.id;
+                const activeSet = exercise.sets.find((s) => s.id === activeSetId) || exercise.sets[0];
+
+                // Quick rep suggestions from recent history (or unique fallback from previous sets)
+                const quickRepSet = new Set<number>();
+                exerciseHistory.forEach((h) => {
+                  if (h.reps > 0 && quickRepSet.size < 3) quickRepSet.add(h.reps);
+                });
+                if (Array.isArray(prevList)) {
+                  prevList.forEach((p) => {
+                    if (p.reps && p.reps > 0 && quickRepSet.size < 3) quickRepSet.add(p.reps);
+                  });
+                }
+                const quickReps = Array.from(quickRepSet);
+
+                const setTypeOptions: { id: SetType; label: string }[] = [
+                  { id: 'normal', label: t('activeWorkout.typeNormal') },
+                  { id: 'warmup', label: t('activeWorkout.typeWarmup') },
+                  { id: 'drop', label: t('activeWorkout.typeDrop') },
+                  { id: 'failure', label: t('activeWorkout.typeFailure') },
+                ];
+
+                const indexLabel = `${String(exIndex + 1).padStart(2, '0')} / ${String(workout.exercises.length).padStart(2, '0')}`;
 
                 return (
-                  <div
+                  <article
                     key={exercise.instanceId || exercise.exerciseId || exIndex}
-                    className={`bg-dark-900/90 border rounded-2xl p-3 sm:p-4 space-y-3 shadow-xl backdrop-blur-sm transition-all ${
-                      hasUnreadNote
-                        ? 'border-amber-500/45 shadow-[0_0_20px_rgba(245,158,11,0.12)]'
-                        : 'border-dark-800/90'
-                    }`}
+                    className="bg-[#171717] border border-[#404040] rounded-[14px] p-5 space-y-4"
                   >
-                    {/* Exercise Card Header */}
-                    <div className="flex items-start justify-between gap-2 border-b border-dark-800/80 pb-2.5">
-                      <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                        <ExerciseThumbnail
-                          exerciseName={exercise.exerciseName}
-                          size="sm"
-                          onClick={() => setInspectingExerciseName(exercise.exerciseName)}
-                          className="cursor-pointer hover:border-brand-500/50 shrink-0"
-                        />
-                        <div className="space-y-0.5 min-w-0 flex-1">
+                    {/* Header: Index, Name, PR, Actions */}
+                    <div className="space-y-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="space-y-1 min-w-0">
+                          <div className="text-[11px] font-semibold uppercase tracking-wider text-[#a3a3a3]">
+                            {indexLabel}
+                          </div>
                           <h3
                             onClick={() => setInspectingExerciseName(exercise.exerciseName)}
-                            className="text-xs sm:text-sm font-extrabold text-white tracking-tight hover:text-brand-400 cursor-pointer transition-colors line-clamp-1"
+                            className="text-xl font-bold text-[#fafafa] tracking-tight hover:text-[#34d399] cursor-pointer transition-colors leading-snug"
                           >
                             {exercise.exerciseName}
                           </h3>
-
-                          <div className="flex items-center gap-1.5 flex-wrap text-[10px] font-semibold text-zinc-500">
-                            {prRecord && (
-                              <span className="inline-flex items-center gap-1 text-[9px] font-semibold text-amber-300 bg-amber-500/15 border border-amber-500/30 px-1.5 py-0.2 rounded-full font-mono shrink-0">
-                                <Trophy className="w-2.5 h-2.5 text-amber-400" />
-                                <span>PR: {formatWeight(prRecord.weightKg, unitPref)} × {prRecord.reps}</span>
-                              </span>
-                            )}
-                            <span className="uppercase tracking-wider">
-                              {exercise.sets.length} {t('activeWorkout.set').toLowerCase()}
-                            </span>
-                          </div>
+                          {prRecord && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setHistoryModalState({
+                                  isOpen: true,
+                                  exerciseName: exercise.exerciseName,
+                                  exerciseId: exercise.exerciseId,
+                                  instanceId: exercise.instanceId,
+                                  setNumber: activeSet?.setNumber,
+                                  activeSetId: activeSet?.id,
+                                  history: exerciseHistory,
+                                })
+                              }
+                              className="text-[13px] font-medium text-[#34d399] hover:underline cursor-pointer text-left block"
+                            >
+                              {t('activeWorkout.prPrefix', {
+                                weight: formatWeight(prRecord.weightKg, unitPref),
+                                reps: prRecord.reps,
+                              })}
+                            </button>
+                          )}
                         </div>
+
+                        <button
+                          type="button"
+                          onClick={() => setInspectingExerciseName(exercise.exerciseName)}
+                          className="w-10 h-10 rounded-[10px] border border-[#262626] bg-[#0a0a0a] text-[#a3a3a3] hover:text-[#fafafa] flex items-center justify-center shrink-0 cursor-pointer transition-colors"
+                          title={t('exercises.viewTechnique')}
+                          aria-label={t('exercises.viewTechnique')}
+                        >
+                          <HelpCircle className="w-4 h-4" />
+                        </button>
                       </div>
 
-                      <div className="flex items-center gap-0.5 sm:gap-1 shrink-0">
-                        {/* Comment / Note Toggle Button with Unread Glow */}
-                        <button
-                          type="button"
-                          onClick={() =>
-                            handleToggleExerciseNote(exercise.instanceId, noteLookupKeys, prevNote?.note)
-                          }
-                          className={`relative p-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1 ${
-                            hasUnreadNote
-                              ? 'bg-amber-500/20 text-amber-300 border border-amber-400/60 shadow-[0_0_12px_rgba(245,158,11,0.4)] px-2'
-                              : isNoteExpanded || hasAnyNote
-                              ? 'bg-brand-500/15 text-brand-400 border border-brand-500/30'
-                              : 'text-zinc-500 hover:text-brand-400 hover:bg-dark-800'
-                          }`}
-                          title={noteLabels.fromPrevWorkout}
-                        >
-                          <MessageSquare className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                          {hasUnreadNote && (
-                            <>
-                              <span className="text-[10px] font-extrabold font-mono">1</span>
-                              <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping absolute -top-0.5 -right-0.5" />
-                            </>
-                          )}
-                        </button>
-
-                        <button
-                          type="button"
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="md"
                           onClick={() => {
                             setReplacingInstanceId(exercise.instanceId);
                             setIsPickerOpen(true);
                           }}
-                          className="text-zinc-500 hover:text-brand-400 p-1.5 rounded-xl hover:bg-dark-800 transition-colors cursor-pointer"
-                          title="Replace Exercise / Swap Movement"
                         >
-                          <ArrowLeftRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setInspectingExerciseName(exercise.exerciseName)}
-                          className="text-zinc-500 hover:text-zinc-300 p-1.5 rounded-xl hover:bg-dark-800 transition-colors cursor-pointer"
-                          title="Exercise Form Guide & Visual"
-                        >
-                          <HelpCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                        </button>
-                        <button
+                          {t('activeWorkout.replaceShort')}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="md"
                           onClick={() => removeExercise(exercise.instanceId)}
-                          className="text-zinc-500 hover:text-red-400 p-1.5 rounded-xl hover:bg-dark-800 transition-colors cursor-pointer"
-                          title="Remove Exercise"
                         >
-                          <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                        </button>
+                          {t('activeWorkout.removeShort')}
+                        </Button>
                       </div>
                     </div>
 
-                    {/* Glowing Unread Comment Pill (Collapsed State) */}
-                    {hasUnreadNote && !isNoteExpanded && prevNote && (
-                      <button
-                        type="button"
-                        onClick={() =>
-                          handleToggleExerciseNote(exercise.instanceId, noteLookupKeys, prevNote.note)
-                        }
-                        className="w-full text-left px-3 py-2 rounded-xl bg-gradient-to-r from-amber-500/20 via-amber-500/10 to-transparent border border-amber-400/50 shadow-[0_0_15px_rgba(245,158,11,0.2)] flex items-center justify-between gap-2 cursor-pointer hover:border-amber-400 transition-all group"
-                      >
-                        <div className="flex items-center gap-2 min-w-0 flex-1">
-                          <span className="relative flex h-2.5 w-2.5 shrink-0">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
-                            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-400" />
-                          </span>
-                          <div className="min-w-0 flex-1">
-                            <div className="text-[10px] font-extrabold uppercase tracking-wider text-amber-300">
-                              {noteLabels.unreadBanner}
+                    {/* Inline Unread Banner / Expandable Note Box */}
+                    {(hasUnreadNote || isNoteExpanded) && (
+                      <div className="p-3.5 rounded-[12px] bg-[#0a0a0a] border border-[#262626] space-y-3">
+                        {hasUnreadNote && !isNoteExpanded && prevNote && (
+                          <>
+                            <div className="space-y-1">
+                              <div className="text-[13px] font-semibold text-[#34d399]">
+                                {t('activeWorkout.noteUnreadCount')}
+                              </div>
+                              <p className="text-xs text-[#fafafa] leading-relaxed whitespace-pre-wrap">
+                                {prevNote.note}
+                              </p>
                             </div>
-                            <p className="text-xs text-zinc-200 truncate font-medium">
-                              «{prevNote.note}»
-                            </p>
-                          </div>
-                        </div>
-                        <span className="inline-flex items-center gap-1 text-[10px] font-extrabold text-amber-300 bg-amber-500/20 px-2 py-1 rounded-lg border border-amber-400/30 shrink-0 group-hover:bg-amber-500/30">
-                          {noteLabels.expand}
-                          <ChevronDown className="w-3 h-3" />
-                        </span>
-                      </button>
-                    )}
-
-                    {/* Expandable Exercise Note Drawer (Previous Comment + Next Workout Comment Input) */}
-                    {isNoteExpanded && (
-                      <div className="p-3 rounded-xl bg-dark-850/90 border border-dark-700/90 space-y-2.5 animate-in fade-in duration-150">
-                        {prevNote?.note && (
-                          <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/25 space-y-1">
-                            <div className="flex items-center justify-between gap-2 text-[10px] font-bold text-amber-300">
-                              <span className="flex items-center gap-1 truncate">
-                                <MessageSquare className="w-3 h-3 text-amber-400 shrink-0" />
-                                <span>{noteLabels.fromPrevWorkout}</span>
-                                {prevNote.workout_name ? (
-                                  <span className="text-zinc-400 font-normal truncate">
-                                    ({prevNote.workout_name})
-                                  </span>
-                                ) : null}
-                              </span>
-                              <span className="text-emerald-400 font-mono shrink-0">
-                                {noteLabels.readBadge}
-                              </span>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <Button
+                                variant="outline"
+                                size="md"
+                                onClick={() =>
+                                  handleToggleExerciseNote(exercise.instanceId, noteLookupKeys, prevNote.note)
+                                }
+                              >
+                                {t('activeWorkout.collapseNote')}
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="md"
+                                onClick={() => {
+                                  handleToggleExerciseNote(exercise.instanceId, noteLookupKeys, prevNote.note);
+                                  setTimeout(() => document.getElementById(noteTextareaId)?.focus(), 50);
+                                }}
+                              >
+                                {t('activeWorkout.commentBtn')}
+                              </Button>
                             </div>
-                            <p className="text-xs text-zinc-100 leading-relaxed whitespace-pre-wrap">
-                              {prevNote.note}
-                            </p>
-                          </div>
+                          </>
                         )}
 
-                        <div className="space-y-1.5">
-                          <div className="flex items-center justify-between">
-                            <label className="text-[11px] font-bold text-zinc-300">
+                        {isNoteExpanded && (
+                          <div className="space-y-2.5">
+                            {prevNote?.note && (
+                              <div className="space-y-1 pb-2.5 border-b border-[#262626]">
+                                <div className="flex items-center justify-between gap-2 text-xs font-semibold text-[#34d399]">
+                                  <span>{noteLabels.fromPrevWorkout}</span>
+                                  <span className="text-[11px] font-normal text-[#a3a3a3]">
+                                    {noteLabels.readBadge}
+                                  </span>
+                                </div>
+                                <p className="text-xs text-[#fafafa] leading-relaxed whitespace-pre-wrap">
+                                  {prevNote.note}
+                                </p>
+                              </div>
+                            )}
+                            <label className="text-xs font-medium text-[#a3a3a3] block">
                               {noteLabels.leaveForNext}
                             </label>
-                            <button
-                              type="button"
-                              onClick={() =>
-                                handleToggleExerciseNote(exercise.instanceId, noteLookupKeys, prevNote?.note)
-                              }
-                              className="text-[10px] font-semibold text-zinc-400 hover:text-zinc-200 inline-flex items-center gap-0.5 cursor-pointer"
-                            >
-                              <span>{noteLabels.hide}</span>
-                              <ChevronUp className="w-3 h-3" />
-                            </button>
+                            <textarea
+                              id={noteTextareaId}
+                              rows={2}
+                              value={exercise.notes || ''}
+                              onChange={(e) => updateExerciseNotes(exercise.instanceId, e.target.value)}
+                              placeholder={noteLabels.placeholder}
+                              className="w-full rounded-[10px] bg-[#171717] border border-[#404040] focus:border-[#34d399] focus:outline-none px-3 py-2 text-xs text-[#fafafa] placeholder:text-[#737373] resize-none"
+                            />
+                            <div className="flex justify-end">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() =>
+                                  handleToggleExerciseNote(exercise.instanceId, noteLookupKeys, prevNote?.note)
+                                }
+                              >
+                                {t('activeWorkout.collapseNote')}
+                              </Button>
+                            </div>
                           </div>
-                          <textarea
-                            rows={2}
-                            value={exercise.notes || ''}
-                            onChange={(e) => updateExerciseNotes(exercise.instanceId, e.target.value)}
-                            placeholder={noteLabels.placeholder}
-                            className="w-full rounded-xl bg-dark-900 border border-dark-700 focus:border-brand-500/60 focus:outline-none px-3 py-2 text-xs text-white placeholder:text-zinc-500 resize-none"
-                          />
+                        )}
+                      </div>
+                    )}
+
+                    {/* Set Type Segmented Selector */}
+                    {activeSet && (
+                      <div className="space-y-2">
+                        <div className="text-xs text-[#a3a3a3]">
+                          {t('activeWorkout.setTypeOfSet', { number: activeSet.setNumber })}
+                        </div>
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          {setTypeOptions.map((opt) => {
+                            const isActive = activeSet.setType === opt.id;
+                            return (
+                              <button
+                                key={opt.id}
+                                type="button"
+                                onClick={() =>
+                                  updateSet(exercise.instanceId, activeSet.id, { setType: opt.id })
+                                }
+                                className={`h-9 px-3 rounded-[10px] text-xs font-semibold transition-colors cursor-pointer ${
+                                  isActive
+                                    ? 'bg-[#022c22] text-[#34d399] border border-[#064e3b]'
+                                    : 'bg-transparent text-[#a3a3a3] hover:text-[#fafafa] border border-transparent'
+                                }`}
+                              >
+                                {opt.label}
+                              </button>
+                            );
+                          })}
                         </div>
                       </div>
                     )}
 
-                    {/* Table Column Headers: SET | PREVIOUS | +KG | REPS | ✓ */}
-                    <div className="grid grid-cols-12 gap-1.5 sm:gap-2 text-[10px] font-extrabold uppercase tracking-wider text-zinc-400 px-2 sm:px-2.5 pb-1 border-b border-dark-800/60 items-center">
-                      <span className="col-span-1 text-center">#</span>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setExpandedHistoryExerciseId((prev) =>
-                            prev === exercise.instanceId ? null : exercise.instanceId
-                          )
-                        }
-                        className="col-span-3 text-center truncate hover:text-brand-300 transition-colors cursor-pointer flex items-center justify-center gap-0.5"
-                        title="Показать / скрыть последние 3 результата"
-                      >
-                        <span>{t('activeWorkout.previous')}</span>
-                        <ChevronDown className="w-2.5 h-2.5 text-zinc-500" />
-                      </button>
-                      <span className="col-span-3 text-center">{unitPref === 'lb' ? '+LBS' : '+KG'}</span>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setExpandedHistoryExerciseId((prev) =>
-                            prev === exercise.instanceId ? null : exercise.instanceId
-                          )
-                        }
-                        className="col-span-3 text-center truncate hover:text-brand-300 transition-colors cursor-pointer flex items-center justify-center gap-0.5"
-                        title="Показать / скрыть последние 3 результата"
-                      >
-                        <span>{t('activeWorkout.reps')}</span>
-                        <ChevronDown className="w-2.5 h-2.5 text-zinc-500" />
-                      </button>
-                      <span className="col-span-2 text-center">✓</span>
-                    </div>
+                    {/* Set Table Header + Rows */}
+                    <div>
+                      <div className="grid grid-cols-[28px_1fr_1fr_44px] gap-2.5 text-[11px] font-medium text-[#a3a3a3] pb-2 border-b border-[#262626] items-center">
+                        <span className="text-center">№</span>
+                        <span>
+                          {t('activeWorkout.weightKgCol', {
+                            unit: unitPref === 'lb' ? 'lb' : 'кг',
+                          })}
+                        </span>
+                        <span>
+                          {exercise.measurementType === 'duration' ||
+                          exercise.measurementType === 'distance_duration'
+                            ? t('exercises.duration') || t('activeWorkout.repsCol')
+                            : t('activeWorkout.repsCol')}
+                        </span>
+                        <span className="text-center">✓</span>
+                      </div>
 
-                    {/* Set Rows List */}
-                    <div className="space-y-1.5">
-                      {(() => {
-                        const exerciseHistory = extractExerciseHistory(
-                          allWorkoutsHistory,
-                          exercise.exerciseId,
-                          exercise.exerciseName
-                        );
+                      <div>
+                        {(() => {
+                          const exerciseHistory = extractExerciseHistory(
+                            allWorkoutsHistory,
+                            exercise.exerciseId,
+                            exercise.exerciseName
+                          );
 
-                        return exercise.sets.map((set, sIdx) => {
-                          const prevSet = prevList && prevList[sIdx]
-                            ? prevList[sIdx]
-                            : prevList && prevList.length > 0
-                            ? prevList[prevList.length - 1]
-                            : null;
+                          return exercise.sets.map((set, sIdx) => {
+                            const prevSet =
+                              prevList && prevList[sIdx]
+                                ? prevList[sIdx]
+                                : prevList && prevList.length > 0
+                                ? prevList[prevList.length - 1]
+                                : null;
 
                           return (
                             <SetRow
@@ -1044,7 +1115,14 @@ export const ActiveWorkoutSheet: React.FC = () => {
                               previousSet={prevSet}
                               measurementType={exercise.measurementType}
                               allExerciseHistory={exerciseHistory}
-                              forceExpanded={expandedHistoryExerciseId === exercise.instanceId}
+                              isSelected={activeSet?.id === set.id}
+                              showPlateMath={showPlateMath}
+                              onSelectSet={() =>
+                                setSelectedSetByInstance((prev) => ({
+                                  ...prev,
+                                  [exercise.instanceId]: set.id,
+                                }))
+                              }
                               onOpenHistoryMenu={(setNum) => {
                                 setHistoryModalState({
                                   isOpen: true,
@@ -1063,92 +1141,259 @@ export const ActiveWorkoutSheet: React.FC = () => {
                                 updateSet(exercise.instanceId, set.id, { completed: willBeCompleted });
                                 if (willBeCompleted) {
                                   playSetCompleteSound();
-                                  const defaultRestSecs = Number(localStorage.getItem('np_default_rest_secs')) || 90;
-                                  useRestTimerStore.getState().startTimer(defaultRestSecs);
+                                  startRestTimer(defaultRestSecs);
                                 } else {
                                   playTaskUncheckSound();
+                                  }
+                                }}
+                              />
+                            );
+                          });
+                        })()}
+                      </div>
+                    </div>
+
+                    {/* Quick Reps Presets */}
+                    {quickReps.length > 0 && activeSet && (
+                      <div className="space-y-1.5">
+                        <div className="text-xs text-[#a3a3a3]">{t('activeWorkout.quickReps')}</div>
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          {quickReps.map((qRep) => {
+                            const isSelectedRep = activeSet.reps === qRep;
+                            return (
+                              <button
+                                key={qRep}
+                                type="button"
+                                onClick={() =>
+                                  updateSet(exercise.instanceId, activeSet.id, { reps: qRep })
                                 }
-                              }}
-                            />
-                          );
-                        });
-                      })()}
-                    </div>
+                                className={`min-w-[36px] h-9 px-2.5 rounded-[8px] text-xs font-semibold tabular-nums transition-colors cursor-pointer ${
+                                  isSelectedRep
+                                    ? 'bg-[#022c22] text-[#34d399] border border-[#064e3b]'
+                                    : 'bg-transparent text-[#a3a3a3] hover:text-[#fafafa] border border-[#262626]'
+                                }`}
+                              >
+                                {qRep}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
 
-                    {/* Add Set & Warmup Buttons */}
-                    <div className="flex items-center gap-2 pt-2">
-                      <button
-                        onClick={() => addSet(exercise.instanceId, 'normal')}
-                        className="flex-1 py-2 bg-dark-800/80 hover:bg-dark-700 text-zinc-200 hover:text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all border border-dark-700/80 active:scale-[0.98]"
-                      >
-                        <Plus className="w-3.5 h-3.5 text-brand-400" />
-                        <span>{t('activeWorkout.addSet')}</span>
-                      </button>
+                    {/* Card Footer Action Row 1 & Row 2 */}
+                    <div className="space-y-2.5 pt-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="md"
+                          onClick={() => addSet(exercise.instanceId, 'normal')}
+                        >
+                          {t('activeWorkout.addNormalSet')}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="md"
+                          onClick={() => addSet(exercise.instanceId, 'warmup')}
+                        >
+                          {t('activeWorkout.addWarmupSet')}
+                        </Button>
+                        {exercise.measurementType === 'weight_reps' && (
+                          <Button
+                            variant="outline"
+                            size="md"
+                            onClick={() =>
+                              setPlateMathInstances((prev) => ({
+                                ...prev,
+                                [exercise.instanceId]: !prev[exercise.instanceId],
+                              }))
+                            }
+                            className={showPlateMath ? 'border-[#34d399] text-[#34d399]' : undefined}
+                          >
+                            {t('activeWorkout.platesBtn')}
+                          </Button>
+                        )}
+                      </div>
 
-                      <button
-                        onClick={() => addSet(exercise.instanceId, 'warmup')}
-                        className="py-2 px-3.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 rounded-xl text-xs font-semibold flex items-center justify-center gap-1 transition-all border border-amber-500/25 active:scale-[0.98]"
-                        title="Add Warmup Set"
-                      >
-                        <Flame className="w-3.5 h-3.5 text-amber-400" />
-                        <span>+ Warmup</span>
-                      </button>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="md"
+                          onClick={() => startRestTimer(defaultRestSecs)}
+                        >
+                          {t('activeWorkout.restBtn', { time: formatDuration(defaultRestSecs) })}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="md"
+                          onClick={() =>
+                            handleToggleExerciseNote(exercise.instanceId, noteLookupKeys, prevNote?.note)
+                          }
+                          className={isNoteExpanded || exercise.notes?.trim() ? 'border-[#34d399] text-[#34d399]' : undefined}
+                        >
+                          {t('activeWorkout.noteBtn')}
+                        </Button>
+                      </div>
                     </div>
-                  </div>
+                  </article>
                 );
-              })
-            )}
+              })}
+            </div>
+          )}
 
-            {/* Bottom Add Exercise Bar */}
-            {workout.exercises.length > 0 && (
+          {/* Collapsed Remaining Exercises Banner Card (matches Figma 04 bottom block) */}
+          {hiddenExerciseCount > 0 && (
+            <div className="bg-[#171717] border border-[#404040] rounded-[14px] p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <h3 className="text-base font-bold text-[#fafafa]">
+                  {t('activeWorkout.moreExercisesTitle', { count: hiddenExerciseCount })}
+                </h3>
+                <p className="text-xs text-[#a3a3a3] mt-1">
+                  {t('activeWorkout.moreExercisesSubtitle')}
+                </p>
+              </div>
               <Button
                 variant="outline"
-                className="w-full py-3.5 border-dashed border-dark-700/80 bg-dark-900/40 text-zinc-300 hover:text-white font-bold text-xs flex items-center justify-center gap-2 rounded-2xl hover:border-brand-500/50 hover:bg-brand-500/5 transition-all shadow-sm"
-                onClick={() => setIsPickerOpen(true)}
+                size="md"
+                onClick={() => setShowAllExercises(true)}
+                className="shrink-0"
               >
-                <Plus className="w-4 h-4 text-brand-400" />
-                {t('activeWorkout.addExercise')}
+                {t('activeWorkout.showMoreCount', { count: hiddenExerciseCount })}
               </Button>
-            )}
-          </main>
+            </div>
+          )}
+
+          {/* Add Exercise & Collapse Controls */}
+          {workout.exercises.length > 0 && (
+            <div className="flex flex-wrap items-center gap-3">
+              <Button
+                variant="outline"
+                size="md"
+                onClick={() => setIsPickerOpen(true)}
+                className="flex items-center gap-2"
+              >
+                <Plus className="w-4 h-4 text-[#34d399]" />
+                <span>{t('activeWorkout.addExercise')}</span>
+              </Button>
+              {showAllExercises && workout.exercises.length > 2 && (
+                <Button
+                  variant="outline"
+                  size="md"
+                  onClick={() => setShowAllExercises(false)}
+                  className="flex items-center gap-1.5"
+                >
+                  <ChevronUp className="w-4 h-4" />
+                  <span>{t('activeWorkout.hideExtraCount')}</span>
+                </Button>
+              )}
+            </div>
+          )}
         </div>
       )}
 
-      {/* Discard Confirmation Modal */}
+      {/* Unfinished Sets Confirmation Modal (Matches Figma 15 State 03) */}
+      <Modal
+        isOpen={isUnfinishedModalOpen}
+        onClose={() => setIsUnfinishedModalOpen(false)}
+        title={t('activeWorkout.unfinishedTitle')}
+        size="sm"
+        footer={
+          <div className="flex flex-col sm:flex-row gap-2.5 w-full">
+            <Button
+              variant="primary"
+              size="md"
+              className="flex-1"
+              onClick={() => setIsUnfinishedModalOpen(false)}
+            >
+              {t('activeWorkout.returnToWorkout')}
+            </Button>
+            <Button
+              variant="outline"
+              size="md"
+              className="flex-1"
+              isLoading={isSubmitting}
+              onClick={commitFinishWorkout}
+            >
+              {t('activeWorkout.saveCompletedOnly')}
+            </Button>
+          </div>
+        }
+      >
+        <div className="space-y-2">
+          <div className="text-[11px] font-semibold uppercase tracking-wider text-[#a3a3a3]">
+            {t('activeWorkout.unfinishedEyebrow')}
+          </div>
+          <p className="text-xs text-[#a3a3a3] leading-relaxed">
+            {t('activeWorkout.unfinishedDesc')}
+          </p>
+        </div>
+      </Modal>
+
+      {/* No Completed Sets Alert Modal */}
+      <Modal
+        isOpen={isEmptySetWarningOpen}
+        onClose={() => setIsEmptySetWarningOpen(false)}
+        title={t('activeWorkout.emptyCheckTitle')}
+        size="sm"
+        footer={
+          <Button variant="primary" size="md" onClick={() => setIsEmptySetWarningOpen(false)}>
+            OK
+          </Button>
+        }
+      >
+        <div className="space-y-2">
+          <div className="text-[11px] font-semibold uppercase tracking-wider text-[#a3a3a3]">
+            {t('activeWorkout.emptyCheckEyebrow')}
+          </div>
+          <p className="text-xs text-[#a3a3a3] leading-relaxed">
+            {t('activeWorkout.atLeastOneCompletedSet') || t('activeWorkout.emptyWorkoutWarning')}
+          </p>
+        </div>
+      </Modal>
+
+      {/* Discard Confirmation Modal (Matches Figma 15 State 04 with high-contrast white button) */}
       <Modal
         isOpen={isDiscardConfirmOpen}
         onClose={() => setIsDiscardConfirmOpen(false)}
-        title={t('activeWorkout.discardWorkout')}
+        title={t('activeWorkout.resetTitle')}
         size="sm"
-        headerIcon={<AlertTriangle className="w-5 h-5 text-red-400" />}
         footer={
           <>
             <Button
-              variant="ghost"
-              size="sm"
+              variant="outline"
+              size="md"
               onClick={() => setIsDiscardConfirmOpen(false)}
             >
               {t('common.cancel')}
             </Button>
             <Button
-              variant="danger"
-              size="sm"
+              variant="outline"
+              size="md"
+              className="!bg-[#fafafa] !text-[#0a0a0a] !border-[#fafafa] hover:!bg-[#e5e5e5]"
               onClick={handleDiscard}
             >
-              {t('common.discard')}
+              {t('activeWorkout.resetConfirmBtn')}
             </Button>
           </>
         }
       >
-        <p className="text-xs text-zinc-400 leading-relaxed">
-          {t('activeWorkout.discardConfirm')}
-        </p>
+        <div className="space-y-2">
+          <div className="text-[11px] font-semibold uppercase tracking-wider text-[#a3a3a3]">
+            {t('activeWorkout.resetEyebrow')}
+          </div>
+          <p className="text-xs text-[#a3a3a3] leading-relaxed">
+            {t('activeWorkout.resetDesc')}
+          </p>
+        </div>
       </Modal>
 
       {/* Exercise Picker Modal */}
       <ExercisePickerModal
         isOpen={isPickerOpen}
-        onClose={() => setIsPickerOpen(false)}
+        onClose={() => {
+          setIsPickerOpen(false);
+          setReplacingInstanceId(null);
+        }}
         onSelectExercise={handleSelectExercise}
       />
 
@@ -1161,7 +1406,7 @@ export const ActiveWorkoutSheet: React.FC = () => {
         />
       )}
 
-      {/* Exercise Set History & Records Modal (Отдельное меню) */}
+      {/* Exercise Set History & Records Modal */}
       {historyModalState?.isOpen && (
         <ExerciseSetHistoryModal
           isOpen={true}
@@ -1184,6 +1429,10 @@ export const ActiveWorkoutSheet: React.FC = () => {
       <WorkoutSummaryModal
         summary={summary}
         onClose={() => setSummary(null)}
+        onViewHistory={() => {
+          setSummary(null);
+          navigate('/history');
+        }}
       />
     </>
   );

@@ -100,7 +100,7 @@ export const ExercisePickerModal: React.FC<ExercisePickerModalProps> = ({
         onClose={onClose}
         size="lg"
         icon={
-          <div className="w-8 h-8 rounded-xl bg-brand-500/20 text-brand-400 border border-brand-500/30 flex items-center justify-center shrink-0">
+          <div className="w-9 h-9 rounded-[10px] bg-[#022c22] text-[#34d399] border border-[#064e3b] flex items-center justify-center shrink-0">
             <Dumbbell className="w-4 h-4" />
           </div>
         }
@@ -113,7 +113,7 @@ export const ExercisePickerModal: React.FC<ExercisePickerModalProps> = ({
             placeholder={t('exercises.searchPlaceholder')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            startContent={<Search className="w-4 h-4 text-zinc-400" />}
+            startContent={<Search className="w-4 h-4 text-[#737373]" />}
             size="sm"
           />
 
@@ -122,11 +122,12 @@ export const ExercisePickerModal: React.FC<ExercisePickerModalProps> = ({
             {MUSCLE_GROUPS.map((mg) => (
               <button
                 key={mg}
+                type="button"
                 onClick={() => setSelectedMuscle(mg)}
-                className={`px-3 py-1 rounded-xl text-xs font-semibold capitalize shrink-0 transition-all cursor-pointer select-none ${
+                className={`h-9 px-3 rounded-[10px] text-xs font-semibold capitalize shrink-0 transition-colors cursor-pointer select-none border ${
                   selectedMuscle === mg
-                    ? 'bg-brand-500 text-dark-950 font-bold shadow-md shadow-brand-500/20'
-                    : 'bg-dark-800 text-zinc-400 hover:text-zinc-200 border border-dark-700'
+                    ? 'bg-[#022c22] text-[#34d399] border-[#064e3b]'
+                    : 'bg-[#0a0a0a] text-[#a3a3a3] hover:text-[#fafafa] border-[#262626]'
                 }`}
               >
                 {mg === 'all' ? t('exercises.allMuscles') : t(`exercises.${mg}` as any)}
@@ -135,15 +136,16 @@ export const ExercisePickerModal: React.FC<ExercisePickerModalProps> = ({
           </div>
 
           {/* Equipment Filter Chips */}
-          <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none text-[11px]">
+          <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none text-xs">
             {EQUIPMENTS.map((eq) => (
               <button
                 key={eq}
+                type="button"
                 onClick={() => setSelectedEquipment(eq)}
-                className={`px-2.5 py-0.5 rounded-lg font-medium capitalize shrink-0 transition-all cursor-pointer select-none ${
+                className={`h-8 px-2.5 rounded-[8px] font-medium capitalize shrink-0 transition-colors cursor-pointer select-none border ${
                   selectedEquipment === eq
-                    ? 'bg-zinc-200 text-dark-950 font-bold'
-                    : 'bg-dark-900 text-zinc-500 hover:text-zinc-300 border border-dark-800'
+                    ? 'bg-[#fafafa] text-[#0a0a0a] border-[#fafafa]'
+                    : 'bg-[#0a0a0a] text-[#a3a3a3] hover:text-[#fafafa] border-[#262626]'
                 }`}
               >
                 {eq === 'all' ? t('exercises.allEquipment') : t(`exercises.${eq}` as any) || eq.replace('_', ' ')}
@@ -160,7 +162,7 @@ export const ExercisePickerModal: React.FC<ExercisePickerModalProps> = ({
                 ))}
               </div>
             ) : visibleExercises.length === 0 ? (
-              <div className="text-center py-8 text-xs text-zinc-500">
+              <div className="text-center py-8 text-xs text-[#737373]">
                 {t('exercises.notFound')}
               </div>
             ) : (
@@ -172,7 +174,7 @@ export const ExercisePickerModal: React.FC<ExercisePickerModalProps> = ({
                       onSelectExercise(ex);
                       onClose();
                     }}
-                    className="p-3 rounded-2xl bg-dark-800/80 border border-dark-700/80 flex items-center justify-between gap-3 hover:border-brand-500/50 hover:bg-dark-800 cursor-pointer transition-all group shadow-sm"
+                    className="p-3 rounded-[12px] bg-[#0a0a0a] border border-[#262626] hover:border-[#34d399] flex items-center justify-between gap-3 cursor-pointer transition-colors group"
                   >
                     <div className="flex items-center gap-3 min-w-0">
                       <ExerciseThumbnail
@@ -181,12 +183,12 @@ export const ExercisePickerModal: React.FC<ExercisePickerModalProps> = ({
                         size="sm"
                       />
                       <div className="min-w-0">
-                        <div className="font-bold text-sm text-zinc-100 truncate group-hover:text-brand-400 transition-colors">
+                        <div className="font-semibold text-sm text-[#fafafa] truncate group-hover:text-[#34d399] transition-colors">
                           {ex.name}
                         </div>
-                        <div className="flex items-center gap-2 mt-0.5 text-xs text-zinc-400">
+                        <div className="flex items-center gap-2 mt-0.5 text-xs text-[#a3a3a3]">
                           <Badge variant="brand" size="sm">{ex.primary_muscle_group}</Badge>
-                          <span className="capitalize text-[11px] text-zinc-500">
+                          <span className="capitalize text-[11px] text-[#737373]">
                             {ex.equipment.replace('_', ' ')}
                           </span>
                         </div>
@@ -200,7 +202,7 @@ export const ExercisePickerModal: React.FC<ExercisePickerModalProps> = ({
                           e.stopPropagation();
                           setInspectingExercise(ex);
                         }}
-                        className="p-2 text-zinc-400 hover:text-white rounded-xl hover:bg-dark-700 transition-colors"
+                        className="w-10 h-10 flex items-center justify-center text-[#a3a3a3] hover:text-[#fafafa] rounded-[10px] hover:bg-[#171717] transition-colors"
                         title={t('exercises.viewTechnique')}
                       >
                         <HelpCircle className="w-4 h-4" />
@@ -209,7 +211,7 @@ export const ExercisePickerModal: React.FC<ExercisePickerModalProps> = ({
                         size="sm"
                         variant="primary"
                         isIconOnly
-                        className="w-8 h-8 rounded-xl"
+                        className="w-10 h-10 rounded-[10px]"
                       >
                         <Plus className="w-4 h-4" />
                       </Button>
@@ -217,14 +219,13 @@ export const ExercisePickerModal: React.FC<ExercisePickerModalProps> = ({
                   </div>
                 ))}
 
-                {/* Load More Button */}
                 {exercises.length > visibleCount && (
                   <div className="pt-2 pb-1 text-center">
                     <Button
-                      size="sm"
-                      variant="secondary"
+                      size="md"
+                      variant="outline"
                       onClick={() => setVisibleCount((prev) => prev + 40)}
-                      className="w-full text-xs font-semibold"
+                      className="w-full"
                     >
                       {t('common.loading')} ({visibleCount} / {exercises.length})
                     </Button>

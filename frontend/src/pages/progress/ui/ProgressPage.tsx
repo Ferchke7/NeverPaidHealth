@@ -1,27 +1,20 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Trophy,
   TrendingUp,
-  Dumbbell,
-  Flame,
-  Calculator,
   Calendar as CalendarIcon,
-  Activity,
-  BarChart3,
   Shield,
   Scale,
   PieChart,
   ChevronRight,
+  Calculator,
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '../../../shared/api/client.ts';
-import { Button } from '../../../shared/ui/button.tsx';
-import { Card, CardHeader, CardTitle, CardContent, Badge } from '../../../shared/ui/card.tsx';
 import { Input } from '../../../shared/ui/input.tsx';
 import { Tabs } from '../../../shared/ui/tabs.tsx';
 import { ProgressBar } from '../../../shared/ui/progress.tsx';
-import { formatWeight } from '../../../shared/lib/units.ts';
+import { formatWeight, kgToLb } from '../../../shared/lib/units.ts';
 import { useAuthStore } from '../../../entities/user/model/authStore.ts';
 import { Exercise } from '../../../entities/exercise/model/types.ts';
 import { WorkoutHistoryItem } from '../../../entities/workout/model/types.ts';
@@ -69,7 +62,7 @@ export const ProgressPage: React.FC = () => {
   usePageSEO({ pageKey: 'progress', canonicalPath: '/progress' });
   const navigate = useNavigate();
   const unitPref = useAuthStore((s) => s.unitPreference);
-  const { language } = useTranslation();
+  const { t, language } = useTranslation();
   const [activeTab, setActiveTab] = useState<string>('progression');
   const [selectedMuscle, setSelectedMuscle] = useState('all');
   const [selectedExerciseId, setSelectedExerciseId] = useState<string | null>(null);
@@ -77,6 +70,7 @@ export const ProgressPage: React.FC = () => {
   // 1RM Calculator state
   const [calcWeight, setCalcWeight] = useState<number>(100);
   const [calcReps, setCalcReps] = useState<number>(5);
+  const [calcFormula, setCalcFormula] = useState<'brzycki' | 'epley'>('brzycki');
 
   const labels = useMemo(() => {
     if (language === 'ru') {
@@ -284,15 +278,23 @@ export const ProgressPage: React.FC = () => {
     enabled: !!activeExerciseId,
   });
 
-  // 1RM calculations based on Brzycki formula
-  const calculated1RM = useMemo(() => {
-    if (calcReps <= 1) return calcWeight;
+  // 1RM calculations based on Brzycki or Epley formula
+  const brzycki1RM = useMemo(() => {
+    if (calcReps <= 1 || calcWeight <= 0) return calcWeight;
     const brzycki = calcWeight * (36 / (37 - Math.min(calcReps, 36)));
     return Math.round(brzycki * 10) / 10;
   }, [calcWeight, calcReps]);
 
+  const epley1RM = useMemo(() => {
+    if (calcReps <= 1 || calcWeight <= 0) return calcWeight;
+    const epley = calcWeight * (1 + calcReps / 30);
+    return Math.round(epley * 10) / 10;
+  }, [calcWeight, calcReps]);
+
+  const calculated1RM = calcFormula === 'epley' ? epley1RM : brzycki1RM;
+
   const percentageTable = useMemo(() => {
-    const percentages = [100, 95, 90, 85, 80, 75, 70, 65];
+    const percentages = [50, 60, 70, 80, 90, 95, 100];
     return percentages.map((pct) => ({
       percentage: pct,
       weightKg: Math.round(((calculated1RM * pct) / 100) * 10) / 10,
@@ -300,10 +302,9 @@ export const ProgressPage: React.FC = () => {
         pct === 100 ? '1' :
         pct === 95 ? '2' :
         pct === 90 ? '3–4' :
-        pct === 85 ? '5–6' :
         pct === 80 ? '7–8' :
-        pct === 75 ? '9–10' :
-        pct === 70 ? '11–12' : '12–15',
+        pct === 70 ? '11–12' :
+        pct === 60 ? '15+' : '20+',
     }));
   }, [calculated1RM]);
 
@@ -425,25 +426,33 @@ export const ProgressPage: React.FC = () => {
   // Strictly 3 Focused Analytics Tabs
   const navTabs = useMemo(
     () => [
-      { id: 'progression', label: labels.tabProgression, icon: <TrendingUp className="w-3.5 h-3.5" />, badge: recordGroups.length },
-      { id: 'volume', label: labels.tabVolume, icon: <PieChart className="w-3.5 h-3.5" /> },
-      { id: 'standards', label: labels.tabStandards, icon: <Shield className="w-3.5 h-3.5" /> },
+      { id: 'progression', label: t('progress.tabProgression'), icon: <TrendingUp className="w-3.5 h-3.5" /> },
+      { id: 'volume', label: t('progress.tabVolume'), icon: <PieChart className="w-3.5 h-3.5" /> },
+      { id: 'standards', label: t('progress.tabStandards'), icon: <Shield className="w-3.5 h-3.5" /> },
     ],
-    [labels, recordGroups.length]
+    [t]
   );
 
+  const formattedTonnage = useMemo(() => {
+    if (unitPref === 'lb') {
+      const lbs = kgToLb(analyticsSummary.totalTonnageKg);
+      return lbs >= 2000 ? `${(lbs / 2000).toFixed(1)} t` : `${Math.round(lbs)} lb`;
+    }
+    if (analyticsSummary.totalTonnageKg >= 1000) {
+      return `${(analyticsSummary.totalTonnageKg / 1000).toFixed(1)} ${language === 'ru' ? 'т' : 't'}`;
+    }
+    return `${analyticsSummary.totalTonnageKg.toFixed(0)} kg`;
+  }, [analyticsSummary.totalTonnageKg, unitPref, language]);
+
   return (
-    <div className="space-y-6 animate-fade-in pb-12">
-      {/* Page Header with Ready-Made Tabs */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-1 border-b border-dark-800/80">
+    <div className="space-y-6 pb-10">
+      {/* Page Header & Tab Bar */}
+      <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
         <div>
-          <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight flex items-center gap-2">
-            <BarChart3 className="w-6 h-6 text-brand-400" />
-            <span>{labels.title}</span>
+          <h1 className="text-[28px] font-bold text-[#fafafa] tracking-[-0.02em] leading-tight">
+            {labels.title}
           </h1>
-          <p className="text-xs text-zinc-400 mt-0.5">
-            {labels.subtitle}
-          </p>
+          <p className="text-[14px] text-[#a3a3a3] mt-1">{t('progress.subtitle')}</p>
         </div>
 
         <Tabs
@@ -454,68 +463,52 @@ export const ProgressPage: React.FC = () => {
         />
       </div>
 
-      {/* Top KPI Metric Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <Card className="p-3.5 sm:p-4 bg-dark-850/80 border-dark-750/80 space-y-1">
-          <div className="flex items-center gap-1.5 text-xs text-zinc-400 font-bold">
-            <Dumbbell className="w-3.5 h-3.5 text-brand-400" />
-            <span className="truncate">{labels.totalWorkouts}</span>
-          </div>
-          <div className="text-xl sm:text-2xl font-black text-white font-mono">
+      {/* Top 4 KPI Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="bg-[#171717] border border-[#404040] rounded-[14px] p-5 flex flex-col justify-between gap-1.5">
+          <div className="text-[24px] sm:text-[26px] font-bold text-[#fafafa] font-mono tabular-nums leading-none">
             {analyticsSummary.totalWorkouts}
           </div>
-        </Card>
+          <div className="text-[12px] text-[#a3a3a3] font-medium">{labels.totalWorkouts}</div>
+        </div>
 
-        <Card className="p-3.5 sm:p-4 bg-dark-850/80 border-dark-750/80 space-y-1">
-          <div className="flex items-center gap-1.5 text-xs text-zinc-400 font-bold">
-            <Flame className="w-3.5 h-3.5 text-emerald-400" />
-            <span className="truncate">{labels.totalTonnage}</span>
+        <div className="bg-[#171717] border border-[#404040] rounded-[14px] p-5 flex flex-col justify-between gap-1.5">
+          <div className="text-[24px] sm:text-[26px] font-bold text-[#34d399] font-mono tabular-nums leading-none">
+            {formattedTonnage}
           </div>
-          <div className="text-xl sm:text-2xl font-black text-emerald-400 font-mono">
-            {analyticsSummary.totalTonnageKg > 1000
-              ? `${(analyticsSummary.totalTonnageKg / 1000).toFixed(1)} T`
-              : `${analyticsSummary.totalTonnageKg.toFixed(0)} kg`}
-          </div>
-        </Card>
+          <div className="text-[12px] text-[#a3a3a3] font-medium">{labels.totalTonnage}</div>
+        </div>
 
-        <Card className="p-3.5 sm:p-4 bg-dark-850/80 border-dark-750/80 space-y-1">
-          <div className="flex items-center gap-1.5 text-xs text-zinc-400 font-bold">
-            <Trophy className="w-3.5 h-3.5 text-amber-400" />
-            <span className="truncate">{labels.personalRecords}</span>
-          </div>
-          <div className="text-xl sm:text-2xl font-black text-amber-400 font-mono">
+        <div className="bg-[#171717] border border-[#404040] rounded-[14px] p-5 flex flex-col justify-between gap-1.5">
+          <div className="text-[24px] sm:text-[26px] font-bold text-[#fafafa] font-mono tabular-nums leading-none">
             {analyticsSummary.totalPRs}
           </div>
-        </Card>
+          <div className="text-[12px] text-[#a3a3a3] font-medium">{labels.personalRecords}</div>
+        </div>
 
-        <Card className="p-3.5 sm:p-4 bg-dark-850/80 border-dark-750/80 space-y-1">
-          <div className="flex items-center gap-1.5 text-xs text-zinc-400 font-bold">
-            <Activity className="w-3.5 h-3.5 text-sky-400" />
-            <span className="truncate">{labels.timeUnderLoad}</span>
-          </div>
-          <div className="text-xl sm:text-2xl font-black text-sky-400 font-mono">
+        <div className="bg-[#171717] border border-[#404040] rounded-[14px] p-5 flex flex-col justify-between gap-1.5">
+          <div className="text-[24px] sm:text-[26px] font-bold text-[#fafafa] font-mono tabular-nums leading-none">
             {analyticsSummary.totalHours} {labels.hrs}
           </div>
-        </Card>
+          <div className="text-[12px] text-[#a3a3a3] font-medium">{labels.timeUnderLoad}</div>
+        </div>
       </div>
 
       {/* TAB 1: PROGRESSION & PERSONAL RECORDS */}
       {activeTab === 'progression' && (
-        <div className="space-y-6 animate-fade-in">
-          {/* Exercise Progression Curve Chart */}
-          <Card className="space-y-4">
-            <CardHeader>
+        <div className="space-y-5">
+          {/* Exercise Progression Curve Card */}
+          <div className="bg-[#171717] border border-[#404040] rounded-[14px] p-5 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#262626]">
               <div>
-                <CardTitle>
-                  <TrendingUp className="w-5 h-5 text-brand-400" />
-                  {labels.progressionTitle}
-                </CardTitle>
+                <h2 className="text-[16px] font-semibold text-[#fafafa]">{labels.progressionTitle}</h2>
+                <p className="text-[12px] text-[#a3a3a3] mt-0.5">{labels.progressionDesc}</p>
               </div>
 
               <select
                 value={activeExerciseId}
                 onChange={(e) => setSelectedExerciseId(e.target.value)}
-                className="bg-dark-900 border border-dark-700 text-zinc-200 text-xs rounded-xl px-3 py-2 font-bold focus:outline-none focus:border-brand-500 max-w-xs"
+                className="min-h-[44px] bg-[#0a0a0a] border border-[#404040] text-[#fafafa] text-[13px] font-medium rounded-[10px] px-3.5 focus:outline-none focus:border-[#34d399] max-w-xs cursor-pointer"
               >
                 {exercises.map((ex) => (
                   <option key={ex.id} value={ex.id}>
@@ -523,279 +516,347 @@ export const ProgressPage: React.FC = () => {
                   </option>
                 ))}
               </select>
-            </CardHeader>
+            </div>
 
-            <CardContent>
-              {historyData?.data_points && historyData.data_points.length > 0 ? (
-                <ExerciseProgressionChart
-                  dataPoints={historyData.data_points}
-                  exerciseName={activeExerciseName}
-                  unitPref={unitPref}
-                />
-              ) : (
-                <div className="text-center py-10 text-zinc-500 text-xs">
-                  {labels.noHistoryData}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Personal Records (PRs Hall of Fame) */}
-          <Card className="space-y-4">
-            <CardHeader>
-              <CardTitle>
-                <Trophy className="w-5 h-5 text-amber-400" />
-                {labels.prHallTitle} ({filteredRecordGroups.length})
-              </CardTitle>
-
-              <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1">
-                {muscleFilters.map((filter) => (
-                  <Button
-                    key={filter.id}
-                    size="xs"
-                    variant={selectedMuscle === filter.id ? 'primary' : 'outline'}
-                    onClick={() => setSelectedMuscle(filter.id)}
-                    className="whitespace-nowrap font-bold"
-                  >
-                    {filter.label}
-                  </Button>
-                ))}
+            {historyData?.data_points && historyData.data_points.length > 0 ? (
+              <ExerciseProgressionChart
+                dataPoints={historyData.data_points}
+                exerciseName={activeExerciseName}
+                unitPref={unitPref}
+              />
+            ) : (
+              <div className="bg-[#0a0a0a] border border-dashed border-[#404040] rounded-[12px] py-10 text-center text-[13px] text-[#a3a3a3]">
+                {labels.noHistoryData}
               </div>
-            </CardHeader>
+            )}
+          </div>
 
-            <CardContent>
-              {filteredRecordGroups.length === 0 ? (
-                <div className="text-center py-8 text-zinc-500 text-xs">
-                  {labels.noMuscleRecords}
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-                  {filteredRecordGroups.map((group) => (
-                    <Card
-                      key={group.exercise_id}
-                      isHoverable
-                      className="p-4 bg-dark-900/80 border-dark-700/80 hover:border-brand-500/40 space-y-3"
+          {/* Personal Records Table */}
+          <div className="bg-[#171717] border border-[#404040] rounded-[14px] p-5 space-y-4">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pb-3 border-b border-[#262626]">
+              <h2 className="text-[16px] font-semibold text-[#fafafa]">
+                {labels.prHallTitle}{' '}
+                <span className="text-[#a3a3a3] font-mono font-normal">
+                  ({filteredRecordGroups.length})
+                </span>
+              </h2>
+
+              <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+                {muscleFilters.map((filter) => {
+                  const isActive = selectedMuscle === filter.id;
+                  return (
+                    <button
+                      key={filter.id}
+                      type="button"
+                      onClick={() => setSelectedMuscle(filter.id)}
+                      className={`min-h-[44px] px-3 rounded-[10px] border text-[12px] font-medium whitespace-nowrap transition-colors cursor-pointer ${
+                        isActive
+                          ? 'bg-[#022c22] border-[#064e3b] text-[#34d399]'
+                          : 'bg-[#0a0a0a] border-[#404040] text-[#a3a3a3] hover:text-[#fafafa]'
+                      }`}
                     >
-                      <div className="flex items-center gap-2 border-b border-dark-700/60 pb-2.5">
-                        <Trophy className="w-4 h-4 text-amber-400 shrink-0" />
-                        <h3 className="text-sm font-black text-white truncate">{group.exercise_name}</h3>
-                      </div>
+                      {filter.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
 
-                      <div className="grid grid-cols-2 gap-2">
-                        <Card variant="flat" className="p-2.5 bg-dark-850/80 border-dark-700/50">
-                          <div className="text-[10px] text-zinc-400">{labels.heaviestWeight}</div>
-                          <div className="text-sm font-bold text-blue-400 font-mono mt-0.5">
+            {filteredRecordGroups.length === 0 ? (
+              <div className="text-center py-8 text-[#a3a3a3] text-[13px]">
+                {t('progress.noMuscleRecords')}
+              </div>
+            ) : (
+              <>
+                {/* Desktop Clean Table */}
+                <div className="hidden md:block overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="border-b border-[#262626] text-[11px] font-semibold uppercase tracking-[0.06em] text-[#a3a3a3]">
+                        <th className="pb-3 pr-4">{labels.progressionTitle.split(' ')[0]}</th>
+                        <th className="pb-3 px-4">{labels.heaviestWeight}</th>
+                        <th className="pb-3 px-4">{labels.bestE1rm}</th>
+                        <th className="pb-3 px-4">{labels.maxSetVolume}</th>
+                        <th className="pb-3 pl-4 text-right">{labels.maxReps}</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[#262626] text-[13px]">
+                      {filteredRecordGroups.map((group) => (
+                        <tr
+                          key={group.exercise_id}
+                          onClick={() => setSelectedExerciseId(group.exercise_id)}
+                          className="hover:bg-[#0a0a0a]/60 transition-colors cursor-pointer"
+                        >
+                          <td className="py-3.5 pr-4 font-semibold text-[#fafafa]">
+                            {group.exercise_name}
+                          </td>
+                          <td className="py-3.5 px-4 font-mono font-bold text-[#34d399] tabular-nums">
+                            {group.best_weight_kg ? formatWeight(group.best_weight_kg, unitPref) : '—'}
+                          </td>
+                          <td className="py-3.5 px-4 font-mono text-[#fafafa] tabular-nums">
+                            {group.best_e1rm_kg
+                              ? formatWeight(Math.round(group.best_e1rm_kg * 10) / 10, unitPref)
+                              : '—'}
+                          </td>
+                          <td className="py-3.5 px-4 font-mono text-[#a3a3a3] tabular-nums">
+                            {group.max_volume_set_kg
+                              ? formatWeight(group.max_volume_set_kg, unitPref)
+                              : '—'}
+                          </td>
+                          <td className="py-3.5 pl-4 text-right font-mono text-[#a3a3a3] tabular-nums">
+                            {group.max_reps ? `${group.max_reps} ${labels.repsUnit}` : '—'}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Mobile Cards */}
+                <div className="md:hidden space-y-2.5">
+                  {filteredRecordGroups.map((group) => (
+                    <div
+                      key={group.exercise_id}
+                      onClick={() => setSelectedExerciseId(group.exercise_id)}
+                      className="p-4 rounded-[12px] bg-[#0a0a0a] border border-[#262626] space-y-3 cursor-pointer"
+                    >
+                      <div className="text-[14px] font-semibold text-[#fafafa]">
+                        {group.exercise_name}
+                      </div>
+                      <div className="grid grid-cols-2 gap-2.5 text-[12px]">
+                        <div>
+                          <div className="text-[#a3a3a3] text-[11px]">{labels.heaviestWeight}</div>
+                          <div className="font-mono font-bold text-[#34d399] mt-0.5">
                             {group.best_weight_kg ? formatWeight(group.best_weight_kg, unitPref) : '—'}
                           </div>
-                        </Card>
-
-                        <Card variant="flat" className="p-2.5 bg-dark-850/80 border-dark-700/50">
-                          <div className="text-[10px] text-zinc-400">{labels.bestE1rm}</div>
-                          <div className="text-sm font-bold text-amber-400 font-mono mt-0.5">
-                            {group.best_e1rm_kg ? formatWeight(Math.round(group.best_e1rm_kg * 10) / 10, unitPref) : '—'}
+                        </div>
+                        <div>
+                          <div className="text-[#a3a3a3] text-[11px]">{labels.bestE1rm}</div>
+                          <div className="font-mono text-[#fafafa] mt-0.5">
+                            {group.best_e1rm_kg
+                              ? formatWeight(Math.round(group.best_e1rm_kg * 10) / 10, unitPref)
+                              : '—'}
                           </div>
-                        </Card>
-
-                        <Card variant="flat" className="p-2.5 bg-dark-850/80 border-dark-700/50">
-                          <div className="text-[10px] text-zinc-400">{labels.maxSetVolume}</div>
-                          <div className="text-sm font-bold text-emerald-400 font-mono mt-0.5">
-                            {group.max_volume_set_kg ? formatWeight(group.max_volume_set_kg, unitPref) : '—'}
+                        </div>
+                        <div>
+                          <div className="text-[#a3a3a3] text-[11px]">{labels.maxSetVolume}</div>
+                          <div className="font-mono text-[#a3a3a3] mt-0.5">
+                            {group.max_volume_set_kg
+                              ? formatWeight(group.max_volume_set_kg, unitPref)
+                              : '—'}
                           </div>
-                        </Card>
-
-                        <Card variant="flat" className="p-2.5 bg-dark-850/80 border-dark-700/50">
-                          <div className="text-[10px] text-zinc-400">{labels.maxReps}</div>
-                          <div className="text-sm font-bold text-purple-400 font-mono mt-0.5">
+                        </div>
+                        <div>
+                          <div className="text-[#a3a3a3] text-[11px]">{labels.maxReps}</div>
+                          <div className="font-mono text-[#a3a3a3] mt-0.5">
                             {group.max_reps ? `${group.max_reps} ${labels.repsUnit}` : '—'}
                           </div>
-                        </Card>
+                        </div>
                       </div>
-                    </Card>
+                    </div>
                   ))}
                 </div>
-              )}
-            </CardContent>
-          </Card>
+              </>
+            )}
+          </div>
         </div>
       )}
 
       {/* TAB 2: VOLUME & MUSCLE BALANCE */}
       {activeTab === 'volume' && (
-        <div className="space-y-6 animate-fade-in">
-          {/* Muscle Balance Radar Chart */}
+        <div className="space-y-5">
           <MuscleBalanceRadarChart muscleSets={analyticsSummary.muscleSets} />
-
-          {/* Overall Tonnage & Workload Volume History Chart */}
           <TonnageVolumeHistoryChart workouts={workouts} unitPref={unitPref} />
         </div>
       )}
 
       {/* TAB 3: 1RM CALCULATOR & STRENGTH STANDARDS */}
       {activeTab === 'standards' && (
-        <div className="space-y-6 animate-fade-in">
-          {/* 1RM Calculator */}
-          <Card className="space-y-5">
-            <CardHeader>
+        <div className="space-y-5">
+          {/* 1RM & Working Percentages Card */}
+          <div className="bg-[#171717] border border-[#404040] rounded-[14px] p-5 space-y-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#262626]">
               <div>
-                <CardTitle>
-                  <Calculator className="w-5 h-5 text-brand-400" />
-                  {labels.calcTitle}
-                </CardTitle>
-              </div>
-            </CardHeader>
-
-            <CardContent className="space-y-5">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <Input
-                  label={`${labels.weightLifted} (${unitPref.toUpperCase()})`}
-                  type="number"
-                  value={calcWeight}
-                  onChange={(e) => setCalcWeight(Number(e.target.value))}
-                  className="font-mono text-base font-bold text-brand-400"
-                />
-
-                <Input
-                  label={labels.repsCompleted}
-                  type="number"
-                  value={calcReps}
-                  onChange={(e) => setCalcReps(Number(e.target.value))}
-                  className="font-mono text-base font-bold text-blue-400"
-                />
-
-                <Card variant="glow" className="p-4 bg-gradient-to-br from-dark-900 to-brand-950/40 border-brand-500/30 flex flex-col justify-center items-center">
-                  <div className="text-[11px] text-zinc-400 uppercase font-bold">{labels.estimated1RM}</div>
-                  <div className="text-2xl font-black text-brand-400 font-mono">
-                    {formatWeight(calculated1RM, unitPref)}
-                  </div>
-                </Card>
+                <h2 className="text-[16px] font-semibold text-[#fafafa] flex items-center gap-2">
+                  <Calculator className="w-4 h-4 text-[#34d399]" />
+                  <span>{labels.calcTitle}</span>
+                </h2>
+                <p className="text-[12px] text-[#a3a3a3] mt-0.5">{labels.calcDesc}</p>
               </div>
 
-              <div className="space-y-2.5">
-                <h3 className="text-xs font-bold text-zinc-300 uppercase tracking-wider">
-                  {labels.workingMatrix}
-                </h3>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                  {percentageTable.map((item) => (
-                    <Card
-                      variant="flat"
-                      key={item.percentage}
-                      className="p-3 bg-dark-900/80 border-dark-750 flex flex-col justify-between space-y-1"
-                    >
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="font-bold text-zinc-300">{item.percentage}%</span>
-                        <span className="text-[10px] text-zinc-500 font-mono">
-                          {item.repsGoal} {labels.repsUnit}
-                        </span>
-                      </div>
-                      <div className="text-sm font-black text-brand-400 font-mono">
-                        {formatWeight(item.weightKg, unitPref)}
-                      </div>
-                    </Card>
-                  ))}
+              <div className="flex items-center gap-1 p-1 bg-[#0a0a0a] border border-[#404040] rounded-[10px] self-start">
+                <button
+                  type="button"
+                  onClick={() => setCalcFormula('brzycki')}
+                  className={`px-3 py-1.5 rounded-[8px] text-[12px] font-medium transition-colors cursor-pointer ${
+                    calcFormula === 'brzycki'
+                      ? 'bg-[#022c22] text-[#34d399] border border-[#064e3b]'
+                      : 'text-[#a3a3a3] hover:text-[#fafafa]'
+                  }`}
+                >
+                  Brzycki
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCalcFormula('epley')}
+                  className={`px-3 py-1.5 rounded-[8px] text-[12px] font-medium transition-colors cursor-pointer ${
+                    calcFormula === 'epley'
+                      ? 'bg-[#022c22] text-[#34d399] border border-[#064e3b]'
+                      : 'text-[#a3a3a3] hover:text-[#fafafa]'
+                  }`}
+                >
+                  Epley
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr_240px] gap-4 items-stretch">
+              <Input
+                label={`${labels.weightLifted} (${unitPref.toUpperCase()})`}
+                type="number"
+                value={calcWeight}
+                onChange={(e) => setCalcWeight(Number(e.target.value))}
+                className="font-mono text-[16px] font-bold text-[#fafafa]"
+              />
+
+              <Input
+                label={labels.repsCompleted}
+                type="number"
+                value={calcReps}
+                onChange={(e) => setCalcReps(Number(e.target.value))}
+                className="font-mono text-[16px] font-bold text-[#fafafa]"
+              />
+
+              <div className="p-4 rounded-[12px] bg-[#022c22]/50 border border-[#064e3b] flex flex-col justify-center items-center text-center">
+                <div className="text-[11px] font-semibold uppercase tracking-[0.06em] text-[#a3a3a3]">
+                  {labels.estimated1RM}
+                </div>
+                <div className="text-[26px] font-bold text-[#34d399] font-mono tabular-nums mt-1">
+                  {formatWeight(calculated1RM, unitPref)}
+                </div>
+                <div className="text-[11px] font-mono text-[#a3a3a3] mt-1">
+                  {calcFormula === 'brzycki'
+                    ? `Epley: ${formatWeight(epley1RM, unitPref)}`
+                    : `Brzycki: ${formatWeight(brzycki1RM, unitPref)}`}
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
 
-          {/* Athletic Strength Standards Horizontal Benchmark */}
+            <div className="space-y-2.5">
+              <div className="text-[12px] font-semibold uppercase tracking-[0.06em] text-[#a3a3a3]">
+                {labels.workingMatrix}
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2.5">
+                {percentageTable.map((item) => (
+                  <div
+                    key={item.percentage}
+                    className="p-3 rounded-[10px] bg-[#0a0a0a] border border-[#262626] flex flex-col justify-between gap-1"
+                  >
+                    <div className="flex items-center justify-between text-[12px]">
+                      <span className="font-semibold text-[#fafafa]">{item.percentage}%</span>
+                      <span className="text-[10px] text-[#737373] font-mono">
+                        {item.repsGoal} {labels.repsUnit}
+                      </span>
+                    </div>
+                    <div className="text-[14px] font-bold text-[#34d399] font-mono tabular-nums">
+                      {formatWeight(item.weightKg, unitPref)}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
           <StrengthStandardsBarChart standards={strengthStandards} unitPref={unitPref} />
 
-          {/* Athletic Strength Classification */}
-          <Card className="space-y-4">
-            <CardHeader>
-              <div>
-                <CardTitle>
-                  <Shield className="w-5 h-5 text-brand-400" />
-                  {labels.standardsTitle}
-                </CardTitle>
-              </div>
-            </CardHeader>
+          {/* Strength Standards Classification Rows */}
+          <div className="bg-[#171717] border border-[#404040] rounded-[14px] p-5 space-y-4">
+            <div className="pb-3 border-b border-[#262626]">
+              <h2 className="text-[16px] font-semibold text-[#fafafa]">{labels.standardsTitle}</h2>
+              <p className="text-[12px] text-[#a3a3a3] mt-0.5">{labels.standardsDesc}</p>
+            </div>
 
-            <CardContent className="space-y-3 pt-1">
+            <div className="space-y-3">
               {strengthStandards.map((std, idx) => (
-                <Card
+                <div
                   key={idx}
-                  className="p-4 bg-dark-900/90 border-dark-700/80 space-y-2.5"
+                  className="p-4 rounded-[12px] bg-[#0a0a0a] border border-[#262626] space-y-2.5"
                 >
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <div>
-                      <h3 className="text-sm font-bold text-zinc-100">{std.name}</h3>
-                      <div className="text-xs text-zinc-400 font-mono mt-0.5">
+                      <h3 className="text-[14px] font-semibold text-[#fafafa]">{std.name}</h3>
+                      <div className="text-[12px] text-[#a3a3a3] font-mono mt-0.5">
                         {labels.currentBest}{' '}
-                        <span className="text-white font-bold">
-                          {std.best1RM > 0 ? `${std.best1RM} kg` : labels.notLogged}
+                        <span className="text-[#34d399] font-semibold">
+                          {std.best1RM > 0 ? formatWeight(std.best1RM, unitPref) : labels.notLogged}
                         </span>
                       </div>
                     </div>
 
-                    <Badge variant={std.badgeColor} size="md">
+                    <span className="px-2.5 py-1 rounded-[8px] bg-[#022c22] border border-[#064e3b] text-[#34d399] text-[12px] font-medium self-start sm:self-center">
                       {std.level}
-                    </Badge>
+                    </span>
                   </div>
 
-                  <div className="space-y-1">
-                    <ProgressBar value={std.progressPct} color="gradient" size="sm" />
-                    <div className="flex justify-between text-[10px] text-zinc-500 font-mono pt-0.5">
-                      <span>Beg ({std.beginner}kg)</span>
-                      <span>Nov ({std.intermediate}kg)</span>
-                      <span>Adv ({std.advanced}kg)</span>
-                      <span>Elite ({std.elite}kg)</span>
+                  <div className="space-y-1.5">
+                    <ProgressBar value={std.progressPct} color="brand" size="sm" />
+                    <div className="flex justify-between text-[11px] text-[#737373] font-mono">
+                      <span>01 Beg ({std.beginner}kg)</span>
+                      <span>02 Nov ({std.intermediate}kg)</span>
+                      <span>03 Adv ({std.advanced}kg)</span>
+                      <span>04 Elite ({std.elite}kg)</span>
                     </div>
                   </div>
-                </Card>
+                </div>
               ))}
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </div>
       )}
 
-      {/* Dedicated Navigation Cards */}
-      <div className="pt-2 border-t border-dark-800/80 grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <Card
-          isHoverable
+      {/* Bottom Navigation Strip */}
+      <div className="pt-4 border-t border-[#262626] grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <button
+          type="button"
           onClick={() => navigate('/history')}
-          className="p-3.5 bg-dark-850/60 hover:bg-dark-800 border-dark-750 hover:border-brand-500/40 transition-all cursor-pointer group"
+          className="min-h-[60px] p-4 rounded-[14px] bg-[#171717] hover:bg-[#262626]/70 border border-[#404040] flex items-center justify-between text-left cursor-pointer transition-colors"
         >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-brand-500/10 border border-brand-500/20 flex items-center justify-center text-brand-400 shrink-0">
-                <CalendarIcon className="w-4 h-4" />
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-10 h-10 rounded-[10px] bg-[#022c22] border border-[#064e3b] flex items-center justify-center text-[#34d399] shrink-0">
+              <CalendarIcon className="w-4 h-4" />
+            </div>
+            <div className="min-w-0">
+              <div className="text-[14px] font-semibold text-[#fafafa] truncate">
+                {t('progress.backToHistory')}
               </div>
-              <div>
-                <div className="text-xs font-bold text-white group-hover:text-brand-400 transition-colors">
-                  {labels.historyCardTitle}
-                </div>
-                <div className="text-[11px] text-zinc-400">
-                  {labels.historyCardDesc}
-                </div>
+              <div className="text-[12px] text-[#a3a3a3] truncate">
+                {t('progress.historyCardDesc')}
               </div>
             </div>
-            <ChevronRight className="w-4 h-4 text-zinc-500 group-hover:text-brand-400 group-hover:translate-x-0.5 transition-all" />
           </div>
-        </Card>
+          <ChevronRight className="w-4 h-4 text-[#a3a3a3] shrink-0" />
+        </button>
 
-        <Card
-          isHoverable
+        <button
+          type="button"
           onClick={() => navigate('/body')}
-          className="p-3.5 bg-dark-850/60 hover:bg-dark-800 border-dark-750 hover:border-brand-500/40 transition-all cursor-pointer group"
+          className="min-h-[60px] p-4 rounded-[14px] bg-[#171717] hover:bg-[#262626]/70 border border-[#404040] flex items-center justify-between text-left cursor-pointer transition-colors"
         >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 shrink-0">
-                <Scale className="w-4 h-4" />
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-10 h-10 rounded-[10px] bg-[#0a0a0a] border border-[#404040] flex items-center justify-center text-[#fafafa] shrink-0">
+              <Scale className="w-4 h-4" />
+            </div>
+            <div className="min-w-0">
+              <div className="text-[14px] font-semibold text-[#fafafa] truncate">
+                {t('progress.toBodyMetrics')}
               </div>
-              <div>
-                <div className="text-xs font-bold text-white group-hover:text-purple-400 transition-colors">
-                  {labels.bodyCardTitle}
-                </div>
-                <div className="text-[11px] text-zinc-400">
-                  {labels.bodyCardDesc}
-                </div>
+              <div className="text-[12px] text-[#a3a3a3] truncate">
+                {t('progress.bodyCardDesc')}
               </div>
             </div>
-            <ChevronRight className="w-4 h-4 text-zinc-500 group-hover:text-purple-400 group-hover:translate-x-0.5 transition-all" />
           </div>
-        </Card>
+          <ChevronRight className="w-4 h-4 text-[#a3a3a3] shrink-0" />
+        </button>
       </div>
     </div>
   );

@@ -196,7 +196,7 @@ export const SmartPhotoPickerModal: React.FC<SmartPhotoPickerModalProps> = ({
       onClose={handleClose}
       size="md"
       icon={
-        <div className="w-8 h-8 rounded-xl bg-brand-500/20 text-brand-400 border border-brand-500/30 flex items-center justify-center shrink-0">
+        <div className="w-8 h-8 rounded-[10px] bg-[#022c22] text-[#34d399] border border-[#064e3b] flex items-center justify-center shrink-0">
           <Camera className="w-4 h-4" />
         </div>
       }
@@ -217,17 +217,17 @@ export const SmartPhotoPickerModal: React.FC<SmartPhotoPickerModalProps> = ({
             <button
               type="button"
               onClick={() => void startCamera('environment')}
-              className="w-full p-4 rounded-2xl bg-gradient-to-r from-brand-950/40 via-dark-800 to-dark-800 border border-brand-500/30 hover:border-brand-500/60 transition-all flex items-center gap-3.5 text-left group shadow-md cursor-pointer"
+              className="w-full min-h-[44px] p-4 rounded-[12px] bg-[#022c22] border border-[#064e3b] hover:border-[#34d399]/60 transition-colors flex items-center gap-3.5 text-left group cursor-pointer"
             >
-              <div className="w-12 h-12 rounded-xl bg-brand-500/20 text-brand-400 flex items-center justify-center group-hover:scale-105 transition-transform shrink-0">
+              <div className="w-12 h-12 rounded-[10px] bg-[#0a0a0a] border border-[#064e3b] text-[#34d399] flex items-center justify-center shrink-0">
                 <Camera className="w-6 h-6" />
               </div>
               <div>
-                <div className="text-sm font-bold text-zinc-100 group-hover:text-brand-400 transition-colors flex items-center gap-1.5">
+                <div className="text-sm font-semibold text-[#fafafa] group-hover:text-[#34d399] transition-colors flex items-center gap-1.5">
                   {t('photoPicker.camera')}
-                  <Sparkles className="w-3.5 h-3.5 text-brand-400" />
+                  <Sparkles className="w-3.5 h-3.5 text-[#34d399]" />
                 </div>
-                <div className="text-xs text-zinc-400 mt-0.5">
+                <div className="text-xs text-[#a3a3a3] mt-0.5">
                   {t('photoPicker.cameraDesc')}
                 </div>
               </div>
@@ -236,16 +236,16 @@ export const SmartPhotoPickerModal: React.FC<SmartPhotoPickerModalProps> = ({
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="w-full p-4 rounded-2xl bg-dark-800/80 hover:bg-dark-800 border border-dark-700 hover:border-dark-600 transition-all flex items-center gap-3.5 text-left group shadow-md cursor-pointer"
+              className="w-full min-h-[44px] p-4 rounded-[12px] bg-[#0a0a0a] hover:bg-[#262626] border border-[#404040] transition-colors flex items-center gap-3.5 text-left group cursor-pointer"
             >
-              <div className="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center group-hover:scale-105 transition-transform shrink-0">
+              <div className="w-12 h-12 rounded-[10px] bg-[#022c22] border border-[#064e3b] text-[#34d399] flex items-center justify-center shrink-0">
                 <ImageIcon className="w-6 h-6" />
               </div>
               <div>
-                <div className="text-sm font-bold text-zinc-100 group-hover:text-emerald-400 transition-colors">
+                <div className="text-sm font-semibold text-[#fafafa] group-hover:text-[#34d399] transition-colors">
                   {t('photoPicker.gallery')}
                 </div>
-                <div className="text-xs text-zinc-400 mt-0.5">
+                <div className="text-xs text-[#a3a3a3] mt-0.5">
                   {t('photoPicker.galleryDesc')}
                 </div>
               </div>
@@ -264,7 +264,7 @@ export const SmartPhotoPickerModal: React.FC<SmartPhotoPickerModalProps> = ({
         {/* 2. Mode: Live In-App Camera Viewfinder */}
         {mode === 'camera' && (
           <div className="flex flex-col items-center">
-            <div className="relative w-full aspect-square sm:aspect-[4/3] bg-black rounded-2xl overflow-hidden border border-dark-750 shadow-inner flex items-center justify-center">
+            <div className="relative w-full aspect-square sm:aspect-[4/3] bg-[#0a0a0a] rounded-[12px] overflow-hidden border border-[#404040] flex items-center justify-center">
               <video
                 ref={videoRef}
                 autoPlay
@@ -278,7 +278,7 @@ export const SmartPhotoPickerModal: React.FC<SmartPhotoPickerModalProps> = ({
               <button
                 type="button"
                 onClick={toggleFacingMode}
-                className="absolute top-3 right-3 p-2.5 rounded-full bg-black/60 backdrop-blur-md text-white border border-white/20 hover:bg-black/80 transition-all active:scale-95 shadow-lg cursor-pointer"
+                className="absolute top-3 right-3 min-w-[44px] min-h-[44px] p-2.5 rounded-full bg-[#171717] text-[#fafafa] border border-[#404040] hover:bg-[#262626] transition-colors flex items-center justify-center cursor-pointer"
                 title={t('photoPicker.switchCamera')}
                 aria-label={t('photoPicker.switchCamera')}
               >
@@ -302,10 +302,10 @@ export const SmartPhotoPickerModal: React.FC<SmartPhotoPickerModalProps> = ({
               <button
                 type="button"
                 onClick={captureSnapshot}
-                className="w-16 h-16 rounded-full bg-white p-1 shadow-lg shadow-brand-500/20 active:scale-90 transition-transform flex items-center justify-center cursor-pointer"
+                className="w-16 h-16 rounded-full bg-[#fafafa] p-1 active:scale-95 transition-transform flex items-center justify-center cursor-pointer"
               >
-                <div className="w-13 h-13 rounded-full border-4 border-dark-900 bg-brand-500 flex items-center justify-center">
-                  <Camera className="w-6 h-6 text-dark-950" />
+                <div className="w-13 h-13 rounded-full border-4 border-[#0a0a0a] bg-[#34d399] flex items-center justify-center">
+                  <Camera className="w-6 h-6 text-[#0a0a0a]" />
                 </div>
               </button>
 
@@ -313,7 +313,7 @@ export const SmartPhotoPickerModal: React.FC<SmartPhotoPickerModalProps> = ({
                 type="button"
                 variant="ghost"
                 size="sm"
-                className="text-brand-400 hover:text-brand-300 font-bold"
+                className="min-h-[44px] text-[#34d399] hover:text-[#34d399]/80 font-semibold"
                 onClick={() => {
                   stopStream();
                   fileInputRef.current?.click();
@@ -328,7 +328,7 @@ export const SmartPhotoPickerModal: React.FC<SmartPhotoPickerModalProps> = ({
         {/* 3. Mode: Photo Preview & Confirm */}
         {mode === 'preview' && capturedPhoto && (
           <div className="flex flex-col items-center space-y-3">
-            <div className="w-full aspect-square sm:aspect-[4/3] bg-black rounded-2xl overflow-hidden border border-brand-500/40 shadow-xl relative">
+            <div className="w-full aspect-square sm:aspect-[4/3] bg-[#0a0a0a] rounded-[12px] overflow-hidden border border-[#064e3b] relative">
               <img
                 src={capturedPhoto.dataUrl}
                 alt="Captured Preview"
@@ -350,7 +350,7 @@ export const SmartPhotoPickerModal: React.FC<SmartPhotoPickerModalProps> = ({
               <Button
                 type="button"
                 variant="primary"
-                className="flex-1 text-xs font-bold shadow-md shadow-brand-500/30"
+                className="flex-1 text-xs font-semibold"
                 onClick={handleConfirmPhoto}
               >
                 <Check className="w-4 h-4 mr-1" />

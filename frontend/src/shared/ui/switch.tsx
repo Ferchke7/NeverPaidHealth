@@ -27,16 +27,20 @@ export const Switch: React.FC<SwitchProps> = ({
       onChange={onValueChange}
       isDisabled={disabled}
       size={size}
-      className={`flex items-center justify-between gap-3 ${className}`}
+      className={`flex items-center justify-between gap-3 cursor-pointer ${className}`}
     >
       {(label || description) && (
         <div className="flex flex-col">
-          {label && <span className="text-sm font-semibold text-zinc-200">{label}</span>}
-          {description && <span className="text-xs text-zinc-400">{description}</span>}
+          {label && <span className="text-[14px] font-medium text-[#fafafa]">{label}</span>}
+          {description && <span className="text-[12px] text-[#a3a3a3]">{description}</span>}
         </div>
       )}
-      <HeroSwitch.Control>
-        <HeroSwitch.Thumb />
+      <HeroSwitch.Control
+        className={`transition-colors ${
+          isSelected ? 'bg-[#34d399]' : 'bg-[#262626] border border-[#404040]'
+        }`}
+      >
+        <HeroSwitch.Thumb className={isSelected ? 'bg-[#0a0a0a]' : 'bg-[#a3a3a3]'} />
       </HeroSwitch.Control>
     </HeroSwitch.Root>
   );

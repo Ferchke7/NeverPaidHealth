@@ -42,22 +42,21 @@ export const ExerciseThumbnail: React.FC<ExerciseThumbnailProps> = ({
 
   const primaryMuscle = visual.primaryMuscles[0] || fallbackMuscle || 'muscle';
 
-  // Dynamic gradient based on muscle group for visual variety in fallbacks
-  const getFallbackGradient = (m: string) => {
+  const getFallbackStyle = (m: string) => {
     const l = m.toLowerCase();
-    if (l.includes('chest')) return 'from-blue-600/30 to-indigo-900/40 text-blue-400 border-blue-500/30';
-    if (l.includes('back') || l.includes('lat')) return 'from-emerald-600/30 to-teal-900/40 text-emerald-400 border-emerald-500/30';
-    if (l.includes('quad') || l.includes('leg') || l.includes('hamstring')) return 'from-amber-600/30 to-orange-900/40 text-amber-400 border-amber-500/30';
-    if (l.includes('shoulder')) return 'from-purple-600/30 to-violet-900/40 text-purple-400 border-purple-500/30';
-    if (l.includes('bicep') || l.includes('tricep') || l.includes('arm')) return 'from-rose-600/30 to-pink-900/40 text-rose-400 border-rose-500/30';
-    return 'from-brand-500/20 to-dark-800 text-brand-400 border-dark-700';
+    if (l.includes('chest')) return 'bg-[#0a0a0a] text-[#34d399]';
+    if (l.includes('back') || l.includes('lat')) return 'bg-[#022c22] text-[#34d399]';
+    if (l.includes('quad') || l.includes('leg') || l.includes('hamstring')) return 'bg-[#0a0a0a] text-amber-400';
+    if (l.includes('shoulder')) return 'bg-[#0a0a0a] text-[#fafafa]';
+    if (l.includes('bicep') || l.includes('tricep') || l.includes('arm')) return 'bg-[#0a0a0a] text-[#a3a3a3]';
+    return 'bg-[#0a0a0a] text-[#34d399]';
   };
 
   return (
     <div
       onClick={onClick}
-      className={`relative shrink-0 overflow-hidden bg-dark-900 border border-dark-700/80 flex items-center justify-center select-none shadow-sm ${sizeClass} ${className} ${
-        onClick ? 'cursor-pointer hover:border-brand-500/50 hover:opacity-95 transition-all' : ''
+      className={`relative shrink-0 overflow-hidden bg-[#0a0a0a] border border-[#262626] flex items-center justify-center select-none ${sizeClass} ${className} ${
+        onClick ? 'cursor-pointer hover:border-[#34d399]/60 transition-colors' : ''
       }`}
     >
       {imageSrc && !hasError ? (
@@ -67,11 +66,11 @@ export const ExerciseThumbnail: React.FC<ExerciseThumbnailProps> = ({
           loading="lazy"
           crossOrigin="anonymous"
           onError={() => setHasError(true)}
-          className="w-full h-full object-cover object-center bg-white/5 transition-transform duration-300 group-hover:scale-105"
+          className="w-full h-full object-cover object-center bg-[#171717]"
         />
       ) : (
         <div
-          className={`w-full h-full bg-gradient-to-br flex items-center justify-center ${getFallbackGradient(
+          className={`w-full h-full flex items-center justify-center ${getFallbackStyle(
             primaryMuscle
           )}`}
         >

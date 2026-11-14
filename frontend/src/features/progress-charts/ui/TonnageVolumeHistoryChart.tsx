@@ -1,9 +1,9 @@
 import React, { useState, useMemo } from 'react';
 import * as echarts from 'echarts';
-import { BarChart3 } from 'lucide-react';
 import { EChartsReact } from '../../../shared/ui/EChartsReact.tsx';
 import { WorkoutHistoryItem } from '../../../entities/workout/model/types.ts';
 import { kgToLb } from '../../../shared/lib/units.ts';
+import { useTranslation } from '../../../shared/lib/i18n/i18n.ts';
 
 interface TonnageVolumeHistoryChartProps {
   workouts: WorkoutHistoryItem[];
@@ -16,12 +16,52 @@ export const TonnageVolumeHistoryChart: React.FC<TonnageVolumeHistoryChartProps>
   unitPref,
   className = '',
 }) => {
+  const { language } = useTranslation();
   const [viewMode, setViewMode] = useState<'sessions' | 'weekly'>('sessions');
+
+  const lbl = useMemo(() => {
+    if (language === 'uz') {
+      return {
+        title: 'Tonnaj',
+        byWeeks: 'Haftalar bo‘yicha',
+        bySessions: 'Mashg‘ulotlar bo‘yicha',
+        total: 'Jami',
+        avg: 'O‘rtacha',
+        peak: 'Eng yuqori',
+        noData: 'Hajm qayd etilgan mashg‘ulotlar yo‘q',
+        caption: 'Ustunlar — tonnaj · yozuvlar: t · «s.» — setlar',
+        tonsUnit: 't',
+      };
+    }
+    if (language === 'en') {
+      return {
+        title: 'Tonnage',
+        byWeeks: 'Weekly',
+        bySessions: 'By session',
+        total: 'Total',
+        avg: 'Average',
+        peak: 'Peak session',
+        noData: 'No workouts with logged volume',
+        caption: 'Bars — tonnage · labels: t · «s.» — sets',
+        tonsUnit: 't',
+      };
+    }
+    return {
+      title: 'Тоннаж',
+      byWeeks: 'По неделям',
+      bySessions: 'По тренировкам',
+      total: 'Всего',
+      avg: 'В среднем',
+      peak: 'Пиковая тренировка',
+      noData: 'Нет завершенных тренировок с объёмом',
+      caption: 'Столбцы — тоннаж · подписи: т · «с.» — сеты',
+      tonsUnit: 'т',
+    };
+  }, [language]);
 
   const processedData = useMemo(() => {
     if (!workouts || workouts.length === 0) return [];
 
-    // Filter finished workouts and sort ascending by date
     const valid = workouts
       .filter((w) => w.started_at && (w.total_volume_kg || 0) > 0)
       .sort((a, b) => new Date(a.started_at).getTime() - new Date(b.started_at).getTime());
@@ -29,29 +69,25 @@ export const TonnageVolumeHistoryChart: React.FC<TonnageVolumeHistoryChartProps>
     if (viewMode === 'sessions') {
       return valid.map((w) => {
         const d = new Date(w.started_at);
-        const label = d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+        const label = `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}`;
         const volume = unitPref === 'lb' ? kgToLb(w.total_volume_kg || 0) : (w.total_volume_kg || 0);
-        const durationMins = Math.round((w.duration_seconds || 0) / 60);
         return {
           label,
           fullDate: w.started_at,
           name: w.name,
           volumeKg: Math.round(volume),
           sets: w.completed_sets_count || 0,
-          durationMins,
         };
       });
     }
 
-    // Weekly aggregation
     const weekMap = new Map<string, { volume: number; sets: number; count: number }>();
     for (const w of valid) {
       const d = new Date(w.started_at);
-      // Start of week
       const day = d.getDay();
       const diff = d.getDate() - day + (day === 0 ? -6 : 1);
       const monday = new Date(d.setDate(diff));
-      const key = monday.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+      const key = `${String(monday.getDate()).padStart(2, '0')}.${String(monday.getMonth() + 1).padStart(2, '0')}`;
 
       const prev = weekMap.get(key) || { volume: 0, sets: 0, count: 0 };
       const v = unitPref === 'lb' ? kgToLb(w.total_volume_kg || 0) : (w.total_volume_kg || 0);
@@ -65,10 +101,9 @@ export const TonnageVolumeHistoryChart: React.FC<TonnageVolumeHistoryChartProps>
     return Array.from(weekMap.entries()).map(([key, data]) => ({
       label: key,
       fullDate: key,
-      name: `${data.count} тренировок`,
+      name: `${data.count}`,
       volumeKg: Math.round(data.volume),
       sets: data.sets,
-      durationMins: 0,
     }));
   }, [workouts, viewMode, unitPref]);
 
@@ -83,266 +118,172 @@ export const TonnageVolumeHistoryChart: React.FC<TonnageVolumeHistoryChartProps>
     };
   }, [processedData]);
 
+  const formatCompact = (val: number) =>
+    val >= 1000
+      ? `${(val / 1000).toFixed(1)} ${lbl.tonsUnit}`
+      : `${val} ${unitPref === 'lb' ? 'lb' : 'кг'}`;
+
   const option = useMemo<echarts.EChartsOption>(() => {
     if (processedData.length === 0) {
       return {
         backgroundColor: 'transparent',
         title: {
-          text: 'Нет завершенных тренировок с объёмом',
+          text: lbl.noData,
           left: 'center',
           top: 'center',
-          textStyle: { color: '#64748b', fontSize: 13, fontFamily: 'monospace' },
+          textStyle: { color: '#737373', fontSize: 12 },
         },
       };
     }
 
-    const categories = processedData.map((d) => d.label);
+    const categories = processedData.map((d) => `${d.label}\n${d.sets} с.`);
     const volumes = processedData.map((d) => d.volumeKg);
-    const sets = processedData.map((d) => d.sets);
-    const unitLabel = unitPref.toUpperCase();
+    const unitLabel = unitPref === 'lb' ? 'lb' : 'кг';
 
     return {
       backgroundColor: 'transparent',
-      animationDuration: 850,
-      animationEasing: 'cubicOut',
+      animationDuration: 500,
       tooltip: {
         trigger: 'axis',
-        backgroundColor: 'rgba(15, 23, 42, 0.94)',
-        borderColor: 'rgba(255, 255, 255, 0.12)',
+        backgroundColor: '#171717',
+        borderColor: '#404040',
         borderWidth: 1,
-        borderRadius: 14,
-        padding: [10, 14],
-        extraCssText: 'box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6); backdrop-filter: blur(12px);',
+        borderRadius: 10,
+        padding: [10, 12],
         axisPointer: {
           type: 'shadow',
-          shadowStyle: { color: 'rgba(34, 197, 94, 0.08)' },
+          shadowStyle: { color: 'rgba(255, 255, 255, 0.03)' },
         },
         formatter: (params: any) => {
           if (!Array.isArray(params) || params.length === 0) return '';
           const idx = params[0].dataIndex;
           const item = processedData[idx];
-
           return `
-            <div style="font-family: inherit; min-width: 150px;">
-              <div style="font-size: 11px; color: #94a3b8; font-weight: 600; margin-bottom: 2px;">
-                ${item.label}
-              </div>
-              <div style="font-size: 12px; color: #ffffff; font-weight: bold; margin-bottom: 6px;">
-                ${item.name}
-              </div>
-              <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px;">
-                <span style="font-size: 11px; color: #cbd5e1;">Тоннаж:</span>
-                <span style="font-size: 13px; font-weight: 800; color: #38bdf8; font-family: monospace;">
-                  ${item.volumeKg.toLocaleString('ru-RU')} ${unitLabel}
-                </span>
-              </div>
-              <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 3px;">
-                <span style="font-size: 11px; color: #cbd5e1;">Сетов:</span>
-                <span style="font-size: 12px; font-weight: 700; color: #4ade80; font-family: monospace;">
-                  ${item.sets}
-                </span>
-              </div>
-              ${
-                item.durationMins > 0
-                  ? `<div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 3px;">
-                      <span style="font-size: 11px; color: #cbd5e1;">Время:</span>
-                      <span style="font-size: 11px; font-weight: 600; color: #cbd5e1; font-family: monospace;">
-                        ${item.durationMins} мин
-                      </span>
-                    </div>`
-                  : ''
-              }
+            <div style="min-width:140px;">
+              <div style="font-size:11px;color:#a3a3a3;">${item.label}</div>
+              <div style="font-size:12px;color:#fafafa;font-weight:600;margin-bottom:4px;">${item.name}</div>
+              <div style="font-size:13px;font-weight:700;color:#34d399;">${item.volumeKg.toLocaleString('ru-RU')} ${unitLabel}</div>
             </div>
           `;
         },
       },
-      legend: {
-        top: 0,
-        right: 0,
-        textStyle: { color: '#94a3b8', fontSize: 11, fontWeight: 'bold' },
-        data: ['Тоннаж (Объём)', 'Сеты'],
-      },
       grid: {
         left: '2%',
-        right: '4%',
-        bottom: '4%',
+        right: '2%',
+        bottom: '6%',
         top: '16%',
         containLabel: true,
       },
       xAxis: {
         type: 'category',
         data: categories,
-        axisLine: { lineStyle: { color: '#334155' } },
+        axisLine: { lineStyle: { color: '#262626' } },
         axisTick: { show: false },
         axisLabel: {
-          color: '#94a3b8',
-          fontSize: 10,
-          fontFamily: 'monospace',
-          margin: 10,
+          color: '#737373',
+          fontSize: 11,
+          lineHeight: 16,
         },
       },
-      yAxis: [
-        {
-          type: 'value',
-          name: unitLabel,
-          nameTextStyle: { color: '#64748b', fontSize: 10, fontFamily: 'monospace' },
-          scale: true,
-          axisLine: { show: false },
-          axisTick: { show: false },
-          axisLabel: {
-            color: '#64748b',
-            fontSize: 10,
-            fontFamily: 'monospace',
-            formatter: (v: number) => (v >= 1000 ? `${Math.round(v / 1000)}k` : `${v}`),
-          },
-          splitLine: {
-            lineStyle: {
-              color: 'rgba(255, 255, 255, 0.05)',
-              type: 'dashed',
-            },
+      yAxis: {
+        type: 'value',
+        axisLine: { show: false },
+        axisTick: { show: false },
+        axisLabel: {
+          color: '#737373',
+          fontSize: 11,
+        },
+        splitLine: {
+          lineStyle: {
+            color: '#262626',
+            type: 'solid',
           },
         },
-        {
-          type: 'value',
-          name: 'Сеты',
-          nameTextStyle: { color: '#64748b', fontSize: 10, fontFamily: 'monospace' },
-          scale: true,
-          axisLine: { show: false },
-          axisTick: { show: false },
-          splitLine: { show: false },
-          axisLabel: {
-            color: '#64748b',
-            fontSize: 10,
-            fontFamily: 'monospace',
-          },
-        },
-      ],
+      },
       series: [
         {
-          name: 'Тоннаж (Объём)',
+          name: lbl.title,
           type: 'bar',
           data: volumes,
-          barMaxWidth: 24,
+          barMaxWidth: 52,
           itemStyle: {
-            borderRadius: [6, 6, 0, 0],
-            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-              { offset: 0, color: '#38bdf8' },
-              { offset: 1, color: 'rgba(56, 189, 248, 0.2)' },
-            ]),
+            color: '#34d399',
+            borderRadius: [4, 4, 0, 0],
           },
-          markPoint: {
-            symbol: 'pin',
-            symbolSize: 40,
-            data: [{ type: 'max', name: 'Max' }],
-            itemStyle: {
-              color: '#38bdf8',
-              shadowColor: 'rgba(56, 189, 248, 0.6)',
-              shadowBlur: 10,
-            },
-            label: {
-              formatter: 'TOP',
-              fontSize: 9,
-              fontWeight: 'bold',
-              color: '#0f172a',
-            },
-          },
-        },
-        {
-          name: 'Сеты',
-          type: 'line',
-          yAxisIndex: 1,
-          data: sets,
-          smooth: true,
-          symbol: 'circle',
-          symbolSize: 6,
-          itemStyle: {
-            color: '#22c55e',
-          },
-          lineStyle: {
-            width: 2.5,
-            color: '#22c55e',
-            shadowColor: 'rgba(34, 197, 94, 0.4)',
-            shadowBlur: 8,
+          label: {
+            show: true,
+            position: 'top',
+            color: '#d4d4d4',
+            fontSize: 11,
+            formatter: (p: any) =>
+              p.value >= 1000
+                ? `${(Number(p.value) / 1000).toFixed(1)} ${lbl.tonsUnit}`
+                : `${p.value}`,
           },
         },
       ],
     };
-  }, [processedData, unitPref]);
+  }, [processedData, unitPref, lbl]);
 
   return (
-    <div className={`space-y-4 ${className}`}>
-      {/* Top Controls & Switcher */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <BarChart3 className="w-4 h-4 text-brand-400" />
-          <h4 className="text-xs font-extrabold uppercase tracking-wider text-zinc-200">
-            Динамика объёма и тоннажа
-          </h4>
-        </div>
+    <section className={`bg-[#171717] border border-[#404040] rounded-[14px] p-5 space-y-4 ${className}`}>
+      <div className="space-y-3">
+        <h3 className="text-lg font-bold text-[#fafafa]">{lbl.title}</h3>
 
-        <div className="flex items-center gap-1 bg-dark-900/90 p-1 rounded-xl border border-dark-750 self-start sm:self-auto">
-          <button
-            type="button"
-            onClick={() => setViewMode('sessions')}
-            className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-              viewMode === 'sessions'
-                ? 'bg-dark-750 text-white border border-dark-600 shadow-sm'
-                : 'text-zinc-500 hover:text-zinc-300'
-            }`}
-          >
-            По тренировкам
-          </button>
+        <div className="flex items-center gap-1.5">
           <button
             type="button"
             onClick={() => setViewMode('weekly')}
-            className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+            className={`min-h-[44px] px-3.5 rounded-[10px] text-xs font-semibold transition-colors cursor-pointer ${
               viewMode === 'weekly'
-                ? 'bg-dark-750 text-white border border-dark-600 shadow-sm'
-                : 'text-zinc-500 hover:text-zinc-300'
+                ? 'bg-[#022c22] text-[#34d399] border border-[#064e3b]'
+                : 'text-[#a3a3a3] hover:text-[#fafafa]'
             }`}
           >
-            По неделям
+            {lbl.byWeeks}
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewMode('sessions')}
+            className={`min-h-[44px] px-3.5 rounded-[10px] text-xs font-semibold transition-colors cursor-pointer ${
+              viewMode === 'sessions'
+                ? 'bg-[#022c22] text-[#34d399] border border-[#064e3b]'
+                : 'text-[#a3a3a3] hover:text-[#fafafa]'
+            }`}
+          >
+            {lbl.bySessions}
           </button>
         </div>
       </div>
 
-      {/* Main ECharts Card */}
-      <div className="bg-dark-950/80 rounded-2xl border border-dark-750 p-4 shadow-xl relative overflow-hidden">
-        <EChartsReact
-          option={option}
-          style={{ height: '300px', width: '100%' }}
-        />
-
-        {/* Micro stats footer */}
-        <div className="grid grid-cols-3 gap-2 pt-3 border-t border-dark-800/80">
-          <div className="p-2.5 rounded-xl bg-dark-900/70 border border-dark-750/70">
-            <div className="text-[10px] uppercase font-bold text-zinc-500">Общий объём</div>
-            <div className="text-sm font-mono font-black text-sky-400 mt-0.5">
-              {summary.totalVol > 1000
-                ? `${(summary.totalVol / 1000).toFixed(1)} т`
-                : `${summary.totalVol} ${unitPref}`}
-            </div>
+      {/* Top 3 Metrics matching Figma 07 */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-1">
+        <div>
+          <div className="text-xl sm:text-2xl font-bold tabular-nums text-[#fafafa]">
+            {formatCompact(summary.totalVol)}
           </div>
-
-          <div className="p-2.5 rounded-xl bg-dark-900/70 border border-dark-750/70">
-            <div className="text-[10px] uppercase font-bold text-zinc-500">В среднем / тренировка</div>
-            <div className="text-sm font-mono font-black text-emerald-400 mt-0.5">
-              {summary.avgVol > 1000
-                ? `${(summary.avgVol / 1000).toFixed(1)} т`
-                : `${summary.avgVol} ${unitPref}`}
-            </div>
+          <div className="text-xs text-[#a3a3a3] mt-0.5">{lbl.total}</div>
+        </div>
+        <div>
+          <div className="text-xl sm:text-2xl font-bold tabular-nums text-[#fafafa]">
+            {formatCompact(summary.avgVol)}
           </div>
-
-          <div className="p-2.5 rounded-xl bg-dark-900/70 border border-dark-750/70">
-            <div className="text-[10px] uppercase font-bold text-zinc-500">Пиковый объём</div>
-            <div className="text-sm font-mono font-black text-amber-400 mt-0.5">
-              {summary.maxVol > 1000
-                ? `${(summary.maxVol / 1000).toFixed(1)} т`
-                : `${summary.maxVol} ${unitPref}`}
-            </div>
+          <div className="text-xs text-[#a3a3a3] mt-0.5">{lbl.avg}</div>
+        </div>
+        <div>
+          <div className="text-xl sm:text-2xl font-bold tabular-nums text-[#fafafa]">
+            {formatCompact(summary.maxVol)}
           </div>
+          <div className="text-xs text-[#a3a3a3] mt-0.5">{lbl.peak}</div>
         </div>
       </div>
-    </div>
+
+      <EChartsReact
+        option={option}
+        style={{ height: '260px', width: '100%' }}
+      />
+
+      <p className="text-xs text-[#737373]">{lbl.caption}</p>
+    </section>
   );
 };

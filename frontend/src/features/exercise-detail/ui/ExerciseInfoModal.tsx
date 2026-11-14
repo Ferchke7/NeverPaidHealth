@@ -50,7 +50,7 @@ export const ExerciseInfoModal: React.FC<ExerciseInfoModalProps> = ({
       onClose={onClose}
       size="md"
       icon={
-        <div className="w-9 h-9 rounded-xl bg-brand-500/20 text-brand-400 border border-brand-500/30 flex items-center justify-center shrink-0">
+        <div className="w-10 h-10 rounded-[10px] bg-[#022c22] text-[#34d399] border border-[#064e3b] flex items-center justify-center shrink-0">
           <Dumbbell className="w-4 h-4" />
         </div>
       }
@@ -58,15 +58,15 @@ export const ExerciseInfoModal: React.FC<ExerciseInfoModalProps> = ({
       subtitle={`${meta.primaryMuscles[0] || fallbackMuscle || 'Strength'} • ${meta.equipment ? meta.equipment.replace('_', ' ') : 'Barbell / Dumbbell'}`}
       footer={
         <>
-          <Button variant="ghost" size="sm" onClick={onClose} className="text-xs text-zinc-400">
+          <Button variant="outline" size="md" onClick={onClose}>
             {t('common.close')}
           </Button>
 
           {canAddToWorkout && onAddToWorkout && (
             <Button
               variant="primary"
-              size="sm"
-              className="text-xs font-bold flex items-center gap-1.5"
+              size="md"
+              className="flex items-center gap-1.5"
               onClick={() => {
                 onAddToWorkout();
                 setAdded(true);
@@ -75,12 +75,12 @@ export const ExerciseInfoModal: React.FC<ExerciseInfoModalProps> = ({
             >
               {added ? (
                 <>
-                  <Check className="w-3.5 h-3.5 text-black" />
+                  <Check className="w-4 h-4 text-[#0a0a0a]" />
                   <span>{t('common.saved')}</span>
                 </>
               ) : (
                 <>
-                  <Plus className="w-3.5 h-3.5" />
+                  <Plus className="w-4 h-4" />
                   <span>{t('exercises.addToWorkout')}</span>
                 </>
               )}
@@ -92,7 +92,7 @@ export const ExerciseInfoModal: React.FC<ExerciseInfoModalProps> = ({
       <div className="space-y-4">
         {/* Animated Illustration Preview Card */}
         {currentImage ? (
-          <div className="relative rounded-2xl overflow-hidden bg-black/60 border border-dark-700/80 aspect-[4/3] flex items-center justify-center group shadow-inner">
+          <div className="relative rounded-[14px] overflow-hidden bg-[#0a0a0a] border border-[#404040] aspect-[4/3] flex items-center justify-center">
             <img
               src={currentImage}
               alt={exerciseName}
@@ -102,26 +102,26 @@ export const ExerciseInfoModal: React.FC<ExerciseInfoModalProps> = ({
 
             {/* Frame Indicator and Controls */}
             {hasMultipleFrames && (
-              <div className="absolute bottom-2.5 right-2.5 flex items-center gap-1.5 bg-dark-950/80 backdrop-blur-md px-2.5 py-1 rounded-full border border-dark-700/80 text-[10px]">
+              <div className="absolute bottom-2.5 right-2.5 flex items-center gap-1.5 bg-[#0a0a0a] px-2.5 py-1 rounded-lg border border-[#404040] text-[11px]">
                 <button
                   onClick={() => setIsAutoPlaying(!isAutoPlaying)}
-                  className="text-zinc-400 hover:text-brand-400 flex items-center gap-1 font-medium"
+                  className="text-[#a3a3a3] hover:text-[#34d399] flex items-center gap-1 font-medium"
                   title={isAutoPlaying ? t('exercises.pause') : t('exercises.animation')}
                 >
                   {isAutoPlaying ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3" />}
                   <span>{isAutoPlaying ? t('exercises.animation') : t('exercises.pause')}</span>
                 </button>
-                <span className="text-zinc-600">|</span>
+                <span className="text-[#404040]">|</span>
                 <div className="flex gap-1">
                   <button
                     onClick={() => {
                       setIsAutoPlaying(false);
                       setActiveFrame(0);
                     }}
-                    className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${
+                    className={`px-2 py-0.5 rounded text-[10px] font-semibold ${
                       activeFrame === 0
-                        ? 'bg-brand-500 text-dark-950'
-                        : 'bg-dark-800 text-zinc-400 hover:text-white'
+                        ? 'bg-[#34d399] text-[#0a0a0a]'
+                        : 'bg-[#171717] text-[#a3a3a3] hover:text-[#fafafa]'
                     }`}
                   >
                     {t('exercises.startPhase')}
@@ -131,10 +131,10 @@ export const ExerciseInfoModal: React.FC<ExerciseInfoModalProps> = ({
                       setIsAutoPlaying(false);
                       setActiveFrame(1);
                     }}
-                    className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${
+                    className={`px-2 py-0.5 rounded text-[10px] font-semibold ${
                       activeFrame === 1
-                        ? 'bg-brand-500 text-dark-950'
-                        : 'bg-dark-800 text-zinc-400 hover:text-white'
+                        ? 'bg-[#34d399] text-[#0a0a0a]'
+                        : 'bg-[#171717] text-[#a3a3a3] hover:text-[#fafafa]'
                     }`}
                   >
                     {t('exercises.peakPhase')}
@@ -144,25 +144,25 @@ export const ExerciseInfoModal: React.FC<ExerciseInfoModalProps> = ({
             )}
           </div>
         ) : (
-          <div className="rounded-2xl bg-dark-800/60 border border-dark-700/80 h-36 flex flex-col items-center justify-center text-zinc-500 gap-2">
-            <Dumbbell className="w-8 h-8 text-brand-400/60" />
+          <div className="rounded-[14px] bg-[#0a0a0a] border border-[#262626] h-36 flex flex-col items-center justify-center text-[#a3a3a3] gap-2">
+            <Dumbbell className="w-7 h-7 text-[#34d399]" />
             <span className="text-xs">{t('exercises.visualComingSoon')}</span>
           </div>
         )}
 
         {/* Target Anatomy */}
         <div className="space-y-2">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-400">
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-[#a3a3a3]">
             {t('exercises.targetMuscleGroups')}
           </span>
-          <div className="bg-dark-800/80 p-3 rounded-xl border border-dark-700/70 space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-zinc-400">{t('exercises.mainFocus')}</span>
-              <div className="flex flex-wrap gap-1">
+          <div className="bg-[#0a0a0a] p-3.5 rounded-[12px] border border-[#262626] space-y-2.5">
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-xs text-[#a3a3a3]">{t('exercises.mainFocus')}</span>
+              <div className="flex flex-wrap gap-1.5">
                 {meta.primaryMuscles.map((m, i) => (
                   <span
                     key={i}
-                    className="px-2.5 py-0.5 rounded-md text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 capitalize"
+                    className="px-2.5 py-0.5 rounded-md text-xs font-semibold bg-[#022c22] text-[#34d399] border border-[#064e3b] capitalize"
                   >
                     {m}
                   </span>
@@ -171,13 +171,13 @@ export const ExerciseInfoModal: React.FC<ExerciseInfoModalProps> = ({
             </div>
 
             {meta.secondaryMuscles && meta.secondaryMuscles.length > 0 && (
-              <div className="flex items-center justify-between pt-1 border-t border-dark-700/60">
-                <span className="text-xs text-zinc-500">{t('exercises.synergists')}</span>
-                <div className="flex flex-wrap gap-1">
+              <div className="flex items-center justify-between gap-3 pt-2 border-t border-[#262626]">
+                <span className="text-xs text-[#a3a3a3]">{t('exercises.synergists')}</span>
+                <div className="flex flex-wrap gap-1.5">
                   {meta.secondaryMuscles.map((m, i) => (
                     <span
                       key={i}
-                      className="px-2 py-0.5 rounded text-[11px] font-medium bg-dark-700 text-zinc-300 capitalize"
+                      className="px-2 py-0.5 rounded text-[11px] font-medium bg-[#171717] border border-[#262626] text-[#fafafa] capitalize"
                     >
                       {m}
                     </span>
@@ -190,21 +190,21 @@ export const ExerciseInfoModal: React.FC<ExerciseInfoModalProps> = ({
 
         {/* Form Guide & Execution */}
         <div className="space-y-2">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-400">
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-[#a3a3a3]">
             {t('exercises.executionTechnique')}
           </span>
-          <div className="bg-dark-800/40 p-3.5 rounded-xl border border-dark-700/60 space-y-2.5">
+          <div className="bg-[#0a0a0a] p-3.5 rounded-[12px] border border-[#262626] space-y-2.5">
             {meta.instructions && meta.instructions.length > 0 ? (
               meta.instructions.map((step, idx) => (
                 <div key={idx} className="flex items-start gap-2.5 text-xs leading-relaxed">
-                  <span className="w-5 h-5 rounded-full bg-dark-700 text-brand-400 font-bold flex items-center justify-center shrink-0 text-[10px] border border-dark-600">
+                  <span className="w-5 h-5 rounded-md bg-[#171717] text-[#34d399] font-semibold flex items-center justify-center shrink-0 text-[11px] border border-[#404040]">
                     {idx + 1}
                   </span>
-                  <span className="text-zinc-300 pt-0.5">{step}</span>
+                  <span className="text-[#fafafa] pt-0.5">{step}</span>
                 </div>
               ))
             ) : (
-              <p className="text-xs text-zinc-400">
+              <p className="text-xs text-[#a3a3a3]">
                 {t('exercises.defaultTechniqueTip')}
               </p>
             )}

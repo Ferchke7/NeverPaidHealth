@@ -59,7 +59,7 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose })
       size="md"
       title={
         <div className="flex items-center gap-2">
-          <MessageSquarePlus className="w-5 h-5 text-brand-400" />
+          <MessageSquarePlus className="w-5 h-5 text-[#34d399]" />
           <span className="font-extrabold text-white">Обратная связь и баги</span>
         </div>
       }
@@ -67,24 +67,24 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose })
     >
       {isSuccess ? (
         <div className="py-8 text-center space-y-2 animate-fade-in">
-          <div className="w-12 h-12 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 mx-auto flex items-center justify-center">
+          <div className="w-12 h-12 rounded-full bg-[#022c22] border border-[#064e3b] text-[#34d399] mx-auto flex items-center justify-center">
             <CheckCircle2 className="w-6 h-6" />
           </div>
           <h4 className="text-sm font-bold text-white">Спасибо за ваш отзыв!</h4>
-          <p className="text-xs text-zinc-400">Мы внимательно изучаем каждый отчёт и улучшаем платформу.</p>
+          <p className="text-xs text-[#a3a3a3]">Мы внимательно изучаем каждый отчёт и улучшаем платформу.</p>
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1.5">
-            <label className="text-xs font-bold text-zinc-300">Тип обращения</label>
+            <label className="text-xs font-medium text-[#a3a3a3]">Тип обращения</label>
             <div className="grid grid-cols-3 gap-2">
               <button
                 type="button"
                 onClick={() => setCategory('bug')}
-                className={`py-2 px-2.5 rounded-xl text-xs font-bold border flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                className={`min-h-[44px] py-2 px-3 rounded-[10px] text-xs font-medium border flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
                   category === 'bug'
-                    ? 'bg-rose-500/15 border-rose-500/50 text-rose-300 shadow-sm'
-                    : 'bg-dark-900 border-dark-750 text-zinc-400 hover:text-zinc-200'
+                    ? 'bg-red-950/50 border-red-900 text-red-400'
+                    : 'bg-[#0a0a0a] border-[#404040] text-[#a3a3a3] hover:text-[#fafafa]'
                 }`}
               >
                 <Bug className="w-3.5 h-3.5 text-rose-400" />
@@ -94,10 +94,10 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose })
               <button
                 type="button"
                 onClick={() => setCategory('feature')}
-                className={`py-2 px-2.5 rounded-xl text-xs font-bold border flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                className={`min-h-[44px] py-2 px-3 rounded-[10px] text-xs font-medium border flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
                   category === 'feature'
-                    ? 'bg-amber-500/15 border-amber-500/50 text-amber-300 shadow-sm'
-                    : 'bg-dark-900 border-dark-750 text-zinc-400 hover:text-zinc-200'
+                    ? 'bg-amber-950/40 border-amber-900 text-amber-400'
+                    : 'bg-[#0a0a0a] border-[#404040] text-[#a3a3a3] hover:text-[#fafafa]'
                 }`}
               >
                 <Sparkles className="w-3.5 h-3.5 text-amber-400" />
@@ -107,20 +107,20 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose })
               <button
                 type="button"
                 onClick={() => setCategory('improvement')}
-                className={`py-2 px-2.5 rounded-xl text-xs font-bold border flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                className={`min-h-[44px] py-2 px-3 rounded-[10px] text-xs font-medium border flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
                   category === 'improvement'
-                    ? 'bg-brand-500/15 border-brand-500/50 text-brand-300 shadow-sm'
-                    : 'bg-dark-900 border-dark-750 text-zinc-400 hover:text-zinc-200'
+                    ? 'bg-[#022c22] border-[#064e3b] text-[#34d399]'
+                    : 'bg-[#0a0a0a] border-[#404040] text-[#a3a3a3] hover:text-[#fafafa]'
                 }`}
               >
-                <Zap className="w-3.5 h-3.5 text-brand-400" />
+                <Zap className="w-3.5 h-3.5 text-[#34d399]" />
                 <span>UI / UX</span>
               </button>
             </div>
           </div>
 
           <div>
-            <label className="text-xs font-bold text-zinc-300 block mb-1">Краткая суть</label>
+            <label className="text-xs font-medium text-[#a3a3a3] block mb-1.5">Краткая суть</label>
             <Input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
@@ -130,14 +130,14 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose })
           </div>
 
           <div>
-            <label className="text-xs font-bold text-zinc-300 block mb-1">Подробности</label>
+            <label className="text-xs font-medium text-[#a3a3a3] block mb-1.5">Подробности</label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Опишите, что именно произошло, как воспроизвести или как должна работать новая возможность..."
               rows={4}
               required
-              className="w-full bg-dark-900 border border-dark-750 rounded-xl px-3 py-2 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-brand-500 transition-colors resize-none"
+              className="w-full bg-[#0a0a0a] border border-[#404040] rounded-[10px] px-3 py-2 text-sm text-[#fafafa] placeholder-[#737373] focus:outline-none focus:border-[#34d399] transition-colors resize-none"
             />
           </div>
 

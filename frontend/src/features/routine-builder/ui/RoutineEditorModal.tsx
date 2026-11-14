@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, ChevronUp, ChevronDown, Dumbbell, ArrowLeftRight, Edit3 } from 'lucide-react';
+import { Plus, Trash2, ChevronUp, ChevronDown, ArrowLeftRight } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../../shared/api/client.ts';
 import { Button } from '../../../shared/ui/button.tsx';
@@ -198,11 +198,6 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
         isOpen={isOpen}
         onClose={onClose}
         size="lg"
-        icon={
-          <div className="w-8 h-8 rounded-xl bg-brand-500/20 text-brand-400 border border-brand-500/30 flex items-center justify-center shrink-0">
-            {initialRoutine ? <Edit3 className="w-4 h-4" /> : <Dumbbell className="w-4 h-4" />}
-          </div>
-        }
         title={
           initialRoutine
             ? isSystemRoutine
@@ -217,16 +212,15 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
         }
         footer={
           <>
-            <Button variant="ghost" onClick={onClose} size="sm">
+            <Button variant="outline" onClick={onClose} size="md">
               {t('common.cancel')}
             </Button>
             <Button
               variant="primary"
-              size="sm"
+              size="md"
               isLoading={saveMutation.isPending}
               onClick={() => saveMutation.mutate()}
               disabled={!name.trim() || exercises.length === 0}
-              className="font-bold px-4 shadow-lg shadow-brand-500/20"
             >
               {initialRoutine && !isSystemRoutine ? t('routines.saveChanges') : t('routines.saveRoutine')}
             </Button>
@@ -235,7 +229,7 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
       >
         <div className="space-y-4">
           {error && (
-            <div className="p-3 bg-red-950/50 border border-red-800/60 rounded-xl text-red-300 text-xs">
+            <div className="p-3 bg-[#262626] border border-red-500/40 rounded-[10px] text-red-300 text-xs">
               {error}
             </div>
           )}
@@ -260,8 +254,8 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
 
           {/* Exercises Section */}
           <div className="space-y-3 pt-2">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-wider text-zinc-400">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-[12px] font-semibold uppercase tracking-wider text-[#a3a3a3]">
                 {t('routines.exercisesCount', { count: exercises.length })}
               </span>
               <Button
@@ -272,31 +266,28 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
                   setReplacingIndex(null);
                   setIsPickerOpen(true);
                 }}
-                className="text-xs flex items-center gap-1.5 border-dashed hover:border-brand-500/50"
               >
-                <Plus className="w-3.5 h-3.5 text-brand-400" />
+                <Plus className="w-3.5 h-3.5" />
                 {t('routines.addExercise')}
               </Button>
             </div>
 
             {exercises.length === 0 ? (
-              <div className="text-center py-8 border-2 border-dashed border-dark-750 rounded-2xl p-6 bg-dark-900/40">
-                <Dumbbell className="w-8 h-8 text-zinc-600 mx-auto mb-2" />
-                <p className="text-sm font-semibold text-zinc-400">{t('routines.noExercisesAdded')}</p>
-                <p className="text-xs text-zinc-500 mt-1 mb-4">
+              <div className="text-center py-8 border border-[#404040] rounded-[14px] p-6 bg-[#0a0a0a]">
+                <p className="text-[14px] font-medium text-[#fafafa]">{t('routines.noExercisesAdded')}</p>
+                <p className="text-[13px] text-[#a3a3a3] mt-1 mb-4">
                   {t('routines.noExercisesDesc')}
                 </p>
                 <Button
                   type="button"
                   variant="primary"
-                  size="sm"
+                  size="md"
                   onClick={() => {
                     setReplacingIndex(null);
                     setIsPickerOpen(true);
                   }}
-                  className="gap-1.5 text-xs font-bold"
                 >
-                  <Plus className="w-3.5 h-3.5" />
+                  <Plus className="w-4 h-4" />
                   {t('routines.selectExercise')}
                 </Button>
               </div>
@@ -305,7 +296,7 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
                 {exercises.map((item, idx) => (
                   <div
                     key={`${item.exercise_id}-${idx}`}
-                    className="bg-dark-800/90 border border-dark-700/80 p-3 rounded-2xl space-y-2.5 shadow-sm"
+                    className="bg-[#0a0a0a] border border-[#404040] p-3.5 rounded-[14px] space-y-3"
                   >
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2.5 min-w-0 flex-1">
@@ -316,17 +307,16 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
                         />
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-1.5">
-                            <span className="text-xs font-bold text-brand-400 shrink-0">
+                            <span className="text-xs font-medium text-[#34d399] shrink-0">
                               #{idx + 1}
                             </span>
-                            <span className="text-sm font-bold text-white truncate">
+                            <span className="text-[14px] font-medium text-[#fafafa] truncate">
                               {item.exercise_name}
                             </span>
                           </div>
                         </div>
                       </div>
 
-                      {/* Action Controls */}
                       <div className="flex items-center gap-1 shrink-0">
                         <button
                           type="button"
@@ -334,7 +324,7 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
                             setReplacingIndex(idx);
                             setIsPickerOpen(true);
                           }}
-                          className="text-zinc-500 hover:text-brand-400 p-1.5 rounded-lg hover:bg-dark-700 transition-colors"
+                          className="text-[#a3a3a3] hover:text-[#34d399] p-2 rounded-[8px] hover:bg-[#262626] transition-colors cursor-pointer"
                           title={t('routines.replaceExercise')}
                         >
                           <ArrowLeftRight className="w-3.5 h-3.5" />
@@ -343,7 +333,7 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
                           type="button"
                           disabled={idx === 0}
                           onClick={() => moveExercise(idx, 'up')}
-                          className="text-zinc-500 hover:text-zinc-300 disabled:opacity-30 p-1.5 rounded-lg hover:bg-dark-700 transition-colors"
+                          className="text-[#a3a3a3] hover:text-[#fafafa] disabled:opacity-30 p-2 rounded-[8px] hover:bg-[#262626] transition-colors cursor-pointer"
                           title={t('routines.moveUp')}
                         >
                           <ChevronUp className="w-3.5 h-3.5" />
@@ -352,7 +342,7 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
                           type="button"
                           disabled={idx === exercises.length - 1}
                           onClick={() => moveExercise(idx, 'down')}
-                          className="text-zinc-500 hover:text-zinc-300 disabled:opacity-30 p-1.5 rounded-lg hover:bg-dark-700 transition-colors"
+                          className="text-[#a3a3a3] hover:text-[#fafafa] disabled:opacity-30 p-2 rounded-[8px] hover:bg-[#262626] transition-colors cursor-pointer"
                           title={t('routines.moveDown')}
                         >
                           <ChevronDown className="w-3.5 h-3.5" />
@@ -360,7 +350,7 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
                         <button
                           type="button"
                           onClick={() => removeExercise(idx)}
-                          className="text-zinc-500 hover:text-red-400 p-1.5 rounded-lg hover:bg-dark-700 transition-colors"
+                          className="text-[#a3a3a3] hover:text-red-400 p-2 rounded-[8px] hover:bg-[#262626] transition-colors cursor-pointer"
                           title={t('common.delete')}
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -368,10 +358,9 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
                       </div>
                     </div>
 
-                    {/* Set and Rep targets */}
-                    <div className="grid grid-cols-3 gap-2 pt-1 text-xs bg-dark-900/80 p-2.5 rounded-xl border border-dark-750">
+                    <div className="grid grid-cols-3 gap-2 pt-2 border-t border-[#262626]">
                       <div>
-                        <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 block mb-1">
+                        <label className="text-[11px] font-medium text-[#a3a3a3] block mb-1">
                           {t('routines.sets')}
                         </label>
                         <input
@@ -384,11 +373,11 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
                               target_sets: Math.max(1, parseInt(e.target.value) || 1),
                             })
                           }
-                          className="w-full bg-dark-800 border border-dark-600 rounded-lg px-2 py-1 text-center font-mono font-bold text-white focus:outline-none focus:border-brand-500"
+                          className="w-full h-10 bg-[#171717] border border-[#404040] rounded-[8px] px-2 text-center font-mono text-[14px] text-[#fafafa] focus:outline-none focus:border-[#34d399]"
                         />
                       </div>
                       <div>
-                        <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 block mb-1">
+                        <label className="text-[11px] font-medium text-[#a3a3a3] block mb-1">
                           {t('routines.minReps')}
                         </label>
                         <input
@@ -401,11 +390,11 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
                               target_reps_min: Math.max(1, parseInt(e.target.value) || 1),
                             })
                           }
-                          className="w-full bg-dark-800 border border-dark-600 rounded-lg px-2 py-1 text-center font-mono font-bold text-white focus:outline-none focus:border-brand-500"
+                          className="w-full h-10 bg-[#171717] border border-[#404040] rounded-[8px] px-2 text-center font-mono text-[14px] text-[#fafafa] focus:outline-none focus:border-[#34d399]"
                         />
                       </div>
                       <div>
-                        <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 block mb-1">
+                        <label className="text-[11px] font-medium text-[#a3a3a3] block mb-1">
                           {t('routines.maxReps')}
                         </label>
                         <input
@@ -418,7 +407,7 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
                               target_reps_max: Math.max(1, parseInt(e.target.value) || 1),
                             })
                           }
-                          className="w-full bg-dark-800 border border-dark-600 rounded-lg px-2 py-1 text-center font-mono font-bold text-white focus:outline-none focus:border-brand-500"
+                          className="w-full h-10 bg-[#171717] border border-[#404040] rounded-[8px] px-2 text-center font-mono text-[14px] text-[#fafafa] focus:outline-none focus:border-[#34d399]"
                         />
                       </div>
                     </div>

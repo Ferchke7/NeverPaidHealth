@@ -41,9 +41,9 @@ export const EChartsReact: React.FC<EChartsReactProps> = ({
     if (loading) {
       chart.showLoading({
         text: 'Загрузка...',
-        color: '#22c55e',
-        textColor: '#94a3b8',
-        maskColor: 'rgba(15, 23, 42, 0.4)',
+        color: '#34d399',
+        textColor: '#a3a3a3',
+        maskColor: 'rgba(10, 10, 10, 0.6)',
       });
     } else {
       chart.hideLoading();

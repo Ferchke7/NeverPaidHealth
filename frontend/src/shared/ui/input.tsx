@@ -38,35 +38,35 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
     const activeError = errorMessage || error;
 
     const sizeStyles = {
-      sm: 'h-8 px-2.5 text-xs',
-      md: 'h-10 px-3.5 text-sm',
-      lg: 'h-12 px-4 text-base',
+      sm: 'h-9 px-3 text-[13px]',
+      md: 'h-11 px-3.5 text-[14px]',
+      lg: 'h-12 px-4 text-[15px]',
     }[size];
 
     const variantStyles = {
-      flat: 'bg-dark-900/80 border border-transparent focus-within:border-brand-500',
+      flat: 'bg-[#171717] border border-[#262626] focus-within:border-[#34d399]',
       bordered:
-        'bg-dark-900/90 border border-dark-700 focus-within:border-brand-500 focus-within:ring-1 focus-within:ring-brand-500/30',
-      underlined: 'bg-transparent border-b border-dark-700 rounded-none px-0 focus-within:border-brand-500',
+        'bg-[#0a0a0a] border border-[#404040] focus-within:border-[#34d399] focus-within:ring-1 focus-within:ring-[#34d399]/30',
+      underlined: 'bg-transparent border-b border-[#404040] rounded-none px-0 focus-within:border-[#34d399]',
     }[variant];
 
     return (
-      <div className="w-full space-y-1">
+      <div className="w-full space-y-1.5">
         {label && (
-          <label htmlFor={inputId} className="block text-xs font-bold uppercase tracking-wider text-zinc-300">
+          <label htmlFor={inputId} className="block text-[12px] font-medium text-[#a3a3a3]">
             {label}
           </label>
         )}
 
         <div
-          className={`flex items-center rounded-xl transition-all duration-150 ${
-            variant !== 'underlined' ? 'rounded-xl' : ''
+          className={`flex items-center transition-colors duration-150 ${
+            variant !== 'underlined' ? 'rounded-[10px]' : ''
           } ${variantStyles} ${
             isError ? 'border-red-500/80 focus-within:border-red-500 focus-within:ring-red-500/20' : ''
           } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
           {startContent && (
-            <div className="pl-3 pr-1 text-zinc-400 flex items-center shrink-0">
+            <div className="pl-3.5 pr-1 text-[#a3a3a3] flex items-center shrink-0">
               {startContent}
             </div>
           )}
@@ -77,23 +77,23 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
             aria-describedby={activeError || description ? messageId : props['aria-describedby']}
             ref={ref}
             disabled={disabled}
-            className={`w-full bg-transparent text-zinc-100 placeholder-zinc-500 focus:outline-none font-medium ${sizeStyles} ${className}`}
+            className={`w-full bg-transparent text-[#fafafa] placeholder-[#a3a3a3] focus:outline-none font-normal ${sizeStyles} ${className}`}
             {...props}
           />
 
           {endContent && (
-            <div className="pr-3 pl-1 text-zinc-400 flex items-center shrink-0 font-medium">
+            <div className="pr-3.5 pl-1 text-[#a3a3a3] flex items-center shrink-0 font-normal">
               {endContent}
             </div>
           )}
         </div>
 
         {description && !activeError && (
-          <p id={messageId} className="text-[11px] text-zinc-400 leading-tight">{description}</p>
+          <p id={messageId} className="text-[12px] text-[#a3a3a3] leading-tight">{description}</p>
         )}
 
         {activeError && (
-          <p id={messageId} className="text-xs text-red-400 font-medium flex items-center gap-1 animate-fade-in">
+          <p id={messageId} className="text-xs text-red-400 font-medium flex items-center gap-1">
             <span>{activeError}</span>
           </p>
         )}
@@ -136,15 +136,15 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
     const activeError = errorMessage || error;
 
     const variantStyles = {
-      flat: 'bg-dark-900/80 border border-transparent focus:border-brand-500',
+      flat: 'bg-[#171717] border border-[#262626] focus:border-[#34d399]',
       bordered:
-        'bg-dark-900/90 border border-dark-700 focus:border-brand-500 focus:ring-1 focus:ring-brand-500/30',
+        'bg-[#0a0a0a] border border-[#404040] focus:border-[#34d399] focus:ring-1 focus:ring-[#34d399]/30',
     }[variant];
 
     return (
-      <div className="w-full space-y-1">
+      <div className="w-full space-y-1.5">
         {label && (
-          <label htmlFor={inputId} className="block text-xs font-bold uppercase tracking-wider text-zinc-300">
+          <label htmlFor={inputId} className="block text-[12px] font-medium text-[#a3a3a3]">
             {label}
           </label>
         )}
@@ -155,18 +155,18 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
           aria-describedby={activeError || description ? messageId : props['aria-describedby']}
           ref={ref}
           disabled={disabled}
-          className={`w-full rounded-xl p-3 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none font-medium transition-all duration-150 resize-none ${variantStyles} ${
+          className={`w-full rounded-[10px] p-3 text-[14px] text-[#fafafa] placeholder-[#a3a3a3] focus:outline-none font-normal transition-colors duration-150 resize-none ${variantStyles} ${
             isError ? 'border-red-500/80 focus:border-red-500 focus:ring-red-500/20' : ''
           } ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${className}`}
           {...props}
         />
 
         {description && !activeError && (
-          <p id={messageId} className="text-[11px] text-zinc-400 leading-tight">{description}</p>
+          <p id={messageId} className="text-[12px] text-[#a3a3a3] leading-tight">{description}</p>
         )}
 
         {activeError && (
-          <p id={messageId} className="text-xs text-red-400 font-medium flex items-center gap-1 animate-fade-in">
+          <p id={messageId} className="text-xs text-red-400 font-medium flex items-center gap-1">
             <span>{activeError}</span>
           </p>
         )}
@@ -176,4 +176,3 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
 );
 
 Textarea.displayName = 'Textarea';
-

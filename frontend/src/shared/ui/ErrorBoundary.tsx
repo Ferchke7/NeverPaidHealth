@@ -39,13 +39,13 @@ export class ErrorBoundary extends Component<Props, State> {
 
       return (
         <div className="min-h-[50vh] flex items-center justify-center p-6">
-          <div className="bg-dark-900 border border-dark-800 rounded-2xl p-6 sm:p-8 max-w-md w-full text-center space-y-4 shadow-2xl">
-            <div className="w-12 h-12 rounded-2xl bg-rose-500/15 border border-rose-500/30 flex items-center justify-center text-rose-400 mx-auto">
+          <div className="bg-[#171717] border border-[#404040] rounded-[14px] p-6 sm:p-8 max-w-md w-full text-center space-y-4">
+            <div className="w-12 h-12 rounded-[12px] bg-red-950/40 border border-red-900 flex items-center justify-center text-red-400 mx-auto">
               <AlertTriangle className="w-6 h-6" />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-white">Произошла ошибка при загрузке</h2>
-              <p className="text-xs text-zinc-400 mt-1">
+              <h2 className="text-lg font-bold text-[#fafafa]">Произошла ошибка при загрузке</h2>
+              <p className="text-xs text-[#a3a3a3] mt-1">
                 {this.state.error?.message || 'Не удалось отобразить данные. Попробуйте обновить страницу.'}
               </p>
             </div>

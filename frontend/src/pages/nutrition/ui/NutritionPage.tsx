@@ -1,24 +1,26 @@
 import { readNutritionNumber } from '@/entities/nutrition';
 import { toLocalDateKey } from '@/shared/lib/dates.ts';
-import React, { useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import {
   Camera,
-  Plus,
   Trash2,
   Sparkles,
   Flame,
   CheckCircle2,
   Upload,
   Utensils,
-  Target,
   AlertTriangle,
   FileText,
   RefreshCw,
   Droplets,
+  Pencil,
+  Calendar,
+  Copy,
+  RotateCcw,
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../../shared/api/client.ts';
-import { Card, Button, Input, Modal, ProgressBar } from '../../../shared/ui/index.ts';
+import { Card, Button, Input, Textarea } from '../../../shared/ui/index.ts';
 import { useTranslation } from '../../../shared/lib/i18n/i18n.ts';
 import { usePageSEO } from '../../../shared/lib/seo/usePageSEO.ts';
 import { useAuthStore } from '../../../entities/user/model/authStore.ts';
@@ -104,41 +106,64 @@ export const NutritionPage: React.FC = () => {
     localStorage.setItem(waterStorageKey, updated.toString());
   };
 
-  // Unified logging modal state
-  const [isLogModalOpen, setIsLogModalOpen] = useState(false);
+  // Inline builder & draft state
   const [activeLogTab, setActiveLogTab] = useState<'photo' | 'text' | 'manual'>('photo');
+  const [selectedMealType, setSelectedMealType] = useState<string>('lunch');
 
-  // Text estimation state
   const [textDescription, setTextDescription] = useState('');
   const [textResult, setTextResult] = useState<MealAnalysisResult | null>(null);
 
-  // Scan state
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [scanNotes, setScanNotes] = useState('');
   const [scanResult, setScanResult] = useState<MealAnalysisResult | null>(null);
-  const [selectedMealType, setSelectedMealType] = useState<string>('lunch');
 
-  // Editable result fields
+  const [editingMealId, setEditingMealId] = useState<string | null>(null);
+  const [draftItems, setDraftItems] = useState<MealItem[]>([]);
   const [editMealName, setEditMealName] = useState('');
   const [editCalories, setEditCalories] = useState('');
   const [editProtein, setEditProtein] = useState('');
   const [editCarbs, setEditCarbs] = useState('');
   const [editFat, setEditFat] = useState('');
 
-  // Manual log state
-  const [manualName, setManualName] = useState('');
-  const [manualCalories, setManualCalories] = useState('500');
-  const [manualProtein, setManualProtein] = useState('35');
-  const [manualCarbs, setManualCarbs] = useState('45');
-  const [manualFat, setManualFat] = useState('15');
-
   const [isPhotoPickerOpen, setIsPhotoPickerOpen] = useState(false);
+
+  // Today formatted date + timezone badge
+  const { formattedDate, tzLabel } = useMemo(() => {
+    const now = new Date();
+    const locale = language === 'ru' ? 'ru-RU' : language === 'uz' ? 'uz-Latn-UZ' : 'en-US';
+    const dateStr = new Intl.DateTimeFormat(locale, {
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short',
+    }).format(now);
+    const offsetMinutes = -now.getTimezoneOffset();
+    const offsetSign = offsetMinutes >= 0 ? '+' : '-';
+    const absHours = Math.floor(Math.abs(offsetMinutes) / 60);
+    const absMins = Math.abs(offsetMinutes) % 60;
+    const tz = absMins === 0 ? `UTC${offsetSign}${absHours}` : `UTC${offsetSign}${absHours}:${String(absMins).padStart(2, '0')}`;
+    return { formattedDate: dateStr, tzLabel: tz };
+  }, [language]);
 
   // Fetch today's nutrition
   const { data: summary, isLoading } = useQuery<DailyNutritionSummary>({
     queryKey: ['nutrition', 'day', user?.id, selectedDate, timezone],
     queryFn: () => apiClient.get(`/nutrition/today?${new URLSearchParams({ date: selectedDate, timezone })}`),
   });
+
+  const resetDraft = () => {
+    setEditingMealId(null);
+    setSelectedImage(null);
+    setScanResult(null);
+    setTextResult(null);
+    setScanNotes('');
+    setTextDescription('');
+    setDraftItems([]);
+    setEditMealName('');
+    setEditCalories('');
+    setEditProtein('');
+    setEditCarbs('');
+    setEditFat('');
+  };
 
   // Analyze Photo Mutation
   const analyzeMutation = useMutation({
@@ -149,6 +174,7 @@ export const NutritionPage: React.FC = () => {
       }),
     onSuccess: (data) => {
       setScanResult(data);
+      setDraftItems(data.items || []);
       setEditMealName(data.meal_name || '');
       setEditCalories(String(data.total_calories || 0));
       setEditProtein(String(data.total_protein_g || 0));
@@ -166,6 +192,7 @@ export const NutritionPage: React.FC = () => {
       }),
     onSuccess: (data) => {
       setTextResult(data);
+      setDraftItems(data.items || []);
       setEditMealName(data.meal_name || '');
       setEditCalories(String(data.total_calories || 0));
       setEditProtein(String(data.total_protein_g || 0));
@@ -181,18 +208,6 @@ export const NutritionPage: React.FC = () => {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['nutrition'] });
       void queryClient.invalidateQueries({ queryKey: ['coach-insights'] });
-      setIsLogModalOpen(false);
-      setSelectedImage(null);
-      setScanResult(null);
-      setTextResult(null);
-      setScanNotes('');
-      setTextDescription('');
-      setManualName('');
-      setEditMealName('');
-      setEditCalories('');
-      setEditProtein('');
-      setEditCarbs('');
-      setEditFat('');
     },
   });
 
@@ -207,10 +222,12 @@ export const NutritionPage: React.FC = () => {
 
   // Photo captured callback from SmartPhotoPickerModal
   const handlePhotoCaptured = (photo: CompressedPhoto) => {
+    setEditingMealId(null);
     setSelectedImage(photo.dataUrl);
     setScanResult(null);
+    setTextResult(null);
+    setDraftItems([]);
     setActiveLogTab('photo');
-    setIsLogModalOpen(true);
 
     analyzeMutation.mutate({
       image_base64: photo.dataUrl,
@@ -219,35 +236,67 @@ export const NutritionPage: React.FC = () => {
     });
   };
 
-  const handleSaveMeal = () => {
-    // Each tab owns its values. Zero is a valid correction to an AI estimate.
-    const manual = activeLogTab === 'manual';
-    const result = manual ? null : activeLogTab === 'photo' ? scanResult : textResult;
-    const mealName = (manual ? manualName : editMealName).trim() || result?.meal_name || t('nutrition.logMeal');
-    const cals = Math.round(readNutritionNumber(manual ? manualCalories : editCalories, manual ? 0 : result?.total_calories));
-    const protein = readNutritionNumber(manual ? manualProtein : editProtein, manual ? 0 : result?.total_protein_g);
-    const carbs = readNutritionNumber(manual ? manualCarbs : editCarbs, manual ? 0 : result?.total_carbs_g);
-    const fat = readNutritionNumber(manual ? manualFat : editFat, manual ? 0 : result?.total_fat_g);
-    const loggedAt = selectedDate === toLocalDateKey(new Date())
+  const handleEditMeal = (meal: MealLog) => {
+    setEditingMealId(meal.id);
+    setSelectedMealType(meal.meal_type || 'lunch');
+    setSelectedImage(meal.photo_url || null);
+    setScanResult(null);
+    setTextResult(null);
+    setDraftItems(meal.items || []);
+    setEditMealName(meal.name);
+    setEditCalories(String(meal.calories));
+    setEditProtein(String(meal.protein_g));
+    setEditCarbs(String(meal.carbs_g));
+    setEditFat(String(meal.fat_g));
+    setActiveLogTab('manual');
+  };
+
+  const selectedLoggedAt = () =>
+    selectedDate === toLocalDateKey(new Date())
       ? new Date().toISOString()
       : new Date(`${selectedDate}T12:00:00`).toISOString();
 
-    saveMealMutation.mutate({
-      logged_at: loggedAt,
-      meal_type: selectedMealType,
-      name: mealName,
-      calories: cals,
-      protein_g: protein,
-      carbs_g: carbs,
-      fat_g: fat,
-      photo_url: activeLogTab === 'photo' ? (selectedImage || undefined) : undefined,
-      items:
-        activeLogTab === 'photo'
+  const handleSaveMeal = async () => {
+    // Explicit zero is a valid correction to an AI estimate.
+    const manual = activeLogTab === 'manual';
+    const result = manual ? null : activeLogTab === 'photo' ? scanResult : textResult;
+    const mealName = editMealName.trim() || result?.meal_name || t('nutrition.logMeal');
+    const cals = Math.round(readNutritionNumber(editCalories, manual ? 0 : result?.total_calories));
+    const protein = readNutritionNumber(editProtein, manual ? 0 : result?.total_protein_g);
+    const carbs = readNutritionNumber(editCarbs, manual ? 0 : result?.total_carbs_g);
+    const fat = readNutritionNumber(editFat, manual ? 0 : result?.total_fat_g);
+
+    const itemsToSave =
+      draftItems.length > 0
+        ? draftItems
+        : activeLogTab === 'photo'
           ? scanResult?.items || []
           : activeLogTab === 'text'
-          ? textResult?.items || []
-          : [],
-    });
+            ? textResult?.items || []
+            : [];
+
+    const prevId = editingMealId;
+
+    try {
+      await saveMealMutation.mutateAsync({
+        logged_at: selectedLoggedAt(),
+        meal_type: selectedMealType,
+        name: mealName,
+        calories: cals,
+        protein_g: protein,
+        carbs_g: carbs,
+        fat_g: fat,
+        photo_url: selectedImage || undefined,
+        items: itemsToSave,
+      });
+
+      if (prevId) {
+        await deleteMealMutation.mutateAsync(prevId);
+      }
+      resetDraft();
+    } catch {
+      // Error surfaced cleanly via saveMealMutation.isError
+    }
   };
 
   // User Profile Nutrition Targets
@@ -278,16 +327,16 @@ export const NutritionPage: React.FC = () => {
   // Calculations
   const totalCals = summary?.total_calories || 0;
   const remCals = targetCals - totalCals;
-  const calsPct = Math.min(100, Math.round((totalCals / targetCals) * 100));
+  const calsPct = targetCals > 0 ? Math.min(100, Math.round((totalCals / targetCals) * 100)) : 0;
 
   const totalProtein = Math.round(summary?.total_protein_g || 0);
-  const proteinPct = Math.min(100, Math.round((totalProtein / targetProtein) * 100));
+  const proteinPct = targetProtein > 0 ? Math.min(100, Math.round((totalProtein / targetProtein) * 100)) : 0;
 
   const totalCarbs = Math.round(summary?.total_carbs_g || 0);
-  const carbsPct = Math.min(100, Math.round((totalCarbs / targetCarbs) * 100));
+  const carbsPct = targetCarbs > 0 ? Math.min(100, Math.round((totalCarbs / targetCarbs) * 100)) : 0;
 
   const totalFat = Math.round(summary?.total_fat_g || 0);
-  const fatPct = Math.min(100, Math.round((totalFat / targetFat) * 100));
+  const fatPct = targetFat > 0 ? Math.min(100, Math.round((totalFat / targetFat) * 100)) : 0;
 
   // Quick food presets based on language
   const foodPresets = [
@@ -301,592 +350,813 @@ export const NutritionPage: React.FC = () => {
     { label: t('nutrition.presetCottage'), val: t('nutrition.presetCottageVal') },
   ];
 
+  const activeResult = activeLogTab === 'photo' ? scanResult : activeLogTab === 'text' ? textResult : null;
+  const hasDraftValues =
+    editMealName.trim().length > 0 ||
+    (parseInt(editCalories, 10) || 0) > 0 ||
+    (parseFloat(editProtein) || 0) > 0 ||
+    (parseFloat(editCarbs) || 0) > 0 ||
+    (parseFloat(editFat) || 0) > 0;
+
+  const macroBars = [
+    {
+      key: 'energy',
+      label: t('nutrition.energyLabel'),
+      current: totalCals,
+      target: targetCals,
+      unit: t('nutrition.kcalUnit'),
+      pct: calsPct,
+      over: totalCals > targetCals,
+    },
+    {
+      key: 'protein',
+      label: t('nutrition.protein'),
+      current: totalProtein,
+      target: targetProtein,
+      unit: t('nutrition.gramUnit'),
+      pct: proteinPct,
+      over: false,
+    },
+    {
+      key: 'carbs',
+      label: t('nutrition.carbs'),
+      current: totalCarbs,
+      target: targetCarbs,
+      unit: t('nutrition.gramUnit'),
+      pct: carbsPct,
+      over: totalCarbs > targetCarbs,
+    },
+    {
+      key: 'fat',
+      label: t('nutrition.fat'),
+      current: totalFat,
+      target: targetFat,
+      unit: t('nutrition.gramUnit'),
+      pct: fatPct,
+      over: totalFat > targetFat,
+    },
+  ];
+
+  const mealsList = summary?.meals || [];
+  const waterGlasses = Math.floor(waterMl / 250);
+
   return (
-    <div className="space-y-4 animate-fade-in pb-12 max-w-4xl mx-auto">
-      {/* 1. Header with Unified Action */}
-      <div className="flex items-center justify-between gap-2.5">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-xl bg-brand-500/15 border border-brand-500/30 flex items-center justify-center text-brand-400 font-bold shrink-0">
-            <Utensils className="w-4 h-4" />
+    <div className="space-y-5 pb-12 max-w-6xl mx-auto">
+      {/* 1. Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-start gap-3">
+          <div className="w-10 h-10 rounded-[10px] bg-[#022c22] border border-[#064e3b] flex items-center justify-center text-[#34d399] shrink-0">
+            <Utensils className="w-5 h-5" />
           </div>
-          <h1 className="text-lg sm:text-xl font-extrabold tracking-tight text-white flex items-center gap-2">
-            <span>{t('nutrition.title')}</span>
-          </h1>
+          <div>
+            <h1 className="text-[22px] sm:text-[26px] font-semibold tracking-[-0.02em] text-[#fafafa] leading-tight">
+              {t('nutrition.title')}
+            </h1>
+            <p className="text-[13px] text-[#a3a3a3] mt-0.5">
+              {t('nutrition.subtitle')}
+            </p>
+          </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setIsPhotoPickerOpen(true)}
-            className="p-2 rounded-xl bg-dark-800 hover:bg-dark-750 text-brand-400 border border-dark-700 transition-all cursor-pointer shadow-sm"
-            title={t('nutrition.snapPhoto')}
-          >
-            <Camera className="w-4 h-4" />
-          </button>
+        <div className="flex items-center gap-2 self-start sm:self-auto">
+          <div className="min-h-[44px] px-3.5 rounded-[10px] bg-[#171717] border border-[#404040] flex items-center gap-2 text-[13px] text-[#a3a3a3] font-mono tabular-nums">
+            <Calendar className="w-4 h-4 text-[#34d399] shrink-0" />
+            <span className="capitalize text-[#fafafa] font-medium font-sans">{formattedDate}</span>
+            <span className="text-[#404040]">·</span>
+            <span>{tzLabel}</span>
+          </div>
 
           <Button
             variant="primary"
-            size="sm"
-            className="text-xs font-bold flex items-center gap-1.5 shadow-md shadow-brand-500/20 rounded-xl px-3.5 py-2"
+            size="md"
             onClick={() => {
               setActiveLogTab('photo');
-              setIsLogModalOpen(true);
+              setIsPhotoPickerOpen(true);
             }}
+            className="gap-1.5"
           >
-            <Plus className="w-4 h-4" />
-            <span>{t('nutrition.logMeal')}</span>
+            <Camera className="w-4 h-4" />
+            <span className="hidden sm:inline">{t('nutrition.byPhoto')}</span>
           </Button>
         </div>
       </div>
 
-      <Input
-        type="date"
-        aria-label={t('nutrition.selectedDate')}
-        label={t('nutrition.selectedDate')}
-        value={selectedDate}
-        onChange={(event) => {
-          if (/^\d{4}-\d{2}-\d{2}$/.test(event.target.value)) setSelectedDate(event.target.value);
-        }}
-      />
-
-      {/* 2. Top Hero: Macro & Calorie Dashboard */}
-      <Card className="p-4 sm:p-5 bg-gradient-to-br from-dark-850 via-dark-850 to-brand-950/20 border-dark-700/80 shadow-xl space-y-4 rounded-2xl">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-dark-750">
-          <div>
-            <div className="flex items-center gap-1.5">
-              <Target className="w-3.5 h-3.5 text-brand-400" />
-              <h2 className="text-[11px] font-bold uppercase tracking-wider text-zinc-400">
-                {t('nutrition.remainingForDay')}
+      {/* 2. Daily Balance Hero + Diary Date Picker */}
+      <Card className="p-4 sm:p-5 space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3.5 border-b border-[#262626]">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <Flame className="w-4 h-4 text-[#34d399]" />
+              <h2 className="text-[15px] font-semibold text-[#fafafa]">
+                {t('nutrition.balanceTitle')}
               </h2>
             </div>
-            <div className="flex items-baseline gap-2 mt-1">
-              <span
-                className={`text-2xl sm:text-3xl font-black font-mono tracking-tight ${
-                  remCals >= 0 ? 'text-brand-400' : 'text-amber-400'
-                }`}
-              >
-                {remCals >= 0 ? `+${remCals.toLocaleString()}` : `-${Math.abs(remCals).toLocaleString()}`}
-              </span>
-              <span className="text-xs font-semibold text-zinc-400 font-mono">
-                {t('nutrition.remainingKcal')}
-              </span>
-            </div>
+            <p className="text-[12px] text-[#a3a3a3]">
+              {remCals >= 0 ? t('nutrition.remainingForDay') : t('nutrition.exceeded')}
+            </p>
           </div>
 
-          <div className="flex items-center gap-4 text-xs font-mono bg-dark-900/80 px-3.5 py-2 rounded-xl border border-dark-750 self-start sm:self-auto">
+          <div className="flex items-center gap-2 self-start sm:self-auto">
+            <label htmlFor="nutrition-diary-date" className="sr-only">
+              {t('nutrition.selectedDate')}
+            </label>
+            <input
+              id="nutrition-diary-date"
+              type="date"
+              aria-label={t('nutrition.selectedDate')}
+              value={selectedDate}
+              onChange={(event) => {
+                if (/^\d{4}-\d{2}-\d{2}$/.test(event.target.value)) setSelectedDate(event.target.value);
+              }}
+              className="min-h-[44px] px-3 rounded-[10px] bg-[#0a0a0a] border border-[#404040] text-[13px] font-mono tabular-nums text-[#fafafa] focus:outline-none focus:border-[#34d399]"
+            />
+          </div>
+
+          <div className="flex items-center gap-4 bg-[#0a0a0a] border border-[#262626] rounded-[10px] px-3.5 py-2 self-start sm:self-auto">
             <div>
-              <span className="text-[10px] text-zinc-500 block">{t('nutrition.consumed')}</span>
-              <span className="font-bold text-white">{totalCals.toLocaleString()} kcal</span>
+              <span className="text-[11px] text-[#737373] block">{t('nutrition.consumed')}</span>
+              <span className="text-[14px] font-semibold text-[#fafafa] font-mono tabular-nums">
+                {totalCals.toLocaleString()} {t('nutrition.kcalUnit')}
+              </span>
             </div>
-            <div className="w-px h-6 bg-dark-700" />
+            <div className="w-px h-7 bg-[#262626]" />
             <div>
-              <span className="text-[10px] text-zinc-500 block">{t('nutrition.target')}</span>
-              <span className="font-bold text-zinc-300">{targetCals.toLocaleString()} kcal</span>
+              <span className="text-[11px] text-[#737373] block">{t('nutrition.target')}</span>
+              <span className="text-[14px] font-medium text-[#a3a3a3] font-mono tabular-nums">
+                {targetCals.toLocaleString()} {t('nutrition.kcalUnit')}
+              </span>
+            </div>
+            <div className="w-px h-7 bg-[#262626]" />
+            <div>
+              <span className="text-[11px] text-[#737373] block">
+                {remCals >= 0 ? t('nutrition.remaining') : t('nutrition.exceeded')}
+              </span>
+              <span
+                className={`text-[15px] font-semibold font-mono tabular-nums ${
+                  remCals >= 0 ? 'text-[#34d399]' : 'text-amber-400'
+                }`}
+              >
+                {remCals >= 0 ? remCals.toLocaleString() : `+${Math.abs(remCals).toLocaleString()}`} {t('nutrition.kcalUnit')}
+              </span>
             </div>
           </div>
         </div>
 
-        {/* 4 Macro Cards Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
-          {/* Calories */}
-          <div className="p-3 rounded-2xl bg-dark-900/90 border border-brand-500/20 flex flex-col justify-between space-y-1.5">
-            <div className="flex items-center justify-between text-xs">
-              <span className="font-bold text-zinc-300 flex items-center gap-1">
-                <Flame className="w-3.5 h-3.5 text-brand-400" />
-                {t('nutrition.calories')}
-              </span>
-              <span className="font-mono font-bold text-brand-400">{calsPct}%</span>
-            </div>
-            <div className="space-y-1">
-              <div className="flex items-baseline justify-between text-xs font-mono">
-                <span className="font-black text-white">{totalCals}</span>
-                <span className="text-zinc-500">/ {targetCals}</span>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          {macroBars.map((item) => (
+            <div
+              key={item.key}
+              className="p-3.5 rounded-[10px] bg-[#0a0a0a] border border-[#262626] space-y-2.5"
+            >
+              <div className="flex items-center justify-between text-[12px]">
+                <span className="font-medium text-[#a3a3a3]">{item.label}</span>
+                <span
+                  className={`font-mono font-semibold tabular-nums ${
+                    item.over ? 'text-amber-400' : 'text-[#34d399]'
+                  }`}
+                >
+                  {item.pct}%
+                </span>
               </div>
-              <ProgressBar value={calsPct} color="primary" size="sm" />
-            </div>
-          </div>
 
-          {/* Protein */}
-          <div className="p-3 rounded-2xl bg-dark-900/90 border border-emerald-500/20 flex flex-col justify-between space-y-1.5">
-            <div className="flex items-center justify-between text-xs">
-              <span className="font-bold text-emerald-400">{t('nutrition.protein')}</span>
-              <span className="font-mono font-bold text-emerald-400">{proteinPct}%</span>
-            </div>
-            <div className="space-y-1">
-              <div className="flex items-baseline justify-between text-xs font-mono">
-                <span className="font-black text-white">{totalProtein}g</span>
-                <span className="text-zinc-500">/ {targetProtein}g</span>
+              <div className="flex items-baseline justify-between font-mono tabular-nums">
+                <span className="text-[18px] font-semibold text-[#fafafa]">
+                  {item.current}
+                  <span className="text-[12px] font-normal text-[#a3a3a3] ml-1">{item.unit}</span>
+                </span>
+                <span className="text-[12px] text-[#737373]">
+                  / {item.target} {item.unit}
+                </span>
               </div>
-              <ProgressBar value={proteinPct} color="success" size="sm" />
-            </div>
-          </div>
 
-          {/* Carbs */}
-          <div className="p-3 rounded-2xl bg-dark-900/90 border border-blue-500/20 flex flex-col justify-between space-y-1.5">
-            <div className="flex items-center justify-between text-xs">
-              <span className="font-bold text-blue-400">{t('nutrition.carbs')}</span>
-              <span className="font-mono font-bold text-blue-400">{carbsPct}%</span>
-            </div>
-            <div className="space-y-1">
-              <div className="flex items-baseline justify-between text-xs font-mono">
-                <span className="font-black text-white">{totalCarbs}g</span>
-                <span className="text-zinc-500">/ {targetCarbs}g</span>
+              <div className="h-1.5 w-full rounded-full bg-[#262626] overflow-hidden">
+                <div
+                  className={`h-full rounded-full transition-all duration-300 ${
+                    item.over ? 'bg-amber-400' : 'bg-[#34d399]'
+                  }`}
+                  style={{ width: `${item.pct}%` }}
+                />
               </div>
-              <ProgressBar value={carbsPct} color="primary" size="sm" />
             </div>
-          </div>
-
-          {/* Fat */}
-          <div className="p-3 rounded-2xl bg-dark-900/90 border border-amber-500/20 flex flex-col justify-between space-y-1.5">
-            <div className="flex items-center justify-between text-xs">
-              <span className="font-bold text-amber-400">{t('nutrition.fat')}</span>
-              <span className="font-mono font-bold text-amber-400">{fatPct}%</span>
-            </div>
-            <div className="space-y-1">
-              <div className="flex items-baseline justify-between text-xs font-mono">
-                <span className="font-black text-white">{totalFat}g</span>
-                <span className="text-zinc-500">/ {targetFat}g</span>
-              </div>
-              <ProgressBar value={fatPct} color="warning" size="sm" />
-            </div>
-          </div>
+          ))}
         </div>
       </Card>
 
-      {/* Water Intake Tracker */}
-      <div className="bg-dark-850 border border-dark-750 p-3 sm:p-4 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 flex items-center justify-center shrink-0">
-            <Droplets className="w-5 h-5" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-white">Водный баланс</span>
-              <span className="text-xs font-mono font-bold text-cyan-400">
-                {waterMl} <span className="text-zinc-500">/ {targetWaterMl} мл</span>
-              </span>
-              <span className="text-[10px] text-zinc-400 font-mono">({waterPct}%)</span>
-            </div>
-            <div className="w-36 sm:w-48 mt-1.5">
-              <ProgressBar value={waterPct} color="primary" size="sm" />
-            </div>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-1.5 self-end sm:self-auto">
-          <button
-            type="button"
-            onClick={() => addWater(250)}
-            className="px-2.5 py-1.5 rounded-xl bg-dark-900 hover:bg-dark-800 text-cyan-300 border border-cyan-500/20 text-xs font-bold transition-all flex items-center gap-1 cursor-pointer active:scale-95"
-          >
-            <span>+250 мл</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => addWater(500)}
-            className="px-2.5 py-1.5 rounded-xl bg-dark-900 hover:bg-dark-800 text-cyan-300 border border-cyan-500/20 text-xs font-bold transition-all flex items-center gap-1 cursor-pointer active:scale-95"
-          >
-            <span>+500 мл</span>
-          </button>
-          {waterMl > 0 && (
-            <button
-              type="button"
-              onClick={() => {
-                setWaterMl(0);
-                localStorage.setItem(waterStorageKey, '0');
-              }}
-              className="px-2 py-1.5 rounded-xl text-zinc-500 hover:text-zinc-300 text-xs transition-colors"
-              title="Сбросить воду"
-            >
-              Сброс
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* 3. Daily Meal Logs Timeline */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between border-b border-dark-800 pb-2">
-          <h2 className="text-xs sm:text-sm font-bold text-white flex items-center gap-2">
-            <span>{t('nutrition.mealsToday')}</span>
-            <span className="text-xs font-mono font-bold text-brand-400 bg-brand-500/10 px-2 py-0.5 rounded-full border border-brand-500/20">
-              {summary?.meals?.length || 0}
-            </span>
-          </h2>
-        </div>
-
-        {isLoading ? (
-          <div className="space-y-2.5">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="h-16 bg-dark-800/60 rounded-2xl animate-pulse border border-dark-750" />
-            ))}
-          </div>
-        ) : !summary?.meals || summary.meals.length === 0 ? (
-          <div className="text-center py-10 border border-dashed border-dark-800 rounded-3xl p-6 bg-dark-900/40 space-y-3">
-            <Utensils className="w-10 h-10 text-zinc-600 mx-auto" />
-            <h3 className="text-sm font-bold text-zinc-300">{t('nutrition.noMeals')}</h3>
-            <p className="text-xs text-zinc-500 max-w-sm mx-auto">
-              {t('nutrition.noMealsDesc')}
-            </p>
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={() => {
-                setActiveLogTab('photo');
-                setIsLogModalOpen(true);
-              }}
-              className="text-xs font-bold rounded-xl"
-            >
-              <Plus className="w-4 h-4 mr-1" />
-              {t('nutrition.logMeal')}
-            </Button>
-          </div>
-        ) : (
-          <div className="space-y-2.5">
-            {summary.meals.map((meal) => (
-              <Card
-                key={meal.id}
-                className="p-3.5 bg-dark-850/90 border border-dark-750 hover:border-brand-500/40 transition-all flex items-center justify-between gap-3 shadow-md rounded-2xl"
-              >
-                <div className="flex items-center gap-3 min-w-0 flex-1">
-                  {meal.photo_url ? (
-                    <img
-                      src={meal.photo_url}
-                      alt={meal.name}
-                      className="w-12 h-12 rounded-xl object-cover border border-dark-700 shrink-0"
-                    />
-                  ) : (
-                    <div className="w-12 h-12 rounded-xl bg-dark-900 border border-dark-750 flex items-center justify-center text-brand-400 shrink-0 font-bold">
-                      <Utensils className="w-5 h-5" />
-                    </div>
-                  )}
-
-                  <div className="min-w-0 space-y-0.5">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-[9px] uppercase font-bold text-brand-400 tracking-wider bg-brand-500/10 px-1.5 py-0.2 rounded border border-brand-500/20">
-                        {t(`nutrition.${meal.meal_type}` as any) || meal.meal_type}
-                      </span>
-                      <h4 className="text-xs sm:text-sm font-bold text-white truncate">
-                        {meal.name}
-                      </h4>
-                    </div>
-
-                    <div className="flex items-center gap-2 text-xs font-mono flex-wrap">
-                      <span className="text-white font-extrabold">{meal.calories} kcal</span>
-                      <span className="text-zinc-600">•</span>
-                      <span className="text-emerald-400">{meal.protein_g}g P</span>
-                      <span className="text-zinc-600">•</span>
-                      <span className="text-blue-400">{meal.carbs_g}g C</span>
-                      <span className="text-zinc-600">•</span>
-                      <span className="text-amber-400">{meal.fat_g}g F</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-1 shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      saveMealMutation.mutate({
-                        meal_type: meal.meal_type,
-                        name: meal.name,
-                        calories: meal.calories,
-                        protein_g: meal.protein_g,
-                        carbs_g: meal.carbs_g,
-                        fat_g: meal.fat_g,
-                        photo_url: meal.photo_url,
-                        items: meal.items || [],
-                      });
-                    }}
-                    className="p-1.5 rounded-lg text-zinc-400 hover:text-brand-400 hover:bg-brand-500/10 transition-colors cursor-pointer"
-                    title="Повторить прием пищи"
-                  >
-                    <RefreshCw className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    onClick={() => deleteMealMutation.mutate(meal.id)}
-                    className="p-1.5 rounded-lg text-zinc-500 hover:text-red-400 hover:bg-red-950/20 transition-colors cursor-pointer"
-                    title={t('common.delete')}
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              </Card>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* 4. Unified Log Meal Modal */}
-      <Modal
-        isOpen={isLogModalOpen}
-        onClose={() => setIsLogModalOpen(false)}
-        size="lg"
-        icon={
-          <div className="w-8 h-8 rounded-xl bg-brand-500/20 text-brand-400 border border-brand-500/30 flex items-center justify-center font-bold">
-            <Utensils className="w-4 h-4" />
-          </div>
-        }
-        title={t('nutrition.logMeal')}
-        subtitle=""
-        footer={
-          <>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setIsLogModalOpen(false)}
-            >
-              {t('common.cancel')}
-            </Button>
-
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={handleSaveMeal}
-              disabled={saveMealMutation.isPending}
-              className="font-bold text-xs shadow-md shadow-brand-500/20"
-            >
-              <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
-              {t('nutrition.logMeal')}
-            </Button>
-          </>
-        }
-      >
+      {/* 3. Main Two-Column Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
+        {/* Left Column: Meals Log + Water Tracker */}
         <div className="space-y-4">
-          {/* Modal Tab Switcher */}
-          <div className="flex items-center p-1 bg-dark-900 rounded-xl border border-dark-750 gap-1">
-            <button
-              type="button"
-              onClick={() => setActiveLogTab('photo')}
-              className={`flex-1 py-1.5 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                activeLogTab === 'photo'
-                  ? 'bg-brand-500/20 text-brand-400 border border-brand-500/40 shadow-sm'
-                  : 'text-zinc-400 hover:text-white'
-              }`}
-            >
-              <Camera className="w-3.5 h-3.5" />
-              <span>{t('nutrition.snapPhoto')}</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setActiveLogTab('text')}
-              className={`flex-1 py-1.5 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                activeLogTab === 'text'
-                  ? 'bg-brand-500/20 text-brand-400 border border-brand-500/40 shadow-sm'
-                  : 'text-zinc-400 hover:text-white'
-              }`}
-            >
-              <FileText className="w-3.5 h-3.5" />
-              <span>{t('nutrition.estimateText')}</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setActiveLogTab('manual')}
-              className={`flex-1 py-1.5 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                activeLogTab === 'manual'
-                  ? 'bg-brand-500/20 text-brand-400 border border-brand-500/40 shadow-sm'
-                  : 'text-zinc-400 hover:text-white'
-              }`}
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>{t('nutrition.addManual')}</span>
-            </button>
-          </div>
-
-          {/* Meal Type Selector */}
-          <div className="space-y-1.5">
-            <label className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">
-              {t('nutrition.mealType')}
-            </label>
-            <div className="grid grid-cols-4 gap-1.5">
-              {['breakfast', 'lunch', 'dinner', 'snack'].map((type) => (
-                <button
-                  key={type}
-                  type="button"
-                  onClick={() => setSelectedMealType(type)}
-                  className={`text-xs py-1.5 rounded-xl font-bold transition-all border cursor-pointer ${
-                    selectedMealType === type
-                      ? 'bg-brand-500 text-dark-950 border-brand-500 shadow-sm'
-                      : 'bg-dark-800 text-zinc-400 border-dark-700 hover:text-white'
-                  }`}
-                >
-                  {t(`nutrition.${type}` as any)}
-                </button>
-              ))}
+          {/* Meals Card */}
+          <Card className="p-4 sm:p-5 space-y-4">
+            <div className="flex items-center justify-between border-b border-[#262626] pb-3">
+              <div className="flex items-center gap-2">
+                <h2 className="text-[15px] font-semibold text-[#fafafa]">
+                  {t('nutrition.mealsToday')}
+                </h2>
+                <span className="text-[12px] font-mono font-medium tabular-nums text-[#34d399] bg-[#022c22] border border-[#064e3b] px-2.5 py-0.5 rounded-full">
+                  {mealsList.length}
+                </span>
+              </div>
             </div>
-          </div>
 
-          {/* TAB 1: PHOTO */}
-          {activeLogTab === 'photo' && (
-            <div className="space-y-3">
-              {selectedImage ? (
-                <div className="relative rounded-2xl overflow-hidden border border-dark-700 max-h-48 flex items-center justify-center bg-dark-950">
-                  <img src={selectedImage} alt="Meal" className="w-full h-auto object-cover max-h-48" />
-                  <button
-                    type="button"
-                    onClick={() => setIsPhotoPickerOpen(true)}
-                    className="absolute bottom-2.5 right-2.5 bg-dark-900/90 hover:bg-dark-800 text-white text-xs font-bold px-2.5 py-1.5 rounded-xl border border-dark-700 flex items-center gap-1 shadow-lg backdrop-blur cursor-pointer"
-                  >
-                    <Camera className="w-3.5 h-3.5" />
-                    <span>{t('nutrition.changePhoto')}</span>
-                  </button>
+            {isLoading ? (
+              <div className="space-y-2.5">
+                {[1, 2, 3].map((i) => (
+                  <div
+                    key={i}
+                    className="h-20 bg-[#262626]/60 rounded-[10px] animate-pulse border border-[#262626]"
+                  />
+                ))}
+              </div>
+            ) : mealsList.length === 0 ? (
+              <div className="text-center py-8 px-4 border border-dashed border-[#404040] rounded-[10px] bg-[#0a0a0a] space-y-2.5">
+                <div className="w-10 h-10 rounded-[10px] bg-[#171717] border border-[#262626] flex items-center justify-center mx-auto text-[#737373]">
+                  <Utensils className="w-5 h-5" />
                 </div>
-              ) : (
-                <div
-                  onClick={() => setIsPhotoPickerOpen(true)}
-                  className="border-2 border-dashed border-dark-700 hover:border-brand-500/50 rounded-2xl p-6 text-center cursor-pointer bg-dark-850/50 transition-all"
-                >
-                  <Upload className="w-8 h-8 text-brand-400 mx-auto mb-1.5" />
-                  <p className="text-xs font-bold text-zinc-200">{t('nutrition.photoUploadHint')}</p>
-                </div>
-              )}
+                <h3 className="text-[14px] font-semibold text-[#fafafa]">{t('nutrition.noMeals')}</h3>
+                <p className="text-[12px] text-[#a3a3a3] max-w-sm mx-auto leading-relaxed">
+                  {t('nutrition.noMealsDesc')}
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-2.5">
+                {mealsList.map((meal) => {
+                  const mealTime = meal.logged_at
+                    ? new Date(meal.logged_at).toLocaleTimeString([], {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })
+                    : '';
+                  const isBeingEdited = editingMealId === meal.id;
 
-              {analyzeMutation.isPending && (
-                <div className="p-3.5 rounded-xl bg-dark-800 border border-brand-500/30 flex items-center gap-2.5 animate-pulse">
-                  <Sparkles className="w-4 h-4 text-brand-400 animate-spin shrink-0" />
-                  <span className="text-xs font-semibold text-brand-300">{t('nutrition.analyzing')}</span>
-                </div>
-              )}
+                  return (
+                    <div
+                      key={meal.id}
+                      className={`p-3.5 rounded-[10px] bg-[#0a0a0a] border transition-colors space-y-3 ${
+                        isBeingEdited ? 'border-[#34d399]' : 'border-[#262626]'
+                      }`}
+                    >
+                      <div className="flex items-start gap-3">
+                        {meal.photo_url ? (
+                          <img
+                            src={meal.photo_url}
+                            alt={meal.name}
+                            className="w-12 h-12 rounded-[10px] object-cover border border-[#404040] shrink-0"
+                          />
+                        ) : (
+                          <div className="w-12 h-12 rounded-[10px] bg-[#171717] border border-[#262626] flex items-center justify-center text-[#34d399] shrink-0">
+                            <Utensils className="w-5 h-5" />
+                          </div>
+                        )}
 
-              {analyzeMutation.isError && (
-                <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-300 flex items-center gap-2">
-                  <AlertTriangle className="w-4 h-4 shrink-0" />
-                  <span>{t('nutrition.visionUnavailable')}</span>
+                        <div className="min-w-0 flex-1 space-y-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-[11px] font-medium text-[#34d399] bg-[#022c22] border border-[#064e3b] px-2 py-0.5 rounded-[6px]">
+                              {t(`nutrition.${meal.meal_type}` as Parameters<typeof t>[0]) || meal.meal_type}
+                            </span>
+                            {mealTime && (
+                              <span className="text-[11px] text-[#737373] font-mono tabular-nums">
+                                {mealTime}
+                              </span>
+                            )}
+                          </div>
+
+                          <h4 className="text-[14px] font-semibold text-[#fafafa] truncate">
+                            {meal.name}
+                          </h4>
+
+                          <div className="flex items-center gap-2 text-[12px] font-mono tabular-nums flex-wrap text-[#a3a3a3]">
+                            <span className="text-[#fafafa] font-semibold">
+                              {meal.calories} {t('nutrition.kcalUnit')}
+                            </span>
+                            <span className="text-[#404040]">·</span>
+                            <span>
+                              {t('nutrition.protein').slice(0, 1)}: {meal.protein_g}
+                              {t('nutrition.gramUnit')}
+                            </span>
+                            <span className="text-[#404040]">·</span>
+                            <span>
+                              {t('nutrition.carbs').slice(0, 1)}: {meal.carbs_g}
+                              {t('nutrition.gramUnit')}
+                            </span>
+                            <span className="text-[#404040]">·</span>
+                            <span>
+                              {t('nutrition.fat').slice(0, 1)}: {meal.fat_g}
+                              {t('nutrition.gramUnit')}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 pt-2 border-t border-[#262626] flex-wrap">
+                        <button
+                          type="button"
+                          onClick={() => handleEditMeal(meal)}
+                          className="min-h-[44px] px-3 rounded-[10px] bg-[#171717] hover:bg-[#262626] border border-[#404040] text-[12px] font-medium text-[#fafafa] flex items-center gap-1.5 transition-colors cursor-pointer"
+                        >
+                          <Pencil className="w-3.5 h-3.5 text-[#a3a3a3]" />
+                          <span>{t('nutrition.editBtn')}</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            saveMealMutation.mutate({
+                              logged_at: selectedLoggedAt(),
+                              meal_type: meal.meal_type,
+                              name: meal.name,
+                              calories: meal.calories,
+                              protein_g: meal.protein_g,
+                              carbs_g: meal.carbs_g,
+                              fat_g: meal.fat_g,
+                              photo_url: meal.photo_url,
+                              items: meal.items || [],
+                            })
+                          }
+                          disabled={saveMealMutation.isPending}
+                          className="min-h-[44px] px-3 rounded-[10px] bg-[#171717] hover:bg-[#262626] border border-[#404040] text-[12px] font-medium text-[#fafafa] flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
+                        >
+                          <Copy className="w-3.5 h-3.5 text-[#34d399]" />
+                          <span>{t('nutrition.repeatBtn')}</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (editingMealId === meal.id) {
+                              resetDraft();
+                            }
+                            deleteMealMutation.mutate(meal.id);
+                          }}
+                          disabled={deleteMealMutation.isPending}
+                          className="min-h-[44px] min-w-[44px] px-3 ml-auto rounded-[10px] bg-[#171717] hover:bg-red-950/30 border border-[#404040] hover:border-red-500/40 text-[12px] font-medium text-[#a3a3a3] hover:text-red-400 flex items-center justify-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
+                          title={t('common.delete')}
+                          aria-label={t('common.delete')}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </Card>
+
+          {/* Water Card */}
+          <Card className="p-4 sm:p-5 space-y-4">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-[10px] bg-[#022c22] border border-[#064e3b] text-[#34d399] flex items-center justify-center shrink-0">
+                  <Droplets className="w-5 h-5" />
                 </div>
-              )}
+                <div>
+                  <h3 className="text-[15px] font-semibold text-[#fafafa]">
+                    {t('nutrition.waterTitle')}
+                  </h3>
+                  <p className="text-[12px] text-[#a3a3a3]">
+                    {t('nutrition.waterServings', {
+                      glasses: waterGlasses,
+                      target: targetWaterMl,
+                    })}
+                  </p>
+                </div>
+              </div>
+
+              <div className="text-right font-mono tabular-nums">
+                <span className="text-[16px] font-semibold text-[#fafafa]">
+                  {waterMl}
+                </span>
+                <span className="text-[12px] text-[#737373] ml-1">
+                  / {targetWaterMl} {t('nutrition.mlUnit')}
+                </span>
+                <div className="text-[11px] font-medium text-[#34d399]">
+                  {waterPct}%
+                </div>
+              </div>
             </div>
-          )}
 
-          {/* TAB 2: TEXT */}
-          {activeLogTab === 'text' && (
-            <div className="space-y-3">
-              <textarea
-                rows={2}
-                placeholder={t('nutrition.textPlaceholder')}
-                value={textDescription}
-                onChange={(e) => setTextDescription(e.target.value)}
-                className="w-full bg-dark-900 border border-dark-700 rounded-2xl p-3 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-brand-500 resize-none leading-relaxed"
+            <div className="h-2 w-full rounded-full bg-[#262626] overflow-hidden">
+              <div
+                className="h-full rounded-full bg-[#34d399] transition-all duration-300"
+                style={{ width: `${waterPct}%` }}
               />
+            </div>
 
-              <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none pb-1">
-                {foodPresets.map((chip, idx) => (
+            <div className="grid grid-cols-3 gap-2">
+              <button
+                type="button"
+                onClick={() => addWater(250)}
+                className="min-h-[44px] px-3 rounded-[10px] bg-[#022c22] hover:bg-[#064e3b] border border-[#064e3b] text-[#34d399] text-[13px] font-semibold transition-colors cursor-pointer"
+              >
+                {t('nutrition.waterAdd250')}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => addWater(-250)}
+                disabled={waterMl <= 0}
+                className="min-h-[44px] px-3 rounded-[10px] bg-[#0a0a0a] hover:bg-[#262626] border border-[#404040] text-[#fafafa] text-[13px] font-medium transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {t('nutrition.waterSub250')}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setWaterMl(0);
+                  localStorage.setItem(waterStorageKey, '0');
+                }}
+                disabled={waterMl <= 0}
+                className="min-h-[44px] px-3 rounded-[10px] bg-[#0a0a0a] hover:bg-[#262626] border border-[#404040] text-[#a3a3a3] hover:text-[#fafafa] text-[13px] font-medium flex items-center justify-center gap-1.5 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>{t('nutrition.waterReset')}</span>
+              </button>
+            </div>
+          </Card>
+        </div>
+
+        {/* Right Column: Inline Add Food + Review Draft */}
+        <div className="space-y-4">
+          {/* Add Food Card */}
+          <Card className="p-4 sm:p-5 space-y-4">
+            <div className="space-y-1">
+              <h2 className="text-[15px] font-semibold text-[#fafafa]">
+                {t('nutrition.addFoodTitle')}
+              </h2>
+              <p className="text-[12px] text-[#a3a3a3]">
+                {t('nutrition.addFoodSubtitle')}
+              </p>
+            </div>
+
+            {/* Method Selector: Photo | Text | Manual */}
+            <div className="grid grid-cols-3 gap-2">
+              <button
+                type="button"
+                onClick={() => setActiveLogTab('photo')}
+                className={`min-h-[44px] px-3 rounded-[10px] text-[13px] font-medium border flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
+                  activeLogTab === 'photo'
+                    ? 'bg-[#022c22] text-[#34d399] border-[#064e3b]'
+                    : 'bg-[#0a0a0a] text-[#a3a3a3] border-[#404040] hover:text-[#fafafa]'
+                }`}
+              >
+                <Camera className="w-4 h-4 shrink-0" />
+                <span>{t('nutrition.byPhoto')}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveLogTab('text')}
+                className={`min-h-[44px] px-3 rounded-[10px] text-[13px] font-medium border flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
+                  activeLogTab === 'text'
+                    ? 'bg-[#022c22] text-[#34d399] border-[#064e3b]'
+                    : 'bg-[#0a0a0a] text-[#a3a3a3] border-[#404040] hover:text-[#fafafa]'
+                }`}
+              >
+                <FileText className="w-4 h-4 shrink-0" />
+                <span>{t('nutrition.byText')}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveLogTab('manual')}
+                className={`min-h-[44px] px-3 rounded-[10px] text-[13px] font-medium border flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
+                  activeLogTab === 'manual'
+                    ? 'bg-[#022c22] text-[#34d399] border-[#064e3b]'
+                    : 'bg-[#0a0a0a] text-[#a3a3a3] border-[#404040] hover:text-[#fafafa]'
+                }`}
+              >
+                <Pencil className="w-4 h-4 shrink-0" />
+                <span>{t('nutrition.byManual')}</span>
+              </button>
+            </div>
+
+            {/* Meal Type Selector */}
+            <div className="space-y-1.5">
+              <label className="block text-[12px] font-medium text-[#a3a3a3]">
+                {t('nutrition.mealType')}
+              </label>
+              <div className="grid grid-cols-4 gap-2">
+                {(['breakfast', 'lunch', 'dinner', 'snack'] as const).map((type) => (
                   <button
-                    key={idx}
+                    key={type}
                     type="button"
-                    onClick={() => {
-                      setTextDescription(chip.val);
-                      analyzeTextMutation.mutate({
-                        description: chip.val,
-                        language,
-                      });
-                    }}
-                    className="px-2.5 py-1 rounded-xl text-xs bg-dark-800 hover:bg-dark-750 text-zinc-300 hover:text-white border border-dark-700 whitespace-nowrap shrink-0 transition-colors cursor-pointer"
+                    onClick={() => setSelectedMealType(type)}
+                    className={`min-h-[44px] px-2 rounded-[10px] text-[12px] font-medium border transition-colors cursor-pointer truncate ${
+                      selectedMealType === type
+                        ? 'bg-[#022c22] text-[#34d399] border-[#064e3b]'
+                        : 'bg-[#0a0a0a] text-[#a3a3a3] border-[#404040] hover:text-[#fafafa]'
+                    }`}
                   >
-                    {chip.label}
+                    {t(`nutrition.${type}`)}
                   </button>
                 ))}
               </div>
+            </div>
 
-              <Button
-                variant="primary"
-                size="sm"
-                className="w-full text-xs font-bold shadow-md shadow-brand-500/20"
-                disabled={!textDescription.trim() || analyzeTextMutation.isPending}
-                onClick={() =>
-                  analyzeTextMutation.mutate({
-                    description: textDescription.trim(),
-                    language,
-                  })
-                }
-              >
-                {analyzeTextMutation.isPending ? (
-                  <>
-                    <RefreshCw className="w-3.5 h-3.5 mr-1.5 animate-spin" />
-                    <span>{t('nutrition.analyzingText')}</span>
-                  </>
+            {/* Mode 1: Photo */}
+            {activeLogTab === 'photo' && (
+              <div className="space-y-3">
+                {selectedImage ? (
+                  <div className="relative rounded-[10px] overflow-hidden border border-[#404040] bg-[#0a0a0a]">
+                    <img
+                      src={selectedImage}
+                      alt={t('nutrition.mealName')}
+                      className="w-full h-44 object-cover"
+                    />
+                    <div className="p-2.5 bg-[#0a0a0a] border-t border-[#262626] flex items-center justify-between gap-2 flex-wrap">
+                      <button
+                        type="button"
+                        onClick={() => setIsPhotoPickerOpen(true)}
+                        className="min-h-[44px] px-3 rounded-[10px] bg-[#171717] hover:bg-[#262626] border border-[#404040] text-[12px] font-medium text-[#fafafa] flex items-center gap-1.5 transition-colors cursor-pointer"
+                      >
+                        <Camera className="w-4 h-4 text-[#34d399]" />
+                        <span>{t('nutrition.changePhoto')}</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          analyzeMutation.mutate({
+                            image_base64: selectedImage,
+                            notes: scanNotes,
+                            language,
+                          })
+                        }
+                        disabled={analyzeMutation.isPending}
+                        className="min-h-[44px] px-3 rounded-[10px] bg-[#022c22] hover:bg-[#064e3b] border border-[#064e3b] text-[12px] font-medium text-[#34d399] flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
+                      >
+                        <RefreshCw
+                          className={`w-3.5 h-3.5 ${analyzeMutation.isPending ? 'animate-spin' : ''}`}
+                        />
+                        <span>{t('nutrition.recalculate')}</span>
+                      </button>
+                    </div>
+                  </div>
                 ) : (
-                  <>
-                    <Sparkles className="w-3.5 h-3.5 mr-1.5" />
-                    <span>{t('nutrition.estimateBtn')}</span>
-                  </>
+                  <button
+                    type="button"
+                    onClick={() => setIsPhotoPickerOpen(true)}
+                    className="w-full min-h-[132px] border border-dashed border-[#404040] hover:border-[#34d399] rounded-[10px] p-5 text-center cursor-pointer bg-[#0a0a0a] transition-colors flex flex-col items-center justify-center gap-2"
+                  >
+                    <div className="w-10 h-10 rounded-[10px] bg-[#022c22] border border-[#064e3b] flex items-center justify-center text-[#34d399]">
+                      <Upload className="w-5 h-5" />
+                    </div>
+                    <span className="text-[13px] font-medium text-[#fafafa]">
+                      {t('nutrition.photoUploadHint')}
+                    </span>
+                    <span className="text-[12px] text-[#737373] max-w-xs">
+                      {t('nutrition.photoHintShort')}
+                    </span>
+                  </button>
                 )}
-              </Button>
+
+                <Input
+                  label={t('nutrition.notesLabel')}
+                  placeholder={t('nutrition.notesPlaceholder')}
+                  value={scanNotes}
+                  onChange={(e) => setScanNotes(e.target.value)}
+                />
+
+                {analyzeMutation.isPending && (
+                  <div className="p-3 rounded-[10px] bg-[#022c22] border border-[#064e3b] flex items-center gap-2.5 text-[13px] text-[#34d399]">
+                    <RefreshCw className="w-4 h-4 animate-spin shrink-0" />
+                    <span>{t('nutrition.analyzing')}</span>
+                  </div>
+                )}
+
+                {analyzeMutation.isError && (
+                  <div className="p-3 rounded-[10px] bg-amber-950/30 border border-amber-500/40 text-[12px] text-amber-300 flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4 shrink-0" />
+                    <span>{t('nutrition.analyzePhotoError')}</span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Mode 2: Text */}
+            {activeLogTab === 'text' && (
+              <div className="space-y-3">
+                <Textarea
+                  rows={3}
+                  placeholder={t('nutrition.textPlaceholder')}
+                  value={textDescription}
+                  onChange={(e) => setTextDescription(e.target.value)}
+                />
+
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between text-[11px] text-[#737373]">
+                    <span>{t('nutrition.quickPresets')}</span>
+                    <span>{t('nutrition.quickInsert')}</span>
+                  </div>
+                  <div className="flex items-center gap-2 overflow-x-auto pb-1">
+                    {foodPresets.map((chip, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => {
+                          setEditingMealId(null);
+                          setTextDescription(chip.val);
+                          analyzeTextMutation.mutate({
+                            description: chip.val,
+                            language,
+                          });
+                        }}
+                        className="min-h-[44px] px-3 rounded-[10px] text-[12px] font-medium bg-[#0a0a0a] hover:bg-[#262626] text-[#fafafa] border border-[#404040] whitespace-nowrap shrink-0 transition-colors cursor-pointer"
+                      >
+                        {chip.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <Button
+                  variant="primary"
+                  size="md"
+                  className="w-full font-semibold"
+                  disabled={!textDescription.trim() || analyzeTextMutation.isPending}
+                  onClick={() => {
+                    setEditingMealId(null);
+                    analyzeTextMutation.mutate({
+                      description: textDescription.trim(),
+                      language,
+                    });
+                  }}
+                >
+                  {analyzeTextMutation.isPending ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                      <span>{t('nutrition.analyzingText')}</span>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-4 h-4 mr-2" />
+                      <span>{t('nutrition.estimateBtn')}</span>
+                    </>
+                  )}
+                </Button>
+
+                {analyzeTextMutation.isError && (
+                  <div className="p-3 rounded-[10px] bg-amber-950/30 border border-amber-500/40 text-[12px] text-amber-300 flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4 shrink-0" />
+                    <span>{t('nutrition.analyzeTextError')}</span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Mode 3: Manual hint */}
+            {activeLogTab === 'manual' && (
+              <div className="p-3 rounded-[10px] bg-[#0a0a0a] border border-[#262626] text-[12px] text-[#a3a3a3] leading-relaxed">
+                {t('nutrition.draftSubtitle')}
+              </div>
+            )}
+          </Card>
+
+          {/* Draft Review Card */}
+          <Card className="p-4 sm:p-5 space-y-4">
+            <div className="flex items-start justify-between gap-3 border-b border-[#262626] pb-3">
+              <div>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-[15px] font-semibold text-[#fafafa]">
+                    {editingMealId ? t('nutrition.editDraftTitle') : t('nutrition.draftTitle')}
+                  </h2>
+                  <span className="text-[11px] font-medium px-2 py-0.5 rounded-[6px] bg-[#022c22] border border-[#064e3b] text-[#34d399]">
+                    {editingMealId ? t('nutrition.editBtn') : t('nutrition.draftBadge')}
+                  </span>
+                </div>
+                <p className="text-[12px] text-[#a3a3a3] mt-0.5">
+                  {hasDraftValues ? t('nutrition.draftSubtitle') : t('nutrition.draftEmptyHint')}
+                </p>
+              </div>
             </div>
-          )}
 
-          {/* Editable Meal Info & Macros (Shown in all tabs or after estimation) */}
-          <div className="p-3.5 rounded-2xl bg-dark-900/90 border border-dark-750 space-y-3">
-            <Input
-              label={t('nutrition.mealName')}
-              placeholder={t('nutrition.mealPlaceholder')}
-              value={activeLogTab === 'manual' ? manualName : editMealName}
-              onChange={(e) => {
-                if (activeLogTab === 'manual') setManualName(e.target.value);
-                else setEditMealName(e.target.value);
-              }}
-            />
+            <div className="space-y-3">
+              <Input
+                label={t('nutrition.mealName')}
+                placeholder={t('nutrition.mealPlaceholder')}
+                value={editMealName}
+                onChange={(e) => setEditMealName(e.target.value)}
+              />
 
-            <div className="grid grid-cols-4 gap-2 text-center font-mono">
-              <div className="p-2 bg-dark-850 rounded-xl border border-dark-700">
-                <div className="text-[10px] text-zinc-500 font-sans">{t('nutrition.calories')}</div>
-                <input
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                <Input
+                  label={`${t('nutrition.calories')} (${t('nutrition.kcalUnit')})`}
                   type="number"
+                  min={0}
                   placeholder="0"
-                  value={activeLogTab === 'manual' ? manualCalories : editCalories}
-                  onChange={(e) => {
-                    if (activeLogTab === 'manual') setManualCalories(e.target.value);
-                    else setEditCalories(e.target.value);
-                  }}
-                  className="w-full bg-transparent text-center font-bold text-brand-400 text-xs focus:outline-none"
+                  value={editCalories}
+                  onChange={(e) => setEditCalories(e.target.value)}
+                  className="font-mono tabular-nums"
+                />
+
+                <Input
+                  label={`${t('nutrition.protein')} (${t('nutrition.gramUnit')})`}
+                  type="number"
+                  min={0}
+                  step="0.1"
+                  placeholder="0"
+                  value={editProtein}
+                  onChange={(e) => setEditProtein(e.target.value)}
+                  className="font-mono tabular-nums"
+                />
+
+                <Input
+                  label={`${t('nutrition.carbs')} (${t('nutrition.gramUnit')})`}
+                  type="number"
+                  min={0}
+                  step="0.1"
+                  placeholder="0"
+                  value={editCarbs}
+                  onChange={(e) => setEditCarbs(e.target.value)}
+                  className="font-mono tabular-nums"
+                />
+
+                <Input
+                  label={`${t('nutrition.fat')} (${t('nutrition.gramUnit')})`}
+                  type="number"
+                  min={0}
+                  step="0.1"
+                  placeholder="0"
+                  value={editFat}
+                  onChange={(e) => setEditFat(e.target.value)}
+                  className="font-mono tabular-nums"
                 />
               </div>
 
-              <div className="p-2 bg-dark-850 rounded-xl border border-dark-700">
-                <div className="text-[10px] text-zinc-500 font-sans">{t('nutrition.protein')} (g)</div>
-                <input
-                  type="number"
-                  placeholder="0"
-                  value={activeLogTab === 'manual' ? manualProtein : editProtein}
-                  onChange={(e) => {
-                    if (activeLogTab === 'manual') setManualProtein(e.target.value);
-                    else setEditProtein(e.target.value);
-                  }}
-                  className="w-full bg-transparent text-center font-bold text-emerald-400 text-xs focus:outline-none"
-                />
-              </div>
+              {/* Detected Items */}
+              {draftItems.length > 0 && (
+                <div className="p-3 rounded-[10px] bg-[#0a0a0a] border border-[#262626] space-y-2">
+                  <div className="text-[12px] font-medium text-[#a3a3a3]">
+                    {t('nutrition.detectedItems')}
+                  </div>
+                  <div className="space-y-1.5">
+                    {draftItems.map((item, idx) => (
+                      <div
+                        key={idx}
+                        className="flex items-center justify-between gap-2 text-[12px] py-1 border-b border-[#262626] last:border-b-0"
+                      >
+                        <div className="min-w-0 truncate">
+                          <span className="text-[#fafafa] font-medium">{item.name}</span>
+                          {item.portion && (
+                            <span className="text-[#737373] ml-1.5">({item.portion})</span>
+                          )}
+                        </div>
+                        <span className="font-mono tabular-nums text-[#a3a3a3] shrink-0">
+                          {item.calories} {t('nutrition.kcalUnit')}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
-              <div className="p-2 bg-dark-850 rounded-xl border border-dark-700">
-                <div className="text-[10px] text-zinc-500 font-sans">{t('nutrition.carbs')} (g)</div>
-                <input
-                  type="number"
-                  placeholder="0"
-                  value={activeLogTab === 'manual' ? manualCarbs : editCarbs}
-                  onChange={(e) => {
-                    if (activeLogTab === 'manual') setManualCarbs(e.target.value);
-                    else setEditCarbs(e.target.value);
-                  }}
-                  className="w-full bg-transparent text-center font-bold text-blue-400 text-xs focus:outline-none"
-                />
-              </div>
+              {/* AI Advice */}
+              {activeResult?.advice && (
+                <div className="p-3 rounded-[10px] bg-[#0a0a0a] border border-[#262626] flex items-start gap-2.5 text-[12px] text-[#a3a3a3] leading-relaxed">
+                  <Sparkles className="w-4 h-4 text-[#34d399] shrink-0 mt-0.5" />
+                  <div>
+                    <span className="text-[#fafafa] font-medium block mb-0.5">
+                      {t('nutrition.aiAdvice')}
+                    </span>
+                    {activeResult.advice}
+                  </div>
+                </div>
+              )}
 
-              <div className="p-2 bg-dark-850 rounded-xl border border-dark-700">
-                <div className="text-[10px] text-zinc-500 font-sans">{t('nutrition.fat')} (g)</div>
-                <input
-                  type="number"
-                  placeholder="0"
-                  value={activeLogTab === 'manual' ? manualFat : editFat}
-                  onChange={(e) => {
-                    if (activeLogTab === 'manual') setManualFat(e.target.value);
-                    else setEditFat(e.target.value);
-                  }}
-                  className="w-full bg-transparent text-center font-bold text-amber-400 text-xs focus:outline-none"
-                />
+              {saveMealMutation.isError && (
+                <div className="p-3 rounded-[10px] bg-red-950/30 border border-red-500/40 text-[12px] text-red-400 flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 shrink-0" />
+                  <span>{t('nutrition.saveError')}</span>
+                </div>
+              )}
+
+              <div className="flex items-center gap-2.5 pt-1">
+                <Button
+                  variant="outline"
+                  size="md"
+                  onClick={resetDraft}
+                  disabled={saveMealMutation.isPending}
+                >
+                  {t('common.cancel')}
+                </Button>
+
+                <Button
+                  variant="primary"
+                  size="md"
+                  onClick={handleSaveMeal}
+                  disabled={!hasDraftValues || saveMealMutation.isPending || deleteMealMutation.isPending}
+                  className="flex-1 font-semibold gap-1.5"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>{editingMealId ? t('common.save') : t('nutrition.confirmBtn')}</span>
+                </Button>
               </div>
             </div>
-          </div>
+          </Card>
         </div>
-      </Modal>
+      </div>
 
       {/* Smart Low-Memory Photo Picker Modal */}
       <SmartPhotoPickerModal

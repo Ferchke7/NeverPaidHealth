@@ -4,10 +4,7 @@ import {
   Trash2,
   ChevronUp,
   ChevronDown,
-  Dumbbell,
   ArrowLeftRight,
-  Edit3,
-  Calendar,
   Globe,
   Lock,
 } from 'lucide-react';
@@ -290,25 +287,19 @@ export const ProgramEditorModal: React.FC<ProgramEditorModalProps> = ({
         isOpen={isOpen}
         onClose={onClose}
         size="xl"
-        icon={
-          <div className="w-8 h-8 rounded-xl bg-brand-500/20 text-brand-400 border border-brand-500/30 flex items-center justify-center shrink-0">
-            {initialProgram ? <Edit3 className="w-4 h-4" /> : <Calendar className="w-4 h-4" />}
-          </div>
-        }
         title={initialProgram ? t('programs.editProgram') : t('programs.createProgram')}
         subtitle={t('programs.editorSubtitle')}
         footer={
           <>
-            <Button variant="ghost" onClick={onClose} size="sm">
+            <Button variant="outline" onClick={onClose} size="md">
               {t('common.cancel')}
             </Button>
             <Button
               variant="primary"
-              size="sm"
+              size="md"
               isLoading={saveMutation.isPending}
               onClick={() => saveMutation.mutate()}
               disabled={!name.trim() || days.length === 0}
-              className="font-bold px-4 shadow-lg shadow-brand-500/20"
             >
               {initialProgram ? t('programs.saveChanges') : t('programs.saveAndPublish')}
             </Button>
@@ -317,12 +308,11 @@ export const ProgramEditorModal: React.FC<ProgramEditorModalProps> = ({
       >
         <div className="space-y-4">
           {error && (
-            <div className="p-3 bg-red-950/50 border border-red-800/60 rounded-xl text-red-300 text-xs">
+            <div className="p-3 bg-[#262626] border border-red-500/40 rounded-[10px] text-red-300 text-xs">
               {error}
             </div>
           )}
 
-          {/* Basic Fields */}
           <div className="space-y-3">
             <Input
               label={t('programs.nameLabel')}
@@ -342,13 +332,13 @@ export const ProgramEditorModal: React.FC<ProgramEditorModalProps> = ({
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
-                <label className="text-xs font-semibold text-zinc-300 block mb-1">
+                <label className="text-[12px] font-medium text-[#a3a3a3] block mb-1.5">
                   {t('programs.splitType')}
                 </label>
                 <select
                   value={splitType}
                   onChange={(e) => setSplitType(e.target.value as SplitType)}
-                  className="w-full bg-dark-800 border border-dark-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-500"
+                  className="w-full h-11 bg-[#0a0a0a] border border-[#404040] rounded-[10px] px-3 text-[13px] text-[#fafafa] focus:outline-none focus:border-[#34d399]"
                 >
                   <option value="ppl">{t('programs.splitPpl')}</option>
                   <option value="upper_lower">{t('programs.splitUpperLower')}</option>
@@ -359,13 +349,13 @@ export const ProgramEditorModal: React.FC<ProgramEditorModalProps> = ({
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-zinc-300 block mb-1">
+                <label className="text-[12px] font-medium text-[#a3a3a3] block mb-1.5">
                   {t('programs.level')}
                 </label>
                 <select
                   value={level}
                   onChange={(e) => setLevel(e.target.value as ProgramLevel)}
-                  className="w-full bg-dark-800 border border-dark-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-500"
+                  className="w-full h-11 bg-[#0a0a0a] border border-[#404040] rounded-[10px] px-3 text-[13px] text-[#fafafa] focus:outline-none focus:border-[#34d399]"
                 >
                   <option value="beginner">{t('programs.levelBeginner')}</option>
                   <option value="intermediate">{t('programs.levelIntermediate')}</option>
@@ -374,28 +364,25 @@ export const ProgramEditorModal: React.FC<ProgramEditorModalProps> = ({
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-zinc-300 block mb-1">
+                <label className="text-[12px] font-medium text-[#a3a3a3] block mb-1.5">
                   {t('programs.sharing')}
                 </label>
                 <button
                   type="button"
                   onClick={() => setIsPublic(!isPublic)}
-                  className={`w-full flex items-center justify-between px-3 py-2 rounded-xl border text-xs font-semibold transition-all ${
+                  className={`w-full h-11 flex items-center justify-between px-3 rounded-[10px] border text-[13px] font-medium transition-colors cursor-pointer ${
                     isPublic
-                      ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300'
-                      : 'bg-dark-800 border-dark-700 text-zinc-400 hover:text-zinc-200'
+                      ? 'bg-[#022c22] border-[#34d399]/30 text-[#34d399]'
+                      : 'bg-[#0a0a0a] border-[#404040] text-[#a3a3a3] hover:text-[#fafafa]'
                   }`}
                 >
                   <span className="flex items-center gap-1.5 truncate">
                     {isPublic ? (
-                      <Globe className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                      <Globe className="w-3.5 h-3.5 shrink-0" />
                     ) : (
-                      <Lock className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
+                      <Lock className="w-3.5 h-3.5 shrink-0" />
                     )}
                     <span>{isPublic ? t('programs.publicCommunity') : t('programs.privatePersonal')}</span>
-                  </span>
-                  <span className="text-[10px] uppercase font-mono tracking-wider ml-1">
-                    {isPublic ? t('programs.public') : t('programs.private')}
                   </span>
                 </button>
               </div>
@@ -403,28 +390,23 @@ export const ProgramEditorModal: React.FC<ProgramEditorModalProps> = ({
           </div>
 
           {/* Multi-Day Split Section */}
-          <div className="pt-2 border-t border-dark-750 space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Calendar className="w-4 h-4 text-brand-400" />
-                <span className="text-xs font-bold uppercase tracking-wider text-zinc-300">
-                  {t('programs.trainingDays', { count: days.length })}
-                </span>
-              </div>
+          <div className="pt-3 border-t border-[#262626] space-y-3">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-[12px] font-semibold uppercase tracking-wider text-[#a3a3a3]">
+                {t('programs.trainingDays', { count: days.length })}
+              </span>
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
                 onClick={handleAddDay}
-                className="text-xs flex items-center gap-1.5 border-dashed hover:border-brand-500/50"
               >
-                <Plus className="w-3.5 h-3.5 text-brand-400" />
+                <Plus className="w-3.5 h-3.5" />
                 <span>{t('programs.addDay')}</span>
               </Button>
             </div>
 
-            {/* Day Selector Tabs */}
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
               {days.map((d, idx) => {
                 const isActive = idx === activeDayIndex;
                 return (
@@ -432,16 +414,16 @@ export const ProgramEditorModal: React.FC<ProgramEditorModalProps> = ({
                     key={idx}
                     type="button"
                     onClick={() => setActiveDayIndex(idx)}
-                    className={`text-xs px-3 py-1.5 rounded-xl font-medium transition-all whitespace-nowrap flex items-center gap-1.5 ${
+                    className={`h-[40px] px-3.5 rounded-[8px] text-[13px] font-medium transition-colors whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
                       isActive
-                        ? 'bg-dark-700 text-brand-400 border border-brand-500/40 font-bold shadow-sm'
-                        : 'bg-dark-800/80 text-zinc-400 hover:text-zinc-200 hover:bg-dark-700'
+                        ? 'bg-[#022c22] text-[#34d399]'
+                        : 'bg-[#0a0a0a] border border-[#404040] text-[#a3a3a3] hover:text-[#fafafa]'
                     }`}
                   >
                     <span>
                       {t('programs.dayShort')} {idx + 1}
                     </span>
-                    <span className="text-[10px] text-zinc-500">
+                    <span className="text-[11px] opacity-75">
                       ({d.exercises.length})
                     </span>
                   </button>
@@ -449,9 +431,8 @@ export const ProgramEditorModal: React.FC<ProgramEditorModalProps> = ({
               })}
             </div>
 
-            {/* Current Day Details & Exercise List */}
             {currentDay && (
-              <div className="bg-dark-900/90 border border-dark-750 p-3.5 rounded-2xl space-y-3">
+              <div className="bg-[#0a0a0a] border border-[#404040] p-4 rounded-[14px] space-y-4">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                   <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <input
@@ -459,34 +440,33 @@ export const ProgramEditorModal: React.FC<ProgramEditorModalProps> = ({
                       value={currentDay.name}
                       onChange={(e) => updateCurrentDay({ name: e.target.value })}
                       placeholder={t('programs.dayNamePlaceholder')}
-                      className="bg-dark-800 border border-dark-700 rounded-xl px-3 py-1.5 text-xs text-white font-bold focus:outline-none focus:border-brand-500"
+                      className="h-11 bg-[#171717] border border-[#404040] rounded-[10px] px-3 text-[13px] text-[#fafafa] font-medium focus:outline-none focus:border-[#34d399]"
                     />
                     <input
                       type="text"
                       value={currentDay.notes || ''}
                       onChange={(e) => updateCurrentDay({ notes: e.target.value })}
                       placeholder={t('programs.dayNotesPlaceholder')}
-                      className="bg-dark-800 border border-dark-700 rounded-xl px-3 py-1.5 text-xs text-zinc-300 focus:outline-none focus:border-brand-500"
+                      className="h-11 bg-[#171717] border border-[#404040] rounded-[10px] px-3 text-[13px] text-[#a3a3a3] focus:outline-none focus:border-[#34d399]"
                     />
                   </div>
 
                   {days.length > 1 && (
-                    <button
-                      type="button"
+                    <Button
+                      variant="danger"
+                      size="sm"
                       onClick={() => handleRemoveDay(activeDayIndex)}
-                      className="text-xs text-red-400 hover:text-red-300 p-1.5 rounded-lg hover:bg-red-950/40 transition-colors self-end sm:self-auto flex items-center gap-1"
                       title={t('programs.deleteDay')}
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                       <span>{t('programs.deleteDay')}</span>
-                    </button>
+                    </Button>
                   )}
                 </div>
 
-                {/* Exercises inside this Day */}
-                <div className="space-y-2.5 pt-1">
+                <div className="space-y-3 pt-1">
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-400">
+                    <span className="text-[12px] font-medium text-[#a3a3a3]">
                       {t('programs.exercisesForDay', { count: currentDay.exercises.length })}
                     </span>
                     <Button
@@ -497,20 +477,18 @@ export const ProgramEditorModal: React.FC<ProgramEditorModalProps> = ({
                         setReplacingExerciseIndex(null);
                         setIsPickerOpen(true);
                       }}
-                      className="text-xs flex items-center gap-1.5 border-dashed hover:border-brand-500/50"
                     >
-                      <Plus className="w-3.5 h-3.5 text-brand-400" />
+                      <Plus className="w-3.5 h-3.5" />
                       <span>{t('routines.addExercise')}</span>
                     </Button>
                   </div>
 
                   {currentDay.exercises.length === 0 ? (
-                    <div className="text-center py-6 border-2 border-dashed border-dark-750 rounded-2xl p-4 bg-dark-900/50">
-                      <Dumbbell className="w-7 h-7 text-zinc-600 mx-auto mb-1.5" />
-                      <p className="text-xs font-semibold text-zinc-400">
+                    <div className="text-center py-6 border border-[#404040] rounded-[12px] p-4 bg-[#171717]">
+                      <p className="text-[13px] font-medium text-[#fafafa]">
                         {t('programs.noExercisesInDay')}
                       </p>
-                      <p className="text-[11px] text-zinc-500 mt-0.5 mb-3">
+                      <p className="text-[12px] text-[#a3a3a3] mt-1 mb-3">
                         {t('programs.noExercisesInDayDesc')}
                       </p>
                       <Button
@@ -521,21 +499,20 @@ export const ProgramEditorModal: React.FC<ProgramEditorModalProps> = ({
                           setReplacingExerciseIndex(null);
                           setIsPickerOpen(true);
                         }}
-                        className="gap-1 text-xs font-bold"
                       >
                         <Plus className="w-3.5 h-3.5" />
                         <span>{t('routines.selectExercise')}</span>
                       </Button>
                     </div>
                   ) : (
-                    <div className="space-y-2">
+                    <div className="space-y-2.5">
                       {currentDay.exercises.map((item, exIdx) => (
                         <div
                           key={`${item.exercise_id}-${exIdx}`}
-                          className="bg-dark-800/95 border border-dark-700 p-2.5 rounded-xl space-y-2 shadow-sm"
+                          className="bg-[#171717] border border-[#404040] p-3 rounded-[12px] space-y-2.5"
                         >
                           <div className="flex items-center justify-between gap-2">
-                            <div className="flex items-center gap-2 min-w-0 flex-1">
+                            <div className="flex items-center gap-2.5 min-w-0 flex-1">
                               <ExerciseThumbnail
                                 exerciseName={item.exercise_name}
                                 size="sm"
@@ -543,25 +520,24 @@ export const ProgramEditorModal: React.FC<ProgramEditorModalProps> = ({
                               />
                               <div className="min-w-0 flex-1">
                                 <div className="flex items-center gap-1.5">
-                                  <span className="text-xs font-bold text-brand-400 shrink-0">
+                                  <span className="text-xs font-medium text-[#34d399] shrink-0">
                                     #{exIdx + 1}
                                   </span>
-                                  <span className="text-xs sm:text-sm font-bold text-white truncate">
+                                  <span className="text-[14px] font-medium text-[#fafafa] truncate">
                                     {item.exercise_name}
                                   </span>
                                 </div>
                               </div>
                             </div>
 
-                            {/* Action Controls */}
-                            <div className="flex items-center gap-0.5 shrink-0">
+                            <div className="flex items-center gap-1 shrink-0">
                               <button
                                 type="button"
                                 onClick={() => {
                                   setReplacingExerciseIndex(exIdx);
                                   setIsPickerOpen(true);
                                 }}
-                                className="text-zinc-500 hover:text-brand-400 p-1.5 rounded-lg hover:bg-dark-700 transition-colors"
+                                className="text-[#a3a3a3] hover:text-[#34d399] p-2 rounded-[8px] hover:bg-[#262626] transition-colors cursor-pointer"
                                 title={t('routines.replaceExercise')}
                               >
                                 <ArrowLeftRight className="w-3.5 h-3.5" />
@@ -570,7 +546,7 @@ export const ProgramEditorModal: React.FC<ProgramEditorModalProps> = ({
                                 type="button"
                                 disabled={exIdx === 0}
                                 onClick={() => moveExercise(exIdx, 'up')}
-                                className="text-zinc-500 hover:text-zinc-300 disabled:opacity-30 p-1.5 rounded-lg hover:bg-dark-700 transition-colors"
+                                className="text-[#a3a3a3] hover:text-[#fafafa] disabled:opacity-30 p-2 rounded-[8px] hover:bg-[#262626] transition-colors cursor-pointer"
                                 title={t('routines.moveUp')}
                               >
                                 <ChevronUp className="w-3.5 h-3.5" />
@@ -579,7 +555,7 @@ export const ProgramEditorModal: React.FC<ProgramEditorModalProps> = ({
                                 type="button"
                                 disabled={exIdx === currentDay.exercises.length - 1}
                                 onClick={() => moveExercise(exIdx, 'down')}
-                                className="text-zinc-500 hover:text-zinc-300 disabled:opacity-30 p-1.5 rounded-lg hover:bg-dark-700 transition-colors"
+                                className="text-[#a3a3a3] hover:text-[#fafafa] disabled:opacity-30 p-2 rounded-[8px] hover:bg-[#262626] transition-colors cursor-pointer"
                                 title={t('routines.moveDown')}
                               >
                                 <ChevronDown className="w-3.5 h-3.5" />
@@ -587,7 +563,7 @@ export const ProgramEditorModal: React.FC<ProgramEditorModalProps> = ({
                               <button
                                 type="button"
                                 onClick={() => removeExercise(exIdx)}
-                                className="text-zinc-500 hover:text-red-400 p-1.5 rounded-lg hover:bg-dark-700 transition-colors"
+                                className="text-[#a3a3a3] hover:text-red-400 p-2 rounded-[8px] hover:bg-[#262626] transition-colors cursor-pointer"
                                 title={t('common.delete')}
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
@@ -595,10 +571,9 @@ export const ProgramEditorModal: React.FC<ProgramEditorModalProps> = ({
                             </div>
                           </div>
 
-                          {/* Set and Rep targets */}
-                          <div className="grid grid-cols-3 gap-2 text-xs bg-dark-900/90 p-2 rounded-lg border border-dark-750">
+                          <div className="grid grid-cols-3 gap-2 pt-2 border-t border-[#262626]">
                             <div>
-                              <label className="text-[9px] font-bold uppercase tracking-wider text-zinc-400 block mb-0.5">
+                              <label className="text-[11px] font-medium text-[#a3a3a3] block mb-1">
                                 {t('routines.sets')}
                               </label>
                               <input
@@ -611,11 +586,11 @@ export const ProgramEditorModal: React.FC<ProgramEditorModalProps> = ({
                                     target_sets: Math.max(1, parseInt(e.target.value) || 1),
                                   })
                                 }
-                                className="w-full bg-dark-800 border border-dark-600 rounded-lg px-2 py-0.5 text-center font-mono font-bold text-white focus:outline-none focus:border-brand-500 text-xs"
+                                className="w-full h-10 bg-[#0a0a0a] border border-[#404040] rounded-[8px] px-2 text-center font-mono text-[13px] text-[#fafafa] focus:outline-none focus:border-[#34d399]"
                               />
                             </div>
                             <div>
-                              <label className="text-[9px] font-bold uppercase tracking-wider text-zinc-400 block mb-0.5">
+                              <label className="text-[11px] font-medium text-[#a3a3a3] block mb-1">
                                 {t('routines.minReps')}
                               </label>
                               <input
@@ -628,11 +603,11 @@ export const ProgramEditorModal: React.FC<ProgramEditorModalProps> = ({
                                     target_reps_min: Math.max(1, parseInt(e.target.value) || 1),
                                   })
                                 }
-                                className="w-full bg-dark-800 border border-dark-600 rounded-lg px-2 py-0.5 text-center font-mono font-bold text-white focus:outline-none focus:border-brand-500 text-xs"
+                                className="w-full h-10 bg-[#0a0a0a] border border-[#404040] rounded-[8px] px-2 text-center font-mono text-[13px] text-[#fafafa] focus:outline-none focus:border-[#34d399]"
                               />
                             </div>
                             <div>
-                              <label className="text-[9px] font-bold uppercase tracking-wider text-zinc-400 block mb-0.5">
+                              <label className="text-[11px] font-medium text-[#a3a3a3] block mb-1">
                                 {t('routines.maxReps')}
                               </label>
                               <input
@@ -645,7 +620,7 @@ export const ProgramEditorModal: React.FC<ProgramEditorModalProps> = ({
                                     target_reps_max: Math.max(1, parseInt(e.target.value) || 1),
                                   })
                                 }
-                                className="w-full bg-dark-800 border border-dark-600 rounded-lg px-2 py-0.5 text-center font-mono font-bold text-white focus:outline-none focus:border-brand-500 text-xs"
+                                className="w-full h-10 bg-[#0a0a0a] border border-[#404040] rounded-[8px] px-2 text-center font-mono text-[13px] text-[#fafafa] focus:outline-none focus:border-[#34d399]"
                               />
                             </div>
                           </div>

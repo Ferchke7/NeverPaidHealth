@@ -36,6 +36,19 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
     gradient: 'accent',
   };
 
+  const fillClass =
+    activeColor === 'danger'
+      ? 'bg-red-400'
+      : activeColor === 'warning'
+        ? 'bg-amber-400'
+        : 'bg-[#34d399]';
+
+  const trackHeight = {
+    sm: 'h-1.5',
+    md: 'h-2',
+    lg: 'h-2.5',
+  }[size];
+
   return (
     <HeroProgressBar.Root
       value={value}
@@ -47,13 +60,13 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
       className={`w-full ${className}`}
     >
       {(label || showValueLabel) && (
-        <div className="flex items-center justify-between text-xs mb-1">
-          {label && <span className="font-semibold text-zinc-300">{label}</span>}
-          {showValueLabel && <HeroProgressBar.Output className="font-mono font-bold text-zinc-200" />}
+        <div className="flex items-center justify-between text-xs mb-1.5">
+          {label && <span className="font-medium text-[#a3a3a3]">{label}</span>}
+          {showValueLabel && <HeroProgressBar.Output className="font-mono font-medium text-[#fafafa]" />}
         </div>
       )}
-      <HeroProgressBar.Track className="bg-dark-800 border border-dark-700/80">
-        <HeroProgressBar.Fill />
+      <HeroProgressBar.Track className={`bg-[#262626] border-0 rounded-full ${trackHeight}`}>
+        <HeroProgressBar.Fill className={`${fillClass} rounded-full`} />
       </HeroProgressBar.Track>
     </HeroProgressBar.Root>
   );

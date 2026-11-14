@@ -16,8 +16,6 @@ import {
 } from 'lucide-react';
 import { useFocusTimerStore, SplitStrategy } from '../model/focusTimerStore.ts';
 import { useActiveWorkoutStore } from '../../../entities/workout/model/activeWorkoutStore.ts';
-import { Badge } from '../../../shared/ui/card.tsx';
-import { ProgressBar } from '../../../shared/ui/progress.tsx';
 import { useTranslation } from '../../../shared/lib/i18n/i18n.ts';
 
 const BREAK_PRESET_MINUTES = [3, 5, 10, 15];
@@ -60,17 +58,16 @@ export const FloatingFocusTimer: React.FC = () => {
   const [markCompleted, setMarkCompleted] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [confirmingDiscard, setConfirmingDiscard] = useState(false);
 
   // Sync tick interval + visibility/focus recovery for 0ms drift
   useEffect(() => {
     if (!isActive || !isRunning) return;
 
-    // 1. Regular 1s interval
     const interval = setInterval(() => {
       syncTick();
     }, 1000);
 
-    // 2. Tab visibility & focus change handler (instant drift catchup)
     const handleVisibilityOrFocus = () => {
       syncTick();
     };
@@ -84,6 +81,12 @@ export const FloatingFocusTimer: React.FC = () => {
       window.removeEventListener('focus', handleVisibilityOrFocus);
     };
   }, [isActive, isRunning, syncTick]);
+
+  useEffect(() => {
+    if (!isModalOpen) {
+      setConfirmingDiscard(false);
+    }
+  }, [isModalOpen]);
 
   if (!isActive) return null;
 
@@ -102,12 +105,13 @@ export const FloatingFocusTimer: React.FC = () => {
   const getPhaseName = () => {
     if (mode === 'stopwatch') return t('focusTimer.stopwatch');
     if (mode === 'target_timer') return t('focusTimer.targetTimer');
-    if (pomodoroPhase === 'work') return t('focusTimer.pomodoroRound', { round: pomodoroRound, total: totalPomodoroRounds });
+    if (pomodoroPhase === 'work') {
+      return t('focusTimer.pomodoroRound', { round: pomodoroRound, total: totalPomodoroRounds });
+    }
     if (pomodoroPhase === 'short_break') return t('focusTimer.shortBreak');
     return t('focusTimer.longBreak');
   };
 
-  // Calculate percentage for circular progress of CURRENT active interval
   const getCurrentIntervalPercent = () => {
     if (mode === 'stopwatch') return 100;
     let totalSec = workDurationSec;
@@ -117,11 +121,9 @@ export const FloatingFocusTimer: React.FC = () => {
     return Math.max(0, Math.min(100, ((totalSec - secondsRemaining) / totalSec) * 100));
   };
 
-  // Overall session completion progress (e.g. 45 min done out of 60 min)
   const totalTargetSec = targetTotalMinutes * 60;
-  const overallPercent = totalTargetSec > 0
-    ? Math.min(100, Math.round((secondsElapsedTotal / totalTargetSec) * 100))
-    : 0;
+  const overallPercent =
+    totalTargetSec > 0 ? Math.min(100, Math.round((secondsElapsedTotal / totalTargetSec) * 100)) : 0;
 
   const intervalPercent = getCurrentIntervalPercent();
   const radius = 80;
@@ -134,85 +136,92 @@ export const FloatingFocusTimer: React.FC = () => {
     try {
       await stopAndLog(markCompleted, notes);
       setNotes('');
-    } catch (err: any) {
-      setSaveError(err?.message || 'Ошибка сохранения сессии. Попробуйте еще раз.');
+    } catch (err: unknown) {
+      setSaveError(
+        err instanceof Error ? err.message : t('nutrition.saveError')
+      );
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // 1. Minimized Floating Pill Widget (bottom right corner, stacked above active workout pill if present)
+  // 1. Minimized Floating Pill Widget
   if (!isModalOpen) {
     return (
       <div
         className={`fixed ${
-          hasFloatingWorkoutPill ? 'bottom-36 2xl:bottom-24' : 'bottom-20 2xl:bottom-6'
-        } right-3 sm:right-4 md:right-6 z-50 animate-in slide-in-from-bottom-5 transition-all`}
+          hasFloatingWorkoutPill ? 'bottom-36 lg:bottom-24' : 'bottom-20 lg:bottom-6'
+        } right-3 sm:right-4 md:right-6 z-50 transition-all`}
       >
         <div
           onClick={openModal}
-          className="cursor-pointer bg-dark-900/95 backdrop-blur-md border border-brand-500/40 shadow-2xl hover:border-brand-400 rounded-2xl p-2.5 sm:p-3 flex items-center gap-3 transition-all hover:scale-105 active:scale-95"
+          className="cursor-pointer bg-[#171717] border border-[#404040] hover:border-[#34d399] rounded-[14px] p-2.5 sm:p-3 flex items-center gap-3 transition-colors"
         >
           <div className="relative">
             <div
-              className={`w-9 h-9 rounded-xl border flex items-center justify-center font-bold text-xs ${
+              className={`w-10 h-10 rounded-[10px] border flex items-center justify-center ${
                 pomodoroPhase === 'work'
-                  ? 'bg-amber-500/15 border-amber-500/40 text-amber-400'
-                  : 'bg-emerald-500/15 border-emerald-500/40 text-emerald-400'
+                  ? 'bg-[#022c22] border-[#064e3b] text-[#34d399]'
+                  : 'bg-[#0a0a0a] border-[#404040] text-[#fafafa]'
               }`}
             >
               {pomodoroPhase === 'work' ? (
-                <Flame className="w-4 h-4 animate-pulse" />
+                <Flame className="w-4 h-4" />
               ) : (
                 <Coffee className="w-4 h-4" />
               )}
             </div>
             {isRunning && (
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 absolute -top-0.5 -right-0.5 ring-2 ring-dark-900 animate-ping" />
+              <span className="w-2.5 h-2.5 rounded-full bg-[#34d399] absolute -top-0.5 -right-0.5 ring-2 ring-[#171717]" />
             )}
           </div>
 
           <div className="min-w-0 pr-1">
             <div className="flex items-center gap-1.5">
-              <span className="text-xs font-extrabold text-white truncate max-w-[130px] sm:max-w-[180px]">
+              <span className="text-[12px] font-semibold text-[#fafafa] truncate max-w-[130px] sm:max-w-[180px]">
                 {taskTitle || t('focusTimer.session')}
               </span>
-              <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-dark-800 border border-dark-700 text-zinc-300">
+              <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-[6px] bg-[#0a0a0a] border border-[#404040] text-[#a3a3a3]">
                 {getPhaseName()}
               </span>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="text-sm font-black font-mono tracking-wider text-brand-400">
+            <div className="flex items-center gap-2 mt-0.5">
+              <div className="text-[14px] font-semibold font-mono tabular-nums text-[#34d399]">
                 {mode === 'stopwatch'
                   ? formatTime(secondsElapsedTotal)
                   : formatTime(secondsRemaining)}
               </div>
-              <span className="text-[10px] text-zinc-400 font-mono">
-                ({Math.floor(secondsElapsedTotal / 60)}/{targetTotalMinutes}{t('common.minutes')})
+              <span className="text-[11px] text-[#a3a3a3] font-mono tabular-nums">
+                ({Math.floor(secondsElapsedTotal / 60)}/{targetTotalMinutes}
+                {t('common.minutes')})
               </span>
             </div>
           </div>
 
-          <div className="flex items-center gap-1 border-l border-dark-800 pl-2">
+          <div className="flex items-center gap-1.5 border-l border-[#262626] pl-2.5">
             <button
+              type="button"
               onClick={(e) => {
                 e.stopPropagation();
                 if (isRunning) pause();
                 else resume();
               }}
-              className="w-8 h-8 rounded-xl bg-dark-800 hover:bg-dark-700 text-white flex items-center justify-center transition-colors cursor-pointer"
+              className="min-h-[44px] min-w-[44px] rounded-[10px] bg-[#0a0a0a] hover:bg-[#262626] border border-[#404040] text-[#fafafa] flex items-center justify-center transition-colors cursor-pointer"
+              aria-label={isRunning ? t('focusTimer.pause') : t('focusTimer.start')}
             >
-              {isRunning ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 fill-current" />}
+              {isRunning ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 fill-current" />}
             </button>
 
             <button
+              type="button"
               onClick={(e) => {
                 e.stopPropagation();
                 openModal();
               }}
-              className="w-8 h-8 rounded-xl bg-brand-500 hover:bg-brand-400 text-dark-950 flex items-center justify-center transition-colors font-bold cursor-pointer"
+              className="min-h-[44px] min-w-[44px] rounded-[10px] bg-[#34d399] hover:bg-[#10b981] text-[#0a0a0a] flex items-center justify-center transition-colors cursor-pointer"
+              aria-label={t('focusTimer.title')}
             >
-              <Maximize2 className="w-3.5 h-3.5" />
+              <Maximize2 className="w-4 h-4" />
             </button>
           </div>
         </div>
@@ -220,47 +229,75 @@ export const FloatingFocusTimer: React.FC = () => {
     );
   }
 
-  // 2. Fullscreen / Focused Timer Modal
+  // 2. Focused Timer Overlay Modal
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md animate-in fade-in">
-      <div className="bg-dark-900 border border-dark-700 w-full max-w-lg rounded-3xl p-5 sm:p-6 flex flex-col items-center text-center shadow-2xl relative overflow-hidden animate-in zoom-in-95 max-h-[92vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80">
+      <div className="bg-[#171717] border border-[#404040] w-full max-w-lg rounded-[14px] p-5 sm:p-6 flex flex-col items-center text-center relative max-h-[92vh] overflow-y-auto space-y-3">
         {/* Top Header Bar */}
-        <div className="w-full flex items-center justify-between mb-3">
+        <div className="w-full flex items-center justify-between gap-2">
           <button
+            type="button"
             onClick={closeModal}
-            className="p-2 rounded-xl bg-dark-800/80 hover:bg-dark-700 text-zinc-400 hover:text-white transition-colors cursor-pointer"
+            className="min-h-[44px] min-w-[44px] rounded-[10px] bg-[#0a0a0a] hover:bg-[#262626] border border-[#404040] text-[#a3a3a3] hover:text-[#fafafa] flex items-center justify-center transition-colors cursor-pointer"
             title={t('focusTimer.minimize')}
+            aria-label={t('focusTimer.minimize')}
           >
             <Minimize2 className="w-4 h-4" />
           </button>
 
-          <Badge variant="warning" className="px-3 py-1 text-xs font-bold flex items-center gap-1.5">
+          <span className="px-3 py-1.5 rounded-[10px] bg-[#022c22] border border-[#064e3b] text-[#34d399] text-[12px] font-medium flex items-center gap-1.5">
             <Sparkles className="w-3.5 h-3.5" />
             <span>{getPhaseName()}</span>
-          </Badge>
+          </span>
 
           <button
-            onClick={() => {
-              if (window.confirm(t('focusTimer.discardConfirm'))) {
-                discard();
-              }
-            }}
-            className="p-2 rounded-xl bg-dark-800/80 hover:bg-red-950/40 text-zinc-400 hover:text-red-400 transition-colors cursor-pointer"
+            type="button"
+            onClick={() => setConfirmingDiscard((prev) => !prev)}
+            className="min-h-[44px] min-w-[44px] rounded-[10px] bg-[#0a0a0a] hover:bg-red-950/30 border border-[#404040] hover:border-red-500/40 text-[#a3a3a3] hover:text-red-400 flex items-center justify-center transition-colors cursor-pointer"
             title={t('focusTimer.cancel')}
+            aria-label={t('focusTimer.cancel')}
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
+        {/* Inline Discard Confirmation Strip */}
+        {confirmingDiscard && (
+          <div className="w-full p-3 rounded-[10px] bg-red-950/25 border border-red-500/40 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-left">
+            <span className="text-[12px] text-red-200 font-medium">
+              {t('focusTimer.confirmDiscard')}
+            </span>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => setConfirmingDiscard(false)}
+                className="min-h-[44px] px-3 rounded-[10px] bg-[#0a0a0a] border border-[#404040] text-[12px] text-[#fafafa] cursor-pointer"
+              >
+                {t('common.cancel')}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setConfirmingDiscard(false);
+                  discard();
+                }}
+                className="min-h-[44px] px-3 rounded-[10px] bg-red-500 text-[#fafafa] text-[12px] font-semibold cursor-pointer"
+              >
+                {t('focusTimer.confirmDiscardYes')}
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Mode Switcher Tabs */}
-        <div className="flex bg-dark-950 p-1 rounded-2xl border border-dark-800 mb-3 text-xs font-semibold">
+        <div className="w-full grid grid-cols-3 bg-[#0a0a0a] p-1 rounded-[10px] border border-[#404040] text-[12px] font-medium gap-1">
           <button
             type="button"
             onClick={() => setMode('pomodoro')}
-            className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer ${
+            className={`min-h-[44px] px-2 rounded-[8px] transition-colors cursor-pointer truncate ${
               mode === 'pomodoro'
-                ? 'bg-brand-500 text-dark-950 font-bold shadow-sm'
-                : 'text-zinc-400 hover:text-zinc-200'
+                ? 'bg-[#022c22] text-[#34d399] border border-[#064e3b]'
+                : 'text-[#a3a3a3] hover:text-[#fafafa]'
             }`}
           >
             {t('focusTimer.modePomodoro')}
@@ -268,10 +305,10 @@ export const FloatingFocusTimer: React.FC = () => {
           <button
             type="button"
             onClick={() => setMode('target_timer')}
-            className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer ${
+            className={`min-h-[44px] px-2 rounded-[8px] transition-colors cursor-pointer truncate ${
               mode === 'target_timer'
-                ? 'bg-brand-500 text-dark-950 font-bold shadow-sm'
-                : 'text-zinc-400 hover:text-zinc-200'
+                ? 'bg-[#022c22] text-[#34d399] border border-[#064e3b]'
+                : 'text-[#a3a3a3] hover:text-[#fafafa]'
             }`}
           >
             {t('focusTimer.modeTimer', { mins: targetTotalMinutes })}
@@ -279,10 +316,10 @@ export const FloatingFocusTimer: React.FC = () => {
           <button
             type="button"
             onClick={() => setMode('stopwatch')}
-            className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer ${
+            className={`min-h-[44px] px-2 rounded-[8px] transition-colors cursor-pointer truncate ${
               mode === 'stopwatch'
-                ? 'bg-brand-500 text-dark-950 font-bold shadow-sm'
-                : 'text-zinc-400 hover:text-zinc-200'
+                ? 'bg-[#022c22] text-[#34d399] border border-[#064e3b]'
+                : 'text-[#a3a3a3] hover:text-[#fafafa]'
             }`}
           >
             {t('focusTimer.modeStopwatch')}
@@ -290,27 +327,38 @@ export const FloatingFocusTimer: React.FC = () => {
         </div>
 
         {/* Task Title & Target Details */}
-        <h2 className="text-base sm:text-lg font-extrabold text-white tracking-tight mb-0.5 line-clamp-2">
-          {taskTitle || t('focusTimer.session')}
-        </h2>
-        <div className="flex items-center gap-2 text-xs text-zinc-400 mb-3 flex-wrap justify-center">
-          <span>{t('focusTimer.category')} <strong className="text-zinc-200 capitalize">{category}</strong></span>
-          <span>•</span>
-          <span>{t('focusTimer.dailyTarget')} <strong className="text-brand-400 font-mono">{targetTotalMinutes} {t('common.minutes')}</strong></span>
+        <div>
+          <h2 className="text-[18px] font-semibold text-[#fafafa] tracking-tight line-clamp-2">
+            {taskTitle || t('focusTimer.session')}
+          </h2>
+          <div className="flex items-center gap-2 text-[12px] text-[#a3a3a3] mt-1 flex-wrap justify-center">
+            <span>
+              {t('focusTimer.category')}{' '}
+              <strong className="text-[#fafafa] capitalize">{category}</strong>
+            </span>
+            <span className="text-[#404040]">·</span>
+            <span>
+              {t('focusTimer.dailyTarget')}{' '}
+              <strong className="text-[#34d399] font-mono tabular-nums">
+                {targetTotalMinutes} {t('common.minutes')}
+              </strong>
+            </span>
+          </div>
         </div>
 
-        {/* Pomodoro Split Strategy Selector (when in Pomodoro mode) */}
+        {/* Pomodoro Split Strategy Selector */}
         {mode === 'pomodoro' && (
-          <div className="w-full bg-dark-950/70 border border-dark-800 rounded-2xl p-2.5 mb-3 text-left space-y-2">
-            <div className="flex items-center justify-between text-[11px] text-zinc-400 font-bold">
+          <div className="w-full bg-[#0a0a0a] border border-[#262626] rounded-[10px] p-3 text-left space-y-2.5">
+            <div className="flex items-center justify-between text-[12px] text-[#a3a3a3] font-medium">
               <span className="flex items-center gap-1.5">
-                <Layers className="w-3.5 h-3.5 text-brand-400" />
+                <Layers className="w-3.5 h-3.5 text-[#34d399]" />
                 {t('focusTimer.splitRounds', { target: targetTotalMinutes })}
               </span>
-              <span className="text-brand-400 font-mono">{t('focusTimer.roundsCount', { count: totalPomodoroRounds })}</span>
+              <span className="text-[#34d399] font-mono tabular-nums">
+                {t('focusTimer.roundsCount', { count: totalPomodoroRounds })}
+              </span>
             </div>
 
-            {/* Split Strategy Options */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
               {[
                 { id: '25m', label: t('focusTimer.block25') },
@@ -322,10 +370,10 @@ export const FloatingFocusTimer: React.FC = () => {
                   key={opt.id}
                   type="button"
                   onClick={() => setSplitStrategy(opt.id as SplitStrategy)}
-                  className={`px-2 py-1.5 rounded-xl text-[11px] font-bold border transition-all truncate cursor-pointer ${
+                  className={`min-h-[44px] px-2 rounded-[10px] text-[12px] font-medium border transition-colors truncate cursor-pointer ${
                     splitStrategy === opt.id
-                      ? 'bg-brand-500/20 border-brand-500 text-brand-400 shadow-sm'
-                      : 'bg-dark-800/80 border-dark-700/80 text-zinc-400 hover:text-zinc-200'
+                      ? 'bg-[#022c22] border-[#064e3b] text-[#34d399]'
+                      : 'bg-[#171717] border-[#404040] text-[#a3a3a3] hover:text-[#fafafa]'
                   }`}
                 >
                   {opt.label}
@@ -333,8 +381,7 @@ export const FloatingFocusTimer: React.FC = () => {
               ))}
             </div>
 
-            {/* Visual Round Breakdown Chips */}
-            <div className="flex items-center gap-1.5 overflow-x-auto pt-1 pb-0.5 text-[10px] font-mono no-scrollbar">
+            <div className="flex items-center gap-1.5 overflow-x-auto pt-1 text-[11px] font-mono tabular-nums">
               {roundDurationsSec.map((durSec, idx) => {
                 const roundNum = idx + 1;
                 const isCompleted = roundNum < pomodoroRound;
@@ -344,18 +391,19 @@ export const FloatingFocusTimer: React.FC = () => {
                 return (
                   <React.Fragment key={idx}>
                     <div
-                      className={`px-2 py-1 rounded-lg border flex items-center gap-1 shrink-0 font-bold transition-all ${
-                        isCompleted
-                          ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-400'
-                          : isCurrent
-                          ? 'bg-brand-500/25 border-brand-500 text-brand-400 ring-2 ring-brand-500/30'
-                          : 'bg-dark-800 border-dark-700 text-zinc-500'
+                      className={`px-2 py-1 rounded-[6px] border flex items-center gap-1 shrink-0 font-medium ${
+                        isCompleted || isCurrent
+                          ? 'bg-[#022c22] border-[#064e3b] text-[#34d399]'
+                          : 'bg-[#171717] border-[#404040] text-[#737373]'
                       }`}
                     >
-                      {isCompleted ? '✓' : `#${roundNum}`} {mins}{t('common.minutes')}
+                      {isCompleted ? '✓' : `#${roundNum}`} {mins}
+                      {t('common.minutes')}
                     </div>
                     {idx < roundDurationsSec.length - 1 && (
-                      <span className="text-zinc-600 text-[10px]">☕ 5{t('common.minutes')}</span>
+                      <span className="text-[#737373] text-[11px]">
+                        · 5{t('common.minutes')}
+                      </span>
                     )}
                   </React.Fragment>
                 );
@@ -365,25 +413,21 @@ export const FloatingFocusTimer: React.FC = () => {
         )}
 
         {/* Circular SVG Timer Display */}
-        <div className="relative my-2 flex items-center justify-center">
+        <div className="relative my-1 flex items-center justify-center">
           <svg className="w-52 h-52 sm:w-56 sm:h-56 -rotate-90 transform" viewBox="0 0 200 200">
-            {/* Background Track */}
             <circle
               cx="100"
               cy="100"
               r={radius}
-              className="text-dark-800 stroke-current"
+              className="text-[#262626] stroke-current"
               strokeWidth="10"
               fill="transparent"
             />
-            {/* Animated Progress Ring */}
             <circle
               cx="100"
               cy="100"
               r={radius}
-              className={`stroke-current transition-all duration-700 ease-out ${
-                pomodoroPhase === 'work' ? 'text-brand-500' : 'text-emerald-400'
-              }`}
+              className="text-[#34d399] stroke-current transition-all duration-700 ease-out"
               strokeWidth="10"
               strokeDasharray={circumference}
               strokeDashoffset={strokeDashoffset}
@@ -392,61 +436,71 @@ export const FloatingFocusTimer: React.FC = () => {
             />
           </svg>
 
-          {/* Inner Content */}
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <div className="text-4xl sm:text-5xl font-black font-mono tracking-tight text-white mb-0.5">
+            <div className="text-[40px] sm:text-[46px] font-semibold font-mono tabular-nums tracking-tight text-[#fafafa]">
               {mode === 'stopwatch'
                 ? formatTime(secondsElapsedTotal)
                 : formatTime(secondsRemaining)}
             </div>
 
-            <div className="text-xs text-zinc-400 font-medium flex items-center gap-1.5">
-              {isRunning ? (
-                <>
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-                  <span>{t('focusTimer.inProgress')}</span>
-                </>
-              ) : (
-                <>
-                  <span className="w-2 h-2 rounded-full bg-amber-400" />
-                  <span>{t('focusTimer.onPause')}</span>
-                </>
-              )}
+            <div className="text-[12px] text-[#a3a3a3] font-medium flex items-center gap-1.5 mt-0.5">
+              <span
+                className={`w-2 h-2 rounded-full ${
+                  isRunning ? 'bg-[#34d399]' : 'bg-amber-400'
+                }`}
+              />
+              <span>{isRunning ? t('focusTimer.inProgress') : t('focusTimer.onPause')}</span>
             </div>
 
-            <div className="text-[11px] text-zinc-400 mt-2 font-mono flex items-center gap-1">
-              <Clock className="w-3 h-3 text-brand-400" />
-              <span>{t('focusTimer.accumulated')} <strong className="text-white">{Math.floor(secondsElapsedTotal / 60)}</strong> / {targetTotalMinutes} {t('common.minutes')}</span>
+            <div className="text-[11px] text-[#a3a3a3] mt-2 font-mono tabular-nums flex items-center gap-1">
+              <Clock className="w-3 h-3 text-[#34d399]" />
+              <span>
+                {t('focusTimer.accumulated')}{' '}
+                <strong className="text-[#fafafa]">
+                  {Math.floor(secondsElapsedTotal / 60)}
+                </strong>{' '}
+                / {targetTotalMinutes} {t('common.minutes')}
+              </span>
             </div>
           </div>
         </div>
 
         {/* Total Progress Bar */}
-        <div className="w-full bg-dark-950/80 border border-dark-800 rounded-2xl p-2.5 my-2 space-y-1.5">
-          <div className="flex items-center justify-between text-[11px] text-zinc-400">
+        <div className="w-full bg-[#0a0a0a] border border-[#262626] rounded-[10px] p-3 space-y-1.5">
+          <div className="flex items-center justify-between text-[12px] text-[#a3a3a3]">
             <span>{t('focusTimer.totalProgress')}</span>
-            <span className="font-bold text-brand-400 font-mono">{overallPercent}% ({Math.floor(secondsElapsedTotal / 60)}/{targetTotalMinutes}{t('common.minutes')})</span>
+            <span className="font-semibold text-[#34d399] font-mono tabular-nums">
+              {overallPercent}% ({Math.floor(secondsElapsedTotal / 60)}/{targetTotalMinutes}
+              {t('common.minutes')})
+            </span>
           </div>
-          <ProgressBar value={overallPercent} variant="brand" size="sm" />
+          <div className="h-1.5 w-full rounded-full bg-[#262626] overflow-hidden">
+            <div
+              className="h-full rounded-full bg-[#34d399] transition-all duration-300"
+              style={{ width: `${overallPercent}%` }}
+            />
+          </div>
         </div>
 
-        {/* Break Duration Preset Selector (When on break) */}
+        {/* Break Duration Preset Selector */}
         {mode === 'pomodoro' && pomodoroPhase !== 'work' && (
-          <div className="w-full bg-dark-950/60 border border-dark-800 rounded-2xl p-2.5 my-1">
-            <div className="flex items-center justify-between text-[11px] text-zinc-400 font-bold mb-1.5 px-1">
+          <div className="w-full bg-[#0a0a0a] border border-[#262626] rounded-[10px] p-3">
+            <div className="flex items-center justify-between text-[12px] text-[#a3a3a3] font-medium mb-2">
               <span>{t('focusTimer.breakDuration')}</span>
-              <span className="text-emerald-400">{Math.round(shortBreakDurationSec / 60)} {t('common.minutes')}</span>
+              <span className="text-[#34d399] font-mono tabular-nums">
+                {Math.round(shortBreakDurationSec / 60)} {t('common.minutes')}
+              </span>
             </div>
-            <div className="flex justify-center gap-1.5">
+            <div className="grid grid-cols-4 gap-2">
               {BREAK_PRESET_MINUTES.map((mins) => (
                 <button
                   key={mins}
                   type="button"
                   onClick={() => setBreakDurationMinutes(mins)}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-semibold border transition-all cursor-pointer ${
+                  className={`min-h-[44px] px-2 rounded-[10px] text-[12px] font-medium border transition-colors cursor-pointer ${
                     Math.round(shortBreakDurationSec / 60) === mins
-                      ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400'
-                      : 'bg-dark-800 border-dark-700 text-zinc-400 hover:text-zinc-200'
+                      ? 'bg-[#022c22] border-[#064e3b] text-[#34d399]'
+                      : 'bg-[#171717] border-[#404040] text-[#a3a3a3] hover:text-[#fafafa]'
                   }`}
                 >
                   {mins} {t('common.minutes')}
@@ -457,53 +511,50 @@ export const FloatingFocusTimer: React.FC = () => {
         )}
 
         {/* Action Controls Grid */}
-        <div className="grid grid-cols-3 gap-2.5 w-full mt-2">
-          {/* Reset / Skip */}
+        <div className="grid grid-cols-3 gap-2.5 w-full">
           {mode === 'pomodoro' ? (
             <button
+              type="button"
               onClick={skipPhase}
-              className="py-2.5 px-2 rounded-2xl bg-dark-800 hover:bg-dark-750 border border-dark-700 text-zinc-300 font-bold text-xs flex flex-col items-center justify-center gap-1 transition-all active:scale-95 cursor-pointer"
+              className="min-h-[52px] px-2 rounded-[10px] bg-[#0a0a0a] hover:bg-[#262626] border border-[#404040] text-[#fafafa] font-medium text-[12px] flex flex-col items-center justify-center gap-1 transition-colors cursor-pointer"
             >
-              <FastForward className="w-4 h-4 text-zinc-400" />
+              <FastForward className="w-4 h-4 text-[#a3a3a3]" />
               <span>{t('focusTimer.skip')}</span>
             </button>
           ) : (
             <button
+              type="button"
               onClick={resetCurrentPhase}
-              className="py-2.5 px-2 rounded-2xl bg-dark-800 hover:bg-dark-750 border border-dark-700 text-zinc-300 font-bold text-xs flex flex-col items-center justify-center gap-1 transition-all active:scale-95 cursor-pointer"
+              className="min-h-[52px] px-2 rounded-[10px] bg-[#0a0a0a] hover:bg-[#262626] border border-[#404040] text-[#fafafa] font-medium text-[12px] flex flex-col items-center justify-center gap-1 transition-colors cursor-pointer"
             >
-              <RotateCcw className="w-4 h-4 text-zinc-400" />
+              <RotateCcw className="w-4 h-4 text-[#a3a3a3]" />
               <span>{t('focusTimer.reset')}</span>
             </button>
           )}
 
-          {/* Main Play/Pause Button */}
           <button
+            type="button"
             onClick={isRunning ? pause : resume}
-            className={`py-2.5 px-2 rounded-2xl font-black text-xs sm:text-sm flex flex-col items-center justify-center gap-1 shadow-lg transition-all active:scale-95 cursor-pointer ${
-              isRunning
-                ? 'bg-amber-500 hover:bg-amber-400 text-dark-950 shadow-amber-500/20'
-                : 'bg-brand-500 hover:bg-brand-400 text-dark-950 shadow-brand-500/20'
-            }`}
+            className="min-h-[52px] px-2 rounded-[10px] bg-[#34d399] hover:bg-[#10b981] text-[#0a0a0a] font-semibold text-[13px] flex flex-col items-center justify-center gap-1 transition-colors cursor-pointer"
           >
             {isRunning ? (
               <>
-                <Pause className="w-5 h-5" />
+                <Pause className="w-4 h-4" />
                 <span>{t('focusTimer.pause')}</span>
               </>
             ) : (
               <>
-                <Play className="w-5 h-5 fill-current" />
+                <Play className="w-4 h-4 fill-current" />
                 <span>{t('focusTimer.start')}</span>
               </>
             )}
           </button>
 
-          {/* Finish & Save Log */}
           <button
+            type="button"
             onClick={handleFinishAndSave}
             disabled={isSubmitting}
-            className="py-2.5 px-2 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex flex-col items-center justify-center gap-1 transition-all shadow-lg shadow-emerald-600/20 active:scale-95 disabled:opacity-50 cursor-pointer"
+            className="min-h-[52px] px-2 rounded-[10px] bg-[#022c22] hover:bg-[#064e3b] border border-[#064e3b] text-[#34d399] font-semibold text-[12px] flex flex-col items-center justify-center gap-1 transition-colors disabled:opacity-50 cursor-pointer"
           >
             <CheckCircle2 className="w-4 h-4" />
             <span>{t('focusTimer.done')}</span>
@@ -511,21 +562,21 @@ export const FloatingFocusTimer: React.FC = () => {
         </div>
 
         {saveError && (
-          <div className="w-full mt-2 p-2 bg-red-950/60 border border-red-800 text-red-300 text-xs rounded-xl text-center">
+          <div className="w-full p-2.5 bg-red-950/30 border border-red-500/40 text-red-400 text-[12px] rounded-[10px] text-center">
             {saveError}
           </div>
         )}
 
         {/* Notes & Mark Completed Checkbox */}
-        <div className="w-full mt-3 pt-3 border-t border-dark-800 text-left space-y-2">
-          <label className="flex items-center gap-2 cursor-pointer select-none">
+        <div className="w-full pt-3 border-t border-[#262626] text-left space-y-2.5">
+          <label className="flex items-center gap-2.5 min-h-[44px] cursor-pointer select-none">
             <input
               type="checkbox"
               checked={markCompleted}
               onChange={(e) => setMarkCompleted(e.target.checked)}
-              className="w-4 h-4 rounded text-brand-500 accent-brand-500"
+              className="w-4 h-4 rounded accent-[#34d399]"
             />
-            <span className="text-xs text-zinc-300 font-medium">
+            <span className="text-[12px] text-[#fafafa] font-medium">
               {t('focusTimer.markCompleted')}
             </span>
           </label>
@@ -535,7 +586,7 @@ export const FloatingFocusTimer: React.FC = () => {
             placeholder={t('focusTimer.notesPlaceholder')}
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            className="w-full bg-dark-950 border border-dark-800 rounded-xl px-3 py-1.5 text-xs text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-brand-500"
+            className="w-full min-h-[44px] bg-[#0a0a0a] border border-[#404040] rounded-[10px] px-3.5 text-[13px] text-[#fafafa] placeholder-[#737373] focus:outline-none focus:border-[#34d399]"
           />
         </div>
       </div>

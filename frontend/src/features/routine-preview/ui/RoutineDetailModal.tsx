@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Play, HelpCircle, Edit3, Clock, Layers, Copy } from 'lucide-react';
+import { HelpCircle } from 'lucide-react';
 import { Button } from '../../../shared/ui/button.tsx';
 import { Modal } from '../../../shared/ui/modal.tsx';
 import { Badge } from '../../../shared/ui/card.tsx';
@@ -77,7 +77,7 @@ export const RoutineDetailModal: React.FC<RoutineDetailModalProps> = ({
         onClose={onClose}
         size="lg"
         title={
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-2.5 flex-wrap">
             <span>{routine.name}</span>
             <Badge variant={isSystemRoutine ? 'brand' : 'success'} size="sm">
               {isSystemRoutine ? t('routines.systemLibrary') : t('routines.customRoutines')}
@@ -90,74 +90,58 @@ export const RoutineDetailModal: React.FC<RoutineDetailModalProps> = ({
             : t('routines.neverPerformed')
         }
         footer={
-          <div className="w-full grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <div className="w-full grid grid-cols-1 sm:grid-cols-2 gap-2.5">
             {onEditRoutine ? (
               <Button
                 variant="outline"
                 size="md"
-                className="font-bold text-xs flex items-center justify-center gap-1.5"
                 onClick={() => {
                   onClose();
                   onEditRoutine(routine);
                 }}
               >
-                <Edit3 className="w-3.5 h-3.5 text-brand-400" />
-                <span>{isSystemRoutine ? t('routines.customize') : t('common.edit')}</span>
+                {isSystemRoutine ? t('routines.customize') : t('common.edit')}
               </Button>
             ) : onCloneToMyRoutines ? (
               <Button
                 variant="outline"
                 size="md"
-                className="font-bold text-xs flex items-center justify-center gap-1.5"
                 onClick={() => {
                   onClose();
                   onCloneToMyRoutines(routine);
                 }}
               >
-                <Copy className="w-3.5 h-3.5 text-brand-400" />
-                <span>{t('routines.saveToMy')}</span>
+                {t('routines.saveToMy')}
               </Button>
             ) : null}
 
             <Button
               variant="primary"
               size="md"
-              className="font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-brand-500/20"
               onClick={() => {
                 onClose();
                 onStartWorkout(routine);
               }}
             >
-              <Play className="w-4 h-4 fill-current ml-0.5" />
-              <span>{t('routines.startWorkout')}</span>
+              {t('routines.startWorkout')}
             </Button>
           </div>
         }
       >
-        <div className="space-y-3">
-          {/* Notes */}
+        <div className="space-y-4">
           {routine.notes && (
-            <div className="bg-dark-800/80 p-3 rounded-xl border border-dark-700/80 text-xs text-zinc-300 italic flex items-center gap-2">
-              <span className="text-zinc-500 font-sans not-italic font-semibold">{t('routines.note')}</span>
-              <span>"{routine.notes}"</span>
+            <div className="bg-[#0a0a0a] p-3.5 rounded-[10px] border border-[#262626] text-[13px] text-[#a3a3a3]">
+              <span className="font-medium text-[#fafafa] mr-1.5">{t('routines.note')}</span>
+              <span>{routine.notes}</span>
             </div>
           )}
 
-          {/* Subheader Stats bar */}
-          <div className="p-3 bg-dark-900/80 rounded-xl border border-dark-750 flex items-center justify-between text-xs text-zinc-400">
-            <span className="flex items-center gap-1.5">
-              <Layers className="w-3.5 h-3.5 text-brand-400" />
-              {t('routines.exercisesCount', { count: totalExercises })}
-            </span>
-
-            <span className="flex items-center gap-1.5">
-              <Clock className="w-3.5 h-3.5 text-zinc-400" />
-              {t('routines.estimatedDuration', { mins: estimatedDuration })}
-            </span>
+          <div className="p-3 bg-[#0a0a0a] rounded-[10px] border border-[#262626] flex items-center justify-between text-[13px] text-[#a3a3a3]">
+            <span>{t('routines.exercisesCount', { count: totalExercises })}</span>
+            <span>{t('routines.estimatedDuration', { mins: estimatedDuration })}</span>
           </div>
 
-          {/* Exercise Items List */}
-          <div className="space-y-2 divide-y divide-dark-750">
+          <div className="divide-y divide-[#262626]">
             {routine.exercises && routine.exercises.length > 0 ? (
               routine.exercises.map((ex, idx) => {
                 const exName = getExerciseName(ex);
@@ -171,9 +155,10 @@ export const RoutineDetailModal: React.FC<RoutineDetailModalProps> = ({
                 return (
                   <div
                     key={ex.exercise_id || ex.id || idx}
-                    className="pt-2.5 first:pt-0 flex items-center justify-between gap-3 group"
+                    className="py-3 first:pt-0 last:pb-0 flex items-center justify-between gap-3 group"
                   >
-                    <div
+                    <button
+                      type="button"
                       className="cursor-pointer shrink-0"
                       onClick={() =>
                         setInspectingExercise({
@@ -187,60 +172,57 @@ export const RoutineDetailModal: React.FC<RoutineDetailModalProps> = ({
                         exerciseName={exName}
                         fallbackMuscle={primaryMuscle}
                         size="md"
-                        className="rounded-xl border border-dark-700/80 group-hover:border-brand-500/60 transition-colors shadow-sm"
+                        className="rounded-[10px] border border-[#404040]"
                       />
-                    </div>
-
-                    <div
-                      className="flex-1 min-w-0 cursor-pointer"
-                      onClick={() =>
-                        setInspectingExercise({
-                          name: exName,
-                          muscle: primaryMuscle,
-                        })
-                      }
-                    >
-                      <div className="text-sm font-bold text-zinc-100 group-hover:text-brand-400 transition-colors truncate">
-                        <span className="text-brand-400 font-extrabold mr-1.5">
-                          {targetSets} ×
-                        </span>
-                        <span>{exName}</span>
-                      </div>
-                      <div className="text-xs text-zinc-400 capitalize mt-0.5 flex items-center gap-2">
-                        <span className="text-zinc-300 font-medium">{primaryMuscle}</span>
-                        {ex.target_reps_min && (
-                          <>
-                            <span className="text-zinc-600">•</span>
-                            <span className="text-zinc-400 font-mono text-[11px]">
-                              {ex.target_reps_min}
-                              {ex.target_reps_max && ex.target_reps_max !== ex.target_reps_min
-                                ? `-${ex.target_reps_max}`
-                                : ''}{' '}
-                              {t('activeWorkout.reps')}
-                            </span>
-                          </>
-                        )}
-                      </div>
-                    </div>
+                    </button>
 
                     <button
                       type="button"
+                      className="flex-1 min-w-0 text-left cursor-pointer"
                       onClick={() =>
                         setInspectingExercise({
                           name: exName,
                           muscle: primaryMuscle,
                         })
                       }
-                      className="w-8 h-8 rounded-xl border border-dark-700 text-zinc-400 hover:text-white hover:border-dark-600 hover:bg-dark-800 flex items-center justify-center transition-all shrink-0 cursor-pointer"
+                    >
+                      <div className="text-[14px] font-medium text-[#fafafa] group-hover:text-[#34d399] transition-colors truncate">
+                        {targetSets} × {exName}
+                      </div>
+                      <div className="text-[12px] text-[#a3a3a3] mt-0.5 flex items-center gap-2">
+                        <span>{primaryMuscle}</span>
+                        {ex.target_reps_min && (
+                          <span>
+                            · {ex.target_reps_min}
+                            {ex.target_reps_max && ex.target_reps_max !== ex.target_reps_min
+                              ? `–${ex.target_reps_max}`
+                              : ''}{' '}
+                            {t('activeWorkout.reps')}
+                          </span>
+                        )}
+                      </div>
+                    </button>
+
+                    <Button
+                      isIconOnly
+                      size="sm"
+                      variant="outline"
+                      onClick={() =>
+                        setInspectingExercise({
+                          name: exName,
+                          muscle: primaryMuscle,
+                        })
+                      }
                       title={t('routines.techniqueTooltip')}
+                      aria-label={t('routines.techniqueTooltip')}
                     >
                       <HelpCircle className="w-4 h-4" />
-                    </button>
+                    </Button>
                   </div>
                 );
               })
             ) : (
-              <div className="text-center py-8 text-xs text-zinc-500">
+              <div className="text-center py-8 text-[13px] text-[#a3a3a3]">
                 {t('routines.emptyExercises')}
               </div>
             )}

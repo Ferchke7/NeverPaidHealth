@@ -204,41 +204,35 @@ export const FloatingActiveWorkoutPill: React.FC<FloatingActiveWorkoutPillProps>
         top: `${position.y}px`,
         touchAction: 'none',
       }}
-      className={`z-40 select-none group cursor-grab active:cursor-grabbing transition-shadow duration-200 ${
-        isDragging ? 'scale-[1.03] shadow-brand-500/30 ring-2 ring-brand-500/60' : 'hover:scale-[1.02]'
+      className={`z-40 select-none group cursor-grab active:cursor-grabbing ${
+        isDragging ? 'opacity-95' : ''
       }`}
     >
-      <div className="flex items-center gap-2.5 px-3 py-2 rounded-2xl bg-dark-900/95 backdrop-blur-xl border border-brand-500/40 shadow-2xl shadow-black/80 hover:border-brand-400 transition-colors">
-        {/* Grip Handle for visual drag cue */}
-        <div className="text-zinc-600 group-hover:text-zinc-400 transition-colors shrink-0 -ml-1">
+      <div className="flex items-center gap-2.5 px-3 py-2 rounded-[14px] bg-[#171717] border border-[#404040] hover:border-[#34d399] transition-colors">
+        <div className="text-[#737373] group-hover:text-[#a3a3a3] transition-colors shrink-0 -ml-0.5">
           <GripVertical className="w-3.5 h-3.5" />
         </div>
 
-        {/* Pulsing Dumbbell Badge */}
-        <div className="relative shrink-0">
-          <div className="w-8 h-8 rounded-xl bg-brand-500/20 border border-brand-500/40 text-brand-400 flex items-center justify-center font-bold shadow-sm shadow-brand-500/10">
-            <Dumbbell className="w-4 h-4 animate-pulse" />
-          </div>
-          <span className="w-2 h-2 rounded-full bg-emerald-400 absolute -top-0.5 -right-0.5 ring-2 ring-dark-900 animate-ping" />
+        <div className="w-8 h-8 rounded-[10px] bg-[#022c22] border border-[#064e3b] text-[#34d399] flex items-center justify-center shrink-0">
+          <Dumbbell className="w-4 h-4" />
         </div>
 
-        {/* Info text */}
         <div className="min-w-0 pr-1">
-          <h4 className="text-[12px] font-extrabold text-white tracking-tight leading-none truncate max-w-[125px] sm:max-w-[160px]">
+          <h4 className="text-xs font-semibold text-[#fafafa] tracking-tight leading-none truncate max-w-[125px] sm:max-w-[160px]">
             {workout.name}
           </h4>
-          <div className="flex items-center gap-1.5 text-[10.5px] text-zinc-400 font-mono mt-0.5">
-            <span className="flex items-center gap-0.5 text-emerald-400 font-bold">
+          <div className="flex items-center gap-1.5 text-[11px] text-[#a3a3a3] tabular-nums mt-1">
+            <span className="flex items-center gap-0.5 text-[#34d399] font-semibold">
               <Clock className="w-3 h-3" />
               {formatDuration(elapsedSeconds)}
             </span>
-            <span>•</span>
-            <span className="text-zinc-300">{formatWeight(liveVolume, unitPref)}</span>
+            <span>·</span>
+            <span>{formatWeight(liveVolume, unitPref)}</span>
             {isRestTimerActive && (
               <>
-                <span>•</span>
-                <span className="text-amber-400 font-bold flex items-center gap-0.5 animate-pulse">
-                  <Timer className="w-2.5 h-2.5" />
+                <span>·</span>
+                <span className="text-[#34d399] font-semibold flex items-center gap-0.5">
+                  <Timer className="w-3 h-3" />
                   {restRemaining}s
                 </span>
               </>
@@ -246,16 +240,15 @@ export const FloatingActiveWorkoutPill: React.FC<FloatingActiveWorkoutPillProps>
           </div>
         </div>
 
-        {/* Expand Action Button */}
         <button
           type="button"
           onClick={(e) => {
             e.stopPropagation();
             onOpen();
           }}
-          className="ml-0.5 shrink-0 px-2.5 py-1.5 rounded-xl bg-brand-500 hover:bg-brand-400 text-dark-950 font-black text-[11px] flex items-center gap-1 shadow-md shadow-brand-500/20 active:scale-95 transition-all cursor-pointer"
+          className="ml-0.5 shrink-0 h-9 px-3 rounded-[10px] bg-[#34d399] hover:bg-[#10b981] text-[#0a0a0a] font-semibold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
         >
-          <span>{t('workouts.start')}</span>
+          <span>{t('workouts.startShort') || t('workouts.start')}</span>
           <Maximize2 className="w-3 h-3" />
         </button>
       </div>

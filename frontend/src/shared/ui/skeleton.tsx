@@ -18,12 +18,12 @@ export const Skeleton: React.FC<SkeletonProps> = ({
   const variantStyles = {
     rectangular: 'rounded-none',
     circular: 'rounded-full',
-    rounded: 'rounded-xl',
+    rounded: 'rounded-[10px]',
   }[variant];
 
   return (
     <HeroSkeleton.Root
-      className={`${variantStyles} ${className}`}
+      className={`bg-[#262626] ${variantStyles} ${className}`}
       {...props}
     />
   );

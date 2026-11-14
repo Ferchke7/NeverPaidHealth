@@ -27,10 +27,16 @@ export const Card: React.FC<CardProps> = ({
     glow: 'default',
   };
 
+  const surfaceStyles: Record<NonNullable<CardProps['variant']>, string> = {
+    default: 'bg-[#171717] border border-[#404040] rounded-[14px] shadow-none',
+    flat: 'bg-[#171717] border border-[#262626] rounded-[14px] shadow-none',
+    bordered: 'bg-[#0a0a0a] border border-[#404040] rounded-[14px] shadow-none',
+    glow: 'bg-[#171717] border border-[#34d399]/40 rounded-[14px] shadow-none',
+  };
+
   const extraStyles = [
-    'border border-dark-700/80',
-    variant === 'glow' ? 'border-brand-500/30 shadow-lg shadow-brand-500/5' : '',
-    isHoverable ? 'hover:border-dark-600 transition-colors cursor-pointer' : '',
+    surfaceStyles[variant],
+    isHoverable ? 'hover:border-[#525252] transition-colors cursor-pointer' : '',
     className,
   ]
     .filter(Boolean)
@@ -49,7 +55,7 @@ export const CardHeader: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({
   ...props
 }) => (
   <HeroCard.Header
-    className={`flex-row items-center justify-between pb-3 border-b border-dark-700/70 gap-2 ${className}`}
+    className={`flex-row items-center justify-between pb-3 border-b border-[#262626] gap-2 ${className}`}
     {...props}
   >
     {children}
@@ -61,7 +67,7 @@ export const CardTitle: React.FC<React.HTMLAttributes<HTMLHeadingElement>> = ({
   children,
   ...props
 }) => (
-  <HeroCard.Title className={`font-extrabold text-white flex items-center gap-2 ${className}`} {...props}>
+  <HeroCard.Title className={`font-semibold text-[#fafafa] flex items-center gap-2 ${className}`} {...props}>
     {children}
   </HeroCard.Title>
 );
@@ -71,7 +77,7 @@ export const CardDescription: React.FC<React.HTMLAttributes<HTMLParagraphElement
   children,
   ...props
 }) => (
-  <HeroCard.Description className={`text-xs text-zinc-400 mt-0.5 ${className}`} {...props}>
+  <HeroCard.Description className={`text-[13px] text-[#a3a3a3] mt-0.5 ${className}`} {...props}>
     {children}
   </HeroCard.Description>
 );
@@ -92,7 +98,7 @@ export const CardFooter: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({
   ...props
 }) => (
   <HeroCard.Footer
-    className={`justify-between pt-3 border-t border-dark-700/70 gap-2 ${className}`}
+    className={`justify-between pt-3 border-t border-[#262626] gap-2 ${className}`}
     {...props}
   >
     {children}
@@ -124,13 +130,23 @@ export const Badge: React.FC<BadgeProps> = ({
     info: 'accent',
   };
 
+  const badgeStyles: Record<NonNullable<BadgeProps['variant']>, string> = {
+    brand: 'bg-[#022c22] text-[#34d399] border border-[#34d399]/20',
+    neutral: 'bg-[#262626] text-[#a3a3a3] border border-[#404040]',
+    accent: 'bg-[#022c22] text-[#34d399] border border-[#34d399]/20',
+    warning: 'bg-[#262626] text-amber-300 border border-[#404040]',
+    danger: 'bg-[#262626] text-red-400 border border-[#404040]',
+    success: 'bg-[#022c22] text-[#34d399] border border-[#34d399]/20',
+    info: 'bg-[#022c22] text-[#34d399] border border-[#34d399]/20',
+  };
+
   return (
     <HeroChip.Root
       {...props}
       variant="soft"
       color={colorMap[variant]}
       size={size}
-      className={`font-bold whitespace-nowrap ${className}`}
+      className={`font-medium whitespace-nowrap rounded-[8px] ${badgeStyles[variant]} ${className}`}
     >
       <HeroChip.Label>{children}</HeroChip.Label>
     </HeroChip.Root>
@@ -175,13 +191,24 @@ export const Chip: React.FC<ChipProps> = ({
     dot: 'secondary',
   };
 
+  const chipColorClass =
+    color === 'primary' || color === 'success' || color === 'secondary'
+      ? variant === 'solid'
+        ? 'bg-[#34d399] text-[#0a0a0a] border border-transparent'
+        : 'bg-[#022c22] text-[#34d399] border border-[#34d399]/20'
+      : color === 'danger'
+        ? 'bg-[#262626] text-red-400 border border-[#404040]'
+        : color === 'warning'
+          ? 'bg-[#262626] text-amber-300 border border-[#404040]'
+          : 'bg-[#262626] text-[#a3a3a3] border border-[#404040]';
+
   return (
     <HeroChip.Root
       {...props}
       variant={heroVariantMap[variant]}
       color={heroColorMap[color]}
       size={size}
-      className={`gap-1 ${className}`}
+      className={`gap-1 rounded-[8px] font-medium ${chipColorClass} ${className}`}
     >
       <HeroChip.Label>{children}</HeroChip.Label>
       {onClose && (

@@ -1,26 +1,24 @@
 import React, { useState, useMemo } from 'react';
 import {
-  History,
-  Clock,
-  Flame,
-  Dumbbell,
+  ChevronLeft,
+  ChevronRight,
+  Download,
   ChevronDown,
   ChevronUp,
   RotateCcw,
   Trash2,
-  Calendar,
+  Calendar as CalendarIcon,
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../../shared/api/client.ts';
-import { Card } from '../../../shared/ui/card.tsx';
 import { Button } from '../../../shared/ui/button.tsx';
-import { formatDate, formatDuration } from '../../../shared/lib/dates.ts';
-import { formatWeight } from '../../../shared/lib/units.ts';
+import { Modal } from '../../../shared/ui/modal.tsx';
+import { formatDate, formatDuration, toLocalDateKey } from '../../../shared/lib/dates.ts';
+import { formatWeight, kgToLb } from '../../../shared/lib/units.ts';
 import { useAuthStore } from '../../../entities/user/model/authStore.ts';
 import { useTranslation } from '../../../shared/lib/i18n/i18n.ts';
 import { useStartWorkout } from '../../../features/start-workout/model/useStartWorkout.ts';
 import { WorkoutHistoryItem } from '../../../entities/workout/model/types.ts';
-import { WorkoutCalendar } from '../../../features/workout-calendar/ui/WorkoutCalendar.tsx';
 import { generateUUID } from '../../../shared/lib/uuid.ts';
 
 interface HistoryResponse {
@@ -32,7 +30,13 @@ export const HistoryPage: React.FC = () => {
   const { t, language } = useTranslation();
   const unitPref = useAuthStore((s) => s.unitPreference);
   const queryClient = useQueryClient();
-  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
+  const [selectedMonth, setSelectedMonth] = useState<Date>(() => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), 1);
+  });
+  const [monthFilterEnabled, setMonthFilterEnabled] = useState<boolean>(true);
+  const [selectedDateStr, setSelectedDateStr] = useState<string | null>(null);
+  const [visibleCount, setVisibleCount] = useState<number>(10);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
@@ -81,30 +85,8 @@ export const HistoryPage: React.FC = () => {
     });
   };
 
-  const stats = useMemo(() => {
-    let totalVol = 0;
-    let totalSecs = 0;
-    let totalSets = 0;
-
-    for (const w of workouts) {
-      totalVol += w.total_volume_kg || 0;
-      totalSecs += w.duration_seconds || 0;
-      totalSets += w.completed_sets_count || 0;
-    }
-
-    return {
-      totalWorkouts: workouts.length,
-      totalVolumeKg: totalVol,
-      totalHours: Math.round((totalSecs / 3600) * 10) / 10,
-      totalSets,
-    };
-  }, [workouts]);
-
   const lbl = {
-    list: language === 'uz' ? 'Ro‘yxat' : language === 'en' ? 'List' : 'Список',
-    calendar: language === 'uz' ? 'Taqvim' : language === 'en' ? 'Calendar' : 'Календарь',
     sessions: language === 'uz' ? 'Mashg‘ulotlar' : language === 'en' ? 'Sessions' : 'Тренировок',
-    hours: language === 'uz' ? 'soat' : language === 'en' ? 'hrs' : 'ч',
     sets: language === 'uz' ? 'yond.' : language === 'en' ? 'sets' : 'подх.',
     repeat: language === 'uz' ? 'Qaytarish' : language === 'en' ? 'Repeat' : 'Повторить',
     deleteTitle:
@@ -115,265 +97,641 @@ export const HistoryPage: React.FC = () => {
         : 'Удалить тренировку из истории?',
   };
 
+  const localeStr = language === 'uz' ? 'uz-UZ' : language === 'en' ? 'en-US' : 'ru-RU';
+  const weekdayNames = useMemo(() => {
+    if (language === 'uz') return ['Du', 'Se', 'Ch', 'Pa', 'Ju', 'Sh', 'Ya'];
+    if (language === 'en') return ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    return ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+  }, [language]);
+
+  const workoutsByDate = useMemo(() => {
+    const map: Record<string, WorkoutHistoryItem[]> = {};
+    for (const w of workouts) {
+      const key = toLocalDateKey(w.started_at);
+      if (key) {
+        if (!map[key]) map[key] = [];
+        map[key].push(w);
+      }
+    }
+    return map;
+  }, [workouts]);
+
+  const monthPrefix = useMemo(() => {
+    const y = selectedMonth.getFullYear();
+    const m = String(selectedMonth.getMonth() + 1).padStart(2, '0');
+    return `${y}-${m}`;
+  }, [selectedMonth]);
+
+  const monthYearLabel = useMemo(() => {
+    return selectedMonth.toLocaleDateString(localeStr, { month: 'long', year: 'numeric' });
+  }, [selectedMonth, localeStr]);
+
+  const monthWorkouts = useMemo(() => {
+    return workouts.filter((w) => toLocalDateKey(w.started_at).startsWith(monthPrefix));
+  }, [workouts, monthPrefix]);
+
+  const kpiStats = useMemo(() => {
+    const source = selectedDateStr
+      ? workoutsByDate[selectedDateStr] || []
+      : monthFilterEnabled
+      ? monthWorkouts
+      : workouts;
+    const volKg = source.reduce((acc, w) => acc + (w.total_volume_kg || 0), 0);
+    return {
+      count: source.length,
+      volumeKg: volKg,
+    };
+  }, [selectedDateStr, workoutsByDate, monthFilterEnabled, monthWorkouts, workouts]);
+
+  const filteredWorkouts = useMemo(() => {
+    if (selectedDateStr) {
+      return workoutsByDate[selectedDateStr] || [];
+    }
+    if (monthFilterEnabled) {
+      return monthWorkouts;
+    }
+    return workouts;
+  }, [selectedDateStr, workoutsByDate, monthFilterEnabled, monthWorkouts, workouts]);
+
+  const displayedWorkouts = useMemo(
+    () => filteredWorkouts.slice(0, visibleCount),
+    [filteredWorkouts, visibleCount]
+  );
+
+  const calendarCells = useMemo(() => {
+    const year = selectedMonth.getFullYear();
+    const month = selectedMonth.getMonth();
+    const firstDayIndex = new Date(year, month, 1).getDay();
+    const startOffset = (firstDayIndex + 6) % 7;
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const prevMonthDays = new Date(year, month, 0).getDate();
+
+    return { year, month, startOffset, daysInMonth, prevMonthDays };
+  }, [selectedMonth]);
+
+  const todayKey = useMemo(() => toLocalDateKey(new Date()), []);
+
+  const annualHeatmap = useMemo(() => {
+    const today = new Date();
+    const totalDays = 52 * 7;
+    const start = new Date(today);
+    start.setDate(today.getDate() - totalDays + 1);
+    const weeks: { dateKey: string; count: number }[][] = [];
+    let currentWeek: { dateKey: string; count: number }[] = [];
+
+    for (let i = 0; i < totalDays; i++) {
+      const d = new Date(start);
+      d.setDate(start.getDate() + i);
+      const key = toLocalDateKey(d);
+      const count = workoutsByDate[key]?.length || 0;
+      currentWeek.push({ dateKey: key, count });
+      if (currentWeek.length === 7) {
+        weeks.push(currentWeek);
+        currentWeek = [];
+      }
+    }
+    if (currentWeek.length > 0) weeks.push(currentWeek);
+
+    const startLabel = start.toLocaleDateString(localeStr, { month: 'short', year: 'numeric' });
+    const endLabel = today.toLocaleDateString(localeStr, { month: 'short', year: 'numeric' });
+    return { weeks, startLabel, endLabel };
+  }, [workoutsByDate, localeStr]);
+
+  const formatCompactVolume = (volKg: number) => {
+    if (unitPref === 'lb') {
+      const lbs = kgToLb(volKg);
+      if (lbs >= 2000) return `${(lbs / 2000).toFixed(1)} t`;
+      return `${Math.round(lbs)} lb`;
+    }
+    if (volKg >= 1000) {
+      return `${(volKg / 1000).toFixed(1)} ${language === 'ru' ? 'т' : 't'}`;
+    }
+    return formatWeight(volKg, unitPref);
+  };
+
+  const handleExportCsv = () => {
+    const rows = filteredWorkouts.length > 0 ? filteredWorkouts : workouts;
+    const header = ['Date', 'Name', 'DurationMin', 'VolumeKg', 'Sets', 'Exercises'];
+    const csvLines = [
+      header.join(','),
+      ...rows.map((w) => {
+        const durMin = Math.round((w.duration_seconds || 0) / 60);
+        const exList = (w.exercises || []).map((e) => e.exercise_name).join(' | ');
+        const escape = (val: string | number) => `"${String(val).replace(/"/g, '""')}"`;
+        return [
+          escape(toLocalDateKey(w.started_at)),
+          escape(w.name),
+          durMin,
+          Math.round(w.total_volume_kg || 0),
+          w.completed_sets_count || 0,
+          escape(exList),
+        ].join(',');
+      }),
+    ];
+    const blob = new Blob(['\uFEFF' + csvLines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `duda-history-${toLocalDateKey(new Date())}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const handlePrevMonth = () => {
+    setSelectedDateStr(null);
+    setMonthFilterEnabled(true);
+    setVisibleCount(10);
+    setSelectedMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
+  };
+
+  const handleNextMonth = () => {
+    setSelectedDateStr(null);
+    setMonthFilterEnabled(true);
+    setVisibleCount(10);
+    setSelectedMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
+  };
+
+  const handleToday = () => {
+    const now = new Date();
+    setSelectedMonth(new Date(now.getFullYear(), now.getMonth(), 1));
+    setSelectedDateStr(null);
+    setMonthFilterEnabled(true);
+    setVisibleCount(10);
+  };
+
   return (
-    <div className="space-y-4">
-      {/* Compact Header & View Mode Switcher */}
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <h2 className="text-base sm:text-lg font-extrabold tracking-tight text-white">
-            {t('history.title')}
-          </h2>
-          <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-full bg-brand-500/15 text-brand-400 border border-brand-500/30">
-            {stats.totalWorkouts}
-          </span>
+    <div className="space-y-6 pb-8">
+      {/* Page Title */}
+      <div>
+        <h1 className="text-[28px] font-bold tracking-[-0.02em] text-[#fafafa] leading-tight">
+          {t('nav.history')}
+        </h1>
+        <p className="text-[14px] text-[#a3a3a3] mt-1">{t('history.subtitle')}</p>
+      </div>
+
+      {/* Top KPI Strip & Controls */}
+      <div className="bg-[#171717] border border-[#404040] rounded-[14px] p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-8 sm:gap-12">
+          <div>
+            <div className="text-[11px] font-semibold uppercase tracking-[0.06em] text-[#a3a3a3]">
+              {lbl.sessions}
+            </div>
+            <div className="text-[26px] font-bold text-[#fafafa] font-mono tabular-nums mt-0.5">
+              {kpiStats.count}
+            </div>
+          </div>
+
+          <div className="h-9 w-px bg-[#262626]" />
+
+          <div>
+            <div className="text-[11px] font-semibold uppercase tracking-[0.06em] text-[#a3a3a3]">
+              {t('history.totalVolume')}
+            </div>
+            <div className="text-[26px] font-bold text-[#34d399] font-mono tabular-nums mt-0.5">
+              {formatCompactVolume(kpiStats.volumeKg)}
+            </div>
+          </div>
         </div>
 
-        <div className="flex items-center gap-1 p-1 bg-dark-850 rounded-xl border border-dark-700">
+        <div className="flex flex-wrap items-center gap-2.5">
           <button
-            onClick={() => setViewMode('list')}
-            className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-              viewMode === 'list'
-                ? 'bg-brand-500 text-dark-950 font-bold shadow-sm'
-                : 'text-zinc-400 hover:text-zinc-200'
+            type="button"
+            onClick={() => {
+              setSelectedDateStr(null);
+              setVisibleCount(10);
+              setMonthFilterEnabled((prev) => !prev);
+            }}
+            className={`min-h-[44px] px-4 rounded-[10px] border text-[13px] font-medium capitalize transition-colors cursor-pointer ${
+              monthFilterEnabled && !selectedDateStr
+                ? 'bg-[#022c22] border-[#064e3b] text-[#34d399]'
+                : 'bg-[#0a0a0a] border-[#404040] text-[#fafafa] hover:bg-[#262626]'
             }`}
           >
-            {lbl.list}
+            {monthFilterEnabled && !selectedDateStr ? monthYearLabel : t('history.allMonthsBtn')}
           </button>
+
           <button
-            onClick={() => setViewMode('calendar')}
-            className={`px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer ${
-              viewMode === 'calendar'
-                ? 'bg-brand-500 text-dark-950 font-bold shadow-sm'
-                : 'text-zinc-400 hover:text-zinc-200'
-            }`}
+            type="button"
+            onClick={handleExportCsv}
+            disabled={workouts.length === 0}
+            className="min-h-[44px] px-4 rounded-[10px] bg-[#0a0a0a] hover:bg-[#262626] disabled:opacity-40 border border-[#404040] text-[#fafafa] text-[13px] font-medium flex items-center gap-2 transition-colors cursor-pointer"
           >
-            <Calendar className="w-3.5 h-3.5" />
-            {lbl.calendar}
+            <Download className="w-4 h-4 text-[#a3a3a3]" />
+            <span>{t('history.exportBtn')}</span>
           </button>
         </div>
       </div>
 
-      {viewMode === 'calendar' ? (
-        <WorkoutCalendar workouts={workouts} />
-      ) : (
-        <>
-          {workouts.length > 0 && (
-            <div className="grid grid-cols-3 gap-2.5">
-              <Card className="p-3 bg-dark-800/80 border-dark-700/80 space-y-0.5">
-                <div className="flex items-center gap-1 text-zinc-400 text-[10px] font-bold uppercase">
-                  <History className="w-3 h-3 text-brand-400" />
-                  <span>{lbl.sessions}</span>
-                </div>
-                <div className="text-base sm:text-lg font-extrabold text-white font-mono">
-                  {stats.totalWorkouts}
-                </div>
-              </Card>
-
-              <Card className="p-3 bg-dark-800/80 border-dark-700/80 space-y-0.5">
-                <div className="flex items-center gap-1 text-zinc-400 text-[10px] font-bold uppercase">
-                  <Flame className="w-3 h-3 text-emerald-400" />
-                  <span>{t('history.totalVolume')}</span>
-                </div>
-                <div className="text-base sm:text-lg font-extrabold text-emerald-400 font-mono">
-                  {formatWeight(stats.totalVolumeKg, unitPref)}
-                </div>
-              </Card>
-
-              <Card className="p-3 bg-dark-800/80 border-dark-700/80 space-y-0.5">
-                <div className="flex items-center gap-1 text-zinc-400 text-[10px] font-bold uppercase">
-                  <Clock className="w-3 h-3 text-sky-400" />
-                  <span>{t('history.duration')}</span>
-                </div>
-                <div className="text-base sm:text-lg font-extrabold text-sky-400 font-mono">
-                  {stats.totalHours} {lbl.hours}
-                </div>
-              </Card>
+      {/* Main 2-Column Calendar + Sessions Split */}
+      <div className="grid grid-cols-1 lg:grid-cols-[400px_1fr] gap-4 items-start">
+        {/* Left: Interactive Monthly Calendar */}
+        <div className="bg-[#171717] border border-[#404040] rounded-[14px] p-5 space-y-4">
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="text-[15px] font-semibold text-[#fafafa] capitalize truncate">
+              {monthYearLabel}
+            </h2>
+            <div className="flex items-center gap-1.5 shrink-0">
+              <button
+                type="button"
+                onClick={handlePrevMonth}
+                aria-label="Previous month"
+                className="min-h-[44px] min-w-[44px] rounded-[10px] bg-[#0a0a0a] hover:bg-[#262626] border border-[#404040] text-[#fafafa] flex items-center justify-center cursor-pointer transition-colors"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <button
+                type="button"
+                onClick={handleToday}
+                className="min-h-[44px] px-3 rounded-[10px] bg-[#0a0a0a] hover:bg-[#262626] border border-[#404040] text-[#fafafa] text-[12px] font-medium cursor-pointer transition-colors"
+              >
+                {t('history.todayBtn')}
+              </button>
+              <button
+                type="button"
+                onClick={handleNextMonth}
+                aria-label="Next month"
+                className="min-h-[44px] min-w-[44px] rounded-[10px] bg-[#0a0a0a] hover:bg-[#262626] border border-[#404040] text-[#fafafa] flex items-center justify-center cursor-pointer transition-colors"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
             </div>
-          )}
+          </div>
+
+          <div className="grid grid-cols-7 gap-1.5 text-center text-[11px] font-medium text-[#737373] py-1">
+            {weekdayNames.map((day) => (
+              <div key={day}>{day}</div>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-7 gap-1.5">
+            {Array.from({ length: calendarCells.startOffset }).map((_, i) => (
+              <div
+                key={`prev-${i}`}
+                className="min-h-[44px] rounded-[10px] bg-[#0a0a0a]/40 border border-[#262626]/40 text-[#525252] text-[12px] font-mono flex items-center justify-center select-none"
+              >
+                {calendarCells.prevMonthDays - calendarCells.startOffset + i + 1}
+              </div>
+            ))}
+
+            {Array.from({ length: calendarCells.daysInMonth }).map((_, i) => {
+              const dayNum = i + 1;
+              const dateKey = `${calendarCells.year}-${String(calendarCells.month + 1).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`;
+              const dayCount = workoutsByDate[dateKey]?.length || 0;
+              const hasWorkout = dayCount > 0;
+              const isSelected = selectedDateStr === dateKey;
+              const isToday = todayKey === dateKey;
+
+              return (
+                <button
+                  key={dateKey}
+                  type="button"
+                  onClick={() => {
+                    setVisibleCount(10);
+                    setSelectedDateStr((prev) => (prev === dateKey ? null : dateKey));
+                  }}
+                  className={`min-h-[44px] rounded-[10px] border text-[13px] font-mono font-medium flex flex-col items-center justify-center relative transition-colors cursor-pointer ${
+                    hasWorkout
+                      ? 'bg-[#34d399] border-[#34d399] text-[#0a0a0a] font-semibold'
+                      : isToday
+                      ? 'bg-[#0a0a0a] border-[#737373] text-[#fafafa]'
+                      : 'bg-[#0a0a0a] border-[#262626] text-[#a3a3a3] hover:border-[#404040] hover:text-[#fafafa]'
+                  } ${isSelected ? 'ring-2 ring-[#fafafa] ring-offset-1 ring-offset-[#171717]' : ''}`}
+                >
+                  <span>{dayNum}</span>
+                  {dayCount > 1 && (
+                    <span className="text-[9px] leading-none font-bold opacity-80">
+                      ×{dayCount}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="pt-3 border-t border-[#262626] flex flex-wrap items-center justify-between gap-2 text-[12px]">
+            <div className="flex items-center gap-2 text-[#a3a3a3]">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#34d399] inline-block shrink-0" />
+              <span>{t('history.workoutDotLegend')}</span>
+            </div>
+
+            {selectedDateStr ? (
+              <button
+                type="button"
+                onClick={() => setSelectedDateStr(null)}
+                className="text-[12px] font-medium text-[#34d399] hover:underline cursor-pointer"
+              >
+                {t('history.selectedDateLabel', {
+                  day: formatDate(selectedDateStr + 'T12:00:00', language),
+                })}{' '}
+                · {t('history.showAllDates')}
+              </button>
+            ) : (
+              <span className="text-[#737373] font-mono">
+                {monthWorkouts.length} / {workouts.length}
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Right: Workout Sessions List */}
+        <div className="bg-[#171717] border border-[#404040] rounded-[14px] p-5 space-y-4">
+          <div className="flex items-center justify-between gap-2 pb-3 border-b border-[#262626]">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <h2 className="text-[16px] font-semibold text-[#fafafa] truncate">
+                {lbl.sessions}
+              </h2>
+              <span className="px-2 py-0.5 rounded-[6px] bg-[#0a0a0a] border border-[#404040] text-[12px] font-mono text-[#a3a3a3]">
+                {filteredWorkouts.length}
+              </span>
+            </div>
+
+            {(selectedDateStr || monthFilterEnabled) && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedDateStr(null);
+                  setMonthFilterEnabled(false);
+                  setVisibleCount(10);
+                }}
+                className="min-h-[44px] inline-flex items-center px-2 -my-2 text-[12px] font-medium text-[#a3a3a3] hover:text-[#fafafa] cursor-pointer"
+              >
+                {t('history.allMonthsBtn')}
+              </button>
+            )}
+          </div>
 
           {isLoading ? (
-            <div className="space-y-2.5">
+            <div className="space-y-3">
               {[1, 2, 3].map((i) => (
                 <div
                   key={i}
-                  className="h-24 bg-dark-800/60 rounded-2xl border border-dark-700 animate-pulse"
+                  className="h-20 bg-[#0a0a0a] rounded-[12px] border border-[#262626] animate-pulse"
                 />
               ))}
             </div>
-          ) : workouts.length === 0 ? (
-            <div className="text-center py-12 border border-dashed border-dark-800 rounded-2xl p-6 bg-dark-900/40">
-              <History className="w-10 h-10 text-zinc-600 mx-auto mb-2" />
-              <h3 className="text-sm font-bold text-zinc-300">{t('history.noWorkouts')}</h3>
+          ) : filteredWorkouts.length === 0 ? (
+            <div className="text-center py-10 border border-dashed border-[#404040] rounded-[12px] p-6 bg-[#0a0a0a] space-y-3">
+              <CalendarIcon className="w-8 h-8 text-[#525252] mx-auto" />
+              <div className="text-[14px] font-medium text-[#a3a3a3]">
+                {t('history.noWorkouts')}
+              </div>
+              {workouts.length > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setSelectedDateStr(null);
+                    setMonthFilterEnabled(false);
+                    setVisibleCount(10);
+                  }}
+                >
+                  {t('history.allMonthsBtn')}
+                </Button>
+              )}
             </div>
           ) : (
-            <div className="space-y-2.5">
-              {workouts.map((workout) => {
+            <div className="divide-y divide-[#262626]">
+              {displayedWorkouts.map((workout) => {
                 const isExpanded = expandedId === workout.id;
+
                 return (
-                  <Card
-                    key={workout.id}
-                    className="bg-dark-800/90 border-dark-700/80 hover:border-dark-600 transition-all overflow-hidden shadow-md"
-                  >
-                    <div
-                      className="p-3.5 cursor-pointer flex items-center justify-between gap-2.5 select-none"
-                      onClick={() => toggleExpand(workout.id)}
-                    >
-                      <div className="space-y-1.5 flex-1 min-w-0">
+                  <div key={workout.id} className="py-4 first:pt-1 last:pb-1 space-y-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="space-y-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <h3 className="text-sm font-bold text-white leading-snug truncate">
+                          <h3 className="text-[15px] font-semibold text-[#fafafa] truncate">
                             {workout.name}
                           </h3>
-                          <span className="text-[10px] bg-dark-700/90 text-zinc-300 px-2 py-0.5 rounded font-mono border border-dark-600/50 flex items-center gap-1">
-                            <Calendar className="w-3 h-3 text-zinc-400" />
-                            {formatDate(workout.started_at)}
-                          </span>
+                          {isExpanded && (
+                            <span className="px-2 py-0.5 rounded-[6px] bg-[#022c22] border border-[#064e3b] text-[11px] font-medium text-[#34d399]">
+                              {t('history.detailsOpen')}
+                            </span>
+                          )}
                         </div>
 
-                        <div className="flex flex-wrap items-center gap-3 text-xs font-mono text-zinc-400">
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] font-mono text-[#a3a3a3]">
+                          <span>{formatDate(workout.started_at, language)}</span>
                           {workout.duration_seconds && workout.duration_seconds > 0 ? (
-                            <span className="flex items-center gap-1 text-sky-400">
-                              <Clock className="w-3.5 h-3.5" />
-                              {formatDuration(workout.duration_seconds)}
-                            </span>
+                            <span>· {formatDuration(workout.duration_seconds)}</span>
                           ) : null}
-
                           {workout.total_volume_kg !== undefined && workout.total_volume_kg > 0 ? (
-                            <span className="flex items-center gap-1 text-emerald-400 font-bold">
-                              <Flame className="w-3.5 h-3.5" />
-                              {formatWeight(workout.total_volume_kg, unitPref)}
+                            <span className="text-[#34d399] font-medium">
+                              · {formatWeight(workout.total_volume_kg, unitPref)}
                             </span>
                           ) : null}
-
-                          <span className="flex items-center gap-1 text-zinc-300">
-                            <Dumbbell className="w-3.5 h-3.5 text-zinc-500" />
-                            {workout.completed_sets_count || 0} {lbl.sets}
+                          <span>
+                            · {workout.completed_sets_count || 0} {lbl.sets}
                           </span>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-1 shrink-0">
+                      <div className="flex items-center gap-2 shrink-0">
                         <button
                           type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            void handleRepeatWorkout(workout);
-                          }}
-                          className="p-2 rounded-xl text-zinc-400 hover:text-brand-400 hover:bg-dark-700 transition-colors cursor-pointer"
-                          title={lbl.repeat}
+                          onClick={() => toggleExpand(workout.id)}
+                          className="min-h-[44px] px-3.5 rounded-[10px] bg-[#0a0a0a] hover:bg-[#262626] border border-[#404040] text-[#fafafa] text-[13px] font-medium flex items-center gap-1.5 cursor-pointer transition-colors"
                         >
-                          <RotateCcw className="w-4 h-4" />
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setDeletingId(workout.id);
-                          }}
-                          className="p-2 rounded-xl text-zinc-500 hover:text-red-400 hover:bg-dark-700 transition-colors cursor-pointer"
-                          title={t('common.delete')}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-
-                        <div className="text-zinc-500 p-1">
+                          <span>
+                            {isExpanded ? t('history.hideDetails') : t('history.showDetails')}
+                          </span>
                           {isExpanded ? (
-                            <ChevronUp className="w-4 h-4" />
+                            <ChevronUp className="w-4 h-4 text-[#a3a3a3]" />
                           ) : (
-                            <ChevronDown className="w-4 h-4" />
+                            <ChevronDown className="w-4 h-4 text-[#a3a3a3]" />
                           )}
-                        </div>
+                        </button>
                       </div>
                     </div>
 
                     {isExpanded && (
-                      <div className="px-3.5 pb-3.5 pt-2.5 border-t border-dark-700/60 bg-dark-900/50 space-y-2.5 animate-in fade-in duration-150">
+                      <div className="p-4 rounded-[12px] bg-[#0a0a0a] border border-[#404040] space-y-3">
                         {workout.exercises && workout.exercises.length > 0 && (
-                          <div className="space-y-2">
-                            {workout.exercises.map((ex, i) => (
-                              <div
-                                key={i}
-                                className="space-y-1.5 bg-dark-850/60 p-2.5 rounded-xl border border-dark-750"
-                              >
-                                <div className="flex items-center justify-between">
-                                  <h4 className="text-xs font-bold text-white flex items-center gap-1.5">
-                                    <span className="w-4 h-4 rounded bg-dark-700 text-brand-400 flex items-center justify-center text-[10px] font-mono">
-                                      {i + 1}
+                          <div className="space-y-2.5">
+                            {workout.exercises.map((ex, i) => {
+                              const exVol = (ex.sets || []).reduce(
+                                (sum, s) => sum + (s.weight_kg || 0) * (s.reps || 0),
+                                0
+                              );
+                              return (
+                                <div
+                                  key={i}
+                                  className="p-3 rounded-[10px] bg-[#171717] border border-[#262626] space-y-2"
+                                >
+                                  <div className="flex flex-wrap items-center justify-between gap-2">
+                                    <h4 className="text-[13px] font-semibold text-[#fafafa] flex items-center gap-2">
+                                      <span className="text-[11px] font-mono text-[#34d399]">
+                                        {String(i + 1).padStart(2, '0')}
+                                      </span>
+                                      <span>{ex.exercise_name}</span>
+                                    </h4>
+                                    <span className="text-[11px] font-mono text-[#a3a3a3]">
+                                      {t('history.subtotalVol', {
+                                        volume: formatWeight(exVol, unitPref),
+                                      })}
                                     </span>
-                                    <span>{ex.exercise_name}</span>
-                                  </h4>
-                                  <span className="text-[10px] font-mono text-zinc-400">
-                                    {ex.sets?.length || 0} {lbl.sets}
-                                  </span>
-                                </div>
-
-                                {ex.notes && ex.notes.trim() && (
-                                  <div className="px-2.5 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-[11px] text-amber-200/90 leading-snug">
-                                    💬 {ex.notes}
                                   </div>
-                                )}
 
-                                <div className="flex flex-wrap gap-1.5">
-                                  {ex.sets?.map((set, sIdx) => (
-                                    <div
-                                      key={sIdx}
-                                      className="inline-flex items-center gap-1.5 bg-dark-900/90 px-2.5 py-1 rounded-lg text-[11px] font-mono border border-dark-700/60"
-                                    >
-                                      <span className="text-zinc-500 font-bold">
-                                        #{set.set_number || sIdx + 1}
-                                      </span>
-                                      <span className="text-zinc-200 font-semibold">
-                                        {formatWeight(set.weight_kg, unitPref)} × {set.reps}
-                                      </span>
+                                  {ex.notes && ex.notes.trim() && (
+                                    <div className="px-2.5 py-1.5 rounded-[8px] bg-[#0a0a0a] border border-[#262626] text-[12px] text-[#a3a3a3]">
+                                      {ex.notes}
                                     </div>
-                                  ))}
+                                  )}
+
+                                  <div className="flex flex-wrap gap-1.5">
+                                    {ex.sets?.map((set, sIdx) => (
+                                      <div
+                                        key={sIdx}
+                                        className="inline-flex items-center gap-1.5 bg-[#0a0a0a] px-2.5 py-1 rounded-[8px] text-[12px] font-mono border border-[#262626]"
+                                      >
+                                        <span className="text-[#737373]">
+                                          {set.set_number || sIdx + 1} ·
+                                        </span>
+                                        <span className="text-[#fafafa]">
+                                          {formatWeight(set.weight_kg, unitPref)} × {set.reps}
+                                        </span>
+                                      </div>
+                                    ))}
+                                  </div>
                                 </div>
-                              </div>
-                            ))}
+                              );
+                            })}
                           </div>
                         )}
 
-                        <div className="flex items-center justify-end">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="text-xs flex items-center gap-1.5"
-                            onClick={() => void handleRepeatWorkout(workout)}
-                          >
-                            <RotateCcw className="w-3.5 h-3.5 text-brand-400" />
-                            <span>{lbl.repeat}</span>
-                          </Button>
+                        <div className="pt-3 border-t border-[#262626] flex flex-wrap items-center justify-between gap-3">
+                          <span className="text-[13px] font-mono text-[#a3a3a3]">
+                            {t('history.totalVolRow', {
+                              volume: formatWeight(workout.total_volume_kg || 0, unitPref),
+                            })}
+                          </span>
+
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="primary"
+                              size="md"
+                              onClick={() => void handleRepeatWorkout(workout)}
+                              className="min-h-[44px] text-[13px] gap-1.5"
+                            >
+                              <RotateCcw className="w-3.5 h-3.5" />
+                              <span>{lbl.repeat}</span>
+                            </Button>
+
+                            <Button
+                              variant="outline"
+                              size="md"
+                              onClick={() => setDeletingId(workout.id)}
+                              className="min-h-[44px] text-[13px] gap-1.5 text-red-400 hover:border-red-500/40"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                              <span>{t('common.delete')}</span>
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     )}
-                  </Card>
+                  </div>
                 );
               })}
+
+              {filteredWorkouts.length > visibleCount && (
+                <div className="pt-4">
+                  <Button
+                    variant="outline"
+                    onClick={() => setVisibleCount((prev) => prev + 10)}
+                    className="w-full min-h-[44px] text-[13px]"
+                  >
+                    {t('history.loadMore')}
+                  </Button>
+                </div>
+              )}
             </div>
           )}
-        </>
-      )}
+        </div>
+      </div>
 
-      {deletingId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-dark-900 border border-dark-700 rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-2xl">
-            <h3 className="text-base font-bold text-white">{lbl.deleteTitle}</h3>
-            <div className="flex items-center justify-end gap-2 pt-2">
-              <Button variant="ghost" size="sm" onClick={() => setDeletingId(null)}>
-                {t('common.cancel')}
-              </Button>
-              <Button
-                variant="danger"
-                size="sm"
-                isLoading={deleteWorkoutMutation.isPending}
-                onClick={() => deleteWorkoutMutation.mutate(deletingId)}
-              >
-                {t('common.delete')}
-              </Button>
-            </div>
+      {/* Bottom 52-Week Consistency Heatmap */}
+      <div className="bg-[#171717] border border-[#404040] rounded-[14px] p-5 space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h3 className="text-[15px] font-semibold text-[#fafafa]">{t('history.yearTitle')}</h3>
+          <span className="text-[12px] font-mono text-[#a3a3a3]">
+            {t('history.weeksSpan', {
+              start: annualHeatmap.startLabel,
+              end: annualHeatmap.endLabel,
+            })}
+          </span>
+        </div>
+
+        <div className="overflow-x-auto no-scrollbar pb-1">
+          <div className="inline-flex gap-1">
+            {annualHeatmap.weeks.map((week, wIdx) => (
+              <div key={wIdx} className="flex flex-col gap-1">
+                {week.map((day, dIdx) => (
+                  <button
+                    key={dIdx}
+                    type="button"
+                    onClick={() => {
+                      const d = new Date(day.dateKey + 'T12:00:00');
+                      setSelectedMonth(new Date(d.getFullYear(), d.getMonth(), 1));
+                      setSelectedDateStr((prev) => (prev === day.dateKey ? null : day.dateKey));
+                    }}
+                    title={`${day.dateKey}: ${day.count}`}
+                    className={`w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-[3px] border transition-colors cursor-pointer ${
+                      day.count === 0
+                        ? 'bg-[#0a0a0a] border-[#262626]'
+                        : day.count === 1
+                        ? 'bg-[#064e3b] border-[#047857]'
+                        : 'bg-[#34d399] border-[#34d399]'
+                    } ${selectedDateStr === day.dateKey ? 'ring-2 ring-[#fafafa]' : ''}`}
+                  />
+                ))}
+              </div>
+            ))}
           </div>
         </div>
-      )}
+
+        <div className="flex items-center justify-between text-[11px] text-[#a3a3a3] pt-1">
+          <span className="font-mono">{workouts.length} {lbl.sessions}</span>
+          <div className="flex items-center gap-3">
+            <span className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-[2px] bg-[#0a0a0a] border border-[#262626]" />
+              {t('history.noLogsLegend')}
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-[2px] bg-[#34d399]" />
+              {t('history.hasWorkoutLegend')}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        isOpen={!!deletingId}
+        onClose={() => setDeletingId(null)}
+        title={lbl.deleteTitle}
+        size="sm"
+        footer={
+          <>
+            <Button variant="outline" size="md" onClick={() => setDeletingId(null)}>
+              {t('common.cancel')}
+            </Button>
+            <Button
+              variant="danger"
+              size="md"
+              isLoading={deleteWorkoutMutation.isPending}
+              onClick={() => deletingId && deleteWorkoutMutation.mutate(deletingId)}
+            >
+              {t('common.delete')}
+            </Button>
+          </>
+        }
+      >
+        <p className="text-[14px] text-[#a3a3a3]">
+          {t('common.delete')}
+        </p>
+      </Modal>
     </div>
   );
 };
