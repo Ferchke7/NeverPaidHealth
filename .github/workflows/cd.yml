@@ -44,9 +44,7 @@ jobs:
             
             # Reset and create clean production environment files
             rm -f deploy/.env .env
-            cat << 'EOF' > .env
-AUTH_DEV_MODE=true
-EOF
+            echo "AUTH_DEV_MODE=true" > .env
             if [ -n "${{ secrets.GOOGLE_CLIENT_ID }}" ]; then
               echo "GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}" >> .env
               echo "VITE_GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}" >> .env
