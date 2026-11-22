@@ -1,6 +1,5 @@
 import React, { useState, useMemo, useRef } from 'react';
 import {
-  Heart,
   X,
   Trash2,
   Shield,
@@ -12,6 +11,7 @@ import { Modal } from '../../../shared/ui/modal.tsx';
 import { useAuthStore } from '../../../entities/user/model/authStore.ts';
 import { ProgramComment } from '../../../entities/program/model/types.ts';
 import { AthleteAvatar } from '../../../entities/user/ui/AthleteAvatar.tsx';
+import { useTranslation } from '../../../shared/lib/i18n/i18n.ts';
 
 interface CommentNode extends ProgramComment {
   children: CommentNode[];
@@ -26,7 +26,7 @@ interface InstagramCommentsModalProps {
   onOpenAthlete?: (athleteId: string, name?: string, avatarUrl?: string) => void;
 }
 
-const QUICK_EMOJIS = ['❤️', '🔥', '👏', '💪', '⚡', '🦾', '💯', '🏋️'];
+const QUICK_EMOJIS = ['🔥', '👏', '💪', '⚡', '🦾', '💯', '🏋️', '✅'];
 
 function loadLocalComments(programId: string): ProgramComment[] {
   if (typeof window === 'undefined' || !programId) return [];
@@ -53,9 +53,11 @@ export const InstagramCommentsModal: React.FC<InstagramCommentsModalProps> = ({
   isOpen,
   onClose,
   programId,
+  programTitle,
   programAuthorId,
   onOpenAthlete,
 }) => {
+  const { t } = useTranslation();
   const user = useAuthStore((s) => s.user);
   const queryClient = useQueryClient();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -130,19 +132,14 @@ export const InstagramCommentsModal: React.FC<InstagramCommentsModalProps> = ({
     },
   });
 
-  const toggleCommentLikeMutation = useMutation({
-    mutationFn: async (commentId: string) => {
-      return apiClient(`/programs/${programId}/comments/${commentId}/upvote`, {
-        method: 'POST',
-      });
-    },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['program-comments', programId] });
-    },
-  });
-
   const deleteCommentMutation = useMutation({
     mutationFn: async (commentId: string) => {
+      if (commentId.startsWith('local-')) {
+        const remaining = loadLocalComments(programId).filter((c) => c.id !== commentId);
+        saveLocalComments(programId, remaining);
+        setLocalVersion((v) => v + 1);
+        return { deleted: commentId };
+      }
       return apiClient(`/programs/${programId}/comments/${commentId}`, {
         method: 'DELETE',
       });
@@ -247,36 +244,30 @@ export const InstagramCommentsModal: React.FC<InstagramCommentsModalProps> = ({
                       }
                     : undefined
                 }
-                className="font-bold text-white mr-1.5 hover:underline cursor-pointer"
+                className="font-bold text-[#1E1B4B] mr-1.5 hover:text-[#6D28D9] hover:underline cursor-pointer"
               >
                 {item.author_name || 'Атлет'}
               </span>
               {isProgramAuthor && (
-                <span className="inline-flex items-center gap-0.5 text-[9px] font-bold bg-brand-500/20 text-brand-400 border border-brand-500/30 px-1.5 py-0.2 rounded-full mr-1.5 align-middle">
+                <span className="inline-flex items-center gap-0.5 text-[9px] font-bold bg-[#F0EFFE] text-[#6D28D9] border border-[#DDD6FE] px-1.5 py-0.2 rounded-full mr-1.5 align-middle">
                   <Shield className="w-2.5 h-2.5" />
                   Автор
                 </span>
               )}
-              <span className={`text-zinc-200 break-words ${item.is_deleted ? 'italic text-zinc-500' : ''}`}>
+              <span className={`text-[#374151] break-words ${item.is_deleted ? 'italic text-[#94A3B8]' : ''}`}>
                 {item.content}
               </span>
             </div>
 
-            {/* Subline: time, likes count, reply, delete */}
-            <div className="flex items-center gap-3 text-[11px] text-zinc-500 font-medium">
+            {/* Subline: time, reply, delete */}
+            <div className="flex items-center gap-3 text-[11px] text-[#6B7280] font-medium">
               <span>{formatShortTime(item.created_at)}</span>
-
-              {item.upvotes > 0 && (
-                <span className="font-semibold text-zinc-400">
-                  {item.upvotes} {item.upvotes === 1 ? 'лайк' : 'лайков'}
-                </span>
-              )}
 
               {!item.is_deleted && (
                 <button
                   type="button"
                   onClick={() => handleStartReply(item.id, item.author_name)}
-                  className="font-bold text-zinc-400 hover:text-white transition-colors cursor-pointer"
+                  className="font-bold text-[#6D28D9] hover:text-[#4C1D95] transition-colors cursor-pointer"
                 >
                   Ответить
                 </button>
@@ -286,22 +277,22 @@ export const InstagramCommentsModal: React.FC<InstagramCommentsModalProps> = ({
                 <button
                   type="button"
                   onClick={() => deleteCommentMutation.mutate(item.id)}
-                  className="text-zinc-500 hover:text-rose-400 transition-colors p-0.5 cursor-pointer"
-                  title="Удалить"
+                  className="text-[#94A3B8] hover:text-[#EF4444] transition-colors p-0.5 cursor-pointer"
+                  title={t('common.delete')}
                 >
                   <Trash2 className="w-3 h-3" />
                 </button>
               )}
             </div>
 
-            {/* Expand / Collapse Replies Button (Instagram style) */}
+            {/* Expand / Collapse Replies Button */}
             {hasReplies && (
               <button
                 type="button"
                 onClick={() => toggleExpand(item.id)}
-                className="flex items-center gap-2 pt-1 text-[11px] font-semibold text-zinc-400 hover:text-zinc-200 transition-colors cursor-pointer"
+                className="flex items-center gap-2 pt-1 text-[11px] font-semibold text-[#6D28D9] hover:text-[#4C1D95] transition-colors cursor-pointer"
               >
-                <div className="w-6 h-px bg-zinc-700" />
+                <div className="w-6 h-px bg-[#DDD6FE]" />
                 <span>
                   {isExpanded
                     ? 'Скрыть ответы'
@@ -310,34 +301,11 @@ export const InstagramCommentsModal: React.FC<InstagramCommentsModalProps> = ({
               </button>
             )}
           </div>
-
-          {/* Right: Instagram Heart Like Button */}
-          <div className="flex flex-col items-center shrink-0 pt-0.5">
-            <button
-              type="button"
-              onClick={() => toggleCommentLikeMutation.mutate(item.id)}
-              className="p-1 hover:scale-125 transition-transform cursor-pointer"
-              title="Нравится"
-            >
-              <Heart
-                className={`w-3.5 h-3.5 transition-colors ${
-                  item.has_upvoted
-                    ? 'fill-rose-500 text-rose-500'
-                    : 'text-zinc-500 hover:text-zinc-300'
-                }`}
-              />
-            </button>
-            {item.upvotes > 0 && (
-              <span className="text-[10px] text-zinc-400 font-mono font-medium -mt-0.5">
-                {item.upvotes}
-              </span>
-            )}
-          </div>
         </div>
 
-        {/* Nested Replies with Instagram curve guide line */}
+        {/* Nested Replies */}
         {hasReplies && isExpanded && (
-          <div className="ml-7 pl-3 border-l border-dark-750 space-y-3 pt-1">
+          <div className="ml-7 pl-3 border-l-2 border-[#ECEAF6] space-y-3 pt-1">
             {item.children.map((child) => renderCommentItem(child, depth + 1))}
           </div>
         )}
@@ -354,46 +322,43 @@ export const InstagramCommentsModal: React.FC<InstagramCommentsModalProps> = ({
       size="md"
       title={
         <div className="flex items-center gap-2">
-          <MessageCircle className="w-5 h-5 text-brand-400" />
-          <span className="font-extrabold text-white text-base">Комментарии</span>
-          <span className="text-xs font-mono bg-dark-800 text-zinc-400 border border-dark-700 px-2 py-0.5 rounded-full font-bold">
+          <MessageCircle className="w-5 h-5 text-[#6D28D9]" />
+          <span className="font-bold text-[#1E1B4B] text-base">{t('programs.commentsCount')}</span>
+          <span className="text-xs font-mono bg-[#F0EFFE] text-[#6D28D9] border border-[#DDD6FE] px-2 py-0.5 rounded-full font-bold">
             {comments.length}
           </span>
         </div>
       }
-      subtitle="Обсуждение программы, вопросы по технике и результаты"
+      subtitle={programTitle}
     >
       <div className="flex flex-col h-[65vh] max-h-[580px] -mx-4 -mb-4">
         {/* Comments Feed Area */}
-        <div className="flex-1 overflow-y-auto px-4 py-2 space-y-4 scrollbar-thin">
+        <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4 scrollbar-thin">
           {isLoading ? (
             <div className="space-y-3 py-4">
               {[1, 2, 3, 4].map((i) => (
                 <div key={i} className="flex items-center gap-3 animate-pulse">
-                  <div className="w-8 h-8 rounded-full bg-dark-800" />
+                  <div className="w-8 h-8 rounded-full bg-[#ECEAF6]" />
                   <div className="flex-1 space-y-1.5">
-                    <div className="h-3 bg-dark-800 rounded w-1/4" />
-                    <div className="h-3 bg-dark-800 rounded w-3/4" />
+                    <div className="h-3 bg-[#ECEAF6] rounded w-1/4" />
+                    <div className="h-3 bg-[#ECEAF6] rounded w-3/4" />
                   </div>
                 </div>
               ))}
             </div>
           ) : commentTree.length === 0 ? (
-            <div className="text-center py-16 space-y-2 text-zinc-500">
-              <MessageCircle className="w-10 h-10 mx-auto text-zinc-700" />
-              <div className="text-xs font-bold text-zinc-300">Пока нет комментариев</div>
-              <div className="text-[11px] text-zinc-500">
-                Будьте первым, кто задаст вопрос или оставит отзыв!
-              </div>
+            <div className="text-center py-16 space-y-2 text-[#6B7280]">
+              <MessageCircle className="w-10 h-10 mx-auto text-[#C4B5FD]" />
+              <div className="text-xs font-bold text-[#1E1B4B]">{t('programs.noCommentsYet') || 'Пока нет комментариев'}</div>
             </div>
           ) : (
             commentTree.map((item) => renderCommentItem(item, 0))
           )}
         </div>
 
-        {/* Sticky Instagram Comment Input Bar */}
-        <div className="border-t border-dark-800 bg-dark-900/95 p-3 space-y-2">
-          {/* Quick Instagram Emojis */}
+        {/* Sticky Comment Input Bar */}
+        <div className="border-t border-[#ECEAF6] bg-[#F8F7FC] p-3 space-y-2">
+          {/* Quick Emojis */}
           <div className="flex items-center justify-between px-1">
             <div className="flex items-center gap-2 overflow-x-auto scrollbar-none py-0.5">
               {QUICK_EMOJIS.map((emoji) => (
@@ -411,16 +376,16 @@ export const InstagramCommentsModal: React.FC<InstagramCommentsModalProps> = ({
 
           {/* Replying To Banner */}
           {replyingTo && (
-            <div className="flex items-center justify-between bg-dark-800 px-3 py-1 rounded-lg text-xs text-zinc-300 animate-fade-in border border-dark-700">
+            <div className="flex items-center justify-between bg-[#F0EFFE] px-3 py-1 rounded-lg text-xs text-[#1E1B4B] border border-[#DDD6FE]">
               <span className="flex items-center gap-1.5">
-                <span className="text-zinc-500">Ответ для:</span>
-                <span className="font-bold text-brand-400">@{replyingTo.author_name}</span>
+                <span className="text-[#6B7280]">→</span>
+                <span className="font-bold text-[#6D28D9]">@{replyingTo.author_name}</span>
               </span>
               <button
                 type="button"
                 onClick={() => setReplyingTo(null)}
-                className="text-zinc-500 hover:text-white p-0.5"
-                title="Отменить ответ"
+                className="text-[#6B7280] hover:text-[#1E1B4B] p-0.5 cursor-pointer"
+                title={t('common.cancel')}
               >
                 <X className="w-3.5 h-3.5" />
               </button>
@@ -449,10 +414,10 @@ export const InstagramCommentsModal: React.FC<InstagramCommentsModalProps> = ({
               onChange={(e) => setCommentText(e.target.value)}
               placeholder={
                 replyingTo
-                  ? `Ответить @${replyingTo.author_name}...`
-                  : 'Добавьте комментарий...'
+                  ? `@${replyingTo.author_name}...`
+                  : t('programs.commentPlaceholder') || 'Написать комментарий...'
               }
-              className="flex-1 bg-dark-950 border border-dark-750 rounded-full px-4 py-2 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-brand-500 transition-colors"
+              className="flex-1 bg-white border border-[#E2E0F0] rounded-full px-4 py-2 text-xs text-[#1E1B4B] placeholder-[#94A3B8] focus:outline-none focus:border-[#6D28D9] transition-colors"
             />
 
             <button
@@ -460,11 +425,11 @@ export const InstagramCommentsModal: React.FC<InstagramCommentsModalProps> = ({
               disabled={!commentText.trim() || postCommentMutation.isPending}
               className={`text-xs font-bold px-3 py-2 rounded-full transition-all cursor-pointer ${
                 commentText.trim() && !postCommentMutation.isPending
-                  ? 'text-brand-400 hover:text-brand-300'
-                  : 'text-zinc-600 cursor-not-allowed'
+                  ? 'text-[#6D28D9] hover:text-[#4C1D95]'
+                  : 'text-[#94A3B8] cursor-not-allowed'
               }`}
             >
-              {postCommentMutation.isPending ? '...' : 'Опубликовать'}
+              {postCommentMutation.isPending ? '...' : t('common.save') || 'OK'}
             </button>
           </form>
         </div>

@@ -208,15 +208,15 @@ export const ProgramDiscussionSection: React.FC<ProgramDiscussionSectionProps> =
           <div
             onClick={() => toggleCollapse(node.id)}
             title="Свернуть ветку"
-            className="absolute -left-2.5 sm:-left-3.5 top-0 bottom-0 w-1.5 hover:w-2 hover:bg-brand-500/40 rounded-full cursor-pointer transition-all"
+            className="absolute -left-2.5 sm:-left-3.5 top-0 bottom-0 w-1.5 hover:w-2 hover:bg-[#6D28D9]/30 rounded-full cursor-pointer transition-all"
           />
         )}
 
         <div
           className={`rounded-xl border transition-all ${
             depth === 0
-              ? 'bg-dark-900/90 border-dark-750 p-3'
-              : 'bg-dark-950/60 border-dark-800 p-2.5'
+              ? 'bg-white border-[#ECEAF6] p-3 royal-card-shadow'
+              : 'bg-[#F8F7FC] border-[#ECEAF6] p-2.5'
           } ${isCollapsed ? 'opacity-75' : ''}`}
         >
           {/* Header */}
@@ -227,7 +227,7 @@ export const ProgramDiscussionSection: React.FC<ProgramDiscussionSectionProps> =
                 <button
                   type="button"
                   onClick={() => toggleCollapse(node.id)}
-                  className="text-zinc-500 hover:text-zinc-300 p-0.5 rounded transition-colors cursor-pointer"
+                  className="text-[#6B7280] hover:text-[#1E1B4B] p-0.5 rounded transition-colors cursor-pointer"
                   title={isCollapsed ? 'Развернуть' : 'Свернуть ветку'}
                 >
                   {isCollapsed ? (
@@ -240,22 +240,22 @@ export const ProgramDiscussionSection: React.FC<ProgramDiscussionSectionProps> =
 
               {/* Author name & avatar badge */}
               <div className="flex items-center gap-1.5">
-                <div className="w-5 h-5 rounded-full bg-dark-750 border border-dark-700 flex items-center justify-center text-[10px] font-bold text-zinc-300 uppercase">
+                <div className="w-5 h-5 rounded-full bg-[#F0EFFE] border border-[#DDD6FE] flex items-center justify-center text-[10px] font-bold text-[#6D28D9] uppercase">
                   {(node.author_name || 'А')[0]}
                 </div>
-                <span className="font-bold text-zinc-200 truncate max-w-[140px]">
+                <span className="font-bold text-[#1E1B4B] truncate max-w-[140px]">
                   {node.author_name || 'Атлет'}
                 </span>
               </div>
 
               {isAuthor && (
-                <span className="text-[9px] bg-brand-500/15 text-brand-400 border border-brand-500/30 font-bold px-1.5 py-0.2 rounded-full flex items-center gap-0.5">
+                <span className="text-[9px] bg-[#F0EFFE] text-[#6D28D9] border border-[#DDD6FE] font-bold px-1.5 py-0.2 rounded-full flex items-center gap-0.5">
                   <Shield className="w-2.5 h-2.5" />
                   Автор сплита
                 </span>
               )}
 
-              <span className="text-[10px] text-zinc-500 font-mono flex items-center gap-1">
+              <span className="text-[10px] text-[#6B7280] font-mono flex items-center gap-1">
                 <Clock className="w-2.5 h-2.5" />
                 {formatTime(node.created_at)}
               </span>
@@ -269,8 +269,8 @@ export const ProgramDiscussionSection: React.FC<ProgramDiscussionSectionProps> =
                 onClick={() => toggleUpvoteMutation.mutate(node.id)}
                 className={`flex items-center gap-1 px-1.5 py-0.5 rounded-lg border text-xs font-mono font-bold transition-all cursor-pointer ${
                   node.has_upvoted
-                    ? 'bg-brand-500/20 text-brand-400 border-brand-500/40 shadow-sm'
-                    : 'bg-dark-850 border-dark-750 text-zinc-400 hover:text-zinc-200'
+                    ? 'bg-[#F0EFFE] text-[#6D28D9] border-[#DDD6FE] shadow-sm'
+                    : 'bg-[#F8F7FC] border-[#ECEAF6] text-[#6B7280] hover:text-[#1E1B4B]'
                 }`}
                 title="Плюсануть комментарий"
               >
@@ -283,7 +283,7 @@ export const ProgramDiscussionSection: React.FC<ProgramDiscussionSectionProps> =
                 <button
                   type="button"
                   onClick={() => deleteCommentMutation.mutate(node.id)}
-                  className="text-zinc-500 hover:text-rose-400 p-0.5 transition-colors cursor-pointer"
+                  className="text-[#9CA3AF] hover:text-rose-600 p-0.5 transition-colors cursor-pointer"
                   title="Удалить комментарий"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
@@ -296,15 +296,15 @@ export const ProgramDiscussionSection: React.FC<ProgramDiscussionSectionProps> =
           {isCollapsed ? (
             <div
               onClick={() => toggleCollapse(node.id)}
-              className="text-xs text-zinc-500 italic mt-1.5 cursor-pointer hover:text-zinc-400 flex items-center gap-1"
+              className="text-xs text-[#6B7280] italic mt-1.5 cursor-pointer hover:text-[#1E1B4B] flex items-center gap-1"
             >
               <span>[Ветка свернута — {totalReplies} {totalReplies === 1 ? 'ответ' : 'ответов'}]</span>
             </div>
           ) : (
             <>
-              <div className="mt-2 text-xs sm:text-sm text-zinc-200 leading-relaxed whitespace-pre-wrap break-words">
+              <div className="mt-2 text-xs sm:text-sm text-[#1E1B4B] leading-relaxed whitespace-pre-wrap break-words">
                 {node.is_deleted ? (
-                  <span className="italic text-zinc-500">{node.content}</span>
+                  <span className="italic text-[#9CA3AF]">{node.content}</span>
                 ) : (
                   node.content
                 )}
@@ -312,7 +312,7 @@ export const ProgramDiscussionSection: React.FC<ProgramDiscussionSectionProps> =
 
               {/* Reply trigger button */}
               {!node.is_deleted && (
-                <div className="mt-2 pt-1.5 border-t border-dark-800/80 flex items-center justify-between">
+                <div className="mt-2 pt-1.5 border-t border-[#ECEAF6] flex items-center justify-between">
                   <button
                     type="button"
                     onClick={() => {
@@ -324,28 +324,28 @@ export const ProgramDiscussionSection: React.FC<ProgramDiscussionSectionProps> =
                         setReplyContent('');
                       }
                     }}
-                    className="text-xs font-bold text-zinc-400 hover:text-brand-400 flex items-center gap-1 transition-colors cursor-pointer"
+                    className="text-xs font-bold text-[#6B7280] hover:text-[#6D28D9] flex items-center gap-1 transition-colors cursor-pointer"
                   >
                     <CornerDownRight className="w-3.5 h-3.5" />
                     <span>{isReplying ? 'Отмена' : 'Ответить'}</span>
                   </button>
 
                   {depth >= 3 && (
-                    <span className="text-[10px] text-zinc-600 font-mono">уровень {depth}</span>
+                    <span className="text-[10px] text-[#9CA3AF] font-mono">уровень {depth}</span>
                   )}
                 </div>
               )}
 
               {/* Inline Reply Box */}
               {isReplying && (
-                <div className="mt-2.5 pt-2 border-t border-dark-750/80 space-y-2 animate-fade-in">
+                <div className="mt-2.5 pt-2 border-t border-[#ECEAF6] space-y-2 animate-fade-in">
                   <textarea
                     value={replyContent}
                     onChange={(e) => setReplyContent(e.target.value)}
                     placeholder={`Ответить пользователю @${node.author_name}...`}
                     rows={2}
                     autoFocus
-                    className="w-full bg-dark-900 border border-dark-700 rounded-xl px-3 py-2 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-brand-500 transition-colors resize-none"
+                    className="w-full bg-white border border-[#ECEAF6] rounded-xl px-3 py-2 text-xs text-[#1E1B4B] placeholder-[#9CA3AF] focus:outline-none focus:border-[#6D28D9] transition-colors resize-none"
                   />
                   <div className="flex items-center justify-end gap-2">
                     <Button
@@ -376,7 +376,7 @@ export const ProgramDiscussionSection: React.FC<ProgramDiscussionSectionProps> =
 
               {/* Children recursive list */}
               {node.children.length > 0 && (
-                <div className="mt-2 border-l border-dark-800 pl-2 sm:pl-3 space-y-2">
+                <div className="mt-2 border-l border-[#ECEAF6] pl-2 sm:pl-3 space-y-2">
                   {node.children.map((child) => renderComment(child, depth + 1))}
                 </div>
               )}
@@ -390,24 +390,24 @@ export const ProgramDiscussionSection: React.FC<ProgramDiscussionSectionProps> =
   return (
     <div className="space-y-4">
       {/* Discussion Info Banner */}
-      <div className="bg-dark-900/60 p-3 rounded-2xl border border-dark-800 flex items-center justify-between gap-3 text-xs">
+      <div className="bg-[#F8F7FC] p-3 rounded-2xl border border-[#ECEAF6] flex items-center justify-between gap-3 text-xs">
         <div className="flex items-center gap-2">
-          <MessageSquare className="w-4 h-4 text-brand-400 shrink-0" />
-          <span className="text-zinc-300 font-medium">
+          <MessageSquare className="w-4 h-4 text-[#6D28D9] shrink-0" />
+          <span className="text-[#4B5563] font-medium">
             Обсуждение сплита, техники, адаптации под себя и прогресса
           </span>
         </div>
 
         {/* Sort Options */}
         <div className="flex items-center gap-1 shrink-0 font-mono text-[11px]">
-          <span className="text-zinc-500 hidden sm:inline">Сортировка:</span>
+          <span className="text-[#6B7280] hidden sm:inline">Сортировка:</span>
           <button
             type="button"
             onClick={() => setSortBy('oldest')}
             className={`px-2 py-0.5 rounded-lg border transition-all ${
               sortBy === 'oldest'
-                ? 'bg-brand-500/15 border-brand-500/40 text-brand-400 font-bold'
-                : 'bg-dark-850 border-dark-750 text-zinc-400 hover:text-zinc-200'
+                ? 'bg-[#F0EFFE] border-[#DDD6FE] text-[#6D28D9] font-bold'
+                : 'bg-white border-[#ECEAF6] text-[#6B7280] hover:text-[#1E1B4B]'
             }`}
           >
             По порядку
@@ -417,8 +417,8 @@ export const ProgramDiscussionSection: React.FC<ProgramDiscussionSectionProps> =
             onClick={() => setSortBy('popular')}
             className={`px-2 py-0.5 rounded-lg border transition-all ${
               sortBy === 'popular'
-                ? 'bg-brand-500/15 border-brand-500/40 text-brand-400 font-bold'
-                : 'bg-dark-850 border-dark-750 text-zinc-400 hover:text-zinc-200'
+                ? 'bg-[#F0EFFE] border-[#DDD6FE] text-[#6D28D9] font-bold'
+                : 'bg-white border-[#ECEAF6] text-[#6B7280] hover:text-[#1E1B4B]'
             }`}
           >
             Топ
@@ -428,8 +428,8 @@ export const ProgramDiscussionSection: React.FC<ProgramDiscussionSectionProps> =
             onClick={() => setSortBy('newest')}
             className={`px-2 py-0.5 rounded-lg border transition-all ${
               sortBy === 'newest'
-                ? 'bg-brand-500/15 border-brand-500/40 text-brand-400 font-bold'
-                : 'bg-dark-850 border-dark-750 text-zinc-400 hover:text-zinc-200'
+                ? 'bg-[#F0EFFE] border-[#DDD6FE] text-[#6D28D9] font-bold'
+                : 'bg-white border-[#ECEAF6] text-[#6B7280] hover:text-[#1E1B4B]'
             }`}
           >
             Новые
@@ -440,13 +440,13 @@ export const ProgramDiscussionSection: React.FC<ProgramDiscussionSectionProps> =
       {/* Main Root Comment Box */}
       <form
         onSubmit={handleRootSubmit}
-        className="bg-dark-900 border border-dark-750 p-3.5 rounded-2xl space-y-2.5 shadow-md"
+        className="bg-white border border-[#ECEAF6] p-3.5 rounded-2xl space-y-2.5 royal-card-shadow"
       >
         <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-full bg-brand-500/15 border border-brand-500/30 text-brand-400 font-bold flex items-center justify-center text-xs">
+          <div className="w-6 h-6 rounded-full bg-[#F0EFFE] border border-[#DDD6FE] text-[#6D28D9] font-bold flex items-center justify-center text-xs">
             {(user?.display_name || 'А')[0]}
           </div>
-          <span className="text-xs font-bold text-white">Написать в обсуждение</span>
+          <span className="text-xs font-bold text-[#1E1B4B]">Написать в обсуждение</span>
         </div>
 
         <textarea
@@ -454,12 +454,12 @@ export const ProgramDiscussionSection: React.FC<ProgramDiscussionSectionProps> =
           onChange={(e) => setRootContent(e.target.value)}
           placeholder="Задайте вопрос автору или атлетам, поделитесь результатами, замените упражнение..."
           rows={3}
-          className="w-full bg-dark-950/80 border border-dark-700 rounded-xl px-3 py-2 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-brand-500 transition-colors resize-none"
+          className="w-full bg-[#F8F7FC] border border-[#ECEAF6] rounded-xl px-3 py-2 text-xs text-[#1E1B4B] placeholder-[#9CA3AF] focus:outline-none focus:border-[#6D28D9] transition-colors resize-none"
         />
 
         <div className="flex items-center justify-between pt-1">
-          <span className="text-[11px] text-zinc-500 flex items-center gap-1">
-            <Sparkles className="w-3 h-3 text-brand-400" />
+          <span className="text-[11px] text-[#6B7280] flex items-center gap-1">
+            <Sparkles className="w-3 h-3 text-[#6D28D9]" />
             Ветки поддерживают вложенные ответы как на Хабре
           </span>
 
@@ -484,15 +484,15 @@ export const ProgramDiscussionSection: React.FC<ProgramDiscussionSectionProps> =
             {[1, 2, 3].map((i) => (
               <div
                 key={i}
-                className="h-16 bg-dark-900/60 rounded-xl animate-pulse border border-dark-800"
+                className="h-16 bg-[#F8F7FC] rounded-xl animate-pulse border border-[#ECEAF6]"
               />
             ))}
           </div>
         ) : commentTree.length === 0 ? (
-          <div className="text-center py-10 bg-dark-900/40 rounded-2xl border border-dashed border-dark-800 space-y-2">
-            <MessageSquare className="w-8 h-8 text-zinc-600 mx-auto" />
-            <h4 className="text-xs font-bold text-zinc-300">Пока нет комментариев</h4>
-            <p className="text-[11px] text-zinc-500 max-w-sm mx-auto">
+          <div className="text-center py-10 bg-[#F8F7FC] rounded-2xl border border-dashed border-[#DDD6FE] space-y-2">
+            <MessageSquare className="w-8 h-8 text-[#9CA3AF] mx-auto" />
+            <h4 className="text-xs font-bold text-[#1E1B4B]">Пока нет комментариев</h4>
+            <p className="text-[11px] text-[#6B7280] max-w-sm mx-auto">
               Задайте первый вопрос автору программы или начните обсуждение с другими атлетами.
             </p>
           </div>

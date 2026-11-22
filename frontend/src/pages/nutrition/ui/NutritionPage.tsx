@@ -14,7 +14,6 @@ import {
   RefreshCw,
   Droplets,
   Pencil,
-  Calendar,
   Copy,
   RotateCcw,
 } from 'lucide-react';
@@ -401,118 +400,99 @@ export const NutritionPage: React.FC = () => {
   const waterGlasses = Math.floor(waterMl / 250);
 
   return (
-    <div className="space-y-5 pb-12 max-w-6xl mx-auto">
-      {/* 1. Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="flex items-start gap-3">
-          <div className="w-10 h-10 rounded-[10px] bg-[#022c22] border border-[#064e3b] flex items-center justify-center text-[#34d399] shrink-0">
-            <Utensils className="w-5 h-5" />
-          </div>
-          <div>
-            <h1 className="text-[22px] sm:text-[26px] font-semibold tracking-[-0.02em] text-[#fafafa] leading-tight">
-              {t('nutrition.title')}
-            </h1>
-            <p className="text-[13px] text-[#a3a3a3] mt-0.5">
-              {t('nutrition.subtitle')}
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2 self-start sm:self-auto">
-          <div className="min-h-[44px] px-3.5 rounded-[10px] bg-[#171717] border border-[#404040] flex items-center gap-2 text-[13px] text-[#a3a3a3] font-mono tabular-nums">
-            <Calendar className="w-4 h-4 text-[#34d399] shrink-0" />
-            <span className="capitalize text-[#fafafa] font-medium font-sans">{formattedDate}</span>
-            <span className="text-[#404040]">·</span>
-            <span>{tzLabel}</span>
-          </div>
-
-          <Button
-            variant="primary"
-            size="md"
-            onClick={() => {
-              setActiveLogTab('photo');
-              setIsPhotoPickerOpen(true);
-            }}
-            className="gap-1.5"
-          >
-            <Camera className="w-4 h-4" />
-            <span className="hidden sm:inline">{t('nutrition.byPhoto')}</span>
-          </Button>
-        </div>
-      </div>
-
-      {/* 2. Daily Balance Hero + Diary Date Picker */}
-      <Card className="p-4 sm:p-5 space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3.5 border-b border-[#262626]">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <Flame className="w-4 h-4 text-[#34d399]" />
-              <h2 className="text-[15px] font-semibold text-[#fafafa]">
-                {t('nutrition.balanceTitle')}
-              </h2>
+    <div className="space-y-6 pb-12 max-w-6xl mx-auto">
+      {/* 1 & 2. Royal Violet Nutrition Calorie Hero + Overlapping 4-Macro Floating Card (Figma 06 / 18) */}
+      <section className="relative">
+        <div className="royal-hero-gradient rounded-[26px] px-5 pt-6 pb-12 sm:px-7 sm:pt-7 sm:pb-14 text-white royal-card-shadow space-y-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-[12px] bg-white/15 border border-white/25 flex items-center justify-center text-white shrink-0">
+                <Utensils className="w-5 h-5" />
+              </div>
+              <div>
+                <h1 className="text-[24px] sm:text-[28px] font-extrabold tracking-[-0.02em] text-white leading-tight">
+                  {t('nutrition.title')}
+                </h1>
+                <p className="text-[13px] text-white/80 mt-0.5">
+                  {t('nutrition.subtitle')}
+                </p>
+              </div>
             </div>
-            <p className="text-[12px] text-[#a3a3a3]">
-              {remCals >= 0 ? t('nutrition.remainingForDay') : t('nutrition.exceeded')}
-            </p>
-          </div>
 
-          <div className="flex items-center gap-2 self-start sm:self-auto">
-            <label htmlFor="nutrition-diary-date" className="sr-only">
-              {t('nutrition.selectedDate')}
-            </label>
-            <input
-              id="nutrition-diary-date"
-              type="date"
-              aria-label={t('nutrition.selectedDate')}
-              value={selectedDate}
-              onChange={(event) => {
-                if (/^\d{4}-\d{2}-\d{2}$/.test(event.target.value)) setSelectedDate(event.target.value);
-              }}
-              className="min-h-[44px] px-3 rounded-[10px] bg-[#0a0a0a] border border-[#404040] text-[13px] font-mono tabular-nums text-[#fafafa] focus:outline-none focus:border-[#34d399]"
-            />
-          </div>
+            <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+              <label htmlFor="nutrition-diary-date" className="sr-only">
+                {t('nutrition.selectedDate')}
+              </label>
+              <input
+                id="nutrition-diary-date"
+                type="date"
+                aria-label={t('nutrition.selectedDate')}
+                value={selectedDate}
+                onChange={(event) => {
+                  if (/^\d{4}-\d{2}-\d{2}$/.test(event.target.value)) setSelectedDate(event.target.value);
+                }}
+                className="min-h-[40px] px-3 rounded-[12px] bg-white/15 border border-white/25 text-[12px] font-mono tabular-nums text-white focus:outline-none focus:bg-white/25"
+              />
 
-          <div className="flex items-center gap-4 bg-[#0a0a0a] border border-[#262626] rounded-[10px] px-3.5 py-2 self-start sm:self-auto">
-            <div>
-              <span className="text-[11px] text-[#737373] block">{t('nutrition.consumed')}</span>
-              <span className="text-[14px] font-semibold text-[#fafafa] font-mono tabular-nums">
-                {totalCals.toLocaleString()} {t('nutrition.kcalUnit')}
-              </span>
-            </div>
-            <div className="w-px h-7 bg-[#262626]" />
-            <div>
-              <span className="text-[11px] text-[#737373] block">{t('nutrition.target')}</span>
-              <span className="text-[14px] font-medium text-[#a3a3a3] font-mono tabular-nums">
-                {targetCals.toLocaleString()} {t('nutrition.kcalUnit')}
-              </span>
-            </div>
-            <div className="w-px h-7 bg-[#262626]" />
-            <div>
-              <span className="text-[11px] text-[#737373] block">
-                {remCals >= 0 ? t('nutrition.remaining') : t('nutrition.exceeded')}
-              </span>
-              <span
-                className={`text-[15px] font-semibold font-mono tabular-nums ${
-                  remCals >= 0 ? 'text-[#34d399]' : 'text-amber-400'
-                }`}
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveLogTab('photo');
+                  setIsPhotoPickerOpen(true);
+                }}
+                className="min-h-[40px] px-3.5 rounded-[12px] bg-white text-[#3B0CA3] hover:bg-[#F5F3FF] text-[13px] font-bold inline-flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer"
               >
-                {remCals >= 0 ? remCals.toLocaleString() : `+${Math.abs(remCals).toLocaleString()}`} {t('nutrition.kcalUnit')}
-              </span>
+                <Camera className="w-4 h-4" />
+                <span>{t('nutrition.byPhoto')}</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pt-2 border-t border-white/15">
+            <div>
+              <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-white/75">
+                <Flame className="w-3.5 h-3.5 text-[#6EE7B7]" />
+                <span>{remCals >= 0 ? t('nutrition.remainingForDay') : t('nutrition.exceeded')}</span>
+              </div>
+              <div className="text-[34px] sm:text-[40px] font-extrabold tracking-tight tabular-nums leading-none mt-1">
+                {remCals >= 0 ? remCals.toLocaleString() : `+${Math.abs(remCals).toLocaleString()}`}{' '}
+                <span className="text-lg font-bold text-white/80">{t('nutrition.kcalUnit')}</span>
+              </div>
+              <div className="text-[12px] text-white/75 mt-1 capitalize">
+                {formattedDate} · {tzLabel}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-5 bg-white/12 border border-white/20 rounded-[14px] px-4 py-2.5 backdrop-blur-xs">
+              <div>
+                <span className="text-[11px] text-white/75 block">{t('nutrition.consumed')}</span>
+                <span className="text-[15px] font-bold text-white font-mono tabular-nums">
+                  {totalCals.toLocaleString()} {t('nutrition.kcalUnit')}
+                </span>
+              </div>
+              <div className="w-px h-7 bg-white/20" />
+              <div>
+                <span className="text-[11px] text-white/75 block">{t('nutrition.target')}</span>
+                <span className="text-[15px] font-semibold text-white/90 font-mono tabular-nums">
+                  {targetCals.toLocaleString()} {t('nutrition.kcalUnit')}
+                </span>
+              </div>
             </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        {/* Floating White 4-Macro Card */}
+        <div className="-mt-7 mx-2 sm:mx-5 bg-white rounded-[22px] border border-[#ECEAF6] royal-float-shadow p-4 grid grid-cols-2 lg:grid-cols-4 gap-3">
           {macroBars.map((item) => (
             <div
               key={item.key}
-              className="p-3.5 rounded-[10px] bg-[#0a0a0a] border border-[#262626] space-y-2.5"
+              className="p-3 rounded-[14px] bg-[#F8F7FC] border border-[#ECEAF6] space-y-2"
             >
               <div className="flex items-center justify-between text-[12px]">
-                <span className="font-medium text-[#a3a3a3]">{item.label}</span>
+                <span className="font-semibold text-[#6B7280]">{item.label}</span>
                 <span
-                  className={`font-mono font-semibold tabular-nums ${
-                    item.over ? 'text-amber-400' : 'text-[#34d399]'
+                  className={`font-mono font-bold tabular-nums ${
+                    item.over ? 'text-[#EA580C]' : 'text-[#6D28D9]'
                   }`}
                 >
                   {item.pct}%
@@ -520,19 +500,19 @@ export const NutritionPage: React.FC = () => {
               </div>
 
               <div className="flex items-baseline justify-between font-mono tabular-nums">
-                <span className="text-[18px] font-semibold text-[#fafafa]">
+                <span className="text-[17px] font-bold text-[#1E1B4B]">
                   {item.current}
-                  <span className="text-[12px] font-normal text-[#a3a3a3] ml-1">{item.unit}</span>
+                  <span className="text-[11px] font-normal text-[#6B7280] ml-1">{item.unit}</span>
                 </span>
-                <span className="text-[12px] text-[#737373]">
+                <span className="text-[11px] text-[#94A3B8]">
                   / {item.target} {item.unit}
                 </span>
               </div>
 
-              <div className="h-1.5 w-full rounded-full bg-[#262626] overflow-hidden">
+              <div className="h-1.5 w-full rounded-full bg-[#ECEAF6] overflow-hidden">
                 <div
                   className={`h-full rounded-full transition-all duration-300 ${
-                    item.over ? 'bg-amber-400' : 'bg-[#34d399]'
+                    item.over ? 'bg-[#EA580C]' : 'bg-[#6D28D9]'
                   }`}
                   style={{ width: `${item.pct}%` }}
                 />
@@ -540,7 +520,7 @@ export const NutritionPage: React.FC = () => {
             </div>
           ))}
         </div>
-      </Card>
+      </section>
 
       {/* 3. Main Two-Column Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
@@ -548,12 +528,12 @@ export const NutritionPage: React.FC = () => {
         <div className="space-y-4">
           {/* Meals Card */}
           <Card className="p-4 sm:p-5 space-y-4">
-            <div className="flex items-center justify-between border-b border-[#262626] pb-3">
+            <div className="flex items-center justify-between border-b border-[#ECEAF6] pb-3">
               <div className="flex items-center gap-2">
-                <h2 className="text-[15px] font-semibold text-[#fafafa]">
+                <h2 className="text-[16px] font-bold text-[#1E1B4B]">
                   {t('nutrition.mealsToday')}
                 </h2>
-                <span className="text-[12px] font-mono font-medium tabular-nums text-[#34d399] bg-[#022c22] border border-[#064e3b] px-2.5 py-0.5 rounded-full">
+                <span className="text-[12px] font-mono font-bold tabular-nums text-[#6D28D9] bg-[#F0EFFE] border border-[#DDD6FE] px-2.5 py-0.5 rounded-full">
                   {mealsList.length}
                 </span>
               </div>
@@ -564,17 +544,17 @@ export const NutritionPage: React.FC = () => {
                 {[1, 2, 3].map((i) => (
                   <div
                     key={i}
-                    className="h-20 bg-[#262626]/60 rounded-[10px] animate-pulse border border-[#262626]"
+                    className="h-20 bg-[#F8F7FC] rounded-[12px] animate-pulse border border-[#ECEAF6]"
                   />
                 ))}
               </div>
             ) : mealsList.length === 0 ? (
-              <div className="text-center py-8 px-4 border border-dashed border-[#404040] rounded-[10px] bg-[#0a0a0a] space-y-2.5">
-                <div className="w-10 h-10 rounded-[10px] bg-[#171717] border border-[#262626] flex items-center justify-center mx-auto text-[#737373]">
+              <div className="text-center py-8 px-4 border border-dashed border-[#DDD6FE] rounded-[14px] bg-[#F8F7FC] space-y-2.5">
+                <div className="w-10 h-10 rounded-[12px] bg-[#F0EFFE] border border-[#DDD6FE] flex items-center justify-center mx-auto text-[#6D28D9]">
                   <Utensils className="w-5 h-5" />
                 </div>
-                <h3 className="text-[14px] font-semibold text-[#fafafa]">{t('nutrition.noMeals')}</h3>
-                <p className="text-[12px] text-[#a3a3a3] max-w-sm mx-auto leading-relaxed">
+                <h3 className="text-[14px] font-bold text-[#1E1B4B]">{t('nutrition.noMeals')}</h3>
+                <p className="text-[12px] text-[#6B7280] max-w-sm mx-auto leading-relaxed">
                   {t('nutrition.noMealsDesc')}
                 </p>
               </div>
@@ -592,8 +572,8 @@ export const NutritionPage: React.FC = () => {
                   return (
                     <div
                       key={meal.id}
-                      className={`p-3.5 rounded-[10px] bg-[#0a0a0a] border transition-colors space-y-3 ${
-                        isBeingEdited ? 'border-[#34d399]' : 'border-[#262626]'
+                      className={`p-3.5 rounded-[14px] bg-[#F8F7FC] border transition-colors space-y-3 ${
+                        isBeingEdited ? 'border-[#6D28D9] bg-[#F5F3FF]' : 'border-[#ECEAF6]'
                       }`}
                     >
                       <div className="flex items-start gap-3">
@@ -601,45 +581,45 @@ export const NutritionPage: React.FC = () => {
                           <img
                             src={meal.photo_url}
                             alt={meal.name}
-                            className="w-12 h-12 rounded-[10px] object-cover border border-[#404040] shrink-0"
+                            className="w-12 h-12 rounded-[12px] object-cover border border-[#ECEAF6] shrink-0"
                           />
                         ) : (
-                          <div className="w-12 h-12 rounded-[10px] bg-[#171717] border border-[#262626] flex items-center justify-center text-[#34d399] shrink-0">
+                          <div className="w-12 h-12 rounded-[12px] bg-[#F0EFFE] border border-[#DDD6FE] flex items-center justify-center text-[#6D28D9] shrink-0">
                             <Utensils className="w-5 h-5" />
                           </div>
                         )}
 
                         <div className="min-w-0 flex-1 space-y-1">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-[11px] font-medium text-[#34d399] bg-[#022c22] border border-[#064e3b] px-2 py-0.5 rounded-[6px]">
+                            <span className="text-[11px] font-semibold text-[#6D28D9] bg-[#F0EFFE] border border-[#DDD6FE] px-2 py-0.5 rounded-[6px]">
                               {t(`nutrition.${meal.meal_type}` as Parameters<typeof t>[0]) || meal.meal_type}
                             </span>
                             {mealTime && (
-                              <span className="text-[11px] text-[#737373] font-mono tabular-nums">
+                              <span className="text-[11px] text-[#6B7280] font-mono tabular-nums">
                                 {mealTime}
                               </span>
                             )}
                           </div>
 
-                          <h4 className="text-[14px] font-semibold text-[#fafafa] truncate">
+                          <h4 className="text-[14px] font-bold text-[#1E1B4B] truncate">
                             {meal.name}
                           </h4>
 
-                          <div className="flex items-center gap-2 text-[12px] font-mono tabular-nums flex-wrap text-[#a3a3a3]">
-                            <span className="text-[#fafafa] font-semibold">
+                          <div className="flex items-center gap-2 text-[12px] font-mono tabular-nums flex-wrap text-[#6B7280]">
+                            <span className="text-[#1E1B4B] font-bold">
                               {meal.calories} {t('nutrition.kcalUnit')}
                             </span>
-                            <span className="text-[#404040]">·</span>
+                            <span className="text-[#CBD5E1]">·</span>
                             <span>
                               {t('nutrition.protein').slice(0, 1)}: {meal.protein_g}
                               {t('nutrition.gramUnit')}
                             </span>
-                            <span className="text-[#404040]">·</span>
+                            <span className="text-[#CBD5E1]">·</span>
                             <span>
                               {t('nutrition.carbs').slice(0, 1)}: {meal.carbs_g}
                               {t('nutrition.gramUnit')}
                             </span>
-                            <span className="text-[#404040]">·</span>
+                            <span className="text-[#CBD5E1]">·</span>
                             <span>
                               {t('nutrition.fat').slice(0, 1)}: {meal.fat_g}
                               {t('nutrition.gramUnit')}
@@ -648,13 +628,13 @@ export const NutritionPage: React.FC = () => {
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2 pt-2 border-t border-[#262626] flex-wrap">
+                      <div className="flex items-center gap-2 pt-2 border-t border-[#ECEAF6] flex-wrap">
                         <button
                           type="button"
                           onClick={() => handleEditMeal(meal)}
-                          className="min-h-[44px] px-3 rounded-[10px] bg-[#171717] hover:bg-[#262626] border border-[#404040] text-[12px] font-medium text-[#fafafa] flex items-center gap-1.5 transition-colors cursor-pointer"
+                          className="min-h-[38px] px-3 rounded-[10px] bg-white hover:bg-[#F0EFFE] border border-[#ECEAF6] text-[12px] font-semibold text-[#1E1B4B] flex items-center gap-1.5 transition-colors cursor-pointer"
                         >
-                          <Pencil className="w-3.5 h-3.5 text-[#a3a3a3]" />
+                          <Pencil className="w-3.5 h-3.5 text-[#6B7280]" />
                           <span>{t('nutrition.editBtn')}</span>
                         </button>
 
@@ -674,9 +654,9 @@ export const NutritionPage: React.FC = () => {
                             })
                           }
                           disabled={saveMealMutation.isPending}
-                          className="min-h-[44px] px-3 rounded-[10px] bg-[#171717] hover:bg-[#262626] border border-[#404040] text-[12px] font-medium text-[#fafafa] flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
+                          className="min-h-[38px] px-3 rounded-[10px] bg-white hover:bg-[#F0EFFE] border border-[#ECEAF6] text-[12px] font-semibold text-[#1E1B4B] flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
                         >
-                          <Copy className="w-3.5 h-3.5 text-[#34d399]" />
+                          <Copy className="w-3.5 h-3.5 text-[#6D28D9]" />
                           <span>{t('nutrition.repeatBtn')}</span>
                         </button>
 
@@ -689,7 +669,7 @@ export const NutritionPage: React.FC = () => {
                             deleteMealMutation.mutate(meal.id);
                           }}
                           disabled={deleteMealMutation.isPending}
-                          className="min-h-[44px] min-w-[44px] px-3 ml-auto rounded-[10px] bg-[#171717] hover:bg-red-950/30 border border-[#404040] hover:border-red-500/40 text-[12px] font-medium text-[#a3a3a3] hover:text-red-400 flex items-center justify-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
+                          className="min-h-[38px] min-w-[38px] px-3 ml-auto rounded-[10px] bg-white hover:bg-[#FEF2F2] border border-[#ECEAF6] hover:border-[#FECACA] text-[12px] font-medium text-[#6B7280] hover:text-[#EF4444] flex items-center justify-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
                           title={t('common.delete')}
                           aria-label={t('common.delete')}
                         >
@@ -707,14 +687,14 @@ export const NutritionPage: React.FC = () => {
           <Card className="p-4 sm:p-5 space-y-4">
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-[10px] bg-[#022c22] border border-[#064e3b] text-[#34d399] flex items-center justify-center shrink-0">
+                <div className="w-10 h-10 rounded-[12px] bg-[#ECFEFF] border border-[#A5F3FC] text-[#0891B2] flex items-center justify-center shrink-0">
                   <Droplets className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-[15px] font-semibold text-[#fafafa]">
+                  <h3 className="text-[15px] font-bold text-[#1E1B4B]">
                     {t('nutrition.waterTitle')}
                   </h3>
-                  <p className="text-[12px] text-[#a3a3a3]">
+                  <p className="text-[12px] text-[#6B7280]">
                     {t('nutrition.waterServings', {
                       glasses: waterGlasses,
                       target: targetWaterMl,
@@ -724,21 +704,21 @@ export const NutritionPage: React.FC = () => {
               </div>
 
               <div className="text-right font-mono tabular-nums">
-                <span className="text-[16px] font-semibold text-[#fafafa]">
+                <span className="text-[16px] font-bold text-[#1E1B4B]">
                   {waterMl}
                 </span>
-                <span className="text-[12px] text-[#737373] ml-1">
+                <span className="text-[12px] text-[#6B7280] ml-1">
                   / {targetWaterMl} {t('nutrition.mlUnit')}
                 </span>
-                <div className="text-[11px] font-medium text-[#34d399]">
+                <div className="text-[11px] font-bold text-[#0891B2]">
                   {waterPct}%
                 </div>
               </div>
             </div>
 
-            <div className="h-2 w-full rounded-full bg-[#262626] overflow-hidden">
+            <div className="h-2 w-full rounded-full bg-[#ECFEFF] overflow-hidden">
               <div
-                className="h-full rounded-full bg-[#34d399] transition-all duration-300"
+                className="h-full rounded-full bg-[#0891B2] transition-all duration-300"
                 style={{ width: `${waterPct}%` }}
               />
             </div>
@@ -747,7 +727,7 @@ export const NutritionPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => addWater(250)}
-                className="min-h-[44px] px-3 rounded-[10px] bg-[#022c22] hover:bg-[#064e3b] border border-[#064e3b] text-[#34d399] text-[13px] font-semibold transition-colors cursor-pointer"
+                className="min-h-[42px] px-3 rounded-[12px] bg-[#ECFEFF] hover:bg-[#CFFAFE] border border-[#A5F3FC] text-[#0891B2] text-[13px] font-bold transition-colors cursor-pointer"
               >
                 {t('nutrition.waterAdd250')}
               </button>
@@ -756,7 +736,7 @@ export const NutritionPage: React.FC = () => {
                 type="button"
                 onClick={() => addWater(-250)}
                 disabled={waterMl <= 0}
-                className="min-h-[44px] px-3 rounded-[10px] bg-[#0a0a0a] hover:bg-[#262626] border border-[#404040] text-[#fafafa] text-[13px] font-medium transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                className="min-h-[42px] px-3 rounded-[12px] bg-[#F8F7FC] hover:bg-[#F0EFFE] border border-[#ECEAF6] text-[#1E1B4B] text-[13px] font-semibold transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 {t('nutrition.waterSub250')}
               </button>
@@ -768,7 +748,7 @@ export const NutritionPage: React.FC = () => {
                   localStorage.setItem(waterStorageKey, '0');
                 }}
                 disabled={waterMl <= 0}
-                className="min-h-[44px] px-3 rounded-[10px] bg-[#0a0a0a] hover:bg-[#262626] border border-[#404040] text-[#a3a3a3] hover:text-[#fafafa] text-[13px] font-medium flex items-center justify-center gap-1.5 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                className="min-h-[42px] px-3 rounded-[12px] bg-[#F8F7FC] hover:bg-[#F0EFFE] border border-[#ECEAF6] text-[#6B7280] hover:text-[#1E1B4B] text-[13px] font-medium flex items-center justify-center gap-1.5 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
                 <span>{t('nutrition.waterReset')}</span>
@@ -782,10 +762,10 @@ export const NutritionPage: React.FC = () => {
           {/* Add Food Card */}
           <Card className="p-4 sm:p-5 space-y-4">
             <div className="space-y-1">
-              <h2 className="text-[15px] font-semibold text-[#fafafa]">
+              <h2 className="text-[16px] font-bold text-[#1E1B4B]">
                 {t('nutrition.addFoodTitle')}
               </h2>
-              <p className="text-[12px] text-[#a3a3a3]">
+              <p className="text-[12px] text-[#6B7280]">
                 {t('nutrition.addFoodSubtitle')}
               </p>
             </div>
@@ -795,10 +775,10 @@ export const NutritionPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setActiveLogTab('photo')}
-                className={`min-h-[44px] px-3 rounded-[10px] text-[13px] font-medium border flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
+                className={`min-h-[42px] px-3 rounded-[12px] text-[13px] font-semibold border flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
                   activeLogTab === 'photo'
-                    ? 'bg-[#022c22] text-[#34d399] border-[#064e3b]'
-                    : 'bg-[#0a0a0a] text-[#a3a3a3] border-[#404040] hover:text-[#fafafa]'
+                    ? 'bg-[#6D28D9] text-white border-[#6D28D9]'
+                    : 'bg-[#F8F7FC] text-[#6B7280] border-[#ECEAF6] hover:text-[#1E1B4B]'
                 }`}
               >
                 <Camera className="w-4 h-4 shrink-0" />
@@ -808,10 +788,10 @@ export const NutritionPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setActiveLogTab('text')}
-                className={`min-h-[44px] px-3 rounded-[10px] text-[13px] font-medium border flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
+                className={`min-h-[42px] px-3 rounded-[12px] text-[13px] font-semibold border flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
                   activeLogTab === 'text'
-                    ? 'bg-[#022c22] text-[#34d399] border-[#064e3b]'
-                    : 'bg-[#0a0a0a] text-[#a3a3a3] border-[#404040] hover:text-[#fafafa]'
+                    ? 'bg-[#6D28D9] text-white border-[#6D28D9]'
+                    : 'bg-[#F8F7FC] text-[#6B7280] border-[#ECEAF6] hover:text-[#1E1B4B]'
                 }`}
               >
                 <FileText className="w-4 h-4 shrink-0" />
@@ -821,10 +801,10 @@ export const NutritionPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setActiveLogTab('manual')}
-                className={`min-h-[44px] px-3 rounded-[10px] text-[13px] font-medium border flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
+                className={`min-h-[42px] px-3 rounded-[12px] text-[13px] font-semibold border flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
                   activeLogTab === 'manual'
-                    ? 'bg-[#022c22] text-[#34d399] border-[#064e3b]'
-                    : 'bg-[#0a0a0a] text-[#a3a3a3] border-[#404040] hover:text-[#fafafa]'
+                    ? 'bg-[#6D28D9] text-white border-[#6D28D9]'
+                    : 'bg-[#F8F7FC] text-[#6B7280] border-[#ECEAF6] hover:text-[#1E1B4B]'
                 }`}
               >
                 <Pencil className="w-4 h-4 shrink-0" />
@@ -834,7 +814,7 @@ export const NutritionPage: React.FC = () => {
 
             {/* Meal Type Selector */}
             <div className="space-y-1.5">
-              <label className="block text-[12px] font-medium text-[#a3a3a3]">
+              <label className="block text-[12px] font-semibold text-[#6B7280]">
                 {t('nutrition.mealType')}
               </label>
               <div className="grid grid-cols-4 gap-2">
@@ -843,10 +823,10 @@ export const NutritionPage: React.FC = () => {
                     key={type}
                     type="button"
                     onClick={() => setSelectedMealType(type)}
-                    className={`min-h-[44px] px-2 rounded-[10px] text-[12px] font-medium border transition-colors cursor-pointer truncate ${
+                    className={`min-h-[40px] px-2 rounded-[10px] text-[12px] font-semibold border transition-colors cursor-pointer truncate ${
                       selectedMealType === type
-                        ? 'bg-[#022c22] text-[#34d399] border-[#064e3b]'
-                        : 'bg-[#0a0a0a] text-[#a3a3a3] border-[#404040] hover:text-[#fafafa]'
+                        ? 'bg-[#F0EFFE] text-[#6D28D9] border-[#DDD6FE]'
+                        : 'bg-[#F8F7FC] text-[#6B7280] border-[#ECEAF6] hover:text-[#1E1B4B]'
                     }`}
                   >
                     {t(`nutrition.${type}`)}
@@ -859,19 +839,19 @@ export const NutritionPage: React.FC = () => {
             {activeLogTab === 'photo' && (
               <div className="space-y-3">
                 {selectedImage ? (
-                  <div className="relative rounded-[10px] overflow-hidden border border-[#404040] bg-[#0a0a0a]">
+                  <div className="relative rounded-[14px] overflow-hidden border border-[#ECEAF6] bg-[#F8F7FC]">
                     <img
                       src={selectedImage}
                       alt={t('nutrition.mealName')}
                       className="w-full h-44 object-cover"
                     />
-                    <div className="p-2.5 bg-[#0a0a0a] border-t border-[#262626] flex items-center justify-between gap-2 flex-wrap">
+                    <div className="p-2.5 bg-white border-t border-[#ECEAF6] flex items-center justify-between gap-2 flex-wrap">
                       <button
                         type="button"
                         onClick={() => setIsPhotoPickerOpen(true)}
-                        className="min-h-[44px] px-3 rounded-[10px] bg-[#171717] hover:bg-[#262626] border border-[#404040] text-[12px] font-medium text-[#fafafa] flex items-center gap-1.5 transition-colors cursor-pointer"
+                        className="min-h-[40px] px-3 rounded-[10px] bg-[#F8F7FC] hover:bg-[#F0EFFE] border border-[#ECEAF6] text-[12px] font-semibold text-[#1E1B4B] flex items-center gap-1.5 transition-colors cursor-pointer"
                       >
-                        <Camera className="w-4 h-4 text-[#34d399]" />
+                        <Camera className="w-4 h-4 text-[#6D28D9]" />
                         <span>{t('nutrition.changePhoto')}</span>
                       </button>
 
@@ -885,7 +865,7 @@ export const NutritionPage: React.FC = () => {
                           })
                         }
                         disabled={analyzeMutation.isPending}
-                        className="min-h-[44px] px-3 rounded-[10px] bg-[#022c22] hover:bg-[#064e3b] border border-[#064e3b] text-[12px] font-medium text-[#34d399] flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
+                        className="min-h-[40px] px-3 rounded-[10px] bg-[#F0EFFE] hover:bg-[#DDD6FE] border border-[#DDD6FE] text-[12px] font-bold text-[#6D28D9] flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
                       >
                         <RefreshCw
                           className={`w-3.5 h-3.5 ${analyzeMutation.isPending ? 'animate-spin' : ''}`}
@@ -898,15 +878,15 @@ export const NutritionPage: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setIsPhotoPickerOpen(true)}
-                    className="w-full min-h-[132px] border border-dashed border-[#404040] hover:border-[#34d399] rounded-[10px] p-5 text-center cursor-pointer bg-[#0a0a0a] transition-colors flex flex-col items-center justify-center gap-2"
+                    className="w-full min-h-[132px] border border-dashed border-[#C4B5FD] hover:border-[#6D28D9] rounded-[14px] p-5 text-center cursor-pointer bg-[#F8F7FC] transition-colors flex flex-col items-center justify-center gap-2"
                   >
-                    <div className="w-10 h-10 rounded-[10px] bg-[#022c22] border border-[#064e3b] flex items-center justify-center text-[#34d399]">
+                    <div className="w-10 h-10 rounded-[12px] bg-[#F0EFFE] border border-[#DDD6FE] flex items-center justify-center text-[#6D28D9]">
                       <Upload className="w-5 h-5" />
                     </div>
-                    <span className="text-[13px] font-medium text-[#fafafa]">
+                    <span className="text-[13px] font-semibold text-[#1E1B4B]">
                       {t('nutrition.photoUploadHint')}
                     </span>
-                    <span className="text-[12px] text-[#737373] max-w-xs">
+                    <span className="text-[12px] text-[#6B7280] max-w-xs">
                       {t('nutrition.photoHintShort')}
                     </span>
                   </button>
@@ -920,14 +900,14 @@ export const NutritionPage: React.FC = () => {
                 />
 
                 {analyzeMutation.isPending && (
-                  <div className="p-3 rounded-[10px] bg-[#022c22] border border-[#064e3b] flex items-center gap-2.5 text-[13px] text-[#34d399]">
+                  <div className="p-3 rounded-[12px] bg-[#F0EFFE] border border-[#DDD6FE] flex items-center gap-2.5 text-[13px] font-medium text-[#6D28D9]">
                     <RefreshCw className="w-4 h-4 animate-spin shrink-0" />
                     <span>{t('nutrition.analyzing')}</span>
                   </div>
                 )}
 
                 {analyzeMutation.isError && (
-                  <div className="p-3 rounded-[10px] bg-amber-950/30 border border-amber-500/40 text-[12px] text-amber-300 flex items-center gap-2">
+                  <div className="p-3 rounded-[12px] bg-[#FFFBEB] border border-[#FDE68A] text-[12px] text-[#B45309] flex items-center gap-2">
                     <AlertTriangle className="w-4 h-4 shrink-0" />
                     <span>{t('nutrition.analyzePhotoError')}</span>
                   </div>
@@ -946,7 +926,7 @@ export const NutritionPage: React.FC = () => {
                 />
 
                 <div className="space-y-1.5">
-                  <div className="flex items-center justify-between text-[11px] text-[#737373]">
+                  <div className="flex items-center justify-between text-[11px] text-[#6B7280]">
                     <span>{t('nutrition.quickPresets')}</span>
                     <span>{t('nutrition.quickInsert')}</span>
                   </div>
@@ -963,7 +943,7 @@ export const NutritionPage: React.FC = () => {
                             language,
                           });
                         }}
-                        className="min-h-[44px] px-3 rounded-[10px] text-[12px] font-medium bg-[#0a0a0a] hover:bg-[#262626] text-[#fafafa] border border-[#404040] whitespace-nowrap shrink-0 transition-colors cursor-pointer"
+                        className="min-h-[40px] px-3 rounded-[10px] text-[12px] font-medium bg-[#F8F7FC] hover:bg-[#F0EFFE] text-[#1E1B4B] border border-[#ECEAF6] whitespace-nowrap shrink-0 transition-colors cursor-pointer"
                       >
                         {chip.label}
                       </button>
@@ -998,7 +978,7 @@ export const NutritionPage: React.FC = () => {
                 </Button>
 
                 {analyzeTextMutation.isError && (
-                  <div className="p-3 rounded-[10px] bg-amber-950/30 border border-amber-500/40 text-[12px] text-amber-300 flex items-center gap-2">
+                  <div className="p-3 rounded-[12px] bg-[#FFFBEB] border border-[#FDE68A] text-[12px] text-[#B45309] flex items-center gap-2">
                     <AlertTriangle className="w-4 h-4 shrink-0" />
                     <span>{t('nutrition.analyzeTextError')}</span>
                   </div>
@@ -1008,7 +988,7 @@ export const NutritionPage: React.FC = () => {
 
             {/* Mode 3: Manual hint */}
             {activeLogTab === 'manual' && (
-              <div className="p-3 rounded-[10px] bg-[#0a0a0a] border border-[#262626] text-[12px] text-[#a3a3a3] leading-relaxed">
+              <div className="p-3 rounded-[12px] bg-[#F8F7FC] border border-[#ECEAF6] text-[12px] text-[#6B7280] leading-relaxed">
                 {t('nutrition.draftSubtitle')}
               </div>
             )}
@@ -1016,17 +996,17 @@ export const NutritionPage: React.FC = () => {
 
           {/* Draft Review Card */}
           <Card className="p-4 sm:p-5 space-y-4">
-            <div className="flex items-start justify-between gap-3 border-b border-[#262626] pb-3">
+            <div className="flex items-start justify-between gap-3 border-b border-[#ECEAF6] pb-3">
               <div>
                 <div className="flex items-center gap-2">
-                  <h2 className="text-[15px] font-semibold text-[#fafafa]">
+                  <h2 className="text-[15px] font-bold text-[#1E1B4B]">
                     {editingMealId ? t('nutrition.editDraftTitle') : t('nutrition.draftTitle')}
                   </h2>
-                  <span className="text-[11px] font-medium px-2 py-0.5 rounded-[6px] bg-[#022c22] border border-[#064e3b] text-[#34d399]">
+                  <span className="text-[11px] font-semibold px-2 py-0.5 rounded-[8px] bg-[#F0EFFE] border border-[#DDD6FE] text-[#6D28D9]">
                     {editingMealId ? t('nutrition.editBtn') : t('nutrition.draftBadge')}
                   </span>
                 </div>
-                <p className="text-[12px] text-[#a3a3a3] mt-0.5">
+                <p className="text-[12px] text-[#6B7280] mt-0.5">
                   {hasDraftValues ? t('nutrition.draftSubtitle') : t('nutrition.draftEmptyHint')}
                 </p>
               </div>
@@ -1087,23 +1067,23 @@ export const NutritionPage: React.FC = () => {
 
               {/* Detected Items */}
               {draftItems.length > 0 && (
-                <div className="p-3 rounded-[10px] bg-[#0a0a0a] border border-[#262626] space-y-2">
-                  <div className="text-[12px] font-medium text-[#a3a3a3]">
+                <div className="p-3 rounded-[12px] bg-[#F8F7FC] border border-[#ECEAF6] space-y-2">
+                  <div className="text-[12px] font-semibold text-[#6B7280]">
                     {t('nutrition.detectedItems')}
                   </div>
                   <div className="space-y-1.5">
                     {draftItems.map((item, idx) => (
                       <div
                         key={idx}
-                        className="flex items-center justify-between gap-2 text-[12px] py-1 border-b border-[#262626] last:border-b-0"
+                        className="flex items-center justify-between gap-2 text-[12px] py-1 border-b border-[#ECEAF6] last:border-b-0"
                       >
                         <div className="min-w-0 truncate">
-                          <span className="text-[#fafafa] font-medium">{item.name}</span>
+                          <span className="text-[#1E1B4B] font-semibold">{item.name}</span>
                           {item.portion && (
-                            <span className="text-[#737373] ml-1.5">({item.portion})</span>
+                            <span className="text-[#6B7280] ml-1.5">({item.portion})</span>
                           )}
                         </div>
-                        <span className="font-mono tabular-nums text-[#a3a3a3] shrink-0">
+                        <span className="font-mono tabular-nums text-[#6B7280] shrink-0">
                           {item.calories} {t('nutrition.kcalUnit')}
                         </span>
                       </div>
@@ -1114,10 +1094,10 @@ export const NutritionPage: React.FC = () => {
 
               {/* AI Advice */}
               {activeResult?.advice && (
-                <div className="p-3 rounded-[10px] bg-[#0a0a0a] border border-[#262626] flex items-start gap-2.5 text-[12px] text-[#a3a3a3] leading-relaxed">
-                  <Sparkles className="w-4 h-4 text-[#34d399] shrink-0 mt-0.5" />
+                <div className="p-3 rounded-[12px] bg-[#F5F3FF] border border-[#DDD6FE] flex items-start gap-2.5 text-[12px] text-[#4C1D95] leading-relaxed">
+                  <Sparkles className="w-4 h-4 text-[#6D28D9] shrink-0 mt-0.5" />
                   <div>
-                    <span className="text-[#fafafa] font-medium block mb-0.5">
+                    <span className="text-[#1E1B4B] font-bold block mb-0.5">
                       {t('nutrition.aiAdvice')}
                     </span>
                     {activeResult.advice}
@@ -1126,7 +1106,7 @@ export const NutritionPage: React.FC = () => {
               )}
 
               {saveMealMutation.isError && (
-                <div className="p-3 rounded-[10px] bg-red-950/30 border border-red-500/40 text-[12px] text-red-400 flex items-center gap-2">
+                <div className="p-3 rounded-[12px] bg-[#FEF2F2] border border-[#FECACA] text-[12px] text-[#DC2626] flex items-center gap-2">
                   <AlertTriangle className="w-4 h-4 shrink-0" />
                   <span>{t('nutrition.saveError')}</span>
                 </div>

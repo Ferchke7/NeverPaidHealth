@@ -4,74 +4,76 @@
 @theme {
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 
-  /* Figma Design System: Obsidian + Emerald-400 + Neutral Zinc */
-  --color-brand-50: #ecfdf5;
-  --color-brand-100: #d1fae5;
-  --color-brand-300: #6ee7b7;
-  --color-brand-400: #34d399;
-  --color-brand-500: #34d399;
-  --color-brand-600: #10b981;
-  --color-brand-700: #059669;
-  --color-brand-950: #022c22;
+  /* Royal Violet & Clean White Gym UI Kit Tokens */
+  --color-brand-50: #F4F1FE;
+  --color-brand-100: #EDE9FE;
+  --color-brand-200: #DDD6FE;
+  --color-brand-300: #C4B5FD;
+  --color-brand-400: #8B5CF6;
+  --color-brand-500: #7C3AED;
+  --color-brand-600: #6D28D9;
+  --color-brand-700: #5B21B6;
+  --color-brand-800: #3B0CA3;
+  --color-brand-950: #1B0552;
 
-  --color-dark-950: #0a0a0a;
-  --color-dark-900: #0a0a0a;
-  --color-dark-850: #171717;
-  --color-dark-800: #171717;
-  --color-dark-750: #262626;
-  --color-dark-700: #404040;
-  --color-dark-600: #525252;
+  /* Mapped surface ramp for components using semantic dark/light tokens */
+  --color-dark-950: #F4F3FA;
+  --color-dark-900: #F8F7FC;
+  --color-dark-850: #FFFFFF;
+  --color-dark-800: #FFFFFF;
+  --color-dark-750: #ECEAF6;
+  --color-dark-700: #E4E0F5;
+  --color-dark-600: #C4B5FD;
 }
 
 :root,
-.dark,
-[data-theme="dark"] {
-  color-scheme: dark;
-  --background: #0a0a0a;
-  --foreground: #fafafa;
-  --card: #171717;
-  --card-foreground: #fafafa;
-  --popover: #171717;
-  --popover-foreground: #fafafa;
-  --accent: #34d399;
-  --accent-foreground: #0a0a0a;
-  --surface: #171717;
-  --surface-foreground: #fafafa;
-  --surface-secondary: #262626;
-  --surface-secondary-foreground: #fafafa;
-  --surface-tertiary: #262626;
-  --surface-tertiary-foreground: #fafafa;
-  --overlay: #171717;
-  --overlay-foreground: #fafafa;
-  --default: #262626;
-  --default-foreground: #fafafa;
-  --muted: #a3a3a3;
-  --muted-bg: #262626;
-  --muted-foreground: #a3a3a3;
-  --field-background: #0a0a0a;
-  --field-foreground: #fafafa;
-  --field-placeholder: #a3a3a3;
-  --border: #404040;
-  --separator: #262626;
-  --segment: #262626;
-  --segment-foreground: #fafafa;
-  --emerald-400: #34d399;
-  --emerald-950: #022c22;
-  --radius: 0.875rem;
+[data-theme="light"] {
+  color-scheme: light;
+  --background: #F4F3FA;
+  --foreground: #130F26;
+  --card: #FFFFFF;
+  --card-foreground: #130F26;
+  --popover: #FFFFFF;
+  --popover-foreground: #130F26;
+  --accent: #7C3AED;
+  --accent-foreground: #FFFFFF;
+  --surface: #FFFFFF;
+  --surface-foreground: #130F26;
+  --surface-secondary: #F8F7FC;
+  --surface-secondary-foreground: #130F26;
+  --surface-tertiary: #F1EFFA;
+  --surface-tertiary-foreground: #130F26;
+  --overlay: #FFFFFF;
+  --overlay-foreground: #130F26;
+  --default: #F1EFFA;
+  --default-foreground: #130F26;
+  --muted: #5A5575;
+  --muted-bg: #F1EFFA;
+  --muted-foreground: #5A5575;
+  --field-background: #F9F8FD;
+  --field-foreground: #130F26;
+  --field-placeholder: #8F8AA8;
+  --border: #E4E0F5;
+  --separator: #ECEAF6;
+  --segment: #F1EFFA;
+  --segment-foreground: #130F26;
+  --emerald-400: #10B981;
+  --emerald-950: #D1FAE5;
+  --radius: 1.25rem;
 }
 
 html,
 body {
   margin: 0;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-  background-color: #0a0a0a;
-  color: #fafafa;
+  background-color: #F4F3FA;
+  color: #130F26;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Smooth sleek dark scrollbars */
+/* Smooth Royal Violet scrollbars */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -80,11 +82,11 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #262626;
+  background: #D9D4F0;
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(52, 211, 153, 0.45);
+  background: #7C3AED;
 }
 
 .scrollbar-none::-webkit-scrollbar,
@@ -97,8 +99,26 @@ body {
   scrollbar-width: none;
 }
 
-.switch__thumb,
-.button,
-.card {
-  box-shadow: none !important;
+.royal-hero-gradient {
+  background: linear-gradient(135deg, #1B0552 0%, #3B0CA3 55%, #6D28D9 100%);
+}
+
+.violet-btn-gradient {
+  background: linear-gradient(90deg, #8B5CF6 0%, #6D28D9 100%);
+}
+
+.indigo-card-gradient {
+  background: linear-gradient(145deg, #1B1145 0%, #311B73 100%);
+}
+
+.teal-card-gradient {
+  background: linear-gradient(145deg, #0891B2 0%, #06B6D4 100%);
+}
+
+.royal-card-shadow {
+  box-shadow: 0 10px 28px rgba(27, 5, 82, 0.06);
+}
+
+.royal-float-shadow {
+  box-shadow: 0 16px 36px rgba(27, 5, 82, 0.12);
 }

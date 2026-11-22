@@ -191,18 +191,18 @@ export const ProgramsPage: React.FC<ProgramsPageProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* Royal Violet Header */}
       {!embedded && (
-        <div>
-          <h1 className="text-[28px] sm:text-[32px] font-bold tracking-tight text-[#fafafa]">
+        <div className="royal-hero-gradient rounded-[24px] p-5 sm:p-7 text-white royal-card-shadow">
+          <h1 className="text-[26px] sm:text-[32px] font-extrabold tracking-tight text-white">
             {t('programs.title')}
           </h1>
-          <p className="text-[14px] text-[#a3a3a3] mt-1">{t('programs.subtitle')}</p>
+          <p className="text-[13px] sm:text-[14px] text-white/80 mt-1">{t('programs.subtitle')}</p>
         </div>
       )}
 
-      {/* Flat Figma Pill Tabs */}
-      <div className="flex items-center gap-1 overflow-x-auto no-scrollbar">
+      {/* Pill Tabs */}
+      <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar bg-white p-1.5 rounded-[16px] border border-[#ECEAF6] royal-card-shadow w-fit max-w-full">
         {programTabs.map((tab) => {
           const isSelected = activeTab === tab.id;
           return (
@@ -210,10 +210,10 @@ export const ProgramsPage: React.FC<ProgramsPageProps> = ({
               key={tab.id}
               type="button"
               onClick={() => setActiveTab(tab.id)}
-              className={`h-[44px] px-4 rounded-[10px] text-[14px] font-medium whitespace-nowrap transition-colors cursor-pointer ${
+              className={`h-[40px] px-4 rounded-[12px] text-[13px] font-semibold whitespace-nowrap transition-colors cursor-pointer ${
                 isSelected
-                  ? 'bg-[#022c22] text-[#34d399]'
-                  : 'text-[#a3a3a3] hover:text-[#fafafa] hover:bg-[#171717]'
+                  ? 'bg-[#6D28D9] text-white shadow-xs'
+                  : 'text-[#6B7280] hover:text-[#1E1B4B] hover:bg-[#F8F7FC]'
               }`}
             >
               {tab.label}
@@ -253,10 +253,10 @@ export const ProgramsPage: React.FC<ProgramsPageProps> = ({
               key={cat.id}
               type="button"
               onClick={() => setSelectedSplitType(cat.id)}
-              className={`min-h-[44px] px-3.5 rounded-[8px] text-[13px] font-medium whitespace-nowrap transition-colors cursor-pointer ${
+              className={`min-h-[40px] px-3.5 rounded-[10px] text-[13px] font-semibold whitespace-nowrap transition-colors cursor-pointer border ${
                 isSelected
-                  ? 'bg-[#022c22] text-[#34d399]'
-                  : 'text-[#a3a3a3] hover:text-[#fafafa] hover:bg-[#171717]'
+                  ? 'bg-[#F0EFFE] text-[#6D28D9] border-[#DDD6FE]'
+                  : 'bg-white text-[#6B7280] border-[#ECEAF6] hover:text-[#1E1B4B]'
               }`}
             >
               {cat.label}
@@ -265,17 +265,22 @@ export const ProgramsPage: React.FC<ProgramsPageProps> = ({
         })}
       </div>
 
-      {/* Active Program Highlight Card */}
+      {/* Active Program Highlight Card (Indigo Split Card + Auto-Save Pill) */}
       {!embedded && activeProgram && (
-        <Card className="p-5 sm:p-6 space-y-4">
+        <div className="indigo-card-gradient rounded-[22px] p-5 sm:p-6 space-y-4 text-white royal-card-shadow">
           <div className="space-y-1.5">
-            <div className="text-[11px] font-semibold uppercase tracking-[0.06em] text-[#34d399]">
-              {t('programs.followingBanner')}
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-[11px] font-bold uppercase tracking-[0.06em] text-[#C4B5FD]">
+                {t('programs.followingBanner')}
+              </span>
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#10B981]/20 text-[#6EE7B7] border border-[#10B981]/30">
+                ✓ {t('programs.personalCopyAutoSave')}
+              </span>
             </div>
-            <h2 className="text-[20px] sm:text-[22px] font-bold tracking-tight text-[#fafafa]">
+            <h2 className="text-[20px] sm:text-[22px] font-bold tracking-tight text-white">
               {activeProgram.name}
             </h2>
-            <p className="text-[13px] text-[#a3a3a3]">
+            <p className="text-[13px] text-white/80">
               {getSplitLabel(activeProgram.split_type)} ·{' '}
               {t('programs.daysPerWeekCount', {
                 count: activeProgram.days_per_week || activeProgram.days?.length || 1,
@@ -292,9 +297,8 @@ export const ProgramsPage: React.FC<ProgramsPageProps> = ({
 
           <div className="flex flex-wrap items-center gap-2.5">
             {activeProgram.days?.[0] && (
-              <Button
-                variant="primary"
-                size="md"
+              <button
+                type="button"
                 onClick={() =>
                   startWorkout({
                     name: `${activeProgram.name} - ${activeProgram.days[0].name}`,
@@ -303,31 +307,32 @@ export const ProgramsPage: React.FC<ProgramsPageProps> = ({
                     exercises: activeProgram.days[0].exercises,
                   })
                 }
+                className="min-h-[42px] px-4 rounded-[12px] bg-white text-[#1B1145] hover:bg-[#F5F3FF] font-bold text-sm transition-colors cursor-pointer"
               >
                 {t('programs.continueBtn')}
-              </Button>
+              </button>
             )}
-            <Button
-              variant="outline"
-              size="md"
+            <button
+              type="button"
               onClick={() => setPreviewingProgram(activeProgram)}
+              className="min-h-[42px] px-4 rounded-[12px] bg-white/15 hover:bg-white/25 text-white border border-white/25 font-semibold text-sm transition-colors cursor-pointer"
             >
               {t('programs.detailsBtn')}
-            </Button>
-            <Button
-              variant="outline"
-              size="md"
+            </button>
+            <button
+              type="button"
               onClick={() => setCommentingProgram(activeProgram)}
+              className="min-h-[42px] px-4 rounded-[12px] bg-white/15 hover:bg-white/25 text-white border border-white/25 font-semibold text-sm transition-colors cursor-pointer"
             >
-              💬 Комментарии ({activeProgram.comments_count || 0})
-            </Button>
+              💬 {t('programs.commentsCount')} ({activeProgram.comments_count || 0})
+            </button>
           </div>
-        </Card>
+        </div>
       )}
 
       {/* Programs List */}
       <section className="space-y-4">
-        <h2 className="text-[20px] font-semibold tracking-tight text-[#fafafa]">
+        <h2 className="text-[20px] font-bold tracking-tight text-[#1E1B4B]">
           {activeTab === 'community'
             ? t('programs.tabCommunity')
             : activeTab === 'my_splits'
@@ -374,11 +379,11 @@ export const ProgramsPage: React.FC<ProgramsPageProps> = ({
                 <Card
                   key={prog.id}
                   onClick={() => setPreviewingProgram(prog)}
-                  className="p-5 flex flex-col justify-between gap-4 hover:border-[#525252] transition-colors cursor-pointer"
+                  className="p-5 flex flex-col justify-between gap-4 hover:border-[#C4B5FD] transition-all cursor-pointer"
                 >
                   <div className="space-y-3">
                     <div className="space-y-1.5">
-                      <div className="text-[12px] font-medium text-[#34d399]">
+                      <div className="text-[12px] font-bold text-[#6D28D9]">
                         {getSplitLabel(prog.split_type)} ·{' '}
                         {t('programs.daysPerWeekCount', {
                           count: prog.days_per_week || daysList.length,
@@ -386,29 +391,29 @@ export const ProgramsPage: React.FC<ProgramsPageProps> = ({
                         · {getLevelLabel(prog.level)}
                       </div>
 
-                      <h3 className="text-[18px] font-semibold text-[#fafafa] leading-snug break-words">
+                      <h3 className="text-[18px] font-bold text-[#1E1B4B] leading-snug break-words">
                         {prog.name}
                       </h3>
 
                       {prog.description && (
-                        <p className="text-[13px] text-[#a3a3a3] leading-relaxed line-clamp-2">
+                        <p className="text-[13px] text-[#6B7280] leading-relaxed line-clamp-2">
                           {prog.description}
                         </p>
                       )}
                     </div>
 
-                    <div className="border-t border-[#262626]" />
+                    <div className="border-t border-[#ECEAF6]" />
 
                     {/* Days overview */}
-                    <div className="text-[13px] text-[#fafafa] leading-relaxed">
+                    <div className="text-[13px] font-medium text-[#1E1B4B] leading-relaxed">
                       {daysList.length > 0
                         ? daysList.map((d) => d.name).join(' / ')
                         : t('programs.draftEmptyHint')}
                     </div>
 
-                    {/* Author & Social Info */}
+                    {/* Author & Gym Social Info (Zero Likes — Installs & Comments Only!) */}
                     <div
-                      className="flex flex-wrap items-center gap-3 text-[12px] text-[#a3a3a3]"
+                      className="flex flex-wrap items-center gap-3 text-[12px] text-[#6B7280]"
                       onClick={(e) => e.stopPropagation()}
                     >
                       {prog.author_name && (
@@ -421,28 +426,23 @@ export const ProgramsPage: React.FC<ProgramsPageProps> = ({
                               avatar: prog.author_avatar_url,
                             })
                           }
-                          className="min-h-[36px] inline-flex items-center text-[#fafafa] hover:text-[#34d399] transition-colors cursor-pointer"
+                          className="min-h-[34px] inline-flex items-center font-semibold text-[#1E1B4B] hover:text-[#6D28D9] transition-colors cursor-pointer"
                         >
                           {prog.author_name}
                         </button>
                       )}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          void apiClient(`/programs/${prog.id}/like`, { method: 'POST' }).then(() => {
-                            void queryClient.invalidateQueries({ queryKey: ['programs'] });
-                          });
-                        }}
-                        className="min-h-[36px] inline-flex items-center gap-1 hover:text-[#34d399] transition-colors cursor-pointer"
-                      >
-                        <span>♡ {prog.likes_count || 0}</span>
-                      </button>
+                      <span className="min-h-[34px] inline-flex items-center gap-1 font-medium text-[#6B7280]">
+                        <span>👥 {prog.installs_count || 0}</span>
+                        <span className="hidden sm:inline">{t('programs.installsCount')}</span>
+                      </span>
                       <button
                         type="button"
                         onClick={() => setCommentingProgram(prog)}
-                        className="min-h-[36px] inline-flex items-center gap-1 hover:text-[#34d399] transition-colors cursor-pointer font-medium"
+                        className="min-h-[34px] inline-flex items-center gap-1 text-[#6D28D9] hover:text-[#4C1D95] transition-colors cursor-pointer font-semibold"
                       >
-                        <span>💬 {prog.comments_count || 0} Комментарии</span>
+                        <span>
+                          💬 {prog.comments_count || 0} {t('programs.commentsCount')}
+                        </span>
                       </button>
                     </div>
                   </div>

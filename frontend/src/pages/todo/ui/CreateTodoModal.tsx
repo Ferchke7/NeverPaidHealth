@@ -195,7 +195,7 @@ export const CreateTodoModal: React.FC<CreateTodoModalProps> = ({
       onClose={onClose}
       size="lg"
       icon={
-        <div className="w-9 h-9 rounded-[10px] bg-[#022c22] text-[#34d399] border border-[#064e3b] flex items-center justify-center shrink-0">
+        <div className="w-9 h-9 rounded-[10px] bg-[#F0EFFE] text-[#6D28D9] border border-[#DDD6FE] flex items-center justify-center shrink-0">
           <ListTodo className="w-4 h-4" />
         </div>
       }
@@ -238,7 +238,7 @@ export const CreateTodoModal: React.FC<CreateTodoModalProps> = ({
         />
 
         <div>
-          <label className="block text-[12px] font-medium text-[#a3a3a3] mb-1.5">
+          <label className="block text-[12px] font-semibold text-[#6B7280] mb-1.5">
             {t('todo.categoryLabel')}
           </label>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -254,10 +254,10 @@ export const CreateTodoModal: React.FC<CreateTodoModalProps> = ({
                       setTitle('Google Meet Call');
                     }
                   }}
-                  className={`min-h-[44px] px-3 rounded-[10px] text-[12px] font-medium border transition-colors text-left flex items-center justify-between cursor-pointer ${
+                  className={`min-h-[44px] px-3 rounded-[10px] text-[12px] font-semibold border transition-colors text-left flex items-center justify-between cursor-pointer ${
                     isSelected
-                      ? 'bg-[#022c22] border-[#064e3b] text-[#34d399]'
-                      : 'bg-[#0a0a0a] border-[#404040] text-[#a3a3a3] hover:text-[#fafafa]'
+                      ? 'bg-[#F0EFFE] border-[#6D28D9]/40 text-[#6D28D9]'
+                      : 'bg-[#F8F7FC] border-[#ECEAF6] text-[#6B7280] hover:text-[#1E1B4B] hover:border-[#DDD6FE]'
                   }`}
                 >
                   <span className="truncate">
@@ -279,7 +279,7 @@ export const CreateTodoModal: React.FC<CreateTodoModalProps> = ({
               setStartDate(e.target.value);
               if (endDate < e.target.value) setEndDate(e.target.value);
             }}
-            startContent={<Calendar className="w-4 h-4 text-[#34d399]" />}
+            startContent={<Calendar className="w-4 h-4 text-[#6D28D9]" />}
           />
 
           <Input
@@ -287,7 +287,7 @@ export const CreateTodoModal: React.FC<CreateTodoModalProps> = ({
             type="date"
             value={endDate}
             onChange={(e) => setEndDate(e.target.value)}
-            startContent={<Calendar className="w-4 h-4 text-[#a3a3a3]" />}
+            startContent={<Calendar className="w-4 h-4 text-[#9CA3AF]" />}
           />
         </div>
 
@@ -298,7 +298,7 @@ export const CreateTodoModal: React.FC<CreateTodoModalProps> = ({
               type="time"
               value={startTime}
               onChange={(e) => setStartTime(e.target.value)}
-              startContent={<Clock className="w-4 h-4 text-[#34d399]" />}
+              startContent={<Clock className="w-4 h-4 text-[#6D28D9]" />}
               isInvalid={!!conflict}
             />
 
@@ -307,21 +307,21 @@ export const CreateTodoModal: React.FC<CreateTodoModalProps> = ({
               type="time"
               value={endTime}
               onChange={(e) => setEndTime(e.target.value)}
-              startContent={<Clock className="w-4 h-4 text-[#a3a3a3]" />}
+              startContent={<Clock className="w-4 h-4 text-[#9CA3AF]" />}
               isInvalid={!!conflict}
             />
           </div>
 
           {conflict && (
-            <div className="bg-amber-950/30 border border-amber-500/40 rounded-[10px] p-3 space-y-2.5">
-              <div className="flex items-start gap-2 text-amber-300 text-[12px]">
-                <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+            <div className="bg-amber-50 border border-amber-200 rounded-[10px] p-3 space-y-2.5">
+              <div className="flex items-start gap-2 text-amber-800 text-[12px]">
+                <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
                 <div className="min-w-0 flex-1">
-                  <span className="font-semibold text-amber-200">{t('todo.timeConflict')}</span>
-                  <p className="text-[#a3a3a3] text-[12px] mt-0.5">
+                  <span className="font-semibold text-amber-900">{t('todo.timeConflict')}</span>
+                  <p className="text-amber-700 text-[12px] mt-0.5">
                     {t('todo.conflictAlert')}{' '}
-                    <strong className="text-[#fafafa]">«{conflict.conflictingTodo.title}»</strong>{' '}
-                    <span className="font-mono tabular-nums text-amber-300">({conflict.conflictRange})</span>
+                    <strong className="text-[#1E1B4B]">«{conflict.conflictingTodo.title}»</strong>{' '}
+                    <span className="font-mono tabular-nums text-amber-800">({conflict.conflictRange})</span>
                   </p>
                 </div>
               </div>
@@ -329,7 +329,7 @@ export const CreateTodoModal: React.FC<CreateTodoModalProps> = ({
               <button
                 type="button"
                 onClick={handleApplySuggestedTime}
-                className="w-full min-h-[44px] text-[12px] font-semibold px-3 rounded-[10px] bg-[#022c22] hover:bg-[#064e3b] text-[#34d399] border border-[#064e3b] flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                className="w-full min-h-[44px] text-[12px] font-semibold px-3 rounded-[10px] bg-[#F0EFFE] hover:bg-[#DDD6FE] text-[#6D28D9] border border-[#DDD6FE] flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
               >
                 <Sparkles className="w-3.5 h-3.5" />
                 <span>{t('todo.applySlot', { time: conflict.suggestedNextStartTime })}</span>
@@ -339,12 +339,12 @@ export const CreateTodoModal: React.FC<CreateTodoModalProps> = ({
         </div>
 
         <div>
-          <label className="text-[12px] font-medium text-[#a3a3a3] mb-2 flex items-center justify-between">
+          <label className="text-[12px] font-semibold text-[#6B7280] mb-2 flex items-center justify-between">
             <span className="flex items-center gap-1.5">
-              <Clock className="w-3.5 h-3.5 text-[#34d399]" />
+              <Clock className="w-3.5 h-3.5 text-[#6D28D9]" />
               {t('todo.targetDaily')}
             </span>
-            <strong className="text-[#34d399] font-mono tabular-nums text-[14px]">
+            <strong className="text-[#6D28D9] font-mono tabular-nums text-[14px]">
               {targetDuration} {t('common.minutes')}
             </strong>
           </label>
@@ -355,10 +355,10 @@ export const CreateTodoModal: React.FC<CreateTodoModalProps> = ({
                 key={preset.value}
                 type="button"
                 onClick={() => setTargetDuration(preset.value)}
-                className={`min-h-[44px] px-3 rounded-[10px] text-[12px] font-medium border transition-colors cursor-pointer ${
+                className={`min-h-[44px] px-3 rounded-[10px] text-[12px] font-semibold border transition-colors cursor-pointer ${
                   targetDuration === preset.value
-                    ? 'bg-[#022c22] border-[#064e3b] text-[#34d399]'
-                    : 'bg-[#0a0a0a] border-[#404040] text-[#a3a3a3] hover:text-[#fafafa]'
+                    ? 'bg-[#F0EFFE] border-[#6D28D9]/40 text-[#6D28D9]'
+                    : 'bg-[#F8F7FC] border-[#ECEAF6] text-[#6B7280] hover:text-[#1E1B4B] hover:border-[#DDD6FE]'
                 }`}
               >
                 {preset.label}
@@ -373,7 +373,7 @@ export const CreateTodoModal: React.FC<CreateTodoModalProps> = ({
             step="5"
             value={targetDuration}
             onChange={(e) => setTargetDuration(Number(e.target.value))}
-            className="w-full accent-[#34d399]"
+            className="w-full accent-[#6D28D9]"
           />
         </div>
 
@@ -383,7 +383,7 @@ export const CreateTodoModal: React.FC<CreateTodoModalProps> = ({
           placeholder="https://meet.google.com/xxx-yyyy-zzz"
           value={meetingUrl}
           onChange={(e) => setMeetingUrl(e.target.value)}
-          startContent={<Video className="w-4 h-4 text-[#a3a3a3]" />}
+          startContent={<Video className="w-4 h-4 text-[#9CA3AF]" />}
         />
 
         <Textarea

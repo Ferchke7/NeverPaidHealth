@@ -84,17 +84,17 @@ export const ExerciseSetHistoryModal: React.FC<ExerciseSetHistoryModalProps> = (
       onClose={onClose}
       size="lg"
       icon={
-        <div className="w-9 h-9 rounded-[10px] bg-[#022c22] text-[#34d399] border border-[#064e3b] flex items-center justify-center">
+        <div className="w-9 h-9 rounded-[12px] bg-[#F0EFFE] text-[#6D28D9] border border-[#DDD6FE] flex items-center justify-center">
           <Dumbbell className="w-4 h-4" />
         </div>
       }
       title={
         <div className="flex items-center gap-2">
-          <span className="truncate max-w-[260px] sm:max-w-md">{exerciseName}</span>
+          <span className="truncate max-w-[260px] sm:max-w-md text-[#1E1B4B]">{exerciseName}</span>
         </div>
       }
       subtitle={
-        <span className="text-xs text-[#a3a3a3] font-medium">
+        <span className="text-xs text-[#6B7280] font-medium">
           {t('activeWorkout.historyModalTitle')}
         </span>
       }
@@ -104,44 +104,44 @@ export const ExerciseSetHistoryModal: React.FC<ExerciseSetHistoryModalProps> = (
         </Button>
       }
     >
-      <div className="space-y-4 text-[#fafafa]">
+      <div className="space-y-4 text-[#1E1B4B]">
         {/* 1. All-time PR Stats Summary */}
         <div className="grid grid-cols-3 gap-2.5">
-          <div className="flex flex-col items-center justify-center p-3 rounded-[12px] bg-[#0a0a0a] border border-[#262626] text-center">
-            <span className="text-[10px] uppercase font-semibold text-[#a3a3a3] flex items-center gap-1 mb-1">
-              <Trophy className="w-3 h-3 text-[#34d399]" />
+          <div className="flex flex-col items-center justify-center p-3 rounded-[14px] bg-[#F8F7FC] border border-[#ECEAF6] text-center">
+            <span className="text-[10px] uppercase font-semibold text-[#6B7280] flex items-center gap-1 mb-1">
+              <Trophy className="w-3 h-3 text-[#10B981]" />
               {t('activeWorkout.allTimePR')}
             </span>
-            <span className="text-sm sm:text-base font-bold tabular-nums text-[#34d399]">
+            <span className="text-sm sm:text-base font-bold tabular-nums text-[#6D28D9]">
               {prSummary.best1RMKg > 0 ? `${formatWeight(prSummary.best1RMKg, unit)}` : '—'}
             </span>
-            <span className="text-[10px] text-[#737373]">1RM</span>
+            <span className="text-[10px] text-[#94A3B8]">1RM</span>
           </div>
 
-          <div className="flex flex-col items-center justify-center p-3 rounded-[12px] bg-[#0a0a0a] border border-[#262626] text-center">
-            <span className="text-[10px] uppercase font-semibold text-[#a3a3a3] flex items-center gap-1 mb-1">
-              <Flame className="w-3 h-3 text-[#34d399]" />
+          <div className="flex flex-col items-center justify-center p-3 rounded-[14px] bg-[#F8F7FC] border border-[#ECEAF6] text-center">
+            <span className="text-[10px] uppercase font-semibold text-[#6B7280] flex items-center gap-1 mb-1">
+              <Flame className="w-3 h-3 text-[#6D28D9]" />
               {t('activeWorkout.bestWeight')}
             </span>
-            <span className="text-sm sm:text-base font-bold tabular-nums text-[#fafafa]">
+            <span className="text-sm sm:text-base font-bold tabular-nums text-[#1E1B4B]">
               {prSummary.bestWeightKg > 0
                 ? `${formatWeight(prSummary.bestWeightKg, unit)} × ${prSummary.bestReps}`
                 : '—'}
             </span>
-            <span className="text-[10px] text-[#737373]">
-              {prSummary.bestRecord?.reps ? `${prSummary.bestRecord.reps} reps` : 'max reps'}
+            <span className="text-[10px] text-[#94A3B8]">
+              {prSummary.bestRecord?.reps ? `${prSummary.bestRecord.reps} ${t('common.reps')}` : 'max reps'}
             </span>
           </div>
 
-          <div className="flex flex-col items-center justify-center p-3 rounded-[12px] bg-[#0a0a0a] border border-[#262626] text-center">
-            <span className="text-[10px] uppercase font-semibold text-[#a3a3a3] flex items-center gap-1 mb-1">
-              <Sparkles className="w-3 h-3 text-[#34d399]" />
+          <div className="flex flex-col items-center justify-center p-3 rounded-[14px] bg-[#F8F7FC] border border-[#ECEAF6] text-center">
+            <span className="text-[10px] uppercase font-semibold text-[#6B7280] flex items-center gap-1 mb-1">
+              <Sparkles className="w-3 h-3 text-[#0891B2]" />
               {t('activeWorkout.totalCompleted')}
             </span>
-            <span className="text-sm sm:text-base font-bold tabular-nums text-[#fafafa]">
+            <span className="text-sm sm:text-base font-bold tabular-nums text-[#1E1B4B]">
               {prSummary.totalSets}
             </span>
-            <span className="text-[10px] text-[#737373]">{t('summary.sets')}</span>
+            <span className="text-[10px] text-[#94A3B8]">{t('summary.sets')}</span>
           </div>
         </div>
 
@@ -153,8 +153,8 @@ export const ExerciseSetHistoryModal: React.FC<ExerciseSetHistoryModalProps> = (
               onClick={() => setSelectedSetFilter(null)}
               className={`h-9 px-3 rounded-[10px] text-xs font-semibold transition-colors shrink-0 cursor-pointer border ${
                 selectedSetFilter === null
-                  ? 'bg-[#022c22] text-[#34d399] border-[#064e3b]'
-                  : 'bg-[#0a0a0a] text-[#a3a3a3] hover:text-[#fafafa] border-[#262626]'
+                  ? 'bg-[#6D28D9] text-white border-[#6D28D9]'
+                  : 'bg-[#F8F7FC] text-[#6B7280] hover:text-[#1E1B4B] border-[#ECEAF6]'
               }`}
             >
               {t('activeWorkout.allSetsTab')} ({history.length})
@@ -170,8 +170,8 @@ export const ExerciseSetHistoryModal: React.FC<ExerciseSetHistoryModalProps> = (
                   onClick={() => setSelectedSetFilter(num)}
                   className={`h-9 px-3 rounded-[10px] text-xs font-semibold transition-colors shrink-0 cursor-pointer border ${
                     isSelected
-                      ? 'bg-[#022c22] text-[#34d399] border-[#064e3b]'
-                      : 'bg-[#0a0a0a] text-[#a3a3a3] hover:text-[#fafafa] border-[#262626]'
+                      ? 'bg-[#6D28D9] text-white border-[#6D28D9]'
+                      : 'bg-[#F8F7FC] text-[#6B7280] hover:text-[#1E1B4B] border-[#ECEAF6]'
                   }`}
                 >
                   {t('activeWorkout.setNumberTab', { number: num })} ({count})
@@ -181,21 +181,21 @@ export const ExerciseSetHistoryModal: React.FC<ExerciseSetHistoryModalProps> = (
           </div>
 
           <div className="flex items-center justify-between text-xs pt-1">
-            <span className="text-[#a3a3a3] font-medium">
+            <span className="text-[#6B7280] font-medium">
               {selectedSetFilter === null
                 ? t('activeWorkout.allSetsTab')
                 : t('activeWorkout.setNumberTab', { number: selectedSetFilter })}{' '}
               · {displayRecords.length}
             </span>
 
-            <div className="flex items-center gap-1 bg-[#0a0a0a] p-1 rounded-[10px] border border-[#262626]">
+            <div className="flex items-center gap-1 bg-[#F4F3FA] p-1 rounded-[10px] border border-[#ECEAF6]">
               <button
                 type="button"
                 onClick={() => setSortBy('best')}
                 className={`h-8 px-2.5 rounded-[8px] text-[11px] font-semibold transition-colors cursor-pointer ${
                   sortBy === 'best'
-                    ? 'bg-[#022c22] text-[#34d399]'
-                    : 'text-[#a3a3a3] hover:text-[#fafafa]'
+                    ? 'bg-white text-[#6D28D9] shadow-xs'
+                    : 'text-[#6B7280] hover:text-[#1E1B4B]'
                 }`}
               >
                 {t('activeWorkout.sortByBest')}
@@ -205,8 +205,8 @@ export const ExerciseSetHistoryModal: React.FC<ExerciseSetHistoryModalProps> = (
                 onClick={() => setSortBy('date')}
                 className={`h-8 px-2.5 rounded-[8px] text-[11px] font-semibold transition-colors cursor-pointer ${
                   sortBy === 'date'
-                    ? 'bg-[#022c22] text-[#34d399]'
-                    : 'text-[#a3a3a3] hover:text-[#fafafa]'
+                    ? 'bg-white text-[#6D28D9] shadow-xs'
+                    : 'text-[#6B7280] hover:text-[#1E1B4B]'
                 }`}
               >
                 {t('activeWorkout.sortByDate')}
@@ -218,8 +218,8 @@ export const ExerciseSetHistoryModal: React.FC<ExerciseSetHistoryModalProps> = (
         {/* 3. Scrollable List of Historical Sets */}
         <div className="max-h-[46vh] sm:max-h-[50vh] overflow-y-auto space-y-2 pr-1">
           {displayRecords.length === 0 ? (
-            <div className="py-10 text-center text-[#737373] text-xs flex flex-col items-center justify-center gap-2 bg-[#0a0a0a] border border-[#262626] rounded-[12px]">
-              <Dumbbell className="w-7 h-7 text-[#404040]" />
+            <div className="py-10 text-center text-[#94A3B8] text-xs flex flex-col items-center justify-center gap-2 bg-[#F8F7FC] border border-[#ECEAF6] rounded-[14px]">
+              <Dumbbell className="w-7 h-7 text-[#C4B5FD]" />
               <span>{t('activeWorkout.noHistoryFound')}</span>
             </div>
           ) : (
@@ -231,42 +231,42 @@ export const ExerciseSetHistoryModal: React.FC<ExerciseSetHistoryModalProps> = (
               return (
                 <div
                   key={uniqueKey}
-                  className={`p-3 rounded-[12px] border flex items-center justify-between gap-3 ${
+                  className={`p-3 rounded-[14px] border flex items-center justify-between gap-3 ${
                     isTop1
-                      ? 'bg-[#0a0a0a] border-[#064e3b]'
-                      : 'bg-[#0a0a0a] border-[#262626]'
+                      ? 'bg-[#F5F3FF] border-[#DDD6FE]'
+                      : 'bg-[#F8F7FC] border-[#ECEAF6]'
                   }`}
                 >
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-7 h-7 rounded-md bg-[#171717] border border-[#262626] flex items-center justify-center font-semibold text-xs text-[#a3a3a3] tabular-nums shrink-0">
+                    <div className="w-7 h-7 rounded-lg bg-white border border-[#ECEAF6] flex items-center justify-center font-semibold text-xs text-[#6B7280] tabular-nums shrink-0">
                       #{idx + 1}
                     </div>
 
                     <div className="min-w-0">
                       <div className="flex items-baseline gap-2 flex-wrap">
-                        <span className="text-sm font-bold tabular-nums text-[#fafafa]">
+                        <span className="text-sm font-bold tabular-nums text-[#1E1B4B]">
                           {formatWeight(rec.weightKg, unit)} × {rec.reps}
                         </span>
                         {rec.e1rmKg > 0 && (
-                          <span className="text-[10px] font-semibold tabular-nums text-[#34d399] bg-[#022c22] px-1.5 py-0.5 rounded border border-[#064e3b]">
+                          <span className="text-[10px] font-semibold tabular-nums text-[#10B981] bg-[#ECFDF5] px-1.5 py-0.5 rounded border border-[#A7F3D0]">
                             1RM: {formatWeight(rec.e1rmKg, unit)}
                           </span>
                         )}
                       </div>
 
-                      <div className="flex items-center gap-2 mt-0.5 text-[11px] text-[#a3a3a3] truncate">
+                      <div className="flex items-center gap-2 mt-0.5 text-[11px] text-[#6B7280] truncate">
                         <span>
                           {t('activeWorkout.setNumberTab', { number: rec.setNumber })}
                         </span>
                         <span>·</span>
                         <span className="truncate flex items-center gap-1">
-                          <Calendar className="w-3 h-3 text-[#737373] inline shrink-0" />
+                          <Calendar className="w-3 h-3 text-[#94A3B8] inline shrink-0" />
                           {formatDate(rec.date)}
                         </span>
                         {rec.workoutName && (
                           <>
                             <span>·</span>
-                            <span className="truncate text-[#737373]">{rec.workoutName}</span>
+                            <span className="truncate text-[#94A3B8]">{rec.workoutName}</span>
                           </>
                         )}
                       </div>
@@ -279,8 +279,8 @@ export const ExerciseSetHistoryModal: React.FC<ExerciseSetHistoryModalProps> = (
                       onClick={() => handleApply(rec, uniqueKey)}
                       className={`h-9 px-3 rounded-[10px] text-xs font-semibold transition-colors flex items-center gap-1.5 shrink-0 cursor-pointer border ${
                         isApplied
-                          ? 'bg-[#34d399] text-[#0a0a0a] border-[#34d399]'
-                          : 'bg-[#171717] hover:bg-[#022c22] text-[#fafafa] hover:text-[#34d399] border-[#404040]'
+                          ? 'bg-[#10B981] text-white border-[#10B981]'
+                          : 'bg-white hover:bg-[#F0EFFE] text-[#1E1B4B] hover:text-[#6D28D9] border-[#E2E0F0]'
                       }`}
                       title={t('activeWorkout.useValues')}
                     >

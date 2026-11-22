@@ -36,7 +36,7 @@ export const TodoQuickAdd: React.FC<TodoQuickAddProps> = ({ onAdd, isLoading = f
   return (
     <form
       onSubmit={handleSubmit}
-      className="bg-[#0a0a0a] border border-[#404040] rounded-[10px] p-3 space-y-2.5"
+      className="bg-[#F8F7FC] border border-[#ECEAF6] rounded-[14px] p-3 space-y-2.5"
     >
       <div className="flex items-center gap-2">
         <input
@@ -45,7 +45,7 @@ export const TodoQuickAdd: React.FC<TodoQuickAddProps> = ({ onAdd, isLoading = f
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           disabled={isLoading}
-          className="bg-transparent flex-1 min-h-[44px] text-[14px] text-[#fafafa] placeholder-[#737373] focus:outline-none px-2"
+          className="bg-transparent flex-1 min-h-[42px] text-[14px] text-[#1E1B4B] placeholder-[#94A3B8] focus:outline-none px-2"
         />
 
         <Button
@@ -62,8 +62,8 @@ export const TodoQuickAdd: React.FC<TodoQuickAddProps> = ({ onAdd, isLoading = f
       </div>
 
       {/* Category Pills Selector */}
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 pt-2 border-t border-[#262626]">
-        <span className="text-[11px] text-[#737373] font-medium shrink-0 mr-1">
+      <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 pt-2 border-t border-[#ECEAF6]">
+        <span className="text-[11px] text-[#6B7280] font-semibold shrink-0 mr-1">
           {t('todo.categoryLabel') || 'Категория'}:
         </span>
         {CATEGORIES.map((c) => {
@@ -73,10 +73,10 @@ export const TodoQuickAdd: React.FC<TodoQuickAddProps> = ({ onAdd, isLoading = f
               key={c.id}
               type="button"
               onClick={() => setCategory(c.id)}
-              className={`min-h-[44px] px-3 rounded-[10px] text-[12px] font-medium border whitespace-nowrap shrink-0 transition-colors cursor-pointer ${
+              className={`min-h-[36px] px-3 rounded-[10px] text-[12px] font-semibold border whitespace-nowrap shrink-0 transition-colors cursor-pointer ${
                 isSelected
-                  ? 'bg-[#022c22] text-[#34d399] border-[#064e3b]'
-                  : 'bg-[#171717] text-[#a3a3a3] border-[#404040] hover:text-[#fafafa]'
+                  ? 'bg-[#6D28D9] text-white border-[#6D28D9]'
+                  : 'bg-white text-[#6B7280] border-[#ECEAF6] hover:text-[#1E1B4B]'
               }`}
             >
               {t(c.labelKey as Parameters<typeof t>[0]) || c.id}

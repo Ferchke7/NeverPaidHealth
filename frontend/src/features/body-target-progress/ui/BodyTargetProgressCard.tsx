@@ -1,5 +1,5 @@
 import { toLocalDateKey } from '@/shared/lib/dates.ts';
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Scale,
   Target,
@@ -74,6 +74,22 @@ export const BodyTargetProgressCard: React.FC<BodyTargetProgressCardProps> = ({
 
   const [isEditingTarget, setIsEditingTarget] = useState(false);
   const [logSuccess, setLogSuccess] = useState(false);
+
+  // Sync displayed inputs when unit preference or remote weight targets change
+  useEffect(() => {
+    const targetKg = user?.target_weight_kg || Number(localStorage.getItem('np_target_weight_kg') || 75);
+    setTargetWeightInput(
+      unitPref === 'lb' ? kgToLb(targetKg).toFixed(1) : targetKg.toFixed(1)
+    );
+  }, [unitPref, user?.target_weight_kg]);
+
+  useEffect(() => {
+    if (currentWeightKg > 0) {
+      setQuickWeight(
+        unitPref === 'lb' ? kgToLb(currentWeightKg).toFixed(1) : currentWeightKg.toFixed(1)
+      );
+    }
+  }, [unitPref, currentWeightKg]);
 
   // Parse target weight
   const parsedTargetRaw = parseFloat(targetWeightInput) || 75;
@@ -155,24 +171,24 @@ export const BodyTargetProgressCard: React.FC<BodyTargetProgressCardProps> = ({
   };
 
   return (
-    <Card className={`relative overflow-hidden ${className}`}>
-      <div className="absolute top-0 right-0 w-48 h-48 bg-brand-500/5 rounded-full blur-3xl pointer-events-none" />
+    <Card className={`relative overflow-hidden bg-white border-[#ECEAF6] royal-card-shadow ${className}`}>
+      <div className="absolute top-0 right-0 w-48 h-48 bg-[#6D28D9]/5 rounded-full blur-3xl pointer-events-none" />
 
       {/* Header */}
       <CardHeader>
         <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-brand-500/20 to-emerald-500/20 border border-brand-500/40 flex items-center justify-center text-brand-400 shadow-md shrink-0">
+          <div className="w-11 h-11 rounded-2xl bg-[#F0EFFE] border border-[#DDD6FE] flex items-center justify-center text-[#6D28D9] shrink-0">
             <Target className="w-5 h-5" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <CardTitle>{t('body.goalTitle')}</CardTitle>
+              <CardTitle className="text-[#1E1B4B]">{t('body.goalTitle')}</CardTitle>
               <Badge variant="brand" size="sm">
                 <Sparkles className="w-3 h-3 mr-1" />
                 Live Tracker
               </Badge>
             </div>
-            <CardDescription>
+            <CardDescription className="text-[#6B7280]">
               {t('body.goalSubtitle')}
             </CardDescription>
           </div>
@@ -181,7 +197,7 @@ export const BodyTargetProgressCard: React.FC<BodyTargetProgressCardProps> = ({
         {onNavigateToBody && (
           <button
             onClick={onNavigateToBody}
-            className="text-xs text-brand-400 hover:text-brand-300 font-bold flex items-center gap-1 self-start sm:self-auto hover:underline cursor-pointer"
+            className="text-xs text-[#6D28D9] hover:text-[#4C1D95] font-bold flex items-center gap-1 self-start sm:self-auto hover:underline cursor-pointer"
           >
             <span>{t('body.allHistory')}</span>
             <ArrowRight className="w-3.5 h-3.5" />
@@ -193,15 +209,15 @@ export const BodyTargetProgressCard: React.FC<BodyTargetProgressCardProps> = ({
         {/* Primary KPI Grid: Current vs Target vs Delta */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {/* 1. Current Weight */}
-          <div className="p-4 rounded-2xl bg-dark-900/80 border border-dark-700/80 space-y-1">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
-              <Scale className="w-3.5 h-3.5 text-zinc-400" />
+          <div className="p-4 rounded-2xl bg-[#F8F7FC] border border-[#ECEAF6] space-y-1">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-[#6B7280] flex items-center gap-1.5">
+              <Scale className="w-3.5 h-3.5 text-[#6B7280]" />
               {t('body.currentWeight')}
             </span>
-            <div className="text-2xl font-black font-mono text-white tracking-tight">
+            <div className="text-2xl font-black font-mono text-[#1E1B4B] tracking-tight">
               {formatWeight(currentWeightKg, unitPref)}
             </div>
-            <div className="text-[11px] text-zinc-400 flex items-center gap-1.5">
+            <div className="text-[11px] text-[#6B7280] flex items-center gap-1.5">
               <span>BMI {currentBMI > 0 ? currentBMI.toFixed(1) : '—'}</span>
               <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded border ${bmiCategory.bgColor} ${bmiCategory.textColor} ${bmiCategory.borderColor}`}>
                 {bmiCategory.label}
@@ -210,15 +226,15 @@ export const BodyTargetProgressCard: React.FC<BodyTargetProgressCardProps> = ({
           </div>
 
           {/* 2. Target Goal Weight */}
-          <div className="p-4 rounded-2xl bg-dark-900/80 border border-brand-500/30 space-y-1 relative">
+          <div className="p-4 rounded-2xl bg-[#FAF9FE] border border-[#DDD6FE] space-y-1 relative">
             <div className="flex items-center justify-between">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-brand-400 flex items-center gap-1.5">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-[#6D28D9] flex items-center gap-1.5">
                 <Target className="w-3.5 h-3.5" />
                 {t('body.targetWeight')}
               </span>
               <button
                 onClick={() => setIsEditingTarget(!isEditingTarget)}
-                className="text-[10px] font-semibold text-zinc-400 hover:text-brand-400 transition-colors cursor-pointer"
+                className="text-[10px] font-semibold text-[#6B7280] hover:text-[#6D28D9] transition-colors cursor-pointer"
               >
                 {isEditingTarget ? t('common.cancel') : t('common.edit')}
               </button>
@@ -239,29 +255,29 @@ export const BodyTargetProgressCard: React.FC<BodyTargetProgressCardProps> = ({
                 </Button>
               </div>
             ) : (
-              <div className="text-2xl font-black font-mono text-brand-400 tracking-tight">
+              <div className="text-2xl font-black font-mono text-[#6D28D9] tracking-tight">
                 {formatWeight(targetWeightKg, unitPref)}
               </div>
             )}
 
-            <div className="text-[11px] text-zinc-400">
-              {t('body.targetBMI')}: <strong className="text-zinc-200">{targetBMI > 0 ? targetBMI.toFixed(1) : '—'}</strong>
+            <div className="text-[11px] text-[#6B7280]">
+              {t('body.targetBMI')}: <strong className="text-[#1E1B4B]">{targetBMI > 0 ? targetBMI.toFixed(1) : '—'}</strong>
             </div>
           </div>
 
           {/* 3. Remaining Delta */}
-          <div className="p-4 rounded-2xl bg-dark-900/80 border border-dark-700/80 space-y-1">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
+          <div className="p-4 rounded-2xl bg-[#F8F7FC] border border-[#ECEAF6] space-y-1">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-[#6B7280] flex items-center gap-1.5">
               {diffToGoal > 0 ? (
-                <TrendingDown className="w-3.5 h-3.5 text-blue-400" />
+                <TrendingDown className="w-3.5 h-3.5 text-[#0891B2]" />
               ) : (
-                <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
+                <TrendingUp className="w-3.5 h-3.5 text-[#10B981]" />
               )}
               {t('body.remainingToGoal')}
             </span>
-            <div className="text-2xl font-black font-mono text-emerald-400 tracking-tight">
+            <div className="text-2xl font-black font-mono text-[#059669] tracking-tight">
               {Math.abs(diffToGoal) < 0.1 ? (
-                <span className="text-emerald-400 flex items-center gap-1 text-lg">
+                <span className="text-[#059669] flex items-center gap-1 text-lg">
                   <CheckCircle2 className="w-5 h-5" /> {t('body.goalAchieved')}
                 </span>
               ) : (
@@ -271,45 +287,45 @@ export const BodyTargetProgressCard: React.FC<BodyTargetProgressCardProps> = ({
                 </>
               )}
             </div>
-            <div className="text-[11px] text-zinc-400">
+            <div className="text-[11px] text-[#6B7280]">
               {diffToGoal > 0 ? t('body.cutting') : t('body.bulking')}
             </div>
           </div>
         </div>
 
         {/* Progress Bar Visualizer */}
-        <div className="space-y-2 bg-dark-950/70 p-4 rounded-2xl border border-dark-750">
+        <div className="space-y-2 bg-[#F8F7FC] p-4 rounded-2xl border border-[#ECEAF6]">
           <div className="flex items-center justify-between text-xs">
-            <span className="font-bold text-zinc-200 flex items-center gap-1.5">
-              <Flame className="w-4 h-4 text-brand-400" />
+            <span className="font-bold text-[#1E1B4B] flex items-center gap-1.5">
+              <Flame className="w-4 h-4 text-[#6D28D9]" />
               {t('body.goalProgress')}
             </span>
-            <span className="font-mono font-bold text-brand-400 text-sm">{progressPercent}%</span>
+            <span className="font-mono font-bold text-[#6D28D9] text-sm">{progressPercent}%</span>
           </div>
 
           <ProgressBar value={progressPercent} color="gradient" size="lg" />
 
-          <div className="flex items-center justify-between text-[10px] text-zinc-400 font-mono pt-0.5">
+          <div className="flex items-center justify-between text-[10px] text-[#6B7280] font-mono pt-0.5">
             <span>{t('body.start')}: {formatWeight(startWeightKg, unitPref)}</span>
             <span>{t('body.current')}: {formatWeight(currentWeightKg, unitPref)}</span>
-            <span className="text-brand-400 font-bold">{t('body.goal')}: {formatWeight(targetWeightKg, unitPref)}</span>
+            <span className="text-[#6D28D9] font-bold">{t('body.goal')}: {formatWeight(targetWeightKg, unitPref)}</span>
           </div>
         </div>
 
         {/* Quick Today Weigh-In Form */}
         <form
           onSubmit={handleQuickLog}
-          className="p-4 rounded-2xl bg-dark-900/90 border border-brand-500/30 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 shadow-md"
+          className="p-4 rounded-2xl bg-[#FAF9FE] border border-[#DDD6FE] flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3"
         >
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-brand-500/10 text-brand-400 flex items-center justify-center shrink-0">
+            <div className="w-9 h-9 rounded-xl bg-[#F0EFFE] text-[#6D28D9] flex items-center justify-center shrink-0">
               <Calendar className="w-4 h-4" />
             </div>
             <div>
-              <div className="text-xs font-bold text-zinc-100">
+              <div className="text-xs font-bold text-[#1E1B4B]">
                 {t('body.logTodayWeight')}
               </div>
-              <div className="text-[10px] text-zinc-400">
+              <div className="text-[10px] text-[#6B7280]">
                 {t('body.logTodayDesc')}
               </div>
             </div>
@@ -325,7 +341,7 @@ export const BodyTargetProgressCard: React.FC<BodyTargetProgressCardProps> = ({
                 onChange={(e) => setQuickWeight(e.target.value)}
                 placeholder="80.5"
                 className="font-mono font-bold text-right text-xs"
-                endContent={<span className="text-xs text-zinc-400 font-bold">{unitPref.toUpperCase()}</span>}
+                endContent={<span className="text-xs text-[#6B7280] font-bold">{unitPref.toUpperCase()}</span>}
               />
             </div>
 

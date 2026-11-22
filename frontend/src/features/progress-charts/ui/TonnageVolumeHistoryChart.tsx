@@ -131,13 +131,19 @@ export const TonnageVolumeHistoryChart: React.FC<TonnageVolumeHistoryChartProps>
           text: lbl.noData,
           left: 'center',
           top: 'center',
-          textStyle: { color: '#737373', fontSize: 12 },
+          textStyle: { color: '#6B7280', fontSize: 12 },
         },
       };
     }
 
     const categories = processedData.map((d) => `${d.label}\n${d.sets} с.`);
-    const volumes = processedData.map((d) => d.volumeKg);
+    const volumes = processedData.map((d, idx) => ({
+      value: d.volumeKg,
+      itemStyle: {
+        color: idx % 2 === 0 ? '#1B1145' : '#7C3AED',
+        borderRadius: [6, 6, 0, 0],
+      },
+    }));
     const unitLabel = unitPref === 'lb' ? 'lb' : 'кг';
 
     return {
@@ -145,14 +151,14 @@ export const TonnageVolumeHistoryChart: React.FC<TonnageVolumeHistoryChartProps>
       animationDuration: 500,
       tooltip: {
         trigger: 'axis',
-        backgroundColor: '#171717',
-        borderColor: '#404040',
+        backgroundColor: '#FFFFFF',
+        borderColor: '#ECEAF6',
         borderWidth: 1,
-        borderRadius: 10,
+        borderRadius: 12,
         padding: [10, 12],
         axisPointer: {
           type: 'shadow',
-          shadowStyle: { color: 'rgba(255, 255, 255, 0.03)' },
+          shadowStyle: { color: 'rgba(109, 40, 217, 0.05)' },
         },
         formatter: (params: any) => {
           if (!Array.isArray(params) || params.length === 0) return '';
@@ -160,9 +166,9 @@ export const TonnageVolumeHistoryChart: React.FC<TonnageVolumeHistoryChartProps>
           const item = processedData[idx];
           return `
             <div style="min-width:140px;">
-              <div style="font-size:11px;color:#a3a3a3;">${item.label}</div>
-              <div style="font-size:12px;color:#fafafa;font-weight:600;margin-bottom:4px;">${item.name}</div>
-              <div style="font-size:13px;font-weight:700;color:#34d399;">${item.volumeKg.toLocaleString('ru-RU')} ${unitLabel}</div>
+              <div style="font-size:11px;color:#6B7280;">${item.label}</div>
+              <div style="font-size:12px;color:#1E1B4B;font-weight:600;margin-bottom:4px;">${item.name}</div>
+              <div style="font-size:13px;font-weight:700;color:#6D28D9;">${item.volumeKg.toLocaleString('ru-RU')} ${unitLabel}</div>
             </div>
           `;
         },
@@ -177,10 +183,10 @@ export const TonnageVolumeHistoryChart: React.FC<TonnageVolumeHistoryChartProps>
       xAxis: {
         type: 'category',
         data: categories,
-        axisLine: { lineStyle: { color: '#262626' } },
+        axisLine: { lineStyle: { color: '#ECEAF6' } },
         axisTick: { show: false },
         axisLabel: {
-          color: '#737373',
+          color: '#6B7280',
           fontSize: 11,
           lineHeight: 16,
         },
@@ -190,12 +196,12 @@ export const TonnageVolumeHistoryChart: React.FC<TonnageVolumeHistoryChartProps>
         axisLine: { show: false },
         axisTick: { show: false },
         axisLabel: {
-          color: '#737373',
+          color: '#6B7280',
           fontSize: 11,
         },
         splitLine: {
           lineStyle: {
-            color: '#262626',
+            color: '#ECEAF6',
             type: 'solid',
           },
         },
@@ -205,16 +211,13 @@ export const TonnageVolumeHistoryChart: React.FC<TonnageVolumeHistoryChartProps>
           name: lbl.title,
           type: 'bar',
           data: volumes,
-          barMaxWidth: 52,
-          itemStyle: {
-            color: '#34d399',
-            borderRadius: [4, 4, 0, 0],
-          },
+          barMaxWidth: 44,
           label: {
             show: true,
             position: 'top',
-            color: '#d4d4d4',
+            color: '#1E1B4B',
             fontSize: 11,
+            fontWeight: 600,
             formatter: (p: any) =>
               p.value >= 1000
                 ? `${(Number(p.value) / 1000).toFixed(1)} ${lbl.tonsUnit}`
@@ -226,18 +229,18 @@ export const TonnageVolumeHistoryChart: React.FC<TonnageVolumeHistoryChartProps>
   }, [processedData, unitPref, lbl]);
 
   return (
-    <section className={`bg-[#171717] border border-[#404040] rounded-[14px] p-5 space-y-4 ${className}`}>
+    <section className={`bg-white border border-[#ECEAF6] rounded-[22px] p-5 space-y-4 royal-card-shadow ${className}`}>
       <div className="space-y-3">
-        <h3 className="text-lg font-bold text-[#fafafa]">{lbl.title}</h3>
+        <h3 className="text-lg font-bold text-[#1E1B4B]">{lbl.title}</h3>
 
-        <div className="flex items-center gap-1.5">
+        <div className="inline-flex items-center gap-1 bg-[#F4F3FA] p-1 rounded-[12px] border border-[#ECEAF6]">
           <button
             type="button"
             onClick={() => setViewMode('weekly')}
-            className={`min-h-[44px] px-3.5 rounded-[10px] text-xs font-semibold transition-colors cursor-pointer ${
+            className={`min-h-[38px] px-3.5 rounded-[9px] text-xs font-semibold transition-colors cursor-pointer ${
               viewMode === 'weekly'
-                ? 'bg-[#022c22] text-[#34d399] border border-[#064e3b]'
-                : 'text-[#a3a3a3] hover:text-[#fafafa]'
+                ? 'bg-white text-[#6D28D9] shadow-xs'
+                : 'text-[#6B7280] hover:text-[#1E1B4B]'
             }`}
           >
             {lbl.byWeeks}
@@ -245,10 +248,10 @@ export const TonnageVolumeHistoryChart: React.FC<TonnageVolumeHistoryChartProps>
           <button
             type="button"
             onClick={() => setViewMode('sessions')}
-            className={`min-h-[44px] px-3.5 rounded-[10px] text-xs font-semibold transition-colors cursor-pointer ${
+            className={`min-h-[38px] px-3.5 rounded-[9px] text-xs font-semibold transition-colors cursor-pointer ${
               viewMode === 'sessions'
-                ? 'bg-[#022c22] text-[#34d399] border border-[#064e3b]'
-                : 'text-[#a3a3a3] hover:text-[#fafafa]'
+                ? 'bg-white text-[#6D28D9] shadow-xs'
+                : 'text-[#6B7280] hover:text-[#1E1B4B]'
             }`}
           >
             {lbl.bySessions}
@@ -256,25 +259,25 @@ export const TonnageVolumeHistoryChart: React.FC<TonnageVolumeHistoryChartProps>
         </div>
       </div>
 
-      {/* Top 3 Metrics matching Figma 07 */}
+      {/* Top 3 Metrics */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-1">
         <div>
-          <div className="text-xl sm:text-2xl font-bold tabular-nums text-[#fafafa]">
+          <div className="text-xl sm:text-2xl font-bold tabular-nums text-[#1E1B4B]">
             {formatCompact(summary.totalVol)}
           </div>
-          <div className="text-xs text-[#a3a3a3] mt-0.5">{lbl.total}</div>
+          <div className="text-xs text-[#6B7280] mt-0.5">{lbl.total}</div>
         </div>
         <div>
-          <div className="text-xl sm:text-2xl font-bold tabular-nums text-[#fafafa]">
+          <div className="text-xl sm:text-2xl font-bold tabular-nums text-[#6D28D9]">
             {formatCompact(summary.avgVol)}
           </div>
-          <div className="text-xs text-[#a3a3a3] mt-0.5">{lbl.avg}</div>
+          <div className="text-xs text-[#6B7280] mt-0.5">{lbl.avg}</div>
         </div>
         <div>
-          <div className="text-xl sm:text-2xl font-bold tabular-nums text-[#fafafa]">
+          <div className="text-xl sm:text-2xl font-bold tabular-nums text-[#0891B2]">
             {formatCompact(summary.maxVol)}
           </div>
-          <div className="text-xs text-[#a3a3a3] mt-0.5">{lbl.peak}</div>
+          <div className="text-xs text-[#6B7280] mt-0.5">{lbl.peak}</div>
         </div>
       </div>
 
@@ -283,7 +286,7 @@ export const TonnageVolumeHistoryChart: React.FC<TonnageVolumeHistoryChartProps>
         style={{ height: '260px', width: '100%' }}
       />
 
-      <p className="text-xs text-[#737373]">{lbl.caption}</p>
+      <p className="text-xs text-[#94A3B8]">{lbl.caption}</p>
     </section>
   );
 };

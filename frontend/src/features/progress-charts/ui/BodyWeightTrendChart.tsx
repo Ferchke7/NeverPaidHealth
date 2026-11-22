@@ -101,7 +101,7 @@ export const BodyWeightTrendChart: React.FC<BodyWeightTrendChartProps> = ({
         text: t('body.noTrendPoints'),
         left: 'center',
         top: 'center',
-        textStyle: { color: '#737373', fontSize: 13, fontWeight: 'normal' },
+        textStyle: { color: '#6B7280', fontSize: 13, fontWeight: 'normal' },
       },
     });
 
@@ -116,11 +116,11 @@ export const BodyWeightTrendChart: React.FC<BodyWeightTrendChartProps> = ({
         name: string;
         color: string;
       }> = [
-        { key: 'waist_cm', name: t('body.waistCm'), color: '#34d399' },
-        { key: 'chest_cm', name: t('body.chestCm'), color: '#fafafa' },
-        { key: 'arms_cm', name: t('body.armsCm'), color: '#fbbf24' },
-        { key: 'thighs_cm', name: t('body.hipsCm'), color: '#f87171' },
-        { key: 'neck_cm', name: t('body.neckCm'), color: '#a3a3a3' },
+        { key: 'waist_cm', name: t('body.waistCm'), color: '#6D28D9' },
+        { key: 'chest_cm', name: t('body.chestCm'), color: '#1B1145' },
+        { key: 'arms_cm', name: t('body.armsCm'), color: '#0891B2' },
+        { key: 'thighs_cm', name: t('body.hipsCm'), color: '#10B981' },
+        { key: 'neck_cm', name: t('body.neckCm'), color: '#EA580C' },
       ];
 
       const seriesList = defs
@@ -141,33 +141,33 @@ export const BodyWeightTrendChart: React.FC<BodyWeightTrendChartProps> = ({
         animationDuration: 450,
         tooltip: {
           trigger: 'axis',
-          backgroundColor: '#171717',
-          borderColor: '#404040',
+          backgroundColor: '#FFFFFF',
+          borderColor: '#ECEAF6',
           borderWidth: 1,
-          borderRadius: 10,
-          textStyle: { color: '#fafafa', fontSize: 12 },
+          borderRadius: 12,
+          textStyle: { color: '#1E1B4B', fontSize: 12 },
         },
         legend: {
           top: 0,
           right: 0,
-          textStyle: { color: '#a3a3a3', fontSize: 11 },
+          textStyle: { color: '#6B7280', fontSize: 11 },
         },
         grid: { left: '2%', right: '4%', bottom: '4%', top: '18%', containLabel: true },
         xAxis: {
           type: 'category',
           data: dates,
           boundaryGap: false,
-          axisLine: { lineStyle: { color: '#262626' } },
+          axisLine: { lineStyle: { color: '#ECEAF6' } },
           axisTick: { show: false },
-          axisLabel: { color: '#737373', fontSize: 10, fontFamily: 'monospace' },
+          axisLabel: { color: '#6B7280', fontSize: 10, fontFamily: 'monospace' },
         },
         yAxis: {
           type: 'value',
           scale: true,
           axisLine: { show: false },
           axisTick: { show: false },
-          axisLabel: { color: '#737373', fontSize: 10, fontFamily: 'monospace', formatter: '{value} cm' },
-          splitLine: { lineStyle: { color: '#262626', type: 'dashed' } },
+          axisLabel: { color: '#6B7280', fontSize: 10, fontFamily: 'monospace', formatter: '{value} cm' },
+          splitLine: { lineStyle: { color: '#ECEAF6', type: 'dashed' } },
         },
         series: seriesList,
       };
@@ -184,11 +184,11 @@ export const BodyWeightTrendChart: React.FC<BodyWeightTrendChartProps> = ({
         animationDuration: 450,
         tooltip: {
           trigger: 'axis',
-          backgroundColor: '#171717',
-          borderColor: '#404040',
+          backgroundColor: '#FFFFFF',
+          borderColor: '#ECEAF6',
           borderWidth: 1,
-          borderRadius: 10,
-          textStyle: { color: '#fafafa', fontSize: 12 },
+          borderRadius: 12,
+          textStyle: { color: '#1E1B4B', fontSize: 12 },
           valueFormatter: (val) => `${val}%`,
         },
         grid: { left: '2%', right: '4%', bottom: '4%', top: '14%', containLabel: true },
@@ -196,17 +196,17 @@ export const BodyWeightTrendChart: React.FC<BodyWeightTrendChartProps> = ({
           type: 'category',
           data: dates,
           boundaryGap: false,
-          axisLine: { lineStyle: { color: '#262626' } },
+          axisLine: { lineStyle: { color: '#ECEAF6' } },
           axisTick: { show: false },
-          axisLabel: { color: '#737373', fontSize: 10, fontFamily: 'monospace' },
+          axisLabel: { color: '#6B7280', fontSize: 10, fontFamily: 'monospace' },
         },
         yAxis: {
           type: 'value',
           scale: true,
           axisLine: { show: false },
           axisTick: { show: false },
-          axisLabel: { color: '#737373', fontSize: 10, fontFamily: 'monospace', formatter: '{value}%' },
-          splitLine: { lineStyle: { color: '#262626', type: 'dashed' } },
+          axisLabel: { color: '#6B7280', fontSize: 10, fontFamily: 'monospace', formatter: '{value}%' },
+          splitLine: { lineStyle: { color: '#ECEAF6', type: 'dashed' } },
         },
         series: [
           {
@@ -215,9 +215,9 @@ export const BodyWeightTrendChart: React.FC<BodyWeightTrendChartProps> = ({
             data: values,
             smooth: 0.3,
             symbolSize: 6,
-            itemStyle: { color: '#34d399', borderColor: '#0a0a0a', borderWidth: 1.5 },
-            lineStyle: { width: 2.5, color: '#34d399' },
-            areaStyle: { color: 'rgba(52, 211, 153, 0.08)' },
+            itemStyle: { color: '#6D28D9', borderColor: '#FFFFFF', borderWidth: 1.5 },
+            lineStyle: { width: 2.5, color: '#6D28D9' },
+            areaStyle: { color: 'rgba(109, 40, 217, 0.12)' },
           },
         ],
       };
@@ -258,8 +258,8 @@ export const BodyWeightTrendChart: React.FC<BodyWeightTrendChartProps> = ({
         data: dailyWeights,
         symbol: 'circle',
         symbolSize: 5,
-        itemStyle: { color: '#737373', borderColor: '#0a0a0a', borderWidth: 1 },
-        lineStyle: { width: 1.5, color: '#737373', type: 'dotted' },
+        itemStyle: { color: '#94A3B8', borderColor: '#FFFFFF', borderWidth: 1 },
+        lineStyle: { width: 1.5, color: '#94A3B8', type: 'dotted' },
       },
       {
         name: smaLabel,
@@ -269,10 +269,10 @@ export const BodyWeightTrendChart: React.FC<BodyWeightTrendChartProps> = ({
         symbol: 'none',
         lineStyle: {
           width: 2.5,
-          color: '#34d399',
+          color: '#6D28D9',
         },
         areaStyle: {
-          color: 'rgba(52, 211, 153, 0.08)',
+          color: 'rgba(109, 40, 217, 0.12)',
         },
       },
     ];
@@ -285,10 +285,10 @@ export const BodyWeightTrendChart: React.FC<BodyWeightTrendChartProps> = ({
         markLine: {
           symbol: 'none',
           data: [{ yAxis: targetVal, name: targetLabelText }],
-          lineStyle: { color: '#34d399', type: 'dashed', width: 1.5 },
+          lineStyle: { color: '#10B981', type: 'dashed', width: 1.5 },
           label: {
             formatter: `${targetLabelText}: ${targetVal} ${unitLabel}`,
-            color: '#34d399',
+            color: '#059669',
             fontSize: 10,
             fontFamily: 'monospace',
           },
@@ -301,14 +301,14 @@ export const BodyWeightTrendChart: React.FC<BodyWeightTrendChartProps> = ({
       animationDuration: 450,
       tooltip: {
         trigger: 'axis',
-        backgroundColor: '#171717',
-        borderColor: '#404040',
+        backgroundColor: '#FFFFFF',
+        borderColor: '#ECEAF6',
         borderWidth: 1,
-        borderRadius: 10,
+        borderRadius: 12,
         padding: [10, 12],
         axisPointer: {
           type: 'line',
-          lineStyle: { color: '#404040', width: 1, type: 'dashed' },
+          lineStyle: { color: '#DDD6FE', width: 1, type: 'dashed' },
         },
         formatter: (params: any) => {
           if (!Array.isArray(params) || params.length === 0) return '';
@@ -319,18 +319,18 @@ export const BodyWeightTrendChart: React.FC<BodyWeightTrendChartProps> = ({
 
           return `
             <div style="font-family: inherit; min-width: 145px;">
-              <div style="font-size: 11px; color: #a3a3a3; margin-bottom: 4px;">
+              <div style="font-size: 11px; color: #6B7280; margin-bottom: 4px;">
                 ${point.date}
               </div>
               <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 2px;">
-                <span style="font-size: 11px; color: #fafafa;">${smaLabel}:</span>
-                <span style="font-size: 12px; font-weight: 700; color: #34d399; font-family: monospace;">
+                <span style="font-size: 11px; color: #1E1B4B;">${smaLabel}:</span>
+                <span style="font-size: 12px; font-weight: 700; color: #6D28D9; font-family: monospace;">
                   ${sWeight} ${unitLabel}
                 </span>
               </div>
               <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px;">
-                <span style="font-size: 11px; color: #a3a3a3;">${dailyLabel}:</span>
-                <span style="font-size: 12px; font-weight: 600; color: #fafafa; font-family: monospace;">
+                <span style="font-size: 11px; color: #6B7280;">${dailyLabel}:</span>
+                <span style="font-size: 12px; font-weight: 600; color: #1E1B4B; font-family: monospace;">
                   ${dWeight} ${unitLabel}
                 </span>
               </div>
@@ -341,7 +341,7 @@ export const BodyWeightTrendChart: React.FC<BodyWeightTrendChartProps> = ({
       legend: {
         top: 0,
         right: 0,
-        textStyle: { color: '#a3a3a3', fontSize: 11 },
+        textStyle: { color: '#6B7280', fontSize: 11 },
         data: [smaLabel, dailyLabel],
       },
       grid: {
@@ -355,10 +355,10 @@ export const BodyWeightTrendChart: React.FC<BodyWeightTrendChartProps> = ({
         type: 'category',
         data: dates,
         boundaryGap: false,
-        axisLine: { lineStyle: { color: '#262626' } },
+        axisLine: { lineStyle: { color: '#ECEAF6' } },
         axisTick: { show: false },
         axisLabel: {
-          color: '#737373',
+          color: '#6B7280',
           fontSize: 10,
           fontFamily: 'monospace',
           margin: 10,
@@ -370,14 +370,14 @@ export const BodyWeightTrendChart: React.FC<BodyWeightTrendChartProps> = ({
         axisLine: { show: false },
         axisTick: { show: false },
         axisLabel: {
-          color: '#737373',
+          color: '#6B7280',
           fontSize: 10,
           fontFamily: 'monospace',
           formatter: `{value} ${unitLabel}`,
         },
         splitLine: {
           lineStyle: {
-            color: '#262626',
+            color: '#ECEAF6',
             type: 'dashed',
           },
         },
@@ -393,18 +393,18 @@ export const BodyWeightTrendChart: React.FC<BodyWeightTrendChartProps> = ({
   ];
 
   return (
-    <div className={`bg-[#171717] rounded-[14px] border border-[#404040] p-4 sm:p-5 space-y-4 ${className}`}>
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#262626]">
+    <div className={`bg-white rounded-[22px] border border-[#ECEAF6] p-4 sm:p-5 space-y-4 royal-card-shadow ${className}`}>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#ECEAF6]">
         <div className="flex items-center gap-2.5">
-          <h3 className="text-base font-semibold text-[#fafafa] tracking-tight">
+          <h3 className="text-base font-bold text-[#1E1B4B] tracking-tight">
             {t('body.weightDynamics')}
           </h3>
-          <span className="px-2 py-0.5 rounded-[6px] bg-[#0a0a0a] border border-[#262626] text-[11px] font-mono tabular-nums text-[#a3a3a3]">
+          <span className="px-2 py-0.5 rounded-[8px] bg-[#F0EFFE] border border-[#DDD6FE] text-[11px] font-mono tabular-nums font-bold text-[#6D28D9]">
             {entryCount}
           </span>
         </div>
 
-        <div className="inline-flex rounded-[10px] bg-[#0a0a0a] border border-[#404040] p-1 gap-1 self-start sm:self-auto">
+        <div className="inline-flex rounded-[12px] bg-[#F4F3FA] border border-[#ECEAF6] p-1 gap-1 self-start sm:self-auto">
           {tabs.map((tab) => {
             const isSelected = activeMode === tab.id;
             return (
@@ -412,10 +412,10 @@ export const BodyWeightTrendChart: React.FC<BodyWeightTrendChartProps> = ({
                 key={tab.id}
                 type="button"
                 onClick={() => setMode(tab.id)}
-                className={`min-h-[44px] px-3 py-1.5 rounded-[8px] text-xs font-medium transition-colors cursor-pointer ${
+                className={`min-h-[38px] px-3 py-1.5 rounded-[9px] text-xs font-semibold transition-colors cursor-pointer ${
                   isSelected
-                    ? 'bg-[#022c22] text-[#34d399] border border-[#064e3b]'
-                    : 'text-[#a3a3a3] hover:text-[#fafafa] border border-transparent'
+                    ? 'bg-white text-[#6D28D9] shadow-xs'
+                    : 'text-[#6B7280] hover:text-[#1E1B4B]'
                 }`}
               >
                 {tab.label}

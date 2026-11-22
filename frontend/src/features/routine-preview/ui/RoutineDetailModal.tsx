@@ -130,18 +130,18 @@ export const RoutineDetailModal: React.FC<RoutineDetailModalProps> = ({
       >
         <div className="space-y-4">
           {routine.notes && (
-            <div className="bg-[#0a0a0a] p-3.5 rounded-[10px] border border-[#262626] text-[13px] text-[#a3a3a3]">
-              <span className="font-medium text-[#fafafa] mr-1.5">{t('routines.note')}</span>
+            <div className="bg-[#F8F7FC] p-3.5 rounded-[14px] border border-[#ECEAF6] text-[13px] text-[#6B7280]">
+              <span className="font-semibold text-[#1E1B4B] mr-1.5">{t('routines.note')}</span>
               <span>{routine.notes}</span>
             </div>
           )}
 
-          <div className="p-3 bg-[#0a0a0a] rounded-[10px] border border-[#262626] flex items-center justify-between text-[13px] text-[#a3a3a3]">
+          <div className="p-3 bg-[#F8F7FC] rounded-[14px] border border-[#ECEAF6] flex items-center justify-between text-[13px] font-medium text-[#6B7280]">
             <span>{t('routines.exercisesCount', { count: totalExercises })}</span>
             <span>{t('routines.estimatedDuration', { mins: estimatedDuration })}</span>
           </div>
 
-          <div className="divide-y divide-[#262626]">
+          <div className="divide-y divide-[#ECEAF6]">
             {routine.exercises && routine.exercises.length > 0 ? (
               routine.exercises.map((ex, idx) => {
                 const exName = getExerciseName(ex);
@@ -172,7 +172,7 @@ export const RoutineDetailModal: React.FC<RoutineDetailModalProps> = ({
                         exerciseName={exName}
                         fallbackMuscle={primaryMuscle}
                         size="md"
-                        className="rounded-[10px] border border-[#404040]"
+                        className="rounded-[12px] border border-[#ECEAF6]"
                       />
                     </button>
 
@@ -186,10 +186,10 @@ export const RoutineDetailModal: React.FC<RoutineDetailModalProps> = ({
                         })
                       }
                     >
-                      <div className="text-[14px] font-medium text-[#fafafa] group-hover:text-[#34d399] transition-colors truncate">
+                      <div className="text-[14px] font-semibold text-[#1E1B4B] group-hover:text-[#6D28D9] transition-colors truncate">
                         {targetSets} × {exName}
                       </div>
-                      <div className="text-[12px] text-[#a3a3a3] mt-0.5 flex items-center gap-2">
+                      <div className="text-[12px] text-[#6B7280] mt-0.5 flex items-center gap-2">
                         <span>{primaryMuscle}</span>
                         {ex.target_reps_min && (
                           <span>
@@ -222,7 +222,7 @@ export const RoutineDetailModal: React.FC<RoutineDetailModalProps> = ({
                 );
               })
             ) : (
-              <div className="text-center py-8 text-[13px] text-[#a3a3a3]">
+              <div className="text-center py-8 text-[13px] text-[#6B7280]">
                 {t('routines.emptyExercises')}
               </div>
             )}

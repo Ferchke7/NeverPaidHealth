@@ -229,7 +229,7 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
       >
         <div className="space-y-4">
           {error && (
-            <div className="p-3 bg-[#262626] border border-red-500/40 rounded-[10px] text-red-300 text-xs">
+            <div className="p-3 bg-[#FEF2F2] border border-[#FECACA] rounded-[12px] text-[#DC2626] text-xs font-medium">
               {error}
             </div>
           )}
@@ -255,7 +255,7 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
           {/* Exercises Section */}
           <div className="space-y-3 pt-2">
             <div className="flex items-center justify-between gap-2">
-              <span className="text-[12px] font-semibold uppercase tracking-wider text-[#a3a3a3]">
+              <span className="text-[12px] font-semibold uppercase tracking-wider text-[#6B7280]">
                 {t('routines.exercisesCount', { count: exercises.length })}
               </span>
               <Button
@@ -273,9 +273,9 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
             </div>
 
             {exercises.length === 0 ? (
-              <div className="text-center py-8 border border-[#404040] rounded-[14px] p-6 bg-[#0a0a0a]">
-                <p className="text-[14px] font-medium text-[#fafafa]">{t('routines.noExercisesAdded')}</p>
-                <p className="text-[13px] text-[#a3a3a3] mt-1 mb-4">
+              <div className="text-center py-8 border border-[#ECEAF6] rounded-[16px] p-6 bg-[#F8F7FC]">
+                <p className="text-[14px] font-semibold text-[#1E1B4B]">{t('routines.noExercisesAdded')}</p>
+                <p className="text-[13px] text-[#6B7280] mt-1 mb-4">
                   {t('routines.noExercisesDesc')}
                 </p>
                 <Button
@@ -296,7 +296,7 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
                 {exercises.map((item, idx) => (
                   <div
                     key={`${item.exercise_id}-${idx}`}
-                    className="bg-[#0a0a0a] border border-[#404040] p-3.5 rounded-[14px] space-y-3"
+                    className="bg-[#F8F7FC] border border-[#ECEAF6] p-3.5 rounded-[16px] space-y-3"
                   >
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2.5 min-w-0 flex-1">
@@ -307,10 +307,10 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
                         />
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-1.5">
-                            <span className="text-xs font-medium text-[#34d399] shrink-0">
+                            <span className="text-xs font-bold text-[#6D28D9] shrink-0">
                               #{idx + 1}
                             </span>
-                            <span className="text-[14px] font-medium text-[#fafafa] truncate">
+                            <span className="text-[14px] font-semibold text-[#1E1B4B] truncate">
                               {item.exercise_name}
                             </span>
                           </div>
@@ -324,7 +324,7 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
                             setReplacingIndex(idx);
                             setIsPickerOpen(true);
                           }}
-                          className="text-[#a3a3a3] hover:text-[#34d399] p-2 rounded-[8px] hover:bg-[#262626] transition-colors cursor-pointer"
+                          className="text-[#6B7280] hover:text-[#6D28D9] p-2 rounded-[8px] hover:bg-[#F0EFFE] transition-colors cursor-pointer"
                           title={t('routines.replaceExercise')}
                         >
                           <ArrowLeftRight className="w-3.5 h-3.5" />
@@ -333,7 +333,7 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
                           type="button"
                           disabled={idx === 0}
                           onClick={() => moveExercise(idx, 'up')}
-                          className="text-[#a3a3a3] hover:text-[#fafafa] disabled:opacity-30 p-2 rounded-[8px] hover:bg-[#262626] transition-colors cursor-pointer"
+                          className="text-[#6B7280] hover:text-[#1E1B4B] disabled:opacity-30 p-2 rounded-[8px] hover:bg-white transition-colors cursor-pointer"
                           title={t('routines.moveUp')}
                         >
                           <ChevronUp className="w-3.5 h-3.5" />
@@ -342,7 +342,7 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
                           type="button"
                           disabled={idx === exercises.length - 1}
                           onClick={() => moveExercise(idx, 'down')}
-                          className="text-[#a3a3a3] hover:text-[#fafafa] disabled:opacity-30 p-2 rounded-[8px] hover:bg-[#262626] transition-colors cursor-pointer"
+                          className="text-[#6B7280] hover:text-[#1E1B4B] disabled:opacity-30 p-2 rounded-[8px] hover:bg-white transition-colors cursor-pointer"
                           title={t('routines.moveDown')}
                         >
                           <ChevronDown className="w-3.5 h-3.5" />
@@ -350,7 +350,7 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
                         <button
                           type="button"
                           onClick={() => removeExercise(idx)}
-                          className="text-[#a3a3a3] hover:text-red-400 p-2 rounded-[8px] hover:bg-[#262626] transition-colors cursor-pointer"
+                          className="text-[#6B7280] hover:text-[#EF4444] p-2 rounded-[8px] hover:bg-[#FEF2F2] transition-colors cursor-pointer"
                           title={t('common.delete')}
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -358,9 +358,9 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-2 pt-2 border-t border-[#262626]">
+                    <div className="grid grid-cols-3 gap-2 pt-2 border-t border-[#ECEAF6]">
                       <div>
-                        <label className="text-[11px] font-medium text-[#a3a3a3] block mb-1">
+                        <label className="text-[11px] font-medium text-[#6B7280] block mb-1">
                           {t('routines.sets')}
                         </label>
                         <input
@@ -373,11 +373,11 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
                               target_sets: Math.max(1, parseInt(e.target.value) || 1),
                             })
                           }
-                          className="w-full h-10 bg-[#171717] border border-[#404040] rounded-[8px] px-2 text-center font-mono text-[14px] text-[#fafafa] focus:outline-none focus:border-[#34d399]"
+                          className="w-full h-10 bg-white border border-[#E2E0F0] rounded-[10px] px-2 text-center font-mono text-[14px] text-[#1E1B4B] focus:outline-none focus:border-[#6D28D9]"
                         />
                       </div>
                       <div>
-                        <label className="text-[11px] font-medium text-[#a3a3a3] block mb-1">
+                        <label className="text-[11px] font-medium text-[#6B7280] block mb-1">
                           {t('routines.minReps')}
                         </label>
                         <input
@@ -390,11 +390,11 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
                               target_reps_min: Math.max(1, parseInt(e.target.value) || 1),
                             })
                           }
-                          className="w-full h-10 bg-[#171717] border border-[#404040] rounded-[8px] px-2 text-center font-mono text-[14px] text-[#fafafa] focus:outline-none focus:border-[#34d399]"
+                          className="w-full h-10 bg-white border border-[#E2E0F0] rounded-[10px] px-2 text-center font-mono text-[14px] text-[#1E1B4B] focus:outline-none focus:border-[#6D28D9]"
                         />
                       </div>
                       <div>
-                        <label className="text-[11px] font-medium text-[#a3a3a3] block mb-1">
+                        <label className="text-[11px] font-medium text-[#6B7280] block mb-1">
                           {t('routines.maxReps')}
                         </label>
                         <input
@@ -407,7 +407,7 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
                               target_reps_max: Math.max(1, parseInt(e.target.value) || 1),
                             })
                           }
-                          className="w-full h-10 bg-[#171717] border border-[#404040] rounded-[8px] px-2 text-center font-mono text-[14px] text-[#fafafa] focus:outline-none focus:border-[#34d399]"
+                          className="w-full h-10 bg-white border border-[#E2E0F0] rounded-[10px] px-2 text-center font-mono text-[14px] text-[#1E1B4B] focus:outline-none focus:border-[#6D28D9]"
                         />
                       </div>
                     </div>

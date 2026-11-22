@@ -124,7 +124,7 @@ export const ExerciseProgressionChart: React.FC<ExerciseProgressionChartProps> =
           text: lbl.noData,
           left: 'center',
           top: 'center',
-          textStyle: { color: '#737373', fontSize: 12 },
+          textStyle: { color: '#6B7280', fontSize: 12 },
         },
       };
     }
@@ -151,15 +151,15 @@ export const ExerciseProgressionChart: React.FC<ExerciseProgressionChartProps> =
       animationDuration: 500,
       tooltip: {
         trigger: 'axis',
-        backgroundColor: '#171717',
-        borderColor: '#404040',
+        backgroundColor: '#FFFFFF',
+        borderColor: '#ECEAF6',
         borderWidth: 1,
-        borderRadius: 10,
+        borderRadius: 12,
         padding: [10, 12],
-        textStyle: { color: '#fafafa', fontSize: 12 },
+        textStyle: { color: '#1E1B4B', fontSize: 12 },
         axisPointer: {
           type: 'line',
-          lineStyle: { color: '#404040', width: 1, type: 'dashed' },
+          lineStyle: { color: '#DDD6FE', width: 1, type: 'dashed' },
         },
         formatter: (params: any) => {
           if (!Array.isArray(params) || params.length === 0) return '';
@@ -168,10 +168,10 @@ export const ExerciseProgressionChart: React.FC<ExerciseProgressionChartProps> =
           const curVal = item.value;
           return `
             <div style="min-width:130px;">
-              <div style="font-size:11px;color:#a3a3a3;margin-bottom:4px;">${formatDate(rawPoint.date)}</div>
+              <div style="font-size:11px;color:#6B7280;margin-bottom:4px;">${formatDate(rawPoint.date)}</div>
               <div style="display:flex;justify-content:space-between;gap:12px;">
-                <span style="font-size:12px;color:#a3a3a3;">${metricTitle}:</span>
-                <span style="font-size:13px;font-weight:700;color:#34d399;">${curVal} ${unitLabel}</span>
+                <span style="font-size:12px;color:#6B7280;">${metricTitle}:</span>
+                <span style="font-size:13px;font-weight:700;color:#6D28D9;">${curVal} ${unitLabel}</span>
               </div>
             </div>
           `;
@@ -188,10 +188,10 @@ export const ExerciseProgressionChart: React.FC<ExerciseProgressionChartProps> =
         type: 'category',
         data: dates,
         boundaryGap: false,
-        axisLine: { lineStyle: { color: '#262626' } },
+        axisLine: { lineStyle: { color: '#ECEAF6' } },
         axisTick: { show: false },
         axisLabel: {
-          color: '#737373',
+          color: '#6B7280',
           fontSize: 11,
           margin: 10,
         },
@@ -202,12 +202,12 @@ export const ExerciseProgressionChart: React.FC<ExerciseProgressionChartProps> =
         axisLine: { show: false },
         axisTick: { show: false },
         axisLabel: {
-          color: '#737373',
+          color: '#6B7280',
           fontSize: 11,
         },
         splitLine: {
           lineStyle: {
-            color: '#262626',
+            color: '#ECEAF6',
             type: 'solid',
           },
         },
@@ -217,24 +217,28 @@ export const ExerciseProgressionChart: React.FC<ExerciseProgressionChartProps> =
           name: metricTitle,
           type: 'line',
           data: values,
-          smooth: false,
+          smooth: 0.25,
           showSymbol: true,
           symbol: 'circle',
           symbolSize: 7,
           itemStyle: {
-            color: '#34d399',
+            color: '#6D28D9',
             borderWidth: 2,
-            borderColor: '#0a0a0a',
+            borderColor: '#FFFFFF',
           },
           lineStyle: {
-            width: 2.5,
-            color: '#34d399',
+            width: 3,
+            color: '#6D28D9',
+          },
+          areaStyle: {
+            color: 'rgba(109, 40, 217, 0.1)',
           },
           label: {
             show: true,
             position: 'top',
-            color: '#d4d4d4',
+            color: '#1E1B4B',
             fontSize: 11,
+            fontWeight: 600,
           },
         },
       ],
@@ -243,9 +247,9 @@ export const ExerciseProgressionChart: React.FC<ExerciseProgressionChartProps> =
 
   return (
     <div className={`space-y-4 ${className}`}>
-      {/* Metric & Time Range Controls matching Figma 06 */}
-      <div className="space-y-2.5">
-        <div className="flex flex-wrap items-center gap-1.5">
+      {/* Metric & Time Range Controls */}
+      <div className="flex flex-wrap items-center justify-between gap-2.5">
+        <div className="inline-flex flex-wrap items-center gap-1 bg-[#F4F3FA] p-1 rounded-[12px] border border-[#ECEAF6]">
           {(
             [
               { id: 'weight', label: lbl.weight },
@@ -257,10 +261,10 @@ export const ExerciseProgressionChart: React.FC<ExerciseProgressionChartProps> =
               key={mode.id}
               type="button"
               onClick={() => setMetricMode(mode.id)}
-              className={`min-h-[44px] px-3.5 rounded-[10px] text-xs font-semibold transition-colors cursor-pointer ${
+              className={`min-h-[38px] px-3.5 rounded-[9px] text-xs font-semibold transition-colors cursor-pointer ${
                 metricMode === mode.id
-                  ? 'bg-[#022c22] text-[#34d399] border border-[#064e3b]'
-                  : 'bg-transparent text-[#a3a3a3] hover:text-[#fafafa] border border-transparent'
+                  ? 'bg-white text-[#6D28D9] shadow-xs'
+                  : 'text-[#6B7280] hover:text-[#1E1B4B]'
               }`}
             >
               {mode.label}
@@ -268,16 +272,16 @@ export const ExerciseProgressionChart: React.FC<ExerciseProgressionChartProps> =
           ))}
         </div>
 
-        <div className="flex items-center gap-1.5">
+        <div className="inline-flex items-center gap-1 bg-[#F4F3FA] p-1 rounded-[12px] border border-[#ECEAF6]">
           {(['1m', '3m', 'all'] as TimeRange[]).map((r) => (
             <button
               key={r}
               type="button"
               onClick={() => setTimeRange(r)}
-              className={`min-h-[44px] px-3 rounded-[8px] text-xs font-semibold transition-colors cursor-pointer ${
+              className={`min-h-[38px] px-3 rounded-[9px] text-xs font-semibold transition-colors cursor-pointer ${
                 timeRange === r
-                  ? 'bg-[#022c22] text-[#34d399] border border-[#064e3b]'
-                  : 'bg-transparent text-[#a3a3a3] hover:text-[#fafafa] border border-transparent'
+                  ? 'bg-white text-[#6D28D9] shadow-xs'
+                  : 'text-[#6B7280] hover:text-[#1E1B4B]'
               }`}
             >
               {r === '1m' ? lbl.m1 : r === '3m' ? lbl.m3 : lbl.all}
@@ -294,29 +298,29 @@ export const ExerciseProgressionChart: React.FC<ExerciseProgressionChartProps> =
         />
       </div>
 
-      {/* Bottom 3 Metrics matching Figma 06 */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-3 border-t border-[#262626]">
+      {/* Bottom 3 Metrics */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-3 border-t border-[#ECEAF6]">
         <div>
-          <div className="text-xl sm:text-2xl font-bold tabular-nums text-[#fafafa]">
+          <div className="text-xl sm:text-2xl font-bold tabular-nums text-[#1E1B4B]">
             {stats.pr > 0 ? formatWeight(stats.pr, unitPref) : '—'}
           </div>
-          <div className="text-xs text-[#a3a3a3] mt-0.5">{lbl.currentPR}</div>
+          <div className="text-xs text-[#6B7280] mt-0.5">{lbl.currentPR}</div>
         </div>
         <div>
           <div
             className={`text-xl sm:text-2xl font-bold tabular-nums ${
-              stats.growthPct >= 0 ? 'text-[#34d399]' : 'text-rose-400'
+              stats.growthPct >= 0 ? 'text-[#10B981]' : 'text-[#EF4444]'
             }`}
           >
             {stats.growthPct >= 0 ? `+${stats.growthPct}%` : `${stats.growthPct}%`}
           </div>
-          <div className="text-xs text-[#a3a3a3] mt-0.5">{lbl.growth}</div>
+          <div className="text-xs text-[#6B7280] mt-0.5">{lbl.growth}</div>
         </div>
         <div>
-          <div className="text-xl sm:text-2xl font-bold tabular-nums text-[#fafafa]">
+          <div className="text-xl sm:text-2xl font-bold tabular-nums text-[#1E1B4B]">
             {stats.initial > 0 ? formatWeight(stats.initial, unitPref) : '—'}
           </div>
-          <div className="text-xs text-[#a3a3a3] mt-0.5">{lbl.startWeight}</div>
+          <div className="text-xs text-[#6B7280] mt-0.5">{lbl.startWeight}</div>
         </div>
       </div>
     </div>

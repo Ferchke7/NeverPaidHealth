@@ -29,14 +29,14 @@ export const TodoActivityLog: React.FC<TodoActivityLogProps> = ({
   return (
     <Card className="p-4 sm:p-5 space-y-3">
       {/* Header bar */}
-      <div className="flex items-center justify-between gap-2 flex-wrap border-b border-[#262626] pb-3">
-        <h2 className="text-[14px] font-semibold text-[#fafafa] flex items-center gap-2">
-          <History className="w-4 h-4 text-[#34d399]" />
+      <div className="flex items-center justify-between gap-2 flex-wrap border-b border-[#ECEAF6] pb-3">
+        <h2 className="text-[14px] font-bold text-[#1E1B4B] flex items-center gap-2">
+          <History className="w-4 h-4 text-[#6D28D9]" />
           <span>{t('todo.sessionsLog', { date: selectedDate })}</span>
         </h2>
-        <span className="text-[12px] text-[#a3a3a3] font-mono tabular-nums">
+        <span className="text-[12px] text-[#6B7280] font-mono tabular-nums">
           {t('todo.totalSummary') || 'Итого:'}{' '}
-          <strong className="text-[#34d399]">
+          <strong className="text-[#6D28D9]">
             {totalHours > 0 ? `${totalHours}${hUnit} ` : ''}
             {remMinutes}
             {mUnit}
@@ -46,7 +46,7 @@ export const TodoActivityLog: React.FC<TodoActivityLogProps> = ({
       </div>
 
       {logs.length === 0 ? (
-        <div className="p-6 text-center bg-[#0a0a0a] border border-dashed border-[#404040] rounded-[10px] text-[12px] text-[#a3a3a3] leading-relaxed">
+        <div className="p-6 text-center bg-[#F8F7FC] border border-dashed border-[#DDD6FE] rounded-[12px] text-[12px] text-[#6B7280] leading-relaxed">
           {t('todo.noActivity')}
         </div>
       ) : (
@@ -64,33 +64,33 @@ export const TodoActivityLog: React.FC<TodoActivityLogProps> = ({
             return (
               <div
                 key={log.id}
-                className="bg-[#0a0a0a] border border-[#262626] rounded-[10px] p-3 flex items-center justify-between gap-3"
+                className="bg-[#F8F7FC] border border-[#ECEAF6] rounded-[12px] p-3 flex items-center justify-between gap-3"
               >
                 <div className="flex items-center gap-3 min-w-0 flex-1">
-                  <div className="w-9 h-9 rounded-[10px] bg-[#022c22] border border-[#064e3b] flex items-center justify-center text-[#34d399] shrink-0">
+                  <div className="w-9 h-9 rounded-[10px] bg-[#ECFDF5] border border-[#A7F3D0] flex items-center justify-center text-[#10B981] shrink-0">
                     <CheckCircle2 className="w-4 h-4" />
                   </div>
 
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-semibold text-[#fafafa] text-[13px] truncate">
+                      <span className="font-bold text-[#1E1B4B] text-[13px] truncate">
                         {log.task_title}
                       </span>
-                      <span className="text-[11px] font-medium px-2 py-0.5 rounded-[6px] bg-[#171717] border border-[#404040] text-[#a3a3a3]">
+                      <span className="text-[11px] font-semibold px-2 py-0.5 rounded-[6px] bg-white border border-[#ECEAF6] text-[#6B7280]">
                         {getCategoryLabel(log.category)}
                       </span>
                     </div>
 
-                    <div className="text-[12px] text-[#a3a3a3] flex items-center gap-2 mt-0.5 flex-wrap">
-                      <span className="font-mono tabular-nums text-[#fafafa]">
+                    <div className="text-[12px] text-[#6B7280] flex items-center gap-2 mt-0.5 flex-wrap">
+                      <span className="font-mono tabular-nums text-[#1E1B4B] font-medium">
                         {startTime} — {endTime}
                       </span>
-                      <span className="text-[#404040]">·</span>
+                      <span className="text-[#CBD5E1]">·</span>
                       <span className="capitalize">{log.session_type}</span>
                       {log.notes && (
                         <>
-                          <span className="text-[#404040]">·</span>
-                          <span className="text-[#737373] truncate max-w-[200px]">
+                          <span className="text-[#CBD5E1]">·</span>
+                          <span className="text-[#6B7280] truncate max-w-[200px]">
                             {log.notes}
                           </span>
                         </>
@@ -100,14 +100,14 @@ export const TodoActivityLog: React.FC<TodoActivityLogProps> = ({
                 </div>
 
                 <div className="flex items-center gap-2 shrink-0">
-                  <div className="text-[13px] font-semibold text-[#34d399] font-mono tabular-nums">
+                  <div className="text-[13px] font-bold text-[#6D28D9] font-mono tabular-nums">
                     +{log.duration_minutes} {t('common.minutes') || 'мин'}
                   </div>
 
                   <button
                     type="button"
                     onClick={() => onDeleteLog(log.id)}
-                    className="min-h-[44px] min-w-[44px] rounded-[10px] bg-[#171717] hover:bg-red-950/30 border border-[#404040] hover:border-red-500/40 text-[#a3a3a3] hover:text-red-400 flex items-center justify-center transition-colors cursor-pointer"
+                    className="min-h-[40px] min-w-[40px] rounded-[10px] bg-white hover:bg-[#FEF2F2] border border-[#ECEAF6] hover:border-[#FECACA] text-[#6B7280] hover:text-[#EF4444] flex items-center justify-center transition-colors cursor-pointer"
                     title={t('common.delete') || 'Удалить'}
                     aria-label={t('common.delete') || 'Удалить'}
                   >

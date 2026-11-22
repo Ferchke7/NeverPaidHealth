@@ -454,15 +454,15 @@ export const TodoCalendarPage: React.FC = () => {
     <div className="space-y-5 max-w-6xl mx-auto pb-16">
       {/* Action Error Banner */}
       {actionError && (
-        <div className="flex items-center justify-between p-3.5 bg-red-950/30 border border-red-500/40 rounded-[10px] text-red-300 text-[13px]">
+        <div className="flex items-center justify-between p-3.5 bg-[#FEF2F2] border border-[#FECACA] rounded-[12px] text-[#DC2626] text-[13px]">
           <div className="flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 shrink-0 text-red-400" />
+            <AlertCircle className="w-4 h-4 shrink-0 text-[#DC2626]" />
             <span className="font-medium">{actionError}</span>
           </div>
           <button
             type="button"
             onClick={() => setActionError(null)}
-            className="min-h-[44px] min-w-[44px] rounded-[10px] hover:bg-[#262626] flex items-center justify-center text-red-300 hover:text-[#fafafa] cursor-pointer"
+            className="min-h-[44px] min-w-[44px] rounded-[10px] hover:bg-[#FEF2F2] flex items-center justify-center text-[#DC2626] cursor-pointer"
             aria-label={t('common.close')}
           >
             <X className="w-4 h-4" />
@@ -470,20 +470,20 @@ export const TodoCalendarPage: React.FC = () => {
         </div>
       )}
 
-      {/* 1. Top Plan Header + Week Strip */}
-      <Card className="p-4 sm:p-5 space-y-4">
+      {/* 1. Royal Violet Plan Hero + Week Strip */}
+      <div className="royal-hero-gradient rounded-[24px] p-5 sm:p-6 text-white royal-card-shadow space-y-4">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
           <div className="flex items-start gap-3">
-            <div className="w-10 h-10 rounded-[10px] bg-[#022c22] border border-[#064e3b] flex items-center justify-center text-[#34d399] shrink-0">
+            <div className="w-10 h-10 rounded-[12px] bg-white/15 border border-white/25 flex items-center justify-center text-white shrink-0">
               <ListTodo className="w-5 h-5" />
             </div>
             <div>
-              <h1 className="text-[22px] sm:text-[26px] font-semibold tracking-[-0.02em] text-[#fafafa] leading-tight">
+              <h1 className="text-[22px] sm:text-[26px] font-extrabold tracking-[-0.02em] text-white leading-tight">
                 {t('todo.planTitle')}
               </h1>
-              <p className="text-[13px] text-[#a3a3a3] mt-0.5">
+              <p className="text-[13px] text-white/80 mt-0.5">
                 {t('todo.subtitle')} ·{' '}
-                <span className="text-[#fafafa] font-medium">
+                <span className="text-white font-semibold">
                   {isSelectedToday ? t('todo.today') : formattedDate}
                 </span>
               </p>
@@ -491,11 +491,11 @@ export const TodoCalendarPage: React.FC = () => {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <div className="flex items-center gap-1 bg-[#0a0a0a] border border-[#404040] rounded-[10px] p-1">
+            <div className="flex items-center gap-1 bg-white/15 border border-white/25 rounded-[12px] p-1">
               <button
                 type="button"
                 onClick={() => handleShiftDate(-1)}
-                className="min-h-[44px] px-2.5 rounded-[8px] hover:bg-[#262626] text-[#a3a3a3] hover:text-[#fafafa] flex items-center gap-1 text-[12px] font-medium transition-colors cursor-pointer"
+                className="min-h-[38px] px-2.5 rounded-[9px] hover:bg-white/20 text-white/85 hover:text-white flex items-center gap-1 text-[12px] font-semibold transition-colors cursor-pointer"
                 aria-label={t('todo.prevDay')}
               >
                 <ChevronLeft className="w-4 h-4" />
@@ -505,10 +505,10 @@ export const TodoCalendarPage: React.FC = () => {
               <button
                 type="button"
                 onClick={handleSetToday}
-                className={`min-h-[44px] px-3 rounded-[8px] text-[12px] font-semibold transition-colors cursor-pointer ${
+                className={`min-h-[38px] px-3 rounded-[9px] text-[12px] font-bold transition-colors cursor-pointer ${
                   isSelectedToday
-                    ? 'bg-[#022c22] text-[#34d399] border border-[#064e3b]'
-                    : 'text-[#fafafa] hover:bg-[#262626]'
+                    ? 'bg-white text-[#3B0CA3] shadow-xs'
+                    : 'text-white hover:bg-white/20'
                 }`}
               >
                 {t('todo.today')}
@@ -517,7 +517,7 @@ export const TodoCalendarPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => handleShiftDate(1)}
-                className="min-h-[44px] px-2.5 rounded-[8px] hover:bg-[#262626] text-[#a3a3a3] hover:text-[#fafafa] flex items-center gap-1 text-[12px] font-medium transition-colors cursor-pointer"
+                className="min-h-[38px] px-2.5 rounded-[9px] hover:bg-white/20 text-white/85 hover:text-white flex items-center gap-1 text-[12px] font-semibold transition-colors cursor-pointer"
                 aria-label={t('todo.nextDay')}
               >
                 <span className="hidden sm:inline">{t('todo.nextDay')}</span>
@@ -525,55 +525,54 @@ export const TodoCalendarPage: React.FC = () => {
               </button>
             </div>
 
-            <label className="relative flex items-center bg-[#0a0a0a] border border-[#404040] rounded-[10px] px-3 min-h-[44px] text-[12px] text-[#fafafa] font-mono tabular-nums cursor-pointer">
-              <Calendar className="w-4 h-4 text-[#34d399] mr-2 shrink-0" />
+            <label className="relative flex items-center bg-white/15 border border-white/25 rounded-[12px] px-3 min-h-[42px] text-[12px] text-white font-mono tabular-nums cursor-pointer">
+              <Calendar className="w-4 h-4 text-[#C4B5FD] mr-2 shrink-0" />
               <input
                 type="date"
                 value={selectedDate}
                 onChange={(e) => e.target.value && setSelectedDate(e.target.value)}
-                className="min-h-[44px] bg-transparent text-[#fafafa] focus:outline-none cursor-pointer"
+                className="min-h-[38px] bg-transparent text-white focus:outline-none cursor-pointer"
                 aria-label={t('todo.calendar')}
               />
             </label>
 
-            <Button
-              variant="primary"
-              size="md"
+            <button
+              type="button"
               onClick={() => setIsCreateModalOpen(true)}
-              className="gap-1.5 font-semibold"
+              className="min-h-[42px] px-4 rounded-[12px] bg-white text-[#3B0CA3] hover:bg-[#F5F3FF] text-[13px] font-bold inline-flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer"
             >
               <Plus className="w-4 h-4" />
               <span>{t('todo.add')}</span>
-            </Button>
+            </button>
           </div>
         </div>
 
         {/* Mon-Sun Week Strip */}
-        <div className="grid grid-cols-7 gap-1.5 pt-3 border-t border-[#262626]">
+        <div className="grid grid-cols-7 gap-1.5 pt-3 border-t border-white/15">
           {weekDays.map((day) => (
             <button
               key={day.key}
               type="button"
               onClick={() => setSelectedDate(day.key)}
-              className={`min-h-[54px] rounded-[10px] border flex flex-col items-center justify-center gap-0.5 transition-colors cursor-pointer ${
+              className={`min-h-[54px] rounded-[12px] border flex flex-col items-center justify-center gap-0.5 transition-all cursor-pointer ${
                 day.isSelected
-                  ? 'bg-[#022c22] border-[#064e3b] text-[#34d399]'
-                  : 'bg-[#0a0a0a] border-[#262626] text-[#a3a3a3] hover:border-[#404040] hover:text-[#fafafa]'
+                  ? 'bg-white border-white text-[#3B0CA3] shadow-sm'
+                  : 'bg-white/10 border-white/20 text-white/85 hover:bg-white/20'
               }`}
             >
-              <span className="text-[11px] uppercase font-medium tracking-wide">
+              <span className="text-[11px] uppercase font-bold tracking-wide">
                 {day.weekday}
               </span>
-              <span className="text-[15px] font-semibold font-mono tabular-nums flex items-center gap-1">
+              <span className="text-[15px] font-extrabold font-mono tabular-nums flex items-center gap-1">
                 {day.dayNum}
                 {day.isToday && !day.isSelected && (
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#34d399]" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#6EE7B7]" />
                 )}
               </span>
             </button>
           ))}
         </div>
-      </Card>
+      </div>
 
       {/* 2. Two-Column Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-[1.25fr_0.95fr] gap-4 items-start">
@@ -587,12 +586,12 @@ export const TodoCalendarPage: React.FC = () => {
           />
 
           <Card className="p-4 sm:p-5 space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 border-b border-[#262626] pb-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 border-b border-[#ECEAF6] pb-3">
               <div>
-                <h2 className="text-[16px] font-semibold text-[#fafafa]">
+                <h2 className="text-[16px] font-bold text-[#1E1B4B]">
                   {t('todo.stepsTitle')}
                 </h2>
-                <p className="text-[12px] text-[#a3a3a3] mt-0.5">
+                <p className="text-[12px] text-[#6B7280] mt-0.5">
                   {t('todo.completedOf', { completed: completedTasks, total: totalTasks })}
                 </p>
               </div>
@@ -603,14 +602,14 @@ export const TodoCalendarPage: React.FC = () => {
                     key={tab.id}
                     type="button"
                     onClick={() => setTaskFilter(tab.id)}
-                    className={`min-h-[44px] px-3 rounded-[10px] text-[12px] font-medium border flex items-center gap-1.5 transition-colors cursor-pointer ${
+                    className={`min-h-[40px] px-3 rounded-[10px] text-[12px] font-semibold border flex items-center gap-1.5 transition-colors cursor-pointer ${
                       taskFilter === tab.id
-                        ? 'bg-[#022c22] border-[#064e3b] text-[#34d399]'
-                        : 'bg-[#0a0a0a] border-[#404040] text-[#a3a3a3] hover:text-[#fafafa]'
+                        ? 'bg-[#6D28D9] border-[#6D28D9] text-white'
+                        : 'bg-[#F8F7FC] border-[#ECEAF6] text-[#6B7280] hover:text-[#1E1B4B]'
                     }`}
                   >
                     <span>{tab.label}</span>
-                    <span className="font-mono tabular-nums text-[11px] opacity-80">
+                    <span className="font-mono tabular-nums text-[11px] opacity-85">
                       {tab.badge}
                     </span>
                   </button>
@@ -627,14 +626,14 @@ export const TodoCalendarPage: React.FC = () => {
                 <Skeleton className="h-20 w-full" variant="rounded" />
               </div>
             ) : todos.length === 0 ? (
-              <div className="p-8 text-center bg-[#0a0a0a] border border-dashed border-[#404040] rounded-[10px] space-y-3">
-                <div className="w-11 h-11 rounded-[10px] bg-[#171717] border border-[#262626] flex items-center justify-center mx-auto text-[#737373]">
+              <div className="p-8 text-center bg-[#F8F7FC] border border-dashed border-[#DDD6FE] rounded-[14px] space-y-3">
+                <div className="w-11 h-11 rounded-[12px] bg-[#F0EFFE] border border-[#DDD6FE] flex items-center justify-center mx-auto text-[#6D28D9]">
                   <ListTodo className="w-5 h-5" />
                 </div>
-                <h3 className="text-[14px] font-semibold text-[#fafafa]">
+                <h3 className="text-[14px] font-bold text-[#1E1B4B]">
                   {t('todo.noTasks', { date: formattedDate })}
                 </h3>
-                <p className="text-[12px] text-[#a3a3a3] max-w-md mx-auto">
+                <p className="text-[12px] text-[#6B7280] max-w-md mx-auto">
                   {t('todo.noTasksDesc')}
                 </p>
                 <div className="pt-1">
@@ -650,7 +649,7 @@ export const TodoCalendarPage: React.FC = () => {
                 </div>
               </div>
             ) : filteredTodos.length === 0 ? (
-              <div className="p-6 text-center bg-[#0a0a0a] border border-[#262626] rounded-[10px] text-[12px] text-[#a3a3a3]">
+              <div className="p-6 text-center bg-[#F8F7FC] border border-[#ECEAF6] rounded-[14px] text-[12px] text-[#6B7280]">
                 {t('todo.noFilteredTasks', { filter: taskFilter })}
               </div>
             ) : (
@@ -692,16 +691,16 @@ export const TodoCalendarPage: React.FC = () => {
             <button
               type="button"
               onClick={() => setIsActivityLogOpen((prev) => !prev)}
-              className="w-full min-h-[48px] flex items-center justify-between px-4 py-2.5 rounded-[14px] bg-[#171717] border border-[#404040] hover:border-[#34d399]/60 text-[13px] text-[#fafafa] transition-colors cursor-pointer"
+              className="w-full min-h-[48px] flex items-center justify-between px-4 py-2.5 rounded-[16px] bg-white border border-[#ECEAF6] hover:border-[#C4B5FD] royal-card-shadow text-[13px] text-[#1E1B4B] transition-all cursor-pointer"
             >
-              <div className="flex items-center gap-2 font-medium">
-                <History className="w-4 h-4 text-[#34d399]" />
+              <div className="flex items-center gap-2 font-semibold">
+                <History className="w-4 h-4 text-[#6D28D9]" />
                 <span>{t('todo.activityLogToggle')}</span>
-                <span className="px-2 py-0.5 rounded-full text-[11px] font-mono tabular-nums bg-[#022c22] text-[#34d399] border border-[#064e3b]">
+                <span className="px-2 py-0.5 rounded-full text-[11px] font-mono tabular-nums bg-[#F0EFFE] text-[#6D28D9] border border-[#DDD6FE]">
                   {t('todo.activityLogEntries', { count: activityLogs.length })}
                 </span>
               </div>
-              <div className="flex items-center gap-1.5 text-[#a3a3a3] text-[12px]">
+              <div className="flex items-center gap-1.5 text-[#6B7280] text-[12px]">
                 <span>
                   {isActivityLogOpen ? t('todo.hideActivityLog') : t('todo.showActivityLog')}
                 </span>
@@ -727,16 +726,16 @@ export const TodoCalendarPage: React.FC = () => {
         <div className="min-w-0 space-y-4">
           {/* Inline Focus Timer Card */}
           <Card className="p-4 sm:p-5 space-y-4">
-            <div className="flex items-start justify-between gap-2 border-b border-[#262626] pb-3">
+            <div className="flex items-start justify-between gap-2 border-b border-[#ECEAF6] pb-3">
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-[10px] bg-[#022c22] border border-[#064e3b] flex items-center justify-center text-[#34d399] shrink-0">
+                <div className="w-9 h-9 rounded-[12px] bg-[#F0EFFE] border border-[#DDD6FE] flex items-center justify-center text-[#6D28D9] shrink-0">
                   <Flame className="w-4 h-4" />
                 </div>
                 <div>
-                  <h2 className="text-[15px] font-semibold text-[#fafafa]">
+                  <h2 className="text-[15px] font-bold text-[#1E1B4B]">
                     {t('todo.focusTitle')}
                   </h2>
-                  <p className="text-[12px] text-[#a3a3a3]">{t('todo.focusSubtitle')}</p>
+                  <p className="text-[12px] text-[#6B7280]">{t('todo.focusSubtitle')}</p>
                 </div>
               </div>
 
@@ -744,7 +743,7 @@ export const TodoCalendarPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={openTimerModal}
-                  className="min-h-[44px] min-w-[44px] rounded-[10px] bg-[#0a0a0a] hover:bg-[#262626] border border-[#404040] text-[#a3a3a3] hover:text-[#fafafa] flex items-center justify-center transition-colors cursor-pointer"
+                  className="min-h-[40px] min-w-[40px] rounded-[10px] bg-[#F8F7FC] hover:bg-[#F0EFFE] border border-[#ECEAF6] text-[#6B7280] hover:text-[#6D28D9] flex items-center justify-center transition-colors cursor-pointer"
                   title={t('focusTimer.title')}
                   aria-label={t('focusTimer.title')}
                 >
@@ -769,10 +768,10 @@ export const TodoCalendarPage: React.FC = () => {
                     if (isTimerActive) setTimerMode(m.id);
                     else setIdleMode(m.id);
                   }}
-                  className={`min-h-[44px] px-1.5 rounded-[10px] text-[11px] sm:text-[12px] font-medium border transition-colors cursor-pointer truncate ${
+                  className={`min-h-[40px] px-1.5 rounded-[10px] text-[11px] sm:text-[12px] font-semibold border transition-colors cursor-pointer truncate ${
                     currentMode === m.id
-                      ? 'bg-[#022c22] border-[#064e3b] text-[#34d399]'
-                      : 'bg-[#0a0a0a] border-[#404040] text-[#a3a3a3] hover:text-[#fafafa]'
+                      ? 'bg-[#6D28D9] border-[#6D28D9] text-white'
+                      : 'bg-[#F8F7FC] border-[#ECEAF6] text-[#6B7280] hover:text-[#1E1B4B]'
                   }`}
                 >
                   {m.label}
@@ -781,23 +780,23 @@ export const TodoCalendarPage: React.FC = () => {
             </div>
 
             {/* Clock Well */}
-            <div className="p-4 sm:p-5 rounded-[10px] bg-[#0a0a0a] border border-[#262626] text-center space-y-2.5">
+            <div className="p-4 sm:p-5 rounded-[16px] bg-[#F8F7FC] border border-[#ECEAF6] text-center space-y-2.5">
               <div className="flex items-center justify-between gap-2 text-[12px]">
-                <span className="px-2.5 py-1 rounded-[6px] bg-[#022c22] border border-[#064e3b] text-[#34d399] font-medium">
+                <span className="px-2.5 py-1 rounded-[8px] bg-[#F0EFFE] border border-[#DDD6FE] text-[#6D28D9] font-semibold">
                   {pomodoroPhase === 'work' ? t('todo.focusWork') : t('todo.focusBreak')}
                 </span>
-                <span className="text-[#a3a3a3] truncate max-w-[180px]">
+                <span className="text-[#6B7280] truncate max-w-[180px] font-medium">
                   {isTimerActive ? timerTaskTitle || t('focusTimer.session') : t('todo.freeSession')}
                 </span>
               </div>
 
-              <div className="text-[46px] sm:text-[52px] font-semibold font-mono tabular-nums tracking-tight text-[#fafafa] leading-none py-1">
+              <div className="text-[46px] sm:text-[52px] font-extrabold font-mono tabular-nums tracking-tight text-[#1E1B4B] leading-none py-1">
                 {activeTimerDisplay}
               </div>
 
-              <div className="text-[12px] font-mono tabular-nums text-[#737373]">
+              <div className="text-[12px] font-mono tabular-nums text-[#6B7280]">
                 {t('todo.accumulated')}{' '}
-                <span className="text-[#fafafa]">
+                <span className="text-[#6D28D9] font-bold">
                   {Math.floor(secondsElapsedTotal / 60)} / {targetTotalMinutes} {t('todo.minuteShort')}
                 </span>
               </div>
@@ -808,7 +807,7 @@ export const TodoCalendarPage: React.FC = () => {
               <button
                 type="button"
                 onClick={handleInlineStartPause}
-                className="col-span-2 min-h-[44px] px-3 rounded-[10px] bg-[#34d399] hover:bg-[#10b981] text-[#0a0a0a] font-semibold text-[13px] flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                className="col-span-2 min-h-[44px] px-3 rounded-[12px] violet-btn-gradient text-white font-bold text-[13px] flex items-center justify-center gap-1.5 shadow-sm transition-opacity hover:opacity-95 cursor-pointer"
               >
                 {isTimerActive && isTimerRunning ? (
                   <>
@@ -827,9 +826,9 @@ export const TodoCalendarPage: React.FC = () => {
                 type="button"
                 onClick={resetCurrentPhase}
                 disabled={!isTimerActive}
-                className="min-h-[44px] px-3 rounded-[10px] bg-[#0a0a0a] hover:bg-[#262626] border border-[#404040] text-[#fafafa] text-[12px] font-medium flex items-center justify-center gap-1.5 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                className="min-h-[42px] px-3 rounded-[10px] bg-[#F8F7FC] hover:bg-[#F0EFFE] border border-[#ECEAF6] text-[#1E1B4B] text-[12px] font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                <RotateCcw className="w-3.5 h-3.5 text-[#a3a3a3]" />
+                <RotateCcw className="w-3.5 h-3.5 text-[#6B7280]" />
                 <span>{t('focusTimer.reset')}</span>
               </button>
 
@@ -837,7 +836,7 @@ export const TodoCalendarPage: React.FC = () => {
                 type="button"
                 onClick={handleInlineFinish}
                 disabled={!isTimerActive || isLoggingFocus}
-                className="min-h-[44px] px-3 rounded-[10px] bg-[#022c22] hover:bg-[#064e3b] border border-[#064e3b] text-[#34d399] text-[12px] font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                className="min-h-[42px] px-3 rounded-[10px] bg-[#ECFDF5] hover:bg-[#D1FAE5] border border-[#A7F3D0] text-[#059669] text-[12px] font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 <CheckCircle2 className="w-3.5 h-3.5" />
                 <span>{t('todo.finishSession')}</span>
@@ -847,21 +846,21 @@ export const TodoCalendarPage: React.FC = () => {
             <button
               type="button"
               onClick={toggleSound}
-              className="w-full min-h-[44px] px-3 rounded-[10px] bg-[#0a0a0a] hover:bg-[#262626] border border-[#404040] text-[#a3a3a3] hover:text-[#fafafa] text-[12px] font-medium flex items-center justify-between transition-colors cursor-pointer"
+              className="w-full min-h-[42px] px-3 rounded-[10px] bg-[#F8F7FC] hover:bg-[#F0EFFE] border border-[#ECEAF6] text-[#6B7280] hover:text-[#1E1B4B] text-[12px] font-medium flex items-center justify-between transition-colors cursor-pointer"
             >
               <span className="flex items-center gap-2">
                 {soundOn ? (
-                  <Volume2 className="w-4 h-4 text-[#34d399]" />
+                  <Volume2 className="w-4 h-4 text-[#6D28D9]" />
                 ) : (
-                  <VolumeX className="w-4 h-4 text-[#737373]" />
+                  <VolumeX className="w-4 h-4 text-[#94A3B8]" />
                 )}
                 <span>{soundOn ? t('todo.soundOn') : t('todo.soundOff')}</span>
               </span>
               <span
-                className={`text-[11px] font-mono px-2 py-0.5 rounded-[6px] border ${
+                className={`text-[11px] font-mono px-2 py-0.5 rounded-[6px] border font-semibold ${
                   soundOn
-                    ? 'bg-[#022c22] border-[#064e3b] text-[#34d399]'
-                    : 'bg-[#171717] border-[#404040] text-[#737373]'
+                    ? 'bg-[#F0EFFE] border-[#DDD6FE] text-[#6D28D9]'
+                    : 'bg-white border-[#ECEAF6] text-[#94A3B8]'
                 }`}
               >
                 {soundOn ? 'ON' : 'OFF'}
@@ -872,10 +871,10 @@ export const TodoCalendarPage: React.FC = () => {
           {/* Inline Task Edit Card */}
           <div ref={inlineEditRef}>
             <Card className="p-4 sm:p-5 space-y-4">
-              <div className="flex items-center justify-between gap-2 border-b border-[#262626] pb-3">
+              <div className="flex items-center justify-between gap-2 border-b border-[#ECEAF6] pb-3">
                 <div className="flex items-center gap-2">
-                  <Pencil className="w-4 h-4 text-[#34d399]" />
-                  <h2 className="text-[15px] font-semibold text-[#fafafa]">
+                  <Pencil className="w-4 h-4 text-[#6D28D9]" />
+                  <h2 className="text-[15px] font-bold text-[#1E1B4B]">
                     {t('todo.inlineEditTitle')}
                   </h2>
                 </div>
@@ -884,7 +883,7 @@ export const TodoCalendarPage: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setEditingTodo(null)}
-                    className="min-h-[44px] min-w-[44px] rounded-[10px] hover:bg-[#262626] flex items-center justify-center text-[#a3a3a3] hover:text-[#fafafa] cursor-pointer"
+                    className="min-h-[40px] min-w-[40px] rounded-[10px] hover:bg-[#F4F3FA] flex items-center justify-center text-[#6B7280] hover:text-[#1E1B4B] cursor-pointer"
                     aria-label={t('common.close')}
                   >
                     <X className="w-4 h-4" />
@@ -894,7 +893,7 @@ export const TodoCalendarPage: React.FC = () => {
 
               {!editingTodo ? (
                 <div className="space-y-3">
-                  <p className="text-[12px] text-[#a3a3a3] leading-relaxed">
+                  <p className="text-[12px] text-[#6B7280] leading-relaxed">
                     {t('todo.inlineEditEmpty')}
                   </p>
                   <Button
@@ -917,7 +916,7 @@ export const TodoCalendarPage: React.FC = () => {
                   />
 
                   <div className="space-y-1.5">
-                    <label className="block text-[12px] font-medium text-[#a3a3a3]">
+                    <label className="block text-[12px] font-semibold text-[#6B7280]">
                       {t('todo.categoryLabel')}
                     </label>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
@@ -926,10 +925,10 @@ export const TodoCalendarPage: React.FC = () => {
                           key={catId}
                           type="button"
                           onClick={() => setEditCategory(catId)}
-                          className={`min-h-[44px] px-2.5 rounded-[10px] text-[12px] font-medium border truncate transition-colors cursor-pointer ${
+                          className={`min-h-[40px] px-2.5 rounded-[10px] text-[12px] font-semibold border truncate transition-colors cursor-pointer ${
                             editCategory === catId
-                              ? 'bg-[#022c22] border-[#064e3b] text-[#34d399]'
-                              : 'bg-[#0a0a0a] border-[#404040] text-[#a3a3a3] hover:text-[#fafafa]'
+                              ? 'bg-[#6D28D9] border-[#6D28D9] text-white'
+                              : 'bg-[#F8F7FC] border-[#ECEAF6] text-[#6B7280] hover:text-[#1E1B4B]'
                           }`}
                         >
                           {t(`todo.cat.${catId}` as Parameters<typeof t>[0])}

@@ -28,15 +28,15 @@ export const Card: React.FC<CardProps> = ({
   };
 
   const surfaceStyles: Record<NonNullable<CardProps['variant']>, string> = {
-    default: 'bg-[#171717] border border-[#404040] rounded-[14px] shadow-none',
-    flat: 'bg-[#171717] border border-[#262626] rounded-[14px] shadow-none',
-    bordered: 'bg-[#0a0a0a] border border-[#404040] rounded-[14px] shadow-none',
-    glow: 'bg-[#171717] border border-[#34d399]/40 rounded-[14px] shadow-none',
+    default: 'bg-[#FFFFFF] border border-[#ECEAF6] rounded-[22px] shadow-[0_10px_28px_rgba(27,5,82,0.06)]',
+    flat: 'bg-[#F8F7FC] border border-[#ECEAF6] rounded-[20px] shadow-none',
+    bordered: 'bg-[#FFFFFF] border border-[#E4E0F5] rounded-[20px] shadow-none',
+    glow: 'bg-[#FFFFFF] border border-[#C4B5FD] rounded-[22px] shadow-[0_12px_30px_rgba(124,58,237,0.12)]',
   };
 
   const extraStyles = [
     surfaceStyles[variant],
-    isHoverable ? 'hover:border-[#525252] transition-colors cursor-pointer' : '',
+    isHoverable ? 'hover:border-[#C4B5FD] hover:shadow-[0_14px_32px_rgba(27,5,82,0.09)] transition-all cursor-pointer' : '',
     className,
   ]
     .filter(Boolean)
@@ -55,7 +55,7 @@ export const CardHeader: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({
   ...props
 }) => (
   <HeroCard.Header
-    className={`flex-row items-center justify-between pb-3 border-b border-[#262626] gap-2 ${className}`}
+    className={`flex-row items-center justify-between pb-3 border-b border-[#ECEAF6] gap-2 ${className}`}
     {...props}
   >
     {children}
@@ -67,7 +67,7 @@ export const CardTitle: React.FC<React.HTMLAttributes<HTMLHeadingElement>> = ({
   children,
   ...props
 }) => (
-  <HeroCard.Title className={`font-semibold text-[#fafafa] flex items-center gap-2 ${className}`} {...props}>
+  <HeroCard.Title className={`font-bold text-[#130F26] flex items-center gap-2 ${className}`} {...props}>
     {children}
   </HeroCard.Title>
 );
@@ -77,7 +77,7 @@ export const CardDescription: React.FC<React.HTMLAttributes<HTMLParagraphElement
   children,
   ...props
 }) => (
-  <HeroCard.Description className={`text-[13px] text-[#a3a3a3] mt-0.5 ${className}`} {...props}>
+  <HeroCard.Description className={`text-[13px] text-[#5A5575] mt-0.5 ${className}`} {...props}>
     {children}
   </HeroCard.Description>
 );
@@ -98,7 +98,7 @@ export const CardFooter: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({
   ...props
 }) => (
   <HeroCard.Footer
-    className={`justify-between pt-3 border-t border-[#262626] gap-2 ${className}`}
+    className={`justify-between pt-3 border-t border-[#ECEAF6] gap-2 ${className}`}
     {...props}
   >
     {children}
@@ -123,7 +123,7 @@ export const Badge: React.FC<BadgeProps> = ({
   > = {
     brand: 'accent',
     neutral: 'default',
-    accent: 'warning',
+    accent: 'accent',
     warning: 'warning',
     danger: 'danger',
     success: 'success',
@@ -131,13 +131,13 @@ export const Badge: React.FC<BadgeProps> = ({
   };
 
   const badgeStyles: Record<NonNullable<BadgeProps['variant']>, string> = {
-    brand: 'bg-[#022c22] text-[#34d399] border border-[#34d399]/20',
-    neutral: 'bg-[#262626] text-[#a3a3a3] border border-[#404040]',
-    accent: 'bg-[#022c22] text-[#34d399] border border-[#34d399]/20',
-    warning: 'bg-[#262626] text-amber-300 border border-[#404040]',
-    danger: 'bg-[#262626] text-red-400 border border-[#404040]',
-    success: 'bg-[#022c22] text-[#34d399] border border-[#34d399]/20',
-    info: 'bg-[#022c22] text-[#34d399] border border-[#34d399]/20',
+    brand: 'bg-[#EDE9FE] text-[#6D28D9] border border-[#DDD6FE]',
+    neutral: 'bg-[#F4F3FA] text-[#5A5575] border border-[#ECEAF6]',
+    accent: 'bg-[#EDE9FE] text-[#7C3AED] border border-[#DDD6FE]',
+    warning: 'bg-[#FEF3C7] text-[#B45309] border border-[#FDE68A]',
+    danger: 'bg-[#FFF1F2] text-[#E11D48] border border-[#FECDD3]',
+    success: 'bg-[#DCFCE7] text-[#15803D] border border-[#A7F3D0]',
+    info: 'bg-[#E0F2FE] text-[#0284C7] border border-[#BAE6FD]',
   };
 
   return (
@@ -146,7 +146,7 @@ export const Badge: React.FC<BadgeProps> = ({
       variant="soft"
       color={colorMap[variant]}
       size={size}
-      className={`font-medium whitespace-nowrap rounded-[8px] ${badgeStyles[variant]} ${className}`}
+      className={`font-semibold whitespace-nowrap rounded-[10px] ${badgeStyles[variant]} ${className}`}
     >
       <HeroChip.Label>{children}</HeroChip.Label>
     </HeroChip.Root>
@@ -192,15 +192,19 @@ export const Chip: React.FC<ChipProps> = ({
   };
 
   const chipColorClass =
-    color === 'primary' || color === 'success' || color === 'secondary'
+    color === 'primary' || color === 'secondary'
       ? variant === 'solid'
-        ? 'bg-[#34d399] text-[#0a0a0a] border border-transparent'
-        : 'bg-[#022c22] text-[#34d399] border border-[#34d399]/20'
-      : color === 'danger'
-        ? 'bg-[#262626] text-red-400 border border-[#404040]'
-        : color === 'warning'
-          ? 'bg-[#262626] text-amber-300 border border-[#404040]'
-          : 'bg-[#262626] text-[#a3a3a3] border border-[#404040]';
+        ? 'bg-[#7C3AED] text-white border border-transparent'
+        : 'bg-[#EDE9FE] text-[#6D28D9] border border-[#DDD6FE]'
+      : color === 'success'
+        ? variant === 'solid'
+          ? 'bg-[#10B981] text-white border border-transparent'
+          : 'bg-[#DCFCE7] text-[#15803D] border border-[#A7F3D0]'
+        : color === 'danger'
+          ? 'bg-[#FFF1F2] text-[#E11D48] border border-[#FECDD3]'
+          : color === 'warning'
+            ? 'bg-[#FEF3C7] text-[#B45309] border border-[#FDE68A]'
+            : 'bg-[#F4F3FA] text-[#5A5575] border border-[#ECEAF6]';
 
   return (
     <HeroChip.Root
@@ -208,7 +212,7 @@ export const Chip: React.FC<ChipProps> = ({
       variant={heroVariantMap[variant]}
       color={heroColorMap[color]}
       size={size}
-      className={`gap-1 rounded-[8px] font-medium ${chipColorClass} ${className}`}
+      className={`gap-1 rounded-[10px] font-semibold ${chipColorClass} ${className}`}
     >
       <HeroChip.Label>{children}</HeroChip.Label>
       {onClose && (

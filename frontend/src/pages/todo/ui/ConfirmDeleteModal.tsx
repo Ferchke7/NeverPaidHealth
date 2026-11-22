@@ -29,7 +29,7 @@ export const ConfirmDeleteModal: React.FC<ConfirmDeleteModalProps> = ({
       onClose={onClose}
       size="sm"
       headerIcon={
-        <div className="w-9 h-9 rounded-[10px] bg-red-950/30 border border-red-500/40 flex items-center justify-center text-red-400">
+        <div className="w-9 h-9 rounded-[10px] bg-[#FEF2F2] border border-[#FECACA] flex items-center justify-center text-[#EF4444]">
           <Trash2 className="w-4 h-4" />
         </div>
       }
@@ -45,7 +45,7 @@ export const ConfirmDeleteModal: React.FC<ConfirmDeleteModalProps> = ({
         </div>
       }
     >
-      <p className="text-[13px] text-[#a3a3a3] leading-relaxed">
+      <p className="text-[13px] text-[#6B7280] leading-relaxed">
         {description || t('common.deleteConfirm')}
       </p>
     </Modal>

@@ -203,8 +203,8 @@ export const BMICalculatorCard: React.FC<BMICalculatorCardProps> = ({
   }, [tdee, goal]);
 
   const macros = useMemo(() => {
-    return calculateMacroSplit(targetCalories, numericWeightKg, goal);
-  }, [targetCalories, numericWeightKg, goal]);
+    return calculateMacroSplit(numericWeightKg, targetCalories, goal);
+  }, [numericWeightKg, targetCalories, goal]);
 
   // Gauge bar needle position calculation (0 to 100%)
   const gaugePercent = useMemo(() => {
@@ -266,22 +266,22 @@ export const BMICalculatorCard: React.FC<BMICalculatorCardProps> = ({
   };
 
   return (
-    <Card className={`space-y-5 ${className}`}>
+    <Card className={`space-y-5 bg-white border-[#ECEAF6] royal-card-shadow ${className}`}>
       {/* Header */}
       <CardHeader>
         <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-2xl bg-brand-500/15 border border-brand-500/30 text-brand-400 flex items-center justify-center shrink-0 shadow-sm">
+          <div className="w-11 h-11 rounded-2xl bg-[#F0EFFE] border border-[#DDD6FE] text-[#6D28D9] flex items-center justify-center shrink-0">
             <Scale className="w-5 h-5" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <CardTitle>{t('bmi.title')}</CardTitle>
+              <CardTitle className="text-[#1E1B4B]">{t('bmi.title')}</CardTitle>
               <Badge variant="brand" size="sm">
                 <Sparkles className="w-3 h-3 mr-1" />
                 {t('bmi.liveAnalysis')}
               </Badge>
             </div>
-            <CardDescription>
+            <CardDescription className="text-[#6B7280]">
               {t('bmi.autoSync', { weight: formatWeight(latestRecordedWeightKg, unitPref) })}
             </CardDescription>
           </div>
@@ -297,12 +297,12 @@ export const BMICalculatorCard: React.FC<BMICalculatorCardProps> = ({
         >
           {saveSuccess ? (
             <>
-              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+              <CheckCircle2 className="w-4 h-4 text-[#10B981]" />
               <span>{t('bmi.savedToProfile')}</span>
             </>
           ) : (
             <>
-              <Save className="w-4 h-4 text-brand-400" />
+              <Save className="w-4 h-4 text-[#6D28D9]" />
               <span>{t('bmi.saveToProfile')}</span>
             </>
           )}
@@ -311,19 +311,19 @@ export const BMICalculatorCard: React.FC<BMICalculatorCardProps> = ({
 
       <CardContent className="space-y-5">
         {/* Input Controls Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 bg-dark-900/70 p-4 rounded-2xl border border-dark-700/70">
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 bg-[#F8F7FC] p-4 rounded-2xl border border-[#ECEAF6]">
           {/* Height Control */}
           <div className="space-y-1">
             <div className="flex items-center justify-between">
-              <label className="text-[11px] font-bold uppercase tracking-wider text-zinc-300">
+              <label className="text-[11px] font-bold uppercase tracking-wider text-[#6B7280]">
                 {t('bmi.height')} *
               </label>
               <div className="flex items-center gap-1 text-[10px] font-bold">
                 <button
                   type="button"
                   onClick={() => setHeightMode('cm')}
-                  className={`px-1.5 py-0.5 rounded transition-colors ${
-                    heightMode === 'cm' ? 'bg-brand-500 text-dark-950' : 'text-zinc-400 hover:text-zinc-200'
+                  className={`px-1.5 py-0.5 rounded transition-colors cursor-pointer ${
+                    heightMode === 'cm' ? 'bg-[#6D28D9] text-white' : 'text-[#6B7280] hover:text-[#1E1B4B]'
                   }`}
                 >
                   CM
@@ -331,8 +331,8 @@ export const BMICalculatorCard: React.FC<BMICalculatorCardProps> = ({
                 <button
                   type="button"
                   onClick={() => setHeightMode('ft')}
-                  className={`px-1.5 py-0.5 rounded transition-colors ${
-                    heightMode === 'ft' ? 'bg-brand-500 text-dark-950' : 'text-zinc-400 hover:text-zinc-200'
+                  className={`px-1.5 py-0.5 rounded transition-colors cursor-pointer ${
+                    heightMode === 'ft' ? 'bg-[#6D28D9] text-white' : 'text-[#6B7280] hover:text-[#1E1B4B]'
                   }`}
                 >
                   FT/IN
@@ -352,7 +352,7 @@ export const BMICalculatorCard: React.FC<BMICalculatorCardProps> = ({
                   setHeightCmInput(e.target.value);
                 }}
                 className="font-mono text-center font-bold"
-                endContent={<span className="text-xs text-zinc-500 font-bold">cm</span>}
+                endContent={<span className="text-xs text-[#6B7280] font-bold">cm</span>}
               />
             ) : (
               <div className="grid grid-cols-2 gap-1.5">
@@ -367,7 +367,7 @@ export const BMICalculatorCard: React.FC<BMICalculatorCardProps> = ({
                     setFeetInput(e.target.value);
                   }}
                   className="font-mono text-center font-bold"
-                  endContent={<span className="text-xs text-zinc-500 font-bold">ft</span>}
+                  endContent={<span className="text-xs text-[#6B7280] font-bold">ft</span>}
                 />
                 <Input
                   type="number"
@@ -381,7 +381,7 @@ export const BMICalculatorCard: React.FC<BMICalculatorCardProps> = ({
                     setInchesInput(e.target.value);
                   }}
                   className="font-mono text-center font-bold"
-                  endContent={<span className="text-xs text-zinc-500 font-bold">in</span>}
+                  endContent={<span className="text-xs text-[#6B7280] font-bold">in</span>}
                 />
               </div>
             )}
@@ -390,14 +390,14 @@ export const BMICalculatorCard: React.FC<BMICalculatorCardProps> = ({
           {/* Weight Control with Reset Option */}
           <div className="space-y-1">
             <div className="flex items-center justify-between">
-              <label className="text-[11px] font-bold uppercase tracking-wider text-zinc-300 block">
+              <label className="text-[11px] font-bold uppercase tracking-wider text-[#6B7280] block">
                 {t('bmi.weight')} ({unitPref.toUpperCase()}) *
               </label>
               {hasUserEditedWeight && (
                 <button
                   type="button"
                   onClick={handleResetToCurrentWeight}
-                  className="text-[10px] text-brand-400 hover:text-brand-300 font-bold flex items-center gap-0.5"
+                  className="text-[10px] text-[#6D28D9] hover:text-[#4C1D95] font-bold flex items-center gap-0.5 cursor-pointer"
                   title={t('bmi.resetToLatest')}
                 >
                   <RotateCcw className="w-2.5 h-2.5" />
@@ -418,23 +418,23 @@ export const BMICalculatorCard: React.FC<BMICalculatorCardProps> = ({
                 setWeightInput(e.target.value);
               }}
               className="font-mono text-center font-bold"
-              endContent={<span className="text-xs text-zinc-500 font-bold">{unitPref.toUpperCase()}</span>}
+              endContent={<span className="text-xs text-[#6B7280] font-bold">{unitPref.toUpperCase()}</span>}
             />
           </div>
 
           {/* Gender */}
           <div className="space-y-1">
-            <label className="text-[11px] font-bold uppercase tracking-wider text-zinc-300 block">
+            <label className="text-[11px] font-bold uppercase tracking-wider text-[#6B7280] block">
               {t('bmi.biologicalSex')}
             </label>
-            <div className="grid grid-cols-2 gap-1 bg-dark-800 p-1 rounded-xl border border-dark-700 h-10 items-center">
+            <div className="grid grid-cols-2 gap-1 bg-white p-1 rounded-xl border border-[#ECEAF6] h-10 items-center">
               <button
                 type="button"
                 onClick={() => setGender('male')}
-                className={`h-8 rounded-lg text-xs font-bold transition-all flex items-center justify-center ${
+                className={`h-8 rounded-lg text-xs font-bold transition-all flex items-center justify-center cursor-pointer ${
                   gender === 'male'
-                    ? 'bg-brand-500 text-dark-950 shadow-sm'
-                    : 'text-zinc-400 hover:text-white'
+                    ? 'bg-[#6D28D9] text-white shadow-sm'
+                    : 'text-[#6B7280] hover:text-[#1E1B4B]'
                 }`}
               >
                 {t('bmi.male')}
@@ -442,10 +442,10 @@ export const BMICalculatorCard: React.FC<BMICalculatorCardProps> = ({
               <button
                 type="button"
                 onClick={() => setGender('female')}
-                className={`h-8 rounded-lg text-xs font-bold transition-all flex items-center justify-center ${
+                className={`h-8 rounded-lg text-xs font-bold transition-all flex items-center justify-center cursor-pointer ${
                   gender === 'female'
-                    ? 'bg-brand-500 text-dark-950 shadow-sm'
-                    : 'text-zinc-400 hover:text-white'
+                    ? 'bg-[#6D28D9] text-white shadow-sm'
+                    : 'text-[#6B7280] hover:text-[#1E1B4B]'
                 }`}
               >
                 {t('bmi.female')}
@@ -455,7 +455,7 @@ export const BMICalculatorCard: React.FC<BMICalculatorCardProps> = ({
 
           {/* Age */}
           <div className="space-y-1">
-            <label className="text-[11px] font-bold uppercase tracking-wider text-zinc-300 block">
+            <label className="text-[11px] font-bold uppercase tracking-wider text-[#6B7280] block">
               {t('bmi.age')} ({t('bmi.years')})
             </label>
             <Input
@@ -466,21 +466,21 @@ export const BMICalculatorCard: React.FC<BMICalculatorCardProps> = ({
               value={age}
               onChange={(e) => setAge(e.target.value)}
               className="font-mono text-center font-bold"
-              endContent={<span className="text-xs text-zinc-500 font-bold">{t('bmi.years')}</span>}
+              endContent={<span className="text-xs text-[#6B7280] font-bold">{t('bmi.years')}</span>}
             />
           </div>
         </div>
 
         {/* Primary BMI Gauge & Category Card */}
-        <div className="p-4 rounded-2xl bg-dark-900 border border-dark-700/80 space-y-4 relative overflow-hidden">
+        <div className="p-4 rounded-2xl bg-[#FAF9FE] border border-[#ECEAF6] space-y-4 relative overflow-hidden">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             {/* Main BMI Number & Badge */}
             <div className="flex items-baseline gap-3">
-              <div className="text-3xl font-black font-mono text-white tracking-tight">
+              <div className="text-3xl font-black font-mono text-[#1E1B4B] tracking-tight">
                 {bmi > 0 ? bmi.toFixed(1) : '—'}
               </div>
               <div>
-                <div className="text-xs uppercase font-bold text-zinc-400">{t('body.bmi')}</div>
+                <div className="text-xs uppercase font-bold text-[#6B7280]">{t('body.bmi')}</div>
                 <div
                   className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold border mt-0.5 ${bmiCat.bgColor} ${bmiCat.textColor} ${bmiCat.borderColor}`}
                 >
@@ -493,22 +493,22 @@ export const BMICalculatorCard: React.FC<BMICalculatorCardProps> = ({
             {/* Healthy Weight Target & Estimated BF% */}
             <div className="flex items-center gap-3">
               {estimatedBodyFat > 0 && (
-                <div className="bg-dark-800/90 border border-dark-700/80 px-3 py-2 rounded-xl text-right text-xs">
-                  <span className="text-[10px] text-zinc-400 uppercase font-semibold block">
+                <div className="bg-white border border-[#ECEAF6] px-3 py-2 rounded-xl text-right text-xs">
+                  <span className="text-[10px] text-[#6B7280] uppercase font-semibold block">
                     {t('body.bodyFat')}
                   </span>
-                  <span className="font-mono font-bold text-amber-400 text-sm">
+                  <span className="font-mono font-bold text-amber-600 text-sm">
                     ~{estimatedBodyFat.toFixed(1)}%
                   </span>
                 </div>
               )}
 
               {idealRange.minKg > 0 && (
-                <div className="bg-dark-800/90 border border-dark-700/80 px-3 py-2 rounded-xl text-right text-xs">
-                  <span className="text-[10px] text-zinc-400 uppercase font-semibold block">
+                <div className="bg-white border border-[#ECEAF6] px-3 py-2 rounded-xl text-right text-xs">
+                  <span className="text-[10px] text-[#6B7280] uppercase font-semibold block">
                     {t('bmi.idealWeightRange')}
                   </span>
-                  <span className="font-mono font-bold text-emerald-400 text-sm">
+                  <span className="font-mono font-bold text-[#059669] text-sm">
                     {formatWeight(idealRange.minKg, unitPref)} – {formatWeight(idealRange.maxKg, unitPref)}
                   </span>
                 </div>
@@ -518,33 +518,33 @@ export const BMICalculatorCard: React.FC<BMICalculatorCardProps> = ({
 
           {/* Multi-zone Color Gauge */}
           <div className="space-y-1.5 pt-1">
-            <div className="relative h-4 rounded-full overflow-hidden flex bg-dark-800 border border-dark-700">
-              <div className="h-full bg-sky-500/80" style={{ width: '14%' }} title={`${t('bmi.underweight')} (< 18.5)`} />
-              <div className="h-full bg-emerald-500/90" style={{ width: '26%' }} title={`${t('bmi.normal')} (18.5 - 24.9)`} />
-              <div className="h-full bg-amber-500/90" style={{ width: '20%' }} title={`${t('bmi.overweight')} (25 - 29.9)`} />
-              <div className="h-full bg-orange-500/90" style={{ width: '20%' }} title={`${t('bmi.obese1')} (30 - 34.9)`} />
-              <div className="h-full bg-red-500/90" style={{ width: '20%' }} title={`${t('bmi.obese2')} (35+)`} />
+            <div className="relative h-4 rounded-full overflow-hidden flex bg-[#ECEAF6] border border-[#DDD6FE]">
+              <div className="h-full bg-sky-400" style={{ width: '14%' }} title={`${t('bmi.underweight')} (< 18.5)`} />
+              <div className="h-full bg-emerald-500" style={{ width: '26%' }} title={`${t('bmi.normal')} (18.5 - 24.9)`} />
+              <div className="h-full bg-amber-400" style={{ width: '20%' }} title={`${t('bmi.overweight')} (25 - 29.9)`} />
+              <div className="h-full bg-orange-400" style={{ width: '20%' }} title={`${t('bmi.obese1')} (30 - 34.9)`} />
+              <div className="h-full bg-rose-500" style={{ width: '20%' }} title={`${t('bmi.obese2')} (35+)`} />
 
               {bmi > 0 && (
                 <div
-                  className="absolute top-0 bottom-0 w-2 bg-white shadow-[0_0_10px_rgba(255,255,255,0.95)] rounded-full transition-all duration-500"
+                  className="absolute top-0 bottom-0 w-2 bg-[#1E1B4B] ring-2 ring-white rounded-full transition-all duration-500"
                   style={{ left: `${gaugePercent}%`, transform: 'translateX(-50%)' }}
                 />
               )}
             </div>
 
-            <div className="flex justify-between text-[10px] text-zinc-500 font-mono pt-0.5">
-              <span className="text-sky-400">18.5</span>
-              <span className="text-emerald-400">25.0</span>
-              <span className="text-amber-400">30.0</span>
-              <span className="text-orange-400">35.0</span>
-              <span className="text-red-400">40.0+</span>
+            <div className="flex justify-between text-[10px] font-mono font-semibold pt-0.5">
+              <span className="text-sky-600">18.5</span>
+              <span className="text-emerald-600">25.0</span>
+              <span className="text-amber-600">30.0</span>
+              <span className="text-orange-600">35.0</span>
+              <span className="text-rose-600">40.0+</span>
             </div>
           </div>
 
           {/* Coach Advice */}
-          <div className="flex items-start gap-2.5 text-xs text-zinc-300 bg-dark-800/70 p-3 rounded-xl border border-dark-700/60">
-            <Info className="w-4 h-4 text-brand-400 shrink-0 mt-0.5" />
+          <div className="flex items-start gap-2.5 text-xs text-[#4B5563] bg-white p-3 rounded-xl border border-[#ECEAF6]">
+            <Info className="w-4 h-4 text-[#6D28D9] shrink-0 mt-0.5" />
             <p className="leading-relaxed">{bmiCat.advice}</p>
           </div>
         </div>
@@ -552,28 +552,28 @@ export const BMICalculatorCard: React.FC<BMICalculatorCardProps> = ({
         {/* Metabolic Rate & Nutrition Targets Breakdown */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
           {/* Metabolism & TDEE */}
-          <div className="bg-dark-900/80 border border-dark-700/70 p-4 rounded-2xl space-y-3">
+          <div className="bg-[#F8F7FC] border border-[#ECEAF6] p-4 rounded-2xl space-y-3">
             <div className="flex items-center gap-2">
-              <Flame className="w-4 h-4 text-amber-400" />
-              <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-200">
+              <Flame className="w-4 h-4 text-amber-500" />
+              <h3 className="text-xs font-bold uppercase tracking-wider text-[#1E1B4B]">
                 BMR & TDEE
               </h3>
             </div>
 
             <div className="space-y-2">
-              <div className="flex items-center justify-between text-xs py-1 border-b border-dark-800">
-                <span className="text-zinc-400">BMR:</span>
-                <span className="font-mono font-bold text-white">
+              <div className="flex items-center justify-between text-xs py-1 border-b border-[#ECEAF6]">
+                <span className="text-[#6B7280]">BMR:</span>
+                <span className="font-mono font-bold text-[#1E1B4B]">
                   {bmr > 0 ? `${bmr.toLocaleString()} kcal` : '—'}
                 </span>
               </div>
 
               <div className="space-y-1 pt-1">
-                <label className="text-[11px] text-zinc-400 block font-medium">{t('bmi.activityLevel')}:</label>
+                <label className="text-[11px] text-[#6B7280] block font-medium">{t('bmi.activityLevel')}:</label>
                 <select
                   value={activity}
                   onChange={(e) => setActivity(e.target.value)}
-                  className="w-full bg-dark-800 border border-dark-700 rounded-xl px-3 py-1.5 text-xs text-zinc-200 focus:outline-none focus:border-brand-500 font-medium"
+                  className="w-full bg-white border border-[#ECEAF6] rounded-xl px-3 py-1.5 text-xs text-[#1E1B4B] focus:outline-none focus:border-[#6D28D9] font-medium"
                 >
                   {ACTIVITY_LEVELS.map((a) => (
                     <option key={a.id} value={a.id}>
@@ -584,8 +584,8 @@ export const BMICalculatorCard: React.FC<BMICalculatorCardProps> = ({
               </div>
 
               <div className="flex items-center justify-between text-xs pt-2">
-                <span className="text-zinc-300 font-semibold">TDEE:</span>
-                <span className="font-mono font-extrabold text-brand-400 text-sm">
+                <span className="text-[#4B5563] font-semibold">TDEE:</span>
+                <span className="font-mono font-extrabold text-[#6D28D9] text-sm">
                   {tdee > 0 ? `${tdee.toLocaleString()} kcal` : '—'}
                 </span>
               </div>
@@ -593,22 +593,22 @@ export const BMICalculatorCard: React.FC<BMICalculatorCardProps> = ({
           </div>
 
           {/* Nutrition Targets & Macro Split */}
-          <div className="bg-dark-900/80 border border-dark-700/70 p-4 rounded-2xl space-y-3">
+          <div className="bg-[#F8F7FC] border border-[#ECEAF6] p-4 rounded-2xl space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Zap className="w-4 h-4 text-brand-400" />
-                <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-200">
+                <Zap className="w-4 h-4 text-[#6D28D9]" />
+                <h3 className="text-xs font-bold uppercase tracking-wider text-[#1E1B4B]">
                   {t('nutrition.target')}
                 </h3>
               </div>
 
               {/* Goal Selector */}
-              <div className="flex gap-1 bg-dark-800 p-0.5 rounded-lg border border-dark-700 text-[10px]">
+              <div className="flex gap-1 bg-white p-0.5 rounded-lg border border-[#ECEAF6] text-[10px]">
                 <button
                   type="button"
                   onClick={() => setGoal('cut')}
-                  className={`px-2 py-0.5 rounded font-bold transition-colors ${
-                    goal === 'cut' ? 'bg-amber-500 text-dark-950' : 'text-zinc-400 hover:text-zinc-200'
+                  className={`px-2 py-0.5 rounded font-bold transition-colors cursor-pointer ${
+                    goal === 'cut' ? 'bg-amber-500 text-white' : 'text-[#6B7280] hover:text-[#1E1B4B]'
                   }`}
                 >
                   {t('body.cutting')}
@@ -616,8 +616,8 @@ export const BMICalculatorCard: React.FC<BMICalculatorCardProps> = ({
                 <button
                   type="button"
                   onClick={() => setGoal('maintain')}
-                  className={`px-2 py-0.5 rounded font-bold transition-colors ${
-                    goal === 'maintain' ? 'bg-brand-500 text-dark-950' : 'text-zinc-400 hover:text-zinc-200'
+                  className={`px-2 py-0.5 rounded font-bold transition-colors cursor-pointer ${
+                    goal === 'maintain' ? 'bg-[#6D28D9] text-white' : 'text-[#6B7280] hover:text-[#1E1B4B]'
                   }`}
                 >
                   {t('nutrition.target')}
@@ -625,8 +625,8 @@ export const BMICalculatorCard: React.FC<BMICalculatorCardProps> = ({
                 <button
                   type="button"
                   onClick={() => setGoal('bulk')}
-                  className={`px-2 py-0.5 rounded font-bold transition-colors ${
-                    goal === 'bulk' ? 'bg-emerald-500 text-dark-950' : 'text-zinc-400 hover:text-zinc-200'
+                  className={`px-2 py-0.5 rounded font-bold transition-colors cursor-pointer ${
+                    goal === 'bulk' ? 'bg-[#10B981] text-white' : 'text-[#6B7280] hover:text-[#1E1B4B]'
                   }`}
                 >
                   {t('body.bulking')}
@@ -635,29 +635,29 @@ export const BMICalculatorCard: React.FC<BMICalculatorCardProps> = ({
             </div>
 
             <div className="space-y-2">
-              <div className="flex items-center justify-between text-xs py-1 border-b border-dark-800">
-                <span className="text-zinc-400">{t('nutrition.calories')}:</span>
-                <span className="font-mono font-bold text-white">
+              <div className="flex items-center justify-between text-xs py-1 border-b border-[#ECEAF6]">
+                <span className="text-[#6B7280]">{t('nutrition.calories')}:</span>
+                <span className="font-mono font-bold text-[#1E1B4B]">
                   {targetCalories > 0 ? `${targetCalories.toLocaleString()} kcal` : '—'}
                 </span>
               </div>
 
               <div className="grid grid-cols-3 gap-2 pt-1">
-                <div className="bg-dark-800 p-2 rounded-xl border border-dark-700/80 text-center">
-                  <span className="text-[10px] text-zinc-400 uppercase block font-semibold">{t('nutrition.protein')}</span>
-                  <span className="font-mono font-bold text-xs text-rose-400">
+                <div className="bg-white p-2 rounded-xl border border-[#ECEAF6] text-center">
+                  <span className="text-[10px] text-[#6B7280] uppercase block font-semibold">{t('nutrition.protein')}</span>
+                  <span className="font-mono font-bold text-xs text-rose-600">
                     {macros.proteinG}g
                   </span>
                 </div>
-                <div className="bg-dark-800 p-2 rounded-xl border border-dark-700/80 text-center">
-                  <span className="text-[10px] text-zinc-400 uppercase block font-semibold">{t('nutrition.fat')}</span>
-                  <span className="font-mono font-bold text-xs text-amber-400">
+                <div className="bg-white p-2 rounded-xl border border-[#ECEAF6] text-center">
+                  <span className="text-[10px] text-[#6B7280] uppercase block font-semibold">{t('nutrition.fat')}</span>
+                  <span className="font-mono font-bold text-xs text-amber-600">
                     {macros.fatG}g
                   </span>
                 </div>
-                <div className="bg-dark-800 p-2 rounded-xl border border-dark-700/80 text-center">
-                  <span className="text-[10px] text-zinc-400 uppercase block font-semibold">{t('nutrition.carbs')}</span>
-                  <span className="font-mono font-bold text-xs text-sky-400">
+                <div className="bg-white p-2 rounded-xl border border-[#ECEAF6] text-center">
+                  <span className="text-[10px] text-[#6B7280] uppercase block font-semibold">{t('nutrition.carbs')}</span>
+                  <span className="font-mono font-bold text-xs text-sky-600">
                     {macros.carbG}g
                   </span>
                 </div>

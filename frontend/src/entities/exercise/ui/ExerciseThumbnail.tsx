@@ -44,19 +44,19 @@ export const ExerciseThumbnail: React.FC<ExerciseThumbnailProps> = ({
 
   const getFallbackStyle = (m: string) => {
     const l = m.toLowerCase();
-    if (l.includes('chest')) return 'bg-[#0a0a0a] text-[#34d399]';
-    if (l.includes('back') || l.includes('lat')) return 'bg-[#022c22] text-[#34d399]';
-    if (l.includes('quad') || l.includes('leg') || l.includes('hamstring')) return 'bg-[#0a0a0a] text-amber-400';
-    if (l.includes('shoulder')) return 'bg-[#0a0a0a] text-[#fafafa]';
-    if (l.includes('bicep') || l.includes('tricep') || l.includes('arm')) return 'bg-[#0a0a0a] text-[#a3a3a3]';
-    return 'bg-[#0a0a0a] text-[#34d399]';
+    if (l.includes('chest')) return 'bg-[#F0EFFE] text-[#6D28D9]';
+    if (l.includes('back') || l.includes('lat')) return 'bg-[#ECFEFF] text-[#0891B2]';
+    if (l.includes('quad') || l.includes('leg') || l.includes('hamstring') || l.includes('glute')) return 'bg-[#FFF7ED] text-[#EA580C]';
+    if (l.includes('shoulder')) return 'bg-[#F5F3FF] text-[#7C3AED]';
+    if (l.includes('bicep') || l.includes('tricep') || l.includes('arm')) return 'bg-[#EEF2FF] text-[#4338CA]';
+    return 'bg-[#F0EFFE] text-[#6D28D9]';
   };
 
   return (
     <div
       onClick={onClick}
-      className={`relative shrink-0 overflow-hidden bg-[#0a0a0a] border border-[#262626] flex items-center justify-center select-none ${sizeClass} ${className} ${
-        onClick ? 'cursor-pointer hover:border-[#34d399]/60 transition-colors' : ''
+      className={`relative shrink-0 overflow-hidden bg-[#F4F3FA] border border-[#ECEAF6] flex items-center justify-center select-none ${sizeClass} ${className} ${
+        onClick ? 'cursor-pointer hover:border-[#6D28D9]/50 transition-colors' : ''
       }`}
     >
       {imageSrc && !hasError ? (
@@ -66,7 +66,7 @@ export const ExerciseThumbnail: React.FC<ExerciseThumbnailProps> = ({
           loading="lazy"
           crossOrigin="anonymous"
           onError={() => setHasError(true)}
-          className="w-full h-full object-cover object-center bg-[#171717]"
+          className="w-full h-full object-cover object-center bg-[#F4F3FA]"
         />
       ) : (
         <div

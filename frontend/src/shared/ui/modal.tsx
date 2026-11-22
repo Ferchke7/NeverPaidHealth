@@ -52,23 +52,23 @@ export const Modal: React.FC<ModalProps> = ({
         if (!open) onClose();
       }}
     >
-      <HeroModal.Backdrop className="fixed inset-0 bg-[#0a0a0a]/85 z-50 animate-in fade-in duration-150">
+      <HeroModal.Backdrop className="fixed inset-0 bg-[#1B0552]/45 backdrop-blur-xs z-50 animate-in fade-in duration-150">
         <HeroModal.Container className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-y-auto">
           <HeroModal.Dialog
-            className={`relative w-full ${sizeStyles} bg-[#171717] border border-[#404040] rounded-t-[14px] sm:rounded-[14px] shadow-none flex flex-col max-h-[90dvh] sm:max-h-[85dvh] pb-[env(safe-area-inset-bottom)] sm:pb-0 overflow-hidden ${className}`}
+            className={`relative w-full ${sizeStyles} bg-[#FFFFFF] border border-[#ECEAF6] rounded-t-[28px] sm:rounded-[24px] shadow-[0_24px_60px_rgba(27,5,82,0.18)] flex flex-col max-h-[90dvh] sm:max-h-[85dvh] pb-[env(safe-area-inset-bottom)] sm:pb-0 overflow-hidden ${className}`}
           >
             {(title || effectiveIcon) && (
-              <HeroModal.Header className="px-5 sm:px-6 py-4 border-b border-[#262626] flex items-center justify-between gap-3 shrink-0 bg-[#171717]">
+              <HeroModal.Header className="px-5 sm:px-6 py-4 border-b border-[#ECEAF6] flex items-center justify-between gap-3 shrink-0 bg-[#FFFFFF]">
                 <div className="flex items-center gap-3 min-w-0">
                   {effectiveIcon && <div className="shrink-0">{effectiveIcon}</div>}
                   <div className="min-w-0">
                     {title && (
-                      <HeroModal.Heading className="text-base sm:text-lg font-semibold text-[#fafafa] tracking-tight truncate">
+                      <HeroModal.Heading className="text-base sm:text-lg font-bold text-[#130F26] tracking-tight truncate">
                         {title}
                       </HeroModal.Heading>
                     )}
                     {effectiveSubtitle && (
-                      <p className="text-[13px] text-[#a3a3a3] mt-0.5 truncate">{effectiveSubtitle}</p>
+                      <p className="text-[13px] text-[#5A5575] mt-0.5 truncate">{effectiveSubtitle}</p>
                     )}
                   </div>
                 </div>
@@ -78,7 +78,7 @@ export const Modal: React.FC<ModalProps> = ({
                     size="sm"
                     variant="ghost"
                     onClick={onClose}
-                    className="text-[#a3a3a3] hover:text-[#fafafa] shrink-0"
+                    className="text-[#5A5575] hover:text-[#130F26] bg-[#F4F3FA] shrink-0"
                     aria-label={t('common.close')}
                   >
                     <X className="w-4 h-4" />
@@ -87,12 +87,12 @@ export const Modal: React.FC<ModalProps> = ({
               </HeroModal.Header>
             )}
 
-            <HeroModal.Body className="flex-1 overflow-y-auto p-5 sm:p-6 overscroll-contain">
+            <HeroModal.Body className="flex-1 overflow-y-auto p-5 sm:p-6 overscroll-contain text-[#130F26]">
               {children}
             </HeroModal.Body>
 
             {footer && (
-              <HeroModal.Footer className="px-5 sm:px-6 py-4 bg-[#171717] border-t border-[#262626] flex items-center justify-end gap-2.5 shrink-0">
+              <HeroModal.Footer className="px-5 sm:px-6 py-4 bg-[#F9F8FD] border-t border-[#ECEAF6] flex items-center justify-end gap-2.5 shrink-0">
                 {footer}
               </HeroModal.Footer>
             )}

@@ -30,16 +30,16 @@ export const PWAInstallBanner: React.FC = () => {
 
   return (
     <>
-      <div className="mb-5 bg-[#171717] border border-[#404040] rounded-[14px] p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+      <div className="mb-5 bg-white border border-[#ECEAF6] royal-card-shadow rounded-[18px] p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">
-          <div className="w-10 h-10 rounded-[10px] bg-[#0a0a0a] border border-[#404040] p-1.5 flex items-center justify-center shrink-0">
+          <div className="w-10 h-10 rounded-[12px] bg-[#F0EFFE] border border-[#DDD6FE] p-1.5 flex items-center justify-center shrink-0">
             <img src="/icons/icon.svg" alt="duda.uz" className="w-full h-full" />
           </div>
           <div className="min-w-0">
-            <div className="text-[14px] font-semibold text-[#fafafa]">
+            <div className="text-[14px] font-bold text-[#1E1B4B]">
               {t('pwa.installTitle')}
             </div>
-            <p className="text-[12px] text-[#a3a3a3] mt-0.5 max-w-xl line-clamp-2 sm:line-clamp-none">
+            <p className="text-[12px] text-[#6B7280] mt-0.5 max-w-xl line-clamp-2 sm:line-clamp-none">
               {t('pwa.installDesc')}
             </p>
           </div>

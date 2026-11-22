@@ -26,14 +26,14 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({
   if (isStandalone) {
     if (variant === 'card') {
       return (
-        <div className={`p-4 rounded-[14px] bg-[#171717] border border-[#404040] flex items-center justify-between ${className}`}>
+        <div className={`p-4 rounded-[18px] bg-white border border-[#ECEAF6] royal-card-shadow flex items-center justify-between ${className}`}>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-[10px] bg-[#022c22] border border-[#064e3b] text-[#34d399] flex items-center justify-center">
+            <div className="w-10 h-10 rounded-[12px] bg-[#ECFDF5] border border-[#A7F3D0] text-[#059669] flex items-center justify-center">
               <Check className="w-5 h-5" />
             </div>
             <div>
-              <div className="text-sm font-semibold text-[#fafafa]">{t('pwa.installed')}</div>
-              <div className="text-xs text-[#a3a3a3]">{t('pwa.offlineReady')}</div>
+              <div className="text-sm font-bold text-[#1E1B4B]">{t('pwa.installed')}</div>
+              <div className="text-xs text-[#6B7280]">{t('pwa.offlineReady')}</div>
             </div>
           </div>
         </div>
@@ -45,19 +45,19 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({
   if (variant === 'card') {
     return (
       <>
-        <div className={`p-4 rounded-[14px] bg-[#171717] border border-[#404040] flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 ${className}`}>
+        <div className={`p-4 rounded-[18px] bg-white border border-[#ECEAF6] royal-card-shadow flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 ${className}`}>
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-10 h-10 rounded-[10px] bg-[#022c22] border border-[#064e3b] text-[#34d399] flex items-center justify-center shrink-0">
+            <div className="w-10 h-10 rounded-[12px] bg-[#F0EFFE] border border-[#DDD6FE] text-[#6D28D9] flex items-center justify-center shrink-0">
               <Smartphone className="w-5 h-5" />
             </div>
             <div className="min-w-0">
-              <div className="text-sm font-semibold text-[#fafafa]">{t('pwa.installApp')}</div>
-              <div className="text-xs text-[#a3a3a3]">{t('pwa.installDesc')}</div>
+              <div className="text-sm font-bold text-[#1E1B4B]">{t('pwa.installApp')}</div>
+              <div className="text-xs text-[#6B7280]">{t('pwa.installDesc')}</div>
             </div>
           </div>
           <button
             onClick={promptInstall}
-            className="min-h-[44px] w-full sm:w-auto justify-center px-4 py-2 rounded-[10px] bg-[#34d399] hover:bg-[#34d399]/90 text-[#0a0a0a] font-semibold text-xs flex items-center gap-1.5 shrink-0 transition-colors cursor-pointer"
+            className="min-h-[44px] w-full sm:w-auto justify-center px-4 py-2 rounded-[12px] violet-btn-gradient hover:opacity-95 text-white font-semibold text-xs flex items-center gap-1.5 shrink-0 transition-opacity cursor-pointer shadow-sm"
           >
             <Download className="w-4 h-4" />
             <span>{t('pwa.installBtn')}</span>
@@ -77,7 +77,7 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({
     <>
       <button
         onClick={promptInstall}
-        className={`min-h-[44px] px-3 py-2 rounded-[10px] bg-[#022c22] hover:bg-[#022c22]/80 text-[#34d399] border border-[#064e3b] text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer ${className}`}
+        className={`min-h-[44px] px-3 py-2 rounded-[12px] bg-[#F0EFFE] hover:bg-[#DDD6FE] text-[#6D28D9] border border-[#DDD6FE] text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer ${className}`}
         title={t('pwa.installApp')}
       >
         <Download className="w-3.5 h-3.5" />

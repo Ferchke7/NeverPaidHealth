@@ -31,16 +31,16 @@ export const Switch: React.FC<SwitchProps> = ({
     >
       {(label || description) && (
         <div className="flex flex-col">
-          {label && <span className="text-[14px] font-medium text-[#fafafa]">{label}</span>}
-          {description && <span className="text-[12px] text-[#a3a3a3]">{description}</span>}
+          {label && <span className="text-[14px] font-semibold text-[#130F26]">{label}</span>}
+          {description && <span className="text-[12px] text-[#5A5575]">{description}</span>}
         </div>
       )}
       <HeroSwitch.Control
         className={`transition-colors ${
-          isSelected ? 'bg-[#34d399]' : 'bg-[#262626] border border-[#404040]'
+          isSelected ? 'bg-[#7C3AED]' : 'bg-[#E4E0F5] border border-[#D9D4F0]'
         }`}
       >
-        <HeroSwitch.Thumb className={isSelected ? 'bg-[#0a0a0a]' : 'bg-[#a3a3a3]'} />
+        <HeroSwitch.Thumb className="bg-[#FFFFFF] shadow-sm" />
       </HeroSwitch.Control>
     </HeroSwitch.Root>
   );

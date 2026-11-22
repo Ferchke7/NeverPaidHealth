@@ -23,14 +23,13 @@ export const EChartsReact: React.FC<EChartsReactProps> = ({
     if (!chartRef.current) return;
 
     if (!chartInstance.current) {
-      chartInstance.current = echarts.init(chartRef.current, 'dark', {
+      chartInstance.current = echarts.init(chartRef.current, undefined, {
         renderer: 'canvas',
       });
     }
 
     const chart = chartInstance.current;
 
-    // Attach custom event handlers
     if (onEvents) {
       Object.entries(onEvents).forEach(([eventName, handler]) => {
         chart.off(eventName);
@@ -40,17 +39,16 @@ export const EChartsReact: React.FC<EChartsReactProps> = ({
 
     if (loading) {
       chart.showLoading({
-        text: 'Загрузка...',
-        color: '#34d399',
-        textColor: '#a3a3a3',
-        maskColor: 'rgba(10, 10, 10, 0.6)',
+        text: '...',
+        color: '#7C3AED',
+        textColor: '#5A5575',
+        maskColor: 'rgba(244, 243, 250, 0.75)',
       });
     } else {
       chart.hideLoading();
       chart.setOption(option, { notMerge: true });
     }
 
-    // Auto-resize on container dimension change
     const resizeObserver = new ResizeObserver(() => {
       chart.resize();
     });

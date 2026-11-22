@@ -263,73 +263,74 @@ export const HistoryPage: React.FC = () => {
 
   return (
     <div className="space-y-6 pb-8">
-      {/* Page Title */}
-      <div>
-        <h1 className="text-[28px] font-bold tracking-[-0.02em] text-[#fafafa] leading-tight">
-          {t('nav.history')}
-        </h1>
-        <p className="text-[14px] text-[#a3a3a3] mt-1">{t('history.subtitle')}</p>
-      </div>
-
-      {/* Top KPI Strip & Controls */}
-      <div className="bg-[#171717] border border-[#404040] rounded-[14px] p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-8 sm:gap-12">
-          <div>
-            <div className="text-[11px] font-semibold uppercase tracking-[0.06em] text-[#a3a3a3]">
-              {lbl.sessions}
-            </div>
-            <div className="text-[26px] font-bold text-[#fafafa] font-mono tabular-nums mt-0.5">
-              {kpiStats.count}
-            </div>
-          </div>
-
-          <div className="h-9 w-px bg-[#262626]" />
-
-          <div>
-            <div className="text-[11px] font-semibold uppercase tracking-[0.06em] text-[#a3a3a3]">
-              {t('history.totalVolume')}
-            </div>
-            <div className="text-[26px] font-bold text-[#34d399] font-mono tabular-nums mt-0.5">
-              {formatCompactVolume(kpiStats.volumeKg)}
-            </div>
-          </div>
+      {/* Royal Violet Hero & KPI Summary */}
+      <div className="royal-hero-gradient rounded-[24px] p-5 sm:p-7 text-white royal-card-shadow space-y-5">
+        <div>
+          <h1 className="text-[26px] sm:text-[32px] font-extrabold tracking-[-0.02em] text-white leading-tight">
+            {t('nav.history')}
+          </h1>
+          <p className="text-[13px] sm:text-[14px] text-white/80 mt-1">{t('history.subtitle')}</p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2.5">
-          <button
-            type="button"
-            onClick={() => {
-              setSelectedDateStr(null);
-              setVisibleCount(10);
-              setMonthFilterEnabled((prev) => !prev);
-            }}
-            className={`min-h-[44px] px-4 rounded-[10px] border text-[13px] font-medium capitalize transition-colors cursor-pointer ${
-              monthFilterEnabled && !selectedDateStr
-                ? 'bg-[#022c22] border-[#064e3b] text-[#34d399]'
-                : 'bg-[#0a0a0a] border-[#404040] text-[#fafafa] hover:bg-[#262626]'
-            }`}
-          >
-            {monthFilterEnabled && !selectedDateStr ? monthYearLabel : t('history.allMonthsBtn')}
-          </button>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-1 border-t border-white/15">
+          <div className="flex items-center gap-8 sm:gap-12 pt-2 sm:pt-0">
+            <div>
+              <div className="text-[11px] font-bold uppercase tracking-[0.06em] text-white/75">
+                {lbl.sessions}
+              </div>
+              <div className="text-[26px] font-extrabold text-white font-mono tabular-nums mt-0.5">
+                {kpiStats.count}
+              </div>
+            </div>
 
-          <button
-            type="button"
-            onClick={handleExportCsv}
-            disabled={workouts.length === 0}
-            className="min-h-[44px] px-4 rounded-[10px] bg-[#0a0a0a] hover:bg-[#262626] disabled:opacity-40 border border-[#404040] text-[#fafafa] text-[13px] font-medium flex items-center gap-2 transition-colors cursor-pointer"
-          >
-            <Download className="w-4 h-4 text-[#a3a3a3]" />
-            <span>{t('history.exportBtn')}</span>
-          </button>
+            <div className="h-9 w-px bg-white/20" />
+
+            <div>
+              <div className="text-[11px] font-bold uppercase tracking-[0.06em] text-white/75">
+                {t('history.totalVolume')}
+              </div>
+              <div className="text-[26px] font-extrabold text-[#6EE7B7] font-mono tabular-nums mt-0.5">
+                {formatCompactVolume(kpiStats.volumeKg)}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2.5">
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedDateStr(null);
+                setVisibleCount(10);
+                setMonthFilterEnabled((prev) => !prev);
+              }}
+              className={`min-h-[42px] px-4 rounded-[12px] border text-[13px] font-semibold capitalize transition-colors cursor-pointer ${
+                monthFilterEnabled && !selectedDateStr
+                  ? 'bg-white text-[#3B0CA3] border-white shadow-xs'
+                  : 'bg-white/15 border-white/25 text-white hover:bg-white/25'
+              }`}
+            >
+              {monthFilterEnabled && !selectedDateStr ? monthYearLabel : t('history.allMonthsBtn')}
+            </button>
+
+            <button
+              type="button"
+              onClick={handleExportCsv}
+              disabled={workouts.length === 0}
+              className="min-h-[42px] px-4 rounded-[12px] bg-white/15 hover:bg-white/25 disabled:opacity-40 border border-white/25 text-white text-[13px] font-semibold flex items-center gap-2 transition-colors cursor-pointer"
+            >
+              <Download className="w-4 h-4" />
+              <span>{t('history.exportBtn')}</span>
+            </button>
+          </div>
         </div>
       </div>
 
       {/* Main 2-Column Calendar + Sessions Split */}
-      <div className="grid grid-cols-1 lg:grid-cols-[400px_1fr] gap-4 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-[400px_1fr] gap-5 items-start">
         {/* Left: Interactive Monthly Calendar */}
-        <div className="bg-[#171717] border border-[#404040] rounded-[14px] p-5 space-y-4">
+        <div className="bg-white border border-[#ECEAF6] rounded-[22px] p-5 space-y-4 royal-card-shadow">
           <div className="flex items-center justify-between gap-2">
-            <h2 className="text-[15px] font-semibold text-[#fafafa] capitalize truncate">
+            <h2 className="text-[15px] font-bold text-[#1E1B4B] capitalize truncate">
               {monthYearLabel}
             </h2>
             <div className="flex items-center gap-1.5 shrink-0">
@@ -337,14 +338,14 @@ export const HistoryPage: React.FC = () => {
                 type="button"
                 onClick={handlePrevMonth}
                 aria-label="Previous month"
-                className="min-h-[44px] min-w-[44px] rounded-[10px] bg-[#0a0a0a] hover:bg-[#262626] border border-[#404040] text-[#fafafa] flex items-center justify-center cursor-pointer transition-colors"
+                className="min-h-[40px] min-w-[40px] rounded-[10px] bg-[#F8F7FC] hover:bg-[#F0EFFE] border border-[#ECEAF6] text-[#1E1B4B] flex items-center justify-center cursor-pointer transition-colors"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
               <button
                 type="button"
                 onClick={handleToday}
-                className="min-h-[44px] px-3 rounded-[10px] bg-[#0a0a0a] hover:bg-[#262626] border border-[#404040] text-[#fafafa] text-[12px] font-medium cursor-pointer transition-colors"
+                className="min-h-[40px] px-3 rounded-[10px] bg-[#F8F7FC] hover:bg-[#F0EFFE] border border-[#ECEAF6] text-[#6D28D9] text-[12px] font-semibold cursor-pointer transition-colors"
               >
                 {t('history.todayBtn')}
               </button>
@@ -352,14 +353,14 @@ export const HistoryPage: React.FC = () => {
                 type="button"
                 onClick={handleNextMonth}
                 aria-label="Next month"
-                className="min-h-[44px] min-w-[44px] rounded-[10px] bg-[#0a0a0a] hover:bg-[#262626] border border-[#404040] text-[#fafafa] flex items-center justify-center cursor-pointer transition-colors"
+                className="min-h-[40px] min-w-[40px] rounded-[10px] bg-[#F8F7FC] hover:bg-[#F0EFFE] border border-[#ECEAF6] text-[#1E1B4B] flex items-center justify-center cursor-pointer transition-colors"
               >
                 <ChevronRight className="w-4 h-4" />
               </button>
             </div>
           </div>
 
-          <div className="grid grid-cols-7 gap-1.5 text-center text-[11px] font-medium text-[#737373] py-1">
+          <div className="grid grid-cols-7 gap-1.5 text-center text-[11px] font-semibold text-[#94A3B8] py-1">
             {weekdayNames.map((day) => (
               <div key={day}>{day}</div>
             ))}
@@ -369,7 +370,7 @@ export const HistoryPage: React.FC = () => {
             {Array.from({ length: calendarCells.startOffset }).map((_, i) => (
               <div
                 key={`prev-${i}`}
-                className="min-h-[44px] rounded-[10px] bg-[#0a0a0a]/40 border border-[#262626]/40 text-[#525252] text-[12px] font-mono flex items-center justify-center select-none"
+                className="min-h-[42px] rounded-[10px] bg-[#F8F7FC]/60 border border-[#ECEAF6]/60 text-[#CBD5E1] text-[12px] font-mono flex items-center justify-center select-none"
               >
                 {calendarCells.prevMonthDays - calendarCells.startOffset + i + 1}
               </div>
@@ -391,17 +392,17 @@ export const HistoryPage: React.FC = () => {
                     setVisibleCount(10);
                     setSelectedDateStr((prev) => (prev === dateKey ? null : dateKey));
                   }}
-                  className={`min-h-[44px] rounded-[10px] border text-[13px] font-mono font-medium flex flex-col items-center justify-center relative transition-colors cursor-pointer ${
+                  className={`min-h-[42px] rounded-[10px] border text-[13px] font-mono font-semibold flex flex-col items-center justify-center relative transition-all cursor-pointer ${
                     hasWorkout
-                      ? 'bg-[#34d399] border-[#34d399] text-[#0a0a0a] font-semibold'
+                      ? 'bg-[#6D28D9] border-[#6D28D9] text-white shadow-xs'
                       : isToday
-                      ? 'bg-[#0a0a0a] border-[#737373] text-[#fafafa]'
-                      : 'bg-[#0a0a0a] border-[#262626] text-[#a3a3a3] hover:border-[#404040] hover:text-[#fafafa]'
-                  } ${isSelected ? 'ring-2 ring-[#fafafa] ring-offset-1 ring-offset-[#171717]' : ''}`}
+                      ? 'bg-[#F0EFFE] border-[#6D28D9] text-[#6D28D9]'
+                      : 'bg-[#F8F7FC] border-[#ECEAF6] text-[#1E1B4B] hover:border-[#C4B5FD]'
+                  } ${isSelected ? 'ring-2 ring-[#1B1145] ring-offset-1 ring-offset-white' : ''}`}
                 >
                   <span>{dayNum}</span>
                   {dayCount > 1 && (
-                    <span className="text-[9px] leading-none font-bold opacity-80">
+                    <span className="text-[9px] leading-none font-bold opacity-85">
                       ×{dayCount}
                     </span>
                   )}
@@ -410,9 +411,9 @@ export const HistoryPage: React.FC = () => {
             })}
           </div>
 
-          <div className="pt-3 border-t border-[#262626] flex flex-wrap items-center justify-between gap-2 text-[12px]">
-            <div className="flex items-center gap-2 text-[#a3a3a3]">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#34d399] inline-block shrink-0" />
+          <div className="pt-3 border-t border-[#ECEAF6] flex flex-wrap items-center justify-between gap-2 text-[12px]">
+            <div className="flex items-center gap-2 text-[#6B7280]">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#6D28D9] inline-block shrink-0" />
               <span>{t('history.workoutDotLegend')}</span>
             </div>
 
@@ -420,7 +421,7 @@ export const HistoryPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setSelectedDateStr(null)}
-                className="text-[12px] font-medium text-[#34d399] hover:underline cursor-pointer"
+                className="text-[12px] font-semibold text-[#6D28D9] hover:underline cursor-pointer"
               >
                 {t('history.selectedDateLabel', {
                   day: formatDate(selectedDateStr + 'T12:00:00', language),
@@ -428,7 +429,7 @@ export const HistoryPage: React.FC = () => {
                 · {t('history.showAllDates')}
               </button>
             ) : (
-              <span className="text-[#737373] font-mono">
+              <span className="text-[#6B7280] font-mono">
                 {monthWorkouts.length} / {workouts.length}
               </span>
             )}
@@ -436,13 +437,13 @@ export const HistoryPage: React.FC = () => {
         </div>
 
         {/* Right: Workout Sessions List */}
-        <div className="bg-[#171717] border border-[#404040] rounded-[14px] p-5 space-y-4">
-          <div className="flex items-center justify-between gap-2 pb-3 border-b border-[#262626]">
+        <div className="bg-white border border-[#ECEAF6] rounded-[22px] p-5 space-y-4 royal-card-shadow">
+          <div className="flex items-center justify-between gap-2 pb-3 border-b border-[#ECEAF6]">
             <div className="flex items-center gap-2.5 min-w-0">
-              <h2 className="text-[16px] font-semibold text-[#fafafa] truncate">
+              <h2 className="text-[16px] font-bold text-[#1E1B4B] truncate">
                 {lbl.sessions}
               </h2>
-              <span className="px-2 py-0.5 rounded-[6px] bg-[#0a0a0a] border border-[#404040] text-[12px] font-mono text-[#a3a3a3]">
+              <span className="px-2 py-0.5 rounded-[8px] bg-[#F0EFFE] border border-[#DDD6FE] text-[12px] font-mono font-bold text-[#6D28D9]">
                 {filteredWorkouts.length}
               </span>
             </div>
@@ -455,7 +456,7 @@ export const HistoryPage: React.FC = () => {
                   setMonthFilterEnabled(false);
                   setVisibleCount(10);
                 }}
-                className="min-h-[44px] inline-flex items-center px-2 -my-2 text-[12px] font-medium text-[#a3a3a3] hover:text-[#fafafa] cursor-pointer"
+                className="min-h-[40px] inline-flex items-center px-2.5 text-[12px] font-semibold text-[#6D28D9] hover:underline cursor-pointer"
               >
                 {t('history.allMonthsBtn')}
               </button>
@@ -467,14 +468,14 @@ export const HistoryPage: React.FC = () => {
               {[1, 2, 3].map((i) => (
                 <div
                   key={i}
-                  className="h-20 bg-[#0a0a0a] rounded-[12px] border border-[#262626] animate-pulse"
+                  className="h-20 bg-[#F8F7FC] rounded-[14px] border border-[#ECEAF6] animate-pulse"
                 />
               ))}
             </div>
           ) : filteredWorkouts.length === 0 ? (
-            <div className="text-center py-10 border border-dashed border-[#404040] rounded-[12px] p-6 bg-[#0a0a0a] space-y-3">
-              <CalendarIcon className="w-8 h-8 text-[#525252] mx-auto" />
-              <div className="text-[14px] font-medium text-[#a3a3a3]">
+            <div className="text-center py-10 border border-dashed border-[#DDD6FE] rounded-[16px] p-6 bg-[#F8F7FC] space-y-3">
+              <CalendarIcon className="w-8 h-8 text-[#C4B5FD] mx-auto" />
+              <div className="text-[14px] font-semibold text-[#6B7280]">
                 {t('history.noWorkouts')}
               </div>
               {workouts.length > 0 && (
@@ -492,7 +493,7 @@ export const HistoryPage: React.FC = () => {
               )}
             </div>
           ) : (
-            <div className="divide-y divide-[#262626]">
+            <div className="divide-y divide-[#ECEAF6]">
               {displayedWorkouts.map((workout) => {
                 const isExpanded = expandedId === workout.id;
 
@@ -501,23 +502,23 @@ export const HistoryPage: React.FC = () => {
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                       <div className="space-y-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <h3 className="text-[15px] font-semibold text-[#fafafa] truncate">
+                          <h3 className="text-[15px] font-bold text-[#1E1B4B] truncate">
                             {workout.name}
                           </h3>
                           {isExpanded && (
-                            <span className="px-2 py-0.5 rounded-[6px] bg-[#022c22] border border-[#064e3b] text-[11px] font-medium text-[#34d399]">
+                            <span className="px-2 py-0.5 rounded-[8px] bg-[#F0EFFE] border border-[#DDD6FE] text-[11px] font-semibold text-[#6D28D9]">
                               {t('history.detailsOpen')}
                             </span>
                           )}
                         </div>
 
-                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] font-mono text-[#a3a3a3]">
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] font-mono text-[#6B7280]">
                           <span>{formatDate(workout.started_at, language)}</span>
                           {workout.duration_seconds && workout.duration_seconds > 0 ? (
                             <span>· {formatDuration(workout.duration_seconds)}</span>
                           ) : null}
                           {workout.total_volume_kg !== undefined && workout.total_volume_kg > 0 ? (
-                            <span className="text-[#34d399] font-medium">
+                            <span className="text-[#6D28D9] font-bold">
                               · {formatWeight(workout.total_volume_kg, unitPref)}
                             </span>
                           ) : null}
@@ -531,22 +532,22 @@ export const HistoryPage: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => toggleExpand(workout.id)}
-                          className="min-h-[44px] px-3.5 rounded-[10px] bg-[#0a0a0a] hover:bg-[#262626] border border-[#404040] text-[#fafafa] text-[13px] font-medium flex items-center gap-1.5 cursor-pointer transition-colors"
+                          className="min-h-[40px] px-3.5 rounded-[12px] bg-[#F8F7FC] hover:bg-[#F0EFFE] border border-[#ECEAF6] text-[#1E1B4B] text-[13px] font-semibold flex items-center gap-1.5 cursor-pointer transition-colors"
                         >
                           <span>
                             {isExpanded ? t('history.hideDetails') : t('history.showDetails')}
                           </span>
                           {isExpanded ? (
-                            <ChevronUp className="w-4 h-4 text-[#a3a3a3]" />
+                            <ChevronUp className="w-4 h-4 text-[#6D28D9]" />
                           ) : (
-                            <ChevronDown className="w-4 h-4 text-[#a3a3a3]" />
+                            <ChevronDown className="w-4 h-4 text-[#6B7280]" />
                           )}
                         </button>
                       </div>
                     </div>
 
                     {isExpanded && (
-                      <div className="p-4 rounded-[12px] bg-[#0a0a0a] border border-[#404040] space-y-3">
+                      <div className="p-4 rounded-[16px] bg-[#F8F7FC] border border-[#ECEAF6] space-y-3">
                         {workout.exercises && workout.exercises.length > 0 && (
                           <div className="space-y-2.5">
                             {workout.exercises.map((ex, i) => {
@@ -557,16 +558,16 @@ export const HistoryPage: React.FC = () => {
                               return (
                                 <div
                                   key={i}
-                                  className="p-3 rounded-[10px] bg-[#171717] border border-[#262626] space-y-2"
+                                  className="p-3 rounded-[12px] bg-white border border-[#ECEAF6] space-y-2"
                                 >
                                   <div className="flex flex-wrap items-center justify-between gap-2">
-                                    <h4 className="text-[13px] font-semibold text-[#fafafa] flex items-center gap-2">
-                                      <span className="text-[11px] font-mono text-[#34d399]">
+                                    <h4 className="text-[13px] font-bold text-[#1E1B4B] flex items-center gap-2">
+                                      <span className="text-[11px] font-mono text-[#6D28D9]">
                                         {String(i + 1).padStart(2, '0')}
                                       </span>
                                       <span>{ex.exercise_name}</span>
                                     </h4>
-                                    <span className="text-[11px] font-mono text-[#a3a3a3]">
+                                    <span className="text-[11px] font-mono font-medium text-[#6B7280]">
                                       {t('history.subtotalVol', {
                                         volume: formatWeight(exVol, unitPref),
                                       })}
@@ -574,7 +575,7 @@ export const HistoryPage: React.FC = () => {
                                   </div>
 
                                   {ex.notes && ex.notes.trim() && (
-                                    <div className="px-2.5 py-1.5 rounded-[8px] bg-[#0a0a0a] border border-[#262626] text-[12px] text-[#a3a3a3]">
+                                    <div className="px-2.5 py-1.5 rounded-[8px] bg-[#F8F7FC] border border-[#ECEAF6] text-[12px] text-[#6B7280]">
                                       {ex.notes}
                                     </div>
                                   )}
@@ -583,12 +584,12 @@ export const HistoryPage: React.FC = () => {
                                     {ex.sets?.map((set, sIdx) => (
                                       <div
                                         key={sIdx}
-                                        className="inline-flex items-center gap-1.5 bg-[#0a0a0a] px-2.5 py-1 rounded-[8px] text-[12px] font-mono border border-[#262626]"
+                                        className="inline-flex items-center gap-1.5 bg-[#F8F7FC] px-2.5 py-1 rounded-[8px] text-[12px] font-mono border border-[#ECEAF6]"
                                       >
-                                        <span className="text-[#737373]">
+                                        <span className="text-[#94A3B8]">
                                           {set.set_number || sIdx + 1} ·
                                         </span>
-                                        <span className="text-[#fafafa]">
+                                        <span className="text-[#1E1B4B] font-semibold">
                                           {formatWeight(set.weight_kg, unitPref)} × {set.reps}
                                         </span>
                                       </div>
@@ -600,8 +601,8 @@ export const HistoryPage: React.FC = () => {
                           </div>
                         )}
 
-                        <div className="pt-3 border-t border-[#262626] flex flex-wrap items-center justify-between gap-3">
-                          <span className="text-[13px] font-mono text-[#a3a3a3]">
+                        <div className="pt-3 border-t border-[#ECEAF6] flex flex-wrap items-center justify-between gap-3">
+                          <span className="text-[13px] font-mono font-semibold text-[#6B7280]">
                             {t('history.totalVolRow', {
                               volume: formatWeight(workout.total_volume_kg || 0, unitPref),
                             })}
@@ -610,19 +611,19 @@ export const HistoryPage: React.FC = () => {
                           <div className="flex items-center gap-2">
                             <Button
                               variant="primary"
-                              size="md"
+                              size="sm"
                               onClick={() => void handleRepeatWorkout(workout)}
-                              className="min-h-[44px] text-[13px] gap-1.5"
+                              className="gap-1.5"
                             >
                               <RotateCcw className="w-3.5 h-3.5" />
                               <span>{lbl.repeat}</span>
                             </Button>
 
                             <Button
-                              variant="outline"
-                              size="md"
+                              variant="danger"
+                              size="sm"
                               onClick={() => setDeletingId(workout.id)}
-                              className="min-h-[44px] text-[13px] gap-1.5 text-red-400 hover:border-red-500/40"
+                              className="gap-1.5"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
                               <span>{t('common.delete')}</span>
@@ -652,10 +653,10 @@ export const HistoryPage: React.FC = () => {
       </div>
 
       {/* Bottom 52-Week Consistency Heatmap */}
-      <div className="bg-[#171717] border border-[#404040] rounded-[14px] p-5 space-y-3">
+      <div className="bg-white border border-[#ECEAF6] rounded-[22px] p-5 space-y-3 royal-card-shadow">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h3 className="text-[15px] font-semibold text-[#fafafa]">{t('history.yearTitle')}</h3>
-          <span className="text-[12px] font-mono text-[#a3a3a3]">
+          <h3 className="text-[15px] font-bold text-[#1E1B4B]">{t('history.yearTitle')}</h3>
+          <span className="text-[12px] font-mono text-[#6B7280]">
             {t('history.weeksSpan', {
               start: annualHeatmap.startLabel,
               end: annualHeatmap.endLabel,
@@ -677,13 +678,13 @@ export const HistoryPage: React.FC = () => {
                       setSelectedDateStr((prev) => (prev === day.dateKey ? null : day.dateKey));
                     }}
                     title={`${day.dateKey}: ${day.count}`}
-                    className={`w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-[3px] border transition-colors cursor-pointer ${
+                    className={`w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-[4px] border transition-colors cursor-pointer ${
                       day.count === 0
-                        ? 'bg-[#0a0a0a] border-[#262626]'
+                        ? 'bg-[#F4F3FA] border-[#ECEAF6]'
                         : day.count === 1
-                        ? 'bg-[#064e3b] border-[#047857]'
-                        : 'bg-[#34d399] border-[#34d399]'
-                    } ${selectedDateStr === day.dateKey ? 'ring-2 ring-[#fafafa]' : ''}`}
+                        ? 'bg-[#C4B5FD] border-[#A78BFA]'
+                        : 'bg-[#6D28D9] border-[#6D28D9]'
+                    } ${selectedDateStr === day.dateKey ? 'ring-2 ring-[#1B1145]' : ''}`}
                   />
                 ))}
               </div>
@@ -691,15 +692,15 @@ export const HistoryPage: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex items-center justify-between text-[11px] text-[#a3a3a3] pt-1">
+        <div className="flex items-center justify-between text-[11px] text-[#6B7280] pt-1">
           <span className="font-mono">{workouts.length} {lbl.sessions}</span>
           <div className="flex items-center gap-3">
             <span className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-[2px] bg-[#0a0a0a] border border-[#262626]" />
+              <span className="w-2.5 h-2.5 rounded-[3px] bg-[#F4F3FA] border border-[#ECEAF6]" />
               {t('history.noLogsLegend')}
             </span>
             <span className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-[2px] bg-[#34d399]" />
+              <span className="w-2.5 h-2.5 rounded-[3px] bg-[#6D28D9]" />
               {t('history.hasWorkoutLegend')}
             </span>
           </div>
@@ -728,7 +729,7 @@ export const HistoryPage: React.FC = () => {
           </>
         }
       >
-        <p className="text-[14px] text-[#a3a3a3]">
+        <p className="text-[14px] text-[#6B7280]">
           {t('common.delete')}
         </p>
       </Modal>

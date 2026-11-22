@@ -443,74 +443,70 @@ export const AICoachPage: React.FC = () => {
 
   return (
     <div className="space-y-6 select-text max-w-full overflow-x-hidden">
-      {/* 1. Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
+      {/* 1. Royal Violet Page Header */}
+      <div className="royal-hero-gradient rounded-[24px] p-5 sm:p-7 text-white royal-card-shadow flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2.5">
-            <h1 className="text-2xl sm:text-3xl font-bold text-[#fafafa] tracking-tight truncate">
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight truncate">
               {t('coach.title')}
             </h1>
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-[#022c22] text-[#34d399] border border-[#064e3b] shrink-0">
-              <Sparkles className="w-3 h-3 text-[#34d399]" />
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-white/15 text-white border border-white/25 shrink-0">
+              <Sparkles className="w-3 h-3 text-[#C4B5FD]" />
               RAG 90d
             </span>
           </div>
-          <p className="text-sm text-[#a3a3a3] mt-1">{t('coach.subtitle')}</p>
+          <p className="text-sm text-white/80 mt-1">{t('coach.subtitle')}</p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2 shrink-0">
           {insights?.recommended_workout && (
-            <Button
+            <button
               type="button"
-              variant="secondary"
-              size="md"
               onClick={handleQuickStartDailyWorkout}
               title={insights.recommended_workout.title}
+              className="min-h-[42px] px-4 rounded-[12px] bg-white text-[#3B0CA3] hover:bg-[#F5F3FF] font-bold text-xs inline-flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer"
             >
-              <Play className="w-3.5 h-3.5 mr-1.5 fill-current text-[#34d399]" />
+              <Play className="w-3.5 h-3.5 fill-current" />
               {language === 'uz' ? 'Bugungi' : language === 'en' ? 'Start Day' : 'Старт дня'}
-            </Button>
+            </button>
           )}
-          <Button
+          <button
             type="button"
-            variant="outline"
-            size="md"
             onClick={() => setShowInsightsModal(true)}
             title={t('coach.telemetryTitle')}
+            className="min-h-[42px] px-3.5 rounded-[12px] bg-white/15 hover:bg-white/25 border border-white/25 text-white font-semibold text-xs inline-flex items-center gap-1.5 transition-colors cursor-pointer"
           >
-            <Activity className="w-4 h-4 mr-1.5 text-[#34d399]" />
-            <span className="font-mono tabular-nums text-[#34d399] font-semibold">
+            <Activity className="w-4 h-4 text-[#6EE7B7]" />
+            <span className="font-mono tabular-nums font-bold">
               {readinessScore}%
             </span>
-          </Button>
+          </button>
           {messages.length > 0 && (
-            <Button
+            <button
               type="button"
-              variant="ghost"
-              size="md"
               onClick={() => setIsClearModalOpen(true)}
-              className="text-[#a3a3a3] hover:text-red-400"
+              className="min-h-[42px] min-w-[42px] rounded-[12px] bg-white/10 hover:bg-white/20 border border-white/20 text-white/85 hover:text-white inline-flex items-center justify-center transition-colors cursor-pointer"
               title={t('coach.clearHistory')}
             >
               <Trash2 className="w-4 h-4" />
-            </Button>
+            </button>
           )}
         </div>
       </div>
 
-      {/* 2. Obsidian 2-Column Studio Grid */}
+      {/* 2. Royal Violet 2-Column Studio Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-[1.35fr_0.9fr] gap-4 items-start min-w-0">
         {/* Left: Chat Room & Composer */}
-        <Card className="p-0 overflow-hidden bg-[#171717] border-[#404040] min-w-0 w-full">
-          <CardHeader className="px-4 sm:px-5 py-3.5 border-b border-[#262626] mb-0 flex flex-row flex-wrap items-center justify-between gap-2">
+        <Card className="p-0 overflow-hidden bg-white border-[#ECEAF6] min-w-0 w-full">
+          <CardHeader className="px-4 sm:px-5 py-3.5 border-b border-[#ECEAF6] mb-0 flex flex-row flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2.5 min-w-0 flex-1">
-              <div className="w-9 h-9 rounded-[10px] bg-[#022c22] border border-[#064e3b] text-[#34d399] flex items-center justify-center shrink-0">
+              <div className="w-9 h-9 rounded-[12px] bg-[#F0EFFE] border border-[#DDD6FE] text-[#6D28D9] flex items-center justify-center shrink-0">
                 <Bot className="w-4 h-4" />
               </div>
               <div className="min-w-0 flex-1">
                 <CardTitle className="text-base truncate">{t('coach.discussTitle')}</CardTitle>
-                <p className="text-[11px] font-mono tabular-nums text-[#a3a3a3] truncate">
-                  {t('coach.workoutsCount', { count: weeklyWorkouts })} · {weeklyVolumeTons} t · ACWR{' '}
+                <p className="text-[11px] font-mono tabular-nums text-[#6B7280] truncate">
+                  {t('coach.workoutsCount', { count: weeklyWorkouts })} · {weeklyVolumeTons} {t('summary.tons')} · ACWR{' '}
                   {acwrValue.toFixed(2)}
                 </p>
               </div>
@@ -524,7 +520,7 @@ export const AICoachPage: React.FC = () => {
                 onClick={() => setIsClearModalOpen(true)}
                 className="shrink-0 text-xs"
               >
-                <Trash2 className="w-3.5 h-3.5 mr-1.5 text-[#a3a3a3]" />
+                <Trash2 className="w-3.5 h-3.5 mr-1.5 text-[#6B7280]" />
                 <span className="hidden sm:inline">{t('coach.clearHistory')}</span>
               </Button>
             )}
@@ -536,23 +532,23 @@ export const AICoachPage: React.FC = () => {
               ref={scrollContainerRef}
               onScroll={handleScroll}
               style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-y' }}
-              className="h-[440px] sm:h-[520px] lg:h-[560px] overflow-y-auto overflow-x-hidden px-3 sm:px-4 py-3.5 space-y-3 bg-[#0a0a0a] overscroll-y-contain relative select-text min-w-0"
+              className="h-[440px] sm:h-[520px] lg:h-[560px] overflow-y-auto overflow-x-hidden px-3 sm:px-4 py-3.5 space-y-3 bg-[#F4F3FA] overscroll-y-contain relative select-text min-w-0"
             >
               {/* Collapsible Athlete Briefing */}
-              <div className="rounded-[12px] bg-[#171717] border border-[#262626] p-3.5 space-y-2.5">
+              <div className="rounded-[16px] bg-white border border-[#ECEAF6] p-3.5 space-y-2.5 royal-card-shadow">
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2 min-w-0">
-                    <div className="w-6 h-6 rounded-[6px] bg-[#022c22] border border-[#064e3b] flex items-center justify-center text-[#34d399] shrink-0">
+                    <div className="w-6 h-6 rounded-[8px] bg-[#F0EFFE] border border-[#DDD6FE] flex items-center justify-center text-[#6D28D9] shrink-0">
                       <Zap className="w-3.5 h-3.5" />
                     </div>
-                    <p className="text-xs font-semibold text-[#fafafa] truncate">
+                    <p className="text-xs font-bold text-[#1E1B4B] truncate">
                       {getInitialGreeting()}
                     </p>
                   </div>
                   <button
                     type="button"
                     onClick={() => setShowBriefingCard((v) => !v)}
-                    className="min-w-[44px] min-h-[44px] -my-2 -mr-2 flex items-center justify-center rounded-[10px] text-[#a3a3a3] hover:text-[#fafafa] hover:bg-[#262626] transition-colors shrink-0 cursor-pointer"
+                    className="min-w-[40px] min-h-[40px] -my-2 -mr-2 flex items-center justify-center rounded-[10px] text-[#6B7280] hover:text-[#1E1B4B] hover:bg-[#F8F7FC] transition-colors shrink-0 cursor-pointer"
                     aria-label={t('coach.telemetryDetails')}
                   >
                     {showBriefingCard ? (
@@ -568,15 +564,15 @@ export const AICoachPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setShowInsightsModal(true)}
-                      className="min-h-[44px] p-2.5 rounded-[10px] bg-[#0a0a0a] border border-[#262626] hover:border-[#404040] text-left transition-colors cursor-pointer"
+                      className="min-h-[44px] p-2.5 rounded-[12px] bg-[#F8F7FC] border border-[#ECEAF6] hover:border-[#C4B5FD] text-left transition-colors cursor-pointer"
                     >
-                      <div className="text-[10px] text-[#a3a3a3] flex items-center justify-between">
+                      <div className="text-[10px] text-[#6B7280] flex items-center justify-between font-medium">
                         <span>ЦНС / ACWR</span>
-                        <Activity className="w-3 h-3 text-[#34d399]" />
+                        <Activity className="w-3 h-3 text-[#6D28D9]" />
                       </div>
-                      <div className="font-mono tabular-nums font-semibold text-[#fafafa] mt-0.5">
-                        <span className="text-[#34d399]">{readinessScore}%</span>{' '}
-                        <span className="text-[#737373]">·</span>{' '}
+                      <div className="font-mono tabular-nums font-bold text-[#1E1B4B] mt-0.5">
+                        <span className="text-[#6D28D9]">{readinessScore}%</span>{' '}
+                        <span className="text-[#94A3B8]">·</span>{' '}
                         <span>{acwrValue.toFixed(2)}</span>
                       </div>
                     </button>
@@ -584,9 +580,9 @@ export const AICoachPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setShowInsightsModal(true)}
-                      className="min-h-[44px] p-2.5 rounded-[10px] bg-[#0a0a0a] border border-[#262626] hover:border-[#404040] text-left transition-colors cursor-pointer"
+                      className="min-h-[44px] p-2.5 rounded-[12px] bg-[#F8F7FC] border border-[#ECEAF6] hover:border-[#C4B5FD] text-left transition-colors cursor-pointer"
                     >
-                      <div className="text-[10px] text-[#a3a3a3] flex items-center justify-between">
+                      <div className="text-[10px] text-[#6B7280] flex items-center justify-between font-medium">
                         <span>
                           {language === 'uz'
                             ? 'Mushaklar'
@@ -594,9 +590,9 @@ export const AICoachPage: React.FC = () => {
                             ? 'Ready'
                             : 'Готовы'}
                         </span>
-                        <Dumbbell className="w-3 h-3 text-[#34d399]" />
+                        <Dumbbell className="w-3 h-3 text-[#0891B2]" />
                       </div>
-                      <div className="font-medium text-[#fafafa] truncate mt-0.5">
+                      <div className="font-semibold text-[#1E1B4B] truncate mt-0.5">
                         {readyMuscles.length > 0
                           ? readyMuscles.map((m) => localizeMuscle(m.muscle_group)).join(', ')
                           : `${weeklyWorkouts} / ${weeklyVolumeTons} t`}
@@ -606,9 +602,9 @@ export const AICoachPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => handleSendMessage(t('coach.prompt6').replace(/^[^\s]+\s/, ''))}
-                      className="min-h-[44px] p-2.5 rounded-[10px] bg-[#0a0a0a] border border-[#262626] hover:border-[#404040] text-left transition-colors cursor-pointer"
+                      className="min-h-[44px] p-2.5 rounded-[12px] bg-[#F8F7FC] border border-[#ECEAF6] hover:border-[#C4B5FD] text-left transition-colors cursor-pointer"
                     >
-                      <div className="text-[10px] text-[#a3a3a3] flex items-center justify-between">
+                      <div className="text-[10px] text-[#6B7280] flex items-center justify-between font-medium">
                         <span>
                           {language === 'uz'
                             ? 'Oqsil / LBM'
@@ -616,9 +612,9 @@ export const AICoachPage: React.FC = () => {
                             ? 'Macros'
                             : 'Белок LBM'}
                         </span>
-                        <Utensils className="w-3 h-3 text-amber-400" />
+                        <Utensils className="w-3 h-3 text-[#EA580C]" />
                       </div>
-                      <div className="font-mono tabular-nums font-semibold text-[#fafafa] truncate mt-0.5">
+                      <div className="font-mono tabular-nums font-bold text-[#1E1B4B] truncate mt-0.5">
                         {bodyComp && bodyComp.protein_target_min_g > 0
                           ? `${Math.round(bodyComp.protein_target_min_g)}г · ${bodyComp.recommended_kcal}`
                           : insights?.today_protein_g
@@ -641,24 +637,24 @@ export const AICoachPage: React.FC = () => {
                     }`}
                   >
                     <div
-                      className={`w-7 h-7 rounded-[8px] flex items-center justify-center shrink-0 mt-0.5 border ${
+                      className={`w-7 h-7 rounded-[10px] flex items-center justify-center shrink-0 mt-0.5 border ${
                         isUser
-                          ? 'bg-[#022c22] border-[#064e3b] text-[#34d399]'
-                          : 'bg-[#171717] border-[#404040] text-[#34d399]'
+                          ? 'bg-[#6D28D9] border-[#6D28D9] text-white'
+                          : 'bg-white border-[#ECEAF6] text-[#6D28D9]'
                       }`}
                     >
                       {isUser ? <User className="w-3.5 h-3.5" /> : <Bot className="w-3.5 h-3.5" />}
                     </div>
 
                     <div
-                      className={`min-w-0 flex-1 overflow-hidden flex flex-col rounded-[12px] border text-xs sm:text-sm p-3 sm:p-3.5 space-y-2.5 ${
+                      className={`min-w-0 flex-1 overflow-hidden flex flex-col rounded-[16px] border text-xs sm:text-sm p-3 sm:p-3.5 space-y-2.5 ${
                         isUser
-                          ? 'bg-[#022c22] border-[#064e3b] text-[#fafafa]'
-                          : 'bg-[#171717] border-[#404040] text-[#fafafa]'
+                          ? 'bg-[#F0EFFE] border-[#DDD6FE] text-[#1E1B4B]'
+                          : 'bg-white border-[#ECEAF6] text-[#1E1B4B] royal-card-shadow'
                       }`}
                     >
                       {msg.imageUrl && (
-                        <div className="relative rounded-[10px] overflow-hidden border border-[#262626] bg-[#0a0a0a] max-w-xs">
+                        <div className="relative rounded-[12px] overflow-hidden border border-[#ECEAF6] bg-[#F8F7FC] max-w-xs">
                           <img
                             src={msg.imageUrl}
                             alt="Attached"
@@ -668,9 +664,9 @@ export const AICoachPage: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => setPreviewModalImg(msg.imageUrl || null)}
-                            className="mt-1.5 mb-1.5 mx-1.5 min-h-[44px] px-3 rounded-[8px] bg-[#171717] border border-[#404040] text-[#fafafa] text-xs font-medium inline-flex items-center gap-1.5 cursor-pointer"
+                            className="mt-1.5 mb-1.5 mx-1.5 min-h-[38px] px-3 rounded-[10px] bg-white border border-[#ECEAF6] text-[#1E1B4B] text-xs font-semibold inline-flex items-center gap-1.5 cursor-pointer"
                           >
-                            <ZoomIn className="w-3.5 h-3.5 text-[#34d399]" />
+                            <ZoomIn className="w-3.5 h-3.5 text-[#6D28D9]" />
                             <span>Zoom</span>
                           </button>
                         </div>
@@ -690,20 +686,20 @@ export const AICoachPage: React.FC = () => {
                         </div>
                       )}
 
-                      <div className="flex items-center justify-between gap-2 pt-2 border-t border-[#262626] text-[11px] font-mono tabular-nums text-[#737373]">
+                      <div className="flex items-center justify-between gap-2 pt-2 border-t border-[#ECEAF6] text-[11px] font-mono tabular-nums text-[#94A3B8]">
                         <span>{msg.timestamp}</span>
 
                         {!isUser && (
                           <button
                             type="button"
                             onClick={() => handleCopyMessage(msg.id, msg.content)}
-                            className="min-h-[44px] px-2.5 -my-1.5 rounded-[8px] hover:bg-[#262626] text-[#a3a3a3] hover:text-[#fafafa] inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+                            className="min-h-[36px] px-2.5 -my-1.5 rounded-[8px] hover:bg-[#F4F3FA] text-[#6B7280] hover:text-[#6D28D9] inline-flex items-center gap-1.5 transition-colors cursor-pointer"
                             title={t('coach.copy')}
                           >
                             {copiedMessageId === msg.id ? (
                               <>
-                                <Check className="w-3.5 h-3.5 text-[#34d399]" />
-                                <span className="text-[#34d399] font-sans font-medium text-xs">
+                                <Check className="w-3.5 h-3.5 text-[#10B981]" />
+                                <span className="text-[#10B981] font-sans font-semibold text-xs">
                                   {t('coach.copied')}
                                 </span>
                               </>
@@ -723,12 +719,12 @@ export const AICoachPage: React.FC = () => {
 
               {chatMutation.isPending && (
                 <div className="flex gap-2.5 max-w-[85%] mr-auto items-center">
-                  <div className="w-7 h-7 rounded-[8px] bg-[#171717] border border-[#404040] flex items-center justify-center text-[#34d399] shrink-0">
+                  <div className="w-7 h-7 rounded-[10px] bg-white border border-[#ECEAF6] flex items-center justify-center text-[#6D28D9] shrink-0">
                     <Bot className="w-3.5 h-3.5 animate-pulse" />
                   </div>
-                  <div className="px-3.5 py-2.5 rounded-[12px] bg-[#171717] text-[#fafafa] text-xs border border-[#404040] flex items-center gap-2">
-                    <Sparkles className="w-3.5 h-3.5 text-[#34d399] animate-spin" />
-                    <span className="font-medium">
+                  <div className="px-3.5 py-2.5 rounded-[14px] bg-white text-[#1E1B4B] text-xs border border-[#ECEAF6] royal-card-shadow flex items-center gap-2">
+                    <Sparkles className="w-3.5 h-3.5 text-[#6D28D9] animate-spin" />
+                    <span className="font-semibold">
                       {attachedPhoto ? t('coach.evaluatingPhoto') : t('coach.generating')}
                     </span>
                   </div>
@@ -744,7 +740,7 @@ export const AICoachPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={scrollToTop}
-                      className="min-w-[44px] min-h-[44px] px-3 rounded-full bg-[#171717] hover:bg-[#262626] text-[#fafafa] border border-[#404040] flex items-center justify-center cursor-pointer"
+                      className="min-w-[40px] min-h-[40px] px-3 rounded-full bg-white hover:bg-[#F0EFFE] text-[#1E1B4B] border border-[#ECEAF6] royal-float-shadow flex items-center justify-center cursor-pointer"
                       title={t('coach.scrollToTop')}
                     >
                       <ArrowUp className="w-4 h-4" />
@@ -755,10 +751,10 @@ export const AICoachPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => scrollToBottom(true)}
-                      className={`min-w-[44px] min-h-[44px] px-3 rounded-full border flex items-center justify-center gap-1.5 cursor-pointer ${
+                      className={`min-w-[40px] min-h-[40px] px-3 rounded-full border royal-float-shadow flex items-center justify-center gap-1.5 cursor-pointer ${
                         hasUnreadResponse
-                          ? 'bg-[#34d399] text-[#0a0a0a] font-semibold border-[#34d399]'
-                          : 'bg-[#171717] hover:bg-[#262626] text-[#fafafa] border-[#404040]'
+                          ? 'bg-[#6D28D9] text-white font-semibold border-[#6D28D9]'
+                          : 'bg-white hover:bg-[#F0EFFE] text-[#1E1B4B] border-[#ECEAF6]'
                       }`}
                       title={t('coach.scrollToBottom')}
                     >
@@ -773,7 +769,7 @@ export const AICoachPage: React.FC = () => {
             </div>
 
             {/* Bottom Composer & Quick Prompts */}
-            <div className="border-t border-[#262626] p-3.5 sm:p-4 space-y-3 bg-[#171717]">
+            <div className="border-t border-[#ECEAF6] p-3.5 sm:p-4 space-y-3 bg-white">
               {/* Quick Prompts */}
               <div className="flex flex-wrap gap-1.5">
                 {quickPrompts.map((prompt, i) => {
@@ -790,10 +786,10 @@ export const AICoachPage: React.FC = () => {
                         }
                       }}
                       disabled={chatMutation.isPending}
-                      className={`min-h-[44px] px-3 py-2 rounded-[10px] border text-xs transition-colors flex items-center gap-1.5 disabled:opacity-50 cursor-pointer ${
+                      className={`min-h-[38px] px-3 py-1.5 rounded-[10px] border text-xs transition-colors flex items-center gap-1.5 disabled:opacity-50 cursor-pointer font-medium ${
                         isPhotoPrompt
-                          ? 'bg-[#022c22] text-[#34d399] border-[#064e3b] hover:border-[#34d399]/60 font-medium'
-                          : 'bg-[#0a0a0a] border-[#404040] text-[#fafafa] hover:border-[#34d399]/60'
+                          ? 'bg-[#F0EFFE] text-[#6D28D9] border-[#DDD6FE] hover:bg-[#DDD6FE]/60'
+                          : 'bg-[#F8F7FC] border-[#ECEAF6] text-[#1E1B4B] hover:border-[#C4B5FD]'
                       }`}
                     >
                       <span>{prompt}</span>
@@ -803,32 +799,32 @@ export const AICoachPage: React.FC = () => {
               </div>
 
               {photoError && (
-                <div className="p-2.5 rounded-[10px] bg-red-950/40 border border-red-900 text-xs text-red-400">
+                <div className="p-2.5 rounded-[10px] bg-[#FEF2F2] border border-[#FECACA] text-xs text-[#DC2626]">
                   {photoError}
                 </div>
               )}
 
               {attachedPhoto && (
-                <div className="px-3 py-2 bg-[#0a0a0a] border border-[#064e3b] rounded-[10px] flex items-center justify-between gap-2">
+                <div className="px-3 py-2 bg-[#F5F3FF] border border-[#DDD6FE] rounded-[12px] flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2.5 min-w-0">
                     <img
                       src={attachedPhoto.dataUrl}
                       alt="Attached preview"
-                      className="w-10 h-10 object-cover rounded-[8px] border border-[#404040] cursor-pointer shrink-0"
+                      className="w-10 h-10 object-cover rounded-[8px] border border-[#DDD6FE] cursor-pointer shrink-0"
                       onClick={() => setPreviewModalImg(attachedPhoto.dataUrl)}
                     />
                     <div className="text-xs min-w-0">
-                      <p className="font-semibold text-[#fafafa] flex items-center gap-1 truncate">
-                        <Sparkles className="w-3.5 h-3.5 text-[#34d399] shrink-0" />
+                      <p className="font-semibold text-[#1E1B4B] flex items-center gap-1 truncate">
+                        <Sparkles className="w-3.5 h-3.5 text-[#6D28D9] shrink-0" />
                         {t('coach.photoAttached')}
                       </p>
-                      <p className="text-[11px] text-[#a3a3a3] truncate">{t('coach.photoHint')}</p>
+                      <p className="text-[11px] text-[#6B7280] truncate">{t('coach.photoHint')}</p>
                     </div>
                   </div>
                   <button
                     type="button"
                     onClick={() => setAttachedPhoto(null)}
-                    className="min-w-[44px] min-h-[44px] rounded-[10px] text-[#a3a3a3] hover:text-red-400 hover:bg-[#171717] flex items-center justify-center shrink-0 cursor-pointer"
+                    className="min-w-[40px] min-h-[40px] rounded-[10px] text-[#6B7280] hover:text-[#EF4444] hover:bg-white flex items-center justify-center shrink-0 cursor-pointer"
                     aria-label={t('coach.photoDelete')}
                   >
                     <X className="w-4 h-4" />
@@ -860,7 +856,7 @@ export const AICoachPage: React.FC = () => {
                     onClick={() => setIsPhotoPickerOpen(true)}
                     disabled={chatMutation.isPending}
                   >
-                    <Camera className="w-4 h-4 mr-1.5 text-[#34d399]" />
+                    <Camera className="w-4 h-4 mr-1.5 text-[#6D28D9]" />
                     {t('coach.attachPhoto')}
                   </Button>
 
@@ -885,17 +881,17 @@ export const AICoachPage: React.FC = () => {
         {/* Right: Readiness, Overload Targets & Prescribed Workout */}
         <div className="min-w-0 space-y-4">
           {/* Card 1: Today's Readiness */}
-          <Card className="p-4 sm:p-5 bg-[#171717] border-[#404040] space-y-4">
+          <Card className="p-4 sm:p-5 space-y-4">
             <div className="flex items-start justify-between gap-2">
               <div>
-                <h2 className="text-base font-semibold text-[#fafafa] tracking-tight">
+                <h2 className="text-base font-bold text-[#1E1B4B] tracking-tight">
                   {t('coach.readinessToday')}
                 </h2>
-                <p className="text-xs text-[#a3a3a3] mt-0.5">
+                <p className="text-xs text-[#6B7280] mt-0.5">
                   Banister CNS · ACWR {acwrValue.toFixed(2)}
                 </p>
               </div>
-              <span className="px-2.5 py-1 rounded-full text-[11px] font-medium bg-[#022c22] border border-[#064e3b] text-[#34d399]">
+              <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#ECFDF5] border border-[#A7F3D0] text-[#059669]">
                 {insights?.recovery_status || t('coach.fullyRecovered')}
               </span>
             </div>
@@ -903,39 +899,39 @@ export const AICoachPage: React.FC = () => {
             <div className="space-y-2">
               <div className="flex items-baseline justify-between">
                 <div className="flex items-baseline gap-1.5">
-                  <span className="text-3xl font-bold font-mono tabular-nums text-[#fafafa]">
+                  <span className="text-3xl font-extrabold font-mono tabular-nums text-[#1E1B4B]">
                     {readinessScore}
                   </span>
-                  <span className="text-sm font-mono tabular-nums text-[#737373]">/ 100</span>
+                  <span className="text-sm font-mono tabular-nums text-[#6B7280]">/ 100</span>
                 </div>
-                <span className="text-xs font-mono tabular-nums text-[#a3a3a3]">
+                <span className="text-xs font-mono tabular-nums text-[#6D28D9] font-semibold">
                   {insights?.cns_metrics?.acwr_zone || targetSplit}
                 </span>
               </div>
-              <div className="h-2 w-full rounded-full bg-[#262626] overflow-hidden">
+              <div className="h-2 w-full rounded-full bg-[#ECEAF6] overflow-hidden">
                 <div
-                  className="h-full rounded-full bg-[#34d399]"
+                  className="h-full rounded-full bg-[#6D28D9]"
                   style={{ width: `${Math.min(100, Math.max(0, readinessScore))}%` }}
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-3 gap-2">
-              <div className="p-2.5 rounded-[10px] bg-[#0a0a0a] border border-[#262626]">
-                <div className="text-[11px] text-[#a3a3a3]">ACWR</div>
-                <div className="text-sm font-mono tabular-nums font-semibold text-[#fafafa] mt-0.5">
+              <div className="p-2.5 rounded-[12px] bg-[#F8F7FC] border border-[#ECEAF6]">
+                <div className="text-[11px] text-[#6B7280]">ACWR</div>
+                <div className="text-sm font-mono tabular-nums font-bold text-[#1E1B4B] mt-0.5">
                   {acwrValue.toFixed(2)}
                 </div>
               </div>
-              <div className="p-2.5 rounded-[10px] bg-[#0a0a0a] border border-[#262626]">
-                <div className="text-[11px] text-[#a3a3a3]">7d Volume</div>
-                <div className="text-sm font-mono tabular-nums font-semibold text-[#34d399] mt-0.5">
+              <div className="p-2.5 rounded-[12px] bg-[#F8F7FC] border border-[#ECEAF6]">
+                <div className="text-[11px] text-[#6B7280]">7d Volume</div>
+                <div className="text-sm font-mono tabular-nums font-bold text-[#6D28D9] mt-0.5">
                   {weeklyVolumeTons} t
                 </div>
               </div>
-              <div className="p-2.5 rounded-[10px] bg-[#0a0a0a] border border-[#262626]">
-                <div className="text-[11px] text-[#a3a3a3]">Split</div>
-                <div className="text-sm font-semibold text-[#fafafa] truncate mt-0.5">
+              <div className="p-2.5 rounded-[12px] bg-[#F8F7FC] border border-[#ECEAF6]">
+                <div className="text-[11px] text-[#6B7280]">Split</div>
+                <div className="text-sm font-bold text-[#1E1B4B] truncate mt-0.5">
                   {targetSplit}
                 </div>
               </div>
@@ -946,10 +942,10 @@ export const AICoachPage: React.FC = () => {
                 {readyMuscles.map((m) => (
                   <span
                     key={m.muscle_group}
-                    className="px-2.5 py-1 rounded-[8px] bg-[#0a0a0a] border border-[#262626] text-xs font-mono tabular-nums text-[#a3a3a3]"
+                    className="px-2.5 py-1 rounded-[10px] bg-[#F8F7FC] border border-[#ECEAF6] text-xs font-mono tabular-nums text-[#1E1B4B]"
                   >
                     {localizeMuscle(m.muscle_group)}{' '}
-                    <span className="text-[#34d399]">{m.recovery_percent}%</span>
+                    <span className="text-[#10B981] font-bold">{m.recovery_percent}%</span>
                   </span>
                 ))}
               </div>
@@ -961,16 +957,16 @@ export const AICoachPage: React.FC = () => {
               className="w-full"
               onClick={() => setShowInsightsModal(true)}
             >
-              <Activity className="w-4 h-4 mr-1.5 text-[#34d399]" />
+              <Activity className="w-4 h-4 mr-1.5 text-[#6D28D9]" />
               {t('coach.telemetryDetails')}
             </Button>
           </Card>
 
           {/* Card 2: Progressive Overload & Recomp Targets */}
-          <Card className="p-4 sm:p-5 bg-[#171717] border-[#404040] space-y-3">
+          <Card className="p-4 sm:p-5 space-y-3">
             <div className="flex items-center justify-between gap-2">
-              <h2 className="text-base font-semibold text-[#fafafa] tracking-tight flex items-center gap-2">
-                <TrendingUp className="w-4 h-4 text-[#34d399]" />
+              <h2 className="text-base font-bold text-[#1E1B4B] tracking-tight flex items-center gap-2">
+                <TrendingUp className="w-4 h-4 text-[#6D28D9]" />
                 {t('coach.overloadGoals')}
               </h2>
             </div>
@@ -984,32 +980,32 @@ export const AICoachPage: React.FC = () => {
                     onClick={() =>
                       handleSendMessage(`План прогрессии в упражнении «${ov.exercise_name}»`)
                     }
-                    className="w-full min-h-[44px] p-2.5 rounded-[10px] bg-[#0a0a0a] border border-[#262626] hover:border-[#34d399]/60 flex items-center justify-between gap-2 text-left transition-colors cursor-pointer"
+                    className="w-full min-h-[44px] p-2.5 rounded-[12px] bg-[#F8F7FC] border border-[#ECEAF6] hover:border-[#C4B5FD] flex items-center justify-between gap-2 text-left transition-colors cursor-pointer"
                   >
-                    <span className="text-xs font-medium text-[#fafafa] truncate">
+                    <span className="text-xs font-semibold text-[#1E1B4B] truncate">
                       {ov.exercise_name}
                     </span>
-                    <span className="text-xs font-mono tabular-nums text-[#34d399] shrink-0">
+                    <span className="text-xs font-mono tabular-nums font-bold text-[#6D28D9] shrink-0">
                       {ov.last_best_weight_kg} → {ov.target_weight_kg} kg × {ov.target_reps}
                     </span>
                   </button>
                 ))}
               </div>
             ) : (
-              <p className="text-xs text-[#a3a3a3] bg-[#0a0a0a] border border-[#262626] rounded-[10px] p-3 leading-relaxed">
+              <p className="text-xs text-[#6B7280] bg-[#F8F7FC] border border-[#ECEAF6] rounded-[12px] p-3 leading-relaxed">
                 {t('coach.noOverloadYet')}
               </p>
             )}
 
             {(bodyComp?.current_weight_kg || insights?.today_calories) && (
-              <div className="pt-2 border-t border-[#262626] flex flex-wrap items-center justify-between gap-2 text-xs text-[#a3a3a3] font-mono tabular-nums">
+              <div className="pt-2 border-t border-[#ECEAF6] flex flex-wrap items-center justify-between gap-2 text-xs text-[#6B7280] font-mono tabular-nums">
                 {bodyComp && bodyComp.current_weight_kg > 0 ? (
                   <>
                     <span>
                       {t('coach.todayNutrition')}:{' '}
-                      <strong className="text-[#fafafa]">{bodyComp.recommended_kcal} kcal</strong>
+                      <strong className="text-[#1E1B4B]">{bodyComp.recommended_kcal} kcal</strong>
                     </span>
-                    <span className="text-[#34d399]">
+                    <span className="text-[#6D28D9] font-bold">
                       {Math.round(bodyComp.protein_target_min_g)}–
                       {Math.round(bodyComp.protein_target_max_g)}g P
                     </span>
@@ -1030,12 +1026,12 @@ export const AICoachPage: React.FC = () => {
           {insights?.recommended_workout ? (
             <CoachWorkoutCard workout={insights.recommended_workout} />
           ) : (
-            <Card className="p-4 sm:p-5 bg-[#171717] border-[#404040] space-y-3">
-              <div className="flex items-center gap-2 text-base font-semibold text-[#fafafa]">
-                <Flame className="w-4 h-4 text-[#34d399]" />
+            <Card className="p-4 sm:p-5 space-y-3">
+              <div className="flex items-center gap-2 text-base font-bold text-[#1E1B4B]">
+                <Flame className="w-4 h-4 text-[#6D28D9]" />
                 {t('coach.recommendedSplit')}
               </div>
-              <p className="text-xs text-[#a3a3a3] leading-relaxed">{t('coach.noWorkoutYet')}</p>
+              <p className="text-xs text-[#6B7280] leading-relaxed">{t('coach.noWorkoutYet')}</p>
               <Button
                 type="button"
                 variant="outline"
@@ -1055,7 +1051,7 @@ export const AICoachPage: React.FC = () => {
         onClose={() => setShowInsightsModal(false)}
         title={t('coach.telemetryTitle')}
         description="Banister CNS Decay · ACWR · MEV/MAV/MRV · LBM Macros"
-        headerIcon={<Activity className="w-4 h-4 text-[#34d399]" />}
+        headerIcon={<Activity className="w-4 h-4 text-[#6D28D9]" />}
         size="md"
         footer={
           <div className="flex flex-wrap items-center gap-2 w-full">
@@ -1089,32 +1085,32 @@ export const AICoachPage: React.FC = () => {
         <div className="space-y-3.5 max-h-[70vh] overflow-y-auto pr-1">
           {/* CNS & ACWR Row */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
-            <div className="p-3 rounded-[10px] bg-[#0a0a0a] border border-[#262626] space-y-1">
-              <span className="text-[11px] text-[#a3a3a3] flex items-center gap-1.5">
-                <Activity className="w-3.5 h-3.5 text-[#34d399]" /> {t('coach.cnsReadiness')}
+            <div className="p-3 rounded-[12px] bg-[#F8F7FC] border border-[#ECEAF6] space-y-1">
+              <span className="text-[11px] text-[#6B7280] flex items-center gap-1.5">
+                <Activity className="w-3.5 h-3.5 text-[#6D28D9]" /> {t('coach.cnsReadiness')}
               </span>
               <div className="flex items-baseline gap-2">
-                <p className="text-lg font-bold font-mono tabular-nums text-[#34d399]">
+                <p className="text-lg font-bold font-mono tabular-nums text-[#6D28D9]">
                   {readinessScore}%
                 </p>
-                <span className="text-[11px] font-mono tabular-nums text-[#fafafa]">
+                <span className="text-[11px] font-mono tabular-nums text-[#1E1B4B]">
                   ACWR {acwrValue.toFixed(2)}
                 </span>
               </div>
-              <p className="text-[11px] text-[#737373] truncate">
+              <p className="text-[11px] text-[#6B7280] truncate">
                 {insights?.cns_metrics?.acwr_zone || targetSplit}
               </p>
             </div>
 
-            <div className="p-3 rounded-[10px] bg-[#0a0a0a] border border-[#262626] space-y-1">
-              <span className="text-[11px] text-[#a3a3a3] flex items-center gap-1.5">
-                <Flame className="w-3.5 h-3.5 text-[#34d399]" /> {t('coach.workload7d')}
+            <div className="p-3 rounded-[12px] bg-[#F8F7FC] border border-[#ECEAF6] space-y-1">
+              <span className="text-[11px] text-[#6B7280] flex items-center gap-1.5">
+                <Flame className="w-3.5 h-3.5 text-[#6D28D9]" /> {t('coach.workload7d')}
               </span>
-              <p className="text-lg font-bold font-mono tabular-nums text-[#fafafa]">
+              <p className="text-lg font-bold font-mono tabular-nums text-[#1E1B4B]">
                 {weeklyVolumeTons} t{' '}
-                <span className="text-xs font-normal text-[#a3a3a3]">({weeklyWorkouts})</span>
+                <span className="text-xs font-normal text-[#6B7280]">({weeklyWorkouts})</span>
               </p>
-              <p className="text-[11px] text-[#737373] font-mono tabular-nums">
+              <p className="text-[11px] text-[#6B7280] font-mono tabular-nums">
                 28d avg:{' '}
                 {((insights?.cns_metrics?.chronic_load_28d_avg_kg || 0) / 1000).toFixed(1)} t/wk
               </p>
@@ -1123,10 +1119,10 @@ export const AICoachPage: React.FC = () => {
 
           {/* Per-Muscle Recovery & Volume Matrix */}
           {insights?.muscle_recovery && insights.muscle_recovery.length > 0 && (
-            <div className="p-3 rounded-[10px] bg-[#0a0a0a] border border-[#262626] space-y-2.5">
+            <div className="p-3 rounded-[12px] bg-[#F8F7FC] border border-[#ECEAF6] space-y-2.5">
               <div className="flex items-center justify-between text-[11px]">
-                <span className="font-semibold text-[#fafafa] flex items-center gap-1.5">
-                  <Dumbbell className="w-3.5 h-3.5 text-[#34d399]" />
+                <span className="font-bold text-[#1E1B4B] flex items-center gap-1.5">
+                  <Dumbbell className="w-3.5 h-3.5 text-[#6D28D9]" />
                   {language === 'uz'
                     ? 'Mushaklar tiklanishi va haftalik hajm (MEV–MAV)'
                     : language === 'en'
@@ -1139,30 +1135,30 @@ export const AICoachPage: React.FC = () => {
                 {insights.muscle_recovery.map((m) => {
                   const barColor =
                     m.recovery_percent >= 85
-                      ? 'bg-[#34d399]'
+                      ? 'bg-[#10B981]'
                       : m.recovery_percent >= 60
-                      ? 'bg-amber-400'
-                      : 'bg-red-400';
+                      ? 'bg-[#F59E0B]'
+                      : 'bg-[#EF4444]';
                   return (
                     <div
                       key={m.muscle_group}
-                      className="p-2.5 rounded-[10px] bg-[#171717] border border-[#262626] space-y-1.5"
+                      className="p-2.5 rounded-[12px] bg-white border border-[#ECEAF6] space-y-1.5"
                     >
                       <div className="flex items-center justify-between text-[11px]">
-                        <span className="font-semibold text-[#fafafa]">
+                        <span className="font-semibold text-[#1E1B4B]">
                           {localizeMuscle(m.muscle_group)}
                         </span>
-                        <span className="font-mono tabular-nums font-bold text-[#34d399]">
+                        <span className="font-mono tabular-nums font-bold text-[#6D28D9]">
                           {m.recovery_percent}%
                         </span>
                       </div>
-                      <div className="w-full h-1.5 rounded-full bg-[#262626] overflow-hidden">
+                      <div className="w-full h-1.5 rounded-full bg-[#ECEAF6] overflow-hidden">
                         <div
                           className={`h-full rounded-full ${barColor}`}
                           style={{ width: `${m.recovery_percent}%` }}
                         />
                       </div>
-                      <div className="flex items-center justify-between text-[10px] text-[#a3a3a3] font-mono tabular-nums">
+                      <div className="flex items-center justify-between text-[10px] text-[#6B7280] font-mono tabular-nums">
                         <span>{m.weekly_sets_7d} sets</span>
                         <span>MAV: {m.mav}</span>
                       </div>
@@ -1175,8 +1171,8 @@ export const AICoachPage: React.FC = () => {
 
           {/* Body Recomposition & LBM Macros */}
           {bodyComp && bodyComp.current_weight_kg > 0 && (
-            <div className="p-3 rounded-[10px] bg-[#022c22] border border-[#064e3b] space-y-1">
-              <span className="text-[11px] text-[#34d399] flex items-center gap-1.5 font-semibold">
+            <div className="p-3 rounded-[12px] bg-[#ECFDF5] border border-[#A7F3D0] space-y-1">
+              <span className="text-[11px] text-[#059669] flex items-center gap-1.5 font-bold">
                 <Utensils className="w-3.5 h-3.5" />
                 {language === 'uz'
                   ? 'Tana rekompozitsiyasi (LBM hisobi)'
@@ -1184,11 +1180,11 @@ export const AICoachPage: React.FC = () => {
                   ? 'LBM Recomposition Targets'
                   : 'Цели КБЖУ по сухой массе (LBM)'}
               </span>
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-mono tabular-nums text-[#fafafa]">
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-mono tabular-nums text-[#1E1B4B]">
                 <span>
                   {bodyComp.current_weight_kg} kg (LBM: {bodyComp.lean_body_mass_kg} kg)
                 </span>
-                <span className="text-[#34d399]">{bodyComp.recommended_kcal} kcal</span>
+                <span className="text-[#059669] font-bold">{bodyComp.recommended_kcal} kcal</span>
                 <span>
                   {Math.round(bodyComp.protein_target_min_g)}–
                   {Math.round(bodyComp.protein_target_max_g)} g P
@@ -1200,23 +1196,23 @@ export const AICoachPage: React.FC = () => {
           {/* Overload Target Badges */}
           {insights?.overload_targets && insights.overload_targets.length > 0 && (
             <div className="space-y-1.5">
-              <p className="text-[11px] font-semibold text-[#fafafa] flex items-center gap-1.5">
-                <TrendingUp className="w-3.5 h-3.5 text-[#34d399]" /> {t('coach.overloadGoals')}
+              <p className="text-[11px] font-bold text-[#1E1B4B] flex items-center gap-1.5">
+                <TrendingUp className="w-3.5 h-3.5 text-[#6D28D9]" /> {t('coach.overloadGoals')}
               </p>
               <div className="space-y-1.5">
                 {insights.overload_targets.slice(0, 5).map((target, idx) => (
                   <div
                     key={idx}
-                    className="p-2.5 rounded-[10px] bg-[#0a0a0a] border border-[#262626] flex items-center justify-between text-xs gap-2"
+                    className="p-2.5 rounded-[12px] bg-[#F8F7FC] border border-[#ECEAF6] flex items-center justify-between text-xs gap-2"
                   >
-                    <span className="font-medium text-[#fafafa] truncate">
+                    <span className="font-semibold text-[#1E1B4B] truncate">
                       {target.exercise_name}
                     </span>
                     <div className="flex items-center gap-1.5 font-mono tabular-nums shrink-0 text-[11px]">
-                      <span className="text-[#737373]">
+                      <span className="text-[#6B7280]">
                         {target.last_best_weight_kg}×{target.last_best_reps} →
                       </span>
-                      <span className="text-[#34d399] font-semibold">
+                      <span className="text-[#6D28D9] font-bold">
                         {target.target_weight_kg} kg × {target.target_reps}
                       </span>
                     </div>
@@ -1234,7 +1230,7 @@ export const AICoachPage: React.FC = () => {
         onClose={() => setIsClearModalOpen(false)}
         title={t('coach.clearModalTitle')}
         description={t('coach.clearModalDesc')}
-        headerIcon={<AlertTriangle className="w-5 h-5 text-red-400" />}
+        headerIcon={<AlertTriangle className="w-5 h-5 text-[#EF4444]" />}
         size="sm"
         footer={
           <>
@@ -1248,7 +1244,7 @@ export const AICoachPage: React.FC = () => {
           </>
         }
       >
-        <p className="text-xs text-[#a3a3a3]">{t('coach.clearConfirm')}</p>
+        <p className="text-xs text-[#6B7280]">{t('coach.clearConfirm')}</p>
       </Modal>
 
       {/* 5. Smart Photo Picker Modal */}
@@ -1264,13 +1260,13 @@ export const AICoachPage: React.FC = () => {
       {previewModalImg && (
         <div
           onClick={() => setPreviewModalImg(null)}
-          className="fixed inset-0 z-50 bg-[#0a0a0a]/95 flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 bg-[#1B1145]/80 backdrop-blur-sm flex items-center justify-center p-4"
         >
           <div className="relative max-w-4xl max-h-[90vh] flex flex-col items-center">
             <button
               type="button"
               onClick={() => setPreviewModalImg(null)}
-              className="mb-3 ml-auto min-w-[44px] min-h-[44px] text-[#fafafa] hover:text-[#34d399] px-3 rounded-[10px] bg-[#171717] border border-[#404040] flex items-center justify-center cursor-pointer"
+              className="mb-3 ml-auto min-w-[44px] min-h-[44px] text-[#1E1B4B] hover:text-[#6D28D9] px-3 rounded-[12px] bg-white border border-[#ECEAF6] flex items-center justify-center cursor-pointer shadow-md"
               aria-label={t('common.close')}
             >
               <X className="w-5 h-5" />
@@ -1278,7 +1274,7 @@ export const AICoachPage: React.FC = () => {
             <img
               src={previewModalImg}
               alt="Preview"
-              className="max-h-[82vh] max-w-full object-contain rounded-[14px] border border-[#404040]"
+              className="max-h-[82vh] max-w-full object-contain rounded-[18px] border border-white/25 shadow-2xl"
             />
           </div>
         </div>

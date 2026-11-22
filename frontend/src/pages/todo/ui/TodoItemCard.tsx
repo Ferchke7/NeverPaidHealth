@@ -53,12 +53,12 @@ export const TodoItemCard: React.FC<TodoItemCardProps> = ({
 
   return (
     <div
-      className={`p-3.5 sm:p-4 rounded-[10px] bg-[#0a0a0a] border transition-colors space-y-3 ${
+      className={`p-3.5 sm:p-4 rounded-[14px] bg-[#F8F7FC] border transition-colors space-y-3 ${
         isEditing
-          ? 'border-[#34d399]'
+          ? 'border-[#6D28D9] bg-[#F5F3FF]'
           : isDone
-            ? 'border-[#262626] opacity-75'
-            : 'border-[#262626] hover:border-[#404040]'
+            ? 'border-[#ECEAF6] opacity-75'
+            : 'border-[#ECEAF6] hover:border-[#C4B5FD]'
       }`}
     >
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
@@ -67,10 +67,10 @@ export const TodoItemCard: React.FC<TodoItemCardProps> = ({
           <button
             type="button"
             onClick={() => onToggle(item.id)}
-            className={`min-h-[44px] min-w-[44px] rounded-[10px] border flex items-center justify-center shrink-0 transition-colors cursor-pointer ${
+            className={`min-h-[42px] min-w-[42px] rounded-[12px] border flex items-center justify-center shrink-0 transition-colors cursor-pointer ${
               isDone
-                ? 'bg-[#34d399] text-[#0a0a0a] border-[#34d399]'
-                : 'bg-[#171717] border-[#404040] text-[#737373] hover:border-[#34d399] hover:text-[#34d399]'
+                ? 'bg-[#10B981] text-white border-[#10B981]'
+                : 'bg-white border-[#DDD6FE] text-[#94A3B8] hover:border-[#6D28D9] hover:text-[#6D28D9]'
             }`}
             aria-label={isDone ? 'Mark as pending' : 'Mark as completed'}
           >
@@ -81,37 +81,37 @@ export const TodoItemCard: React.FC<TodoItemCardProps> = ({
             {/* Title & Status */}
             <div className="flex items-center gap-2 flex-wrap">
               <span
-                className={`text-[14px] font-semibold truncate ${
-                  isDone ? 'line-through text-[#737373]' : 'text-[#fafafa]'
+                className={`text-[14px] font-bold truncate ${
+                  isDone ? 'line-through text-[#94A3B8]' : 'text-[#1E1B4B]'
                 }`}
               >
                 {item.title}
               </span>
 
               <span
-                className={`text-[11px] font-medium px-2 py-0.5 rounded-[6px] border ${
+                className={`text-[11px] font-semibold px-2 py-0.5 rounded-[6px] border ${
                   isDone
-                    ? 'bg-[#022c22] border-[#064e3b] text-[#34d399]'
-                    : 'bg-[#171717] border-[#404040] text-[#a3a3a3]'
+                    ? 'bg-[#ECFDF5] border-[#A7F3D0] text-[#059669]'
+                    : 'bg-white border-[#ECEAF6] text-[#6B7280]'
                 }`}
               >
                 {isDone ? t('todo.doneStatus') : t('todo.pendingStatus')}
               </span>
 
-              <span className="text-[11px] font-medium px-2 py-0.5 rounded-[6px] bg-[#171717] border border-[#262626] text-[#a3a3a3]">
+              <span className="text-[11px] font-semibold px-2 py-0.5 rounded-[6px] bg-[#F0EFFE] border border-[#DDD6FE] text-[#6D28D9]">
                 {getCategoryLabel(item.category)}
               </span>
 
               {timeString && (
-                <span className="text-[11px] font-mono tabular-nums px-2 py-0.5 rounded-[6px] bg-[#171717] border border-[#262626] text-[#fafafa] inline-flex items-center gap-1">
-                  <Clock className="w-3 h-3 text-[#34d399]" />
+                <span className="text-[11px] font-mono tabular-nums px-2 py-0.5 rounded-[6px] bg-white border border-[#ECEAF6] text-[#1E1B4B] inline-flex items-center gap-1">
+                  <Clock className="w-3 h-3 text-[#6D28D9]" />
                   <span>{timeString}</span>
                 </span>
               )}
 
               {item.is_multi_day && (
-                <span className="text-[11px] font-mono tabular-nums px-2 py-0.5 rounded-[6px] bg-[#171717] border border-[#404040] text-[#a3a3a3] inline-flex items-center gap-1">
-                  <Calendar className="w-3 h-3 text-[#34d399]" />
+                <span className="text-[11px] font-mono tabular-nums px-2 py-0.5 rounded-[6px] bg-white border border-[#ECEAF6] text-[#6B7280] inline-flex items-center gap-1">
+                  <Calendar className="w-3 h-3 text-[#6D28D9]" />
                   <span>
                     {item.completed_days !== undefined
                       ? `${item.completed_days}/${item.total_days} ${t('todo.daysShort') || 'дн.'}`
@@ -121,7 +121,7 @@ export const TodoItemCard: React.FC<TodoItemCardProps> = ({
               )}
 
               {item.has_conflict && (
-                <span className="text-[11px] font-medium px-2 py-0.5 rounded-[6px] bg-red-950/30 border border-red-500/40 text-red-400 inline-flex items-center gap-1">
+                <span className="text-[11px] font-semibold px-2 py-0.5 rounded-[6px] bg-[#FEF2F2] border border-[#FECACA] text-[#DC2626] inline-flex items-center gap-1">
                   <AlertTriangle className="w-3 h-3" />
                   <span>{t('todo.conflictGeneric') || 'Конфликт времени'}</span>
                 </span>
@@ -129,26 +129,26 @@ export const TodoItemCard: React.FC<TodoItemCardProps> = ({
             </div>
 
             {item.description && (
-              <p className="text-[12px] text-[#a3a3a3] line-clamp-2 leading-relaxed">
+              <p className="text-[12px] text-[#6B7280] line-clamp-2 leading-relaxed">
                 {item.description}
               </p>
             )}
 
             {/* Daily Minutes Progress */}
             <div className="flex items-center gap-3 flex-wrap pt-0.5">
-              <div className="w-28 sm:w-36 h-1.5 rounded-full bg-[#262626] overflow-hidden">
+              <div className="w-28 sm:w-36 h-1.5 rounded-full bg-[#ECEAF6] overflow-hidden">
                 <div
-                  className="h-full rounded-full bg-[#34d399] transition-all duration-300"
+                  className="h-full rounded-full bg-[#6D28D9] transition-all duration-300"
                   style={{ width: `${dayProgressPct}%` }}
                 />
               </div>
 
-              <div className="text-[12px] font-mono tabular-nums text-[#a3a3a3] flex items-center gap-1.5">
+              <div className="text-[12px] font-mono tabular-nums text-[#6B7280] flex items-center gap-1.5">
                 <span>
                   {spentMins} / {targetMins} {t('todo.minuteShort') || 'м'}
                 </span>
                 {item.lifetime_spent_minutes !== undefined && item.lifetime_spent_minutes > spentMins && (
-                  <span className="text-[#737373] text-[11px]">
+                  <span className="text-[#94A3B8] text-[11px]">
                     {t('todo.lifetimeTotal', { minutes: item.lifetime_spent_minutes }) ||
                       `(${item.lifetime_spent_minutes}m)`}
                   </span>
@@ -160,7 +160,7 @@ export const TodoItemCard: React.FC<TodoItemCardProps> = ({
                   href={item.meeting_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 text-[#34d399] hover:underline font-medium text-[12px] min-h-[44px] px-2"
+                  className="inline-flex items-center gap-1.5 text-[#6D28D9] hover:underline font-semibold text-[12px] min-h-[38px] px-2"
                 >
                   <Video className="w-3.5 h-3.5" />
                   <span>{t('todo.joinMeet') || 'Встреча'}</span>
@@ -172,16 +172,16 @@ export const TodoItemCard: React.FC<TodoItemCardProps> = ({
         </div>
       </div>
 
-      {/* Bottom Action Bar (>=44px hit targets) */}
-      <div className="flex items-center gap-2 pt-2.5 border-t border-[#262626] flex-wrap">
+      {/* Bottom Action Bar */}
+      <div className="flex items-center gap-2 pt-2.5 border-t border-[#ECEAF6] flex-wrap">
         {!isDone && (
           <button
             type="button"
             onClick={() => onStartFocus(item)}
-            className={`min-h-[44px] px-3 rounded-[10px] text-[12px] font-semibold border flex items-center gap-1.5 transition-colors cursor-pointer ${
+            className={`min-h-[40px] px-3 rounded-[10px] text-[12px] font-bold border flex items-center gap-1.5 transition-colors cursor-pointer ${
               isToday
-                ? 'bg-[#34d399] hover:bg-[#10b981] text-[#0a0a0a] border-[#34d399]'
-                : 'bg-[#022c22] hover:bg-[#064e3b] text-[#34d399] border-[#064e3b]'
+                ? 'bg-[#6D28D9] hover:bg-[#5B21B6] text-white border-[#6D28D9]'
+                : 'bg-[#F0EFFE] hover:bg-[#DDD6FE] text-[#6D28D9] border-[#DDD6FE]'
             }`}
             title={t('todo.startPomodoro') || 'Запустить таймер'}
           >
@@ -194,11 +194,11 @@ export const TodoItemCard: React.FC<TodoItemCardProps> = ({
           <button
             type="button"
             onClick={() => onMoveToTomorrow(item)}
-            className="min-h-[44px] px-3 rounded-[10px] bg-[#171717] hover:bg-[#262626] border border-[#404040] text-[12px] font-medium text-[#a3a3a3] hover:text-[#fafafa] flex items-center gap-1.5 transition-colors cursor-pointer"
+            className="min-h-[40px] px-3 rounded-[10px] bg-white hover:bg-[#F0EFFE] border border-[#ECEAF6] text-[12px] font-semibold text-[#6B7280] hover:text-[#1E1B4B] flex items-center gap-1.5 transition-colors cursor-pointer"
             title={t('todo.moveToTomorrowTitle') || 'Перенести на завтра (+1 день)'}
           >
             <span>{t('todo.moveToTomorrow') || 'Завтра'}</span>
-            <ArrowRight className="w-3.5 h-3.5 text-[#34d399]" />
+            <ArrowRight className="w-3.5 h-3.5 text-[#6D28D9]" />
           </button>
         )}
 
@@ -206,10 +206,10 @@ export const TodoItemCard: React.FC<TodoItemCardProps> = ({
           <button
             type="button"
             onClick={() => onEdit(item)}
-            className={`min-h-[44px] px-3 rounded-[10px] border text-[12px] font-medium flex items-center gap-1.5 transition-colors cursor-pointer ${
+            className={`min-h-[40px] px-3 rounded-[10px] border text-[12px] font-semibold flex items-center gap-1.5 transition-colors cursor-pointer ${
               isEditing
-                ? 'bg-[#022c22] border-[#064e3b] text-[#34d399]'
-                : 'bg-[#171717] hover:bg-[#262626] border-[#404040] text-[#fafafa]'
+                ? 'bg-[#F0EFFE] border-[#DDD6FE] text-[#6D28D9]'
+                : 'bg-white hover:bg-[#F0EFFE] border-[#ECEAF6] text-[#1E1B4B]'
             }`}
             title={t('common.edit') || 'Редактировать'}
           >
@@ -220,7 +220,7 @@ export const TodoItemCard: React.FC<TodoItemCardProps> = ({
           <button
             type="button"
             onClick={() => onDelete(item)}
-            className="min-h-[44px] min-w-[44px] px-3 rounded-[10px] bg-[#171717] hover:bg-red-950/30 border border-[#404040] hover:border-red-500/40 text-[#a3a3a3] hover:text-red-400 flex items-center justify-center transition-colors cursor-pointer"
+            className="min-h-[40px] min-w-[40px] px-3 rounded-[10px] bg-white hover:bg-[#FEF2F2] border border-[#ECEAF6] hover:border-[#FECACA] text-[#6B7280] hover:text-[#EF4444] flex items-center justify-center transition-colors cursor-pointer"
             title={t('common.delete') || 'Удалить'}
             aria-label={t('common.delete') || 'Удалить'}
           >

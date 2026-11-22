@@ -120,8 +120,8 @@ export const SetRow: React.FC<SetRowProps> = ({
   return (
     <div
       onClick={() => onSelectSet?.()}
-      className={`py-2.5 border-b border-[#262626] last:border-b-0 transition-colors ${
-        isSelected ? 'bg-[#0a0a0a]/40 -mx-2 px-2 rounded-[10px]' : ''
+      className={`py-2.5 border-b border-[#ECEAF6] last:border-b-0 transition-colors ${
+        isSelected ? 'bg-[#F5F3FF] -mx-2 px-2 rounded-[12px]' : ''
       }`}
     >
       {/* Top 4-Column Row: № | Вес, кг | Повторы | ✓ */}
@@ -137,16 +137,16 @@ export const SetRow: React.FC<SetRowProps> = ({
             }}
             className={`w-7 h-7 rounded-md font-semibold text-xs tabular-nums flex items-center justify-center transition-colors shrink-0 cursor-pointer border ${
               set.setType === 'warmup'
-                ? 'bg-[#0a0a0a] text-amber-400 border-amber-500/40'
+                ? 'bg-[#FFFBEB] text-[#D97706] border-[#FDE68A]'
                 : set.setType === 'drop'
-                ? 'bg-[#0a0a0a] text-sky-400 border-sky-500/40'
+                ? 'bg-[#ECFEFF] text-[#0891B2] border-[#A5F3FC]'
                 : set.setType === 'failure'
-                ? 'bg-[#0a0a0a] text-rose-400 border-rose-500/40'
+                ? 'bg-[#FFF1F2] text-[#E11D48] border-[#FECDD3]'
                 : set.completed
-                ? 'bg-[#022c22] text-[#34d399] border-[#064e3b]'
+                ? 'bg-[#ECFDF5] text-[#059669] border-[#A7F3D0]'
                 : isSelected
-                ? 'bg-[#171717] text-[#fafafa] border-[#34d399]/60'
-                : 'bg-transparent text-[#fafafa] border-transparent hover:bg-[#0a0a0a] hover:border-[#404040]'
+                ? 'bg-[#F0EFFE] text-[#6D28D9] border-[#C4B5FD]'
+                : 'bg-[#F8F7FC] text-[#1E1B4B] border-[#ECEAF6] hover:border-[#C4B5FD]'
             }`}
             title="Click to toggle set type: Normal (1,2...), Warmup (W), Drop Set (D), Failure (F)"
           >
@@ -175,10 +175,10 @@ export const SetRow: React.FC<SetRowProps> = ({
               const weight = Math.max(0, Number(e.target.value) || 0);
               onUpdate({ weightKg: usesPounds ? weight * LB_TO_KG : weight });
             }}
-            className={`w-full h-11 bg-[#0a0a0a] border rounded-[10px] px-3 text-left text-sm font-medium tabular-nums transition-colors focus:outline-none ${
+            className={`w-full h-11 bg-[#F8F7FC] border rounded-[10px] px-3 text-left text-sm font-semibold tabular-nums transition-colors focus:outline-none ${
               set.completed
-                ? 'border-[#064e3b] text-[#34d399] focus:border-[#34d399]'
-                : 'border-[#404040] text-[#fafafa] placeholder:text-[#737373] focus:border-[#34d399]'
+                ? 'border-[#A7F3D0] bg-[#ECFDF5]/60 text-[#059669] focus:border-[#10B981]'
+                : 'border-[#E2E0F0] text-[#1E1B4B] placeholder:text-[#94A3B8] focus:border-[#6D28D9]'
             }`}
           />
         </div>
@@ -199,10 +199,10 @@ export const SetRow: React.FC<SetRowProps> = ({
             }
             onFocus={() => onSelectSet?.()}
             onChange={(e) => onUpdate({ reps: parseInt(e.target.value, 10) || 0 })}
-            className={`w-full h-11 bg-[#0a0a0a] border rounded-[10px] px-3 text-left text-sm font-medium tabular-nums transition-colors focus:outline-none ${
+            className={`w-full h-11 bg-[#F8F7FC] border rounded-[10px] px-3 text-left text-sm font-semibold tabular-nums transition-colors focus:outline-none ${
               set.completed
-                ? 'border-[#064e3b] text-[#34d399] focus:border-[#34d399]'
-                : 'border-[#404040] text-[#fafafa] placeholder:text-[#737373] focus:border-[#34d399]'
+                ? 'border-[#A7F3D0] bg-[#ECFDF5]/60 text-[#059669] focus:border-[#10B981]'
+                : 'border-[#E2E0F0] text-[#1E1B4B] placeholder:text-[#94A3B8] focus:border-[#6D28D9]'
             }`}
           />
         </div>
@@ -222,15 +222,15 @@ export const SetRow: React.FC<SetRowProps> = ({
               }
               onCompleteToggle();
             }}
-            className="w-11 h-11 rounded-[10px] flex items-center justify-center cursor-pointer transition-colors hover:bg-[#0a0a0a]"
+            className="w-11 h-11 rounded-[10px] flex items-center justify-center cursor-pointer transition-colors hover:bg-[#F0EFFE]"
             title={set.completed ? 'Mark set incomplete' : 'Mark set complete (starts rest timer)'}
             aria-label={set.completed ? 'Mark set incomplete' : 'Mark set complete'}
           >
             <span
               className={`w-[22px] h-[22px] rounded-[6px] border flex items-center justify-center transition-colors ${
                 set.completed
-                  ? 'bg-[#34d399] border-[#34d399] text-[#0a0a0a]'
-                  : 'bg-[#0a0a0a] border-[#404040] text-transparent hover:border-[#737373]'
+                  ? 'bg-[#10B981] border-[#10B981] text-white'
+                  : 'bg-white border-[#CBD5E1] text-transparent hover:border-[#6D28D9]'
               }`}
             >
               <Check className="w-3.5 h-3.5 stroke-[3]" />
@@ -248,21 +248,21 @@ export const SetRow: React.FC<SetRowProps> = ({
             onSelectSet?.();
             setIsExpanded(!isExpanded);
           }}
-          className="text-[11px] text-[#737373] hover:text-[#34d399] transition-colors flex items-center gap-1.5 min-w-0 truncate cursor-pointer"
+          className="text-[11px] text-[#6B7280] hover:text-[#6D28D9] transition-colors flex items-center gap-1.5 min-w-0 truncate cursor-pointer"
           title={t('activeWorkout.historyHint')}
         >
           <span className="truncate">
             {t('activeWorkout.earlierPrefix', { value: previousText })}
           </span>
           {showPlateMath && plateText ? (
-            <span className="text-[#34d399] font-medium shrink-0">· {plateText}</span>
+            <span className="text-[#6D28D9] font-medium shrink-0">· {plateText}</span>
           ) : !showPlateMath && e1rm !== null && e1rm > 0 && measurementType === 'weight_reps' && set.weightKg > 0 ? (
-            <span className="text-[#737373] shrink-0 hidden sm:inline">· 1RM {formatWeight(e1rm, unit)}</span>
+            <span className="text-[#94A3B8] shrink-0 hidden sm:inline">· 1RM {formatWeight(e1rm, unit)}</span>
           ) : null}
           {showExpanded ? (
-            <ChevronUp className="w-3 h-3 text-[#34d399] shrink-0" />
+            <ChevronUp className="w-3 h-3 text-[#6D28D9] shrink-0" />
           ) : (
-            <ChevronDown className="w-3 h-3 text-[#737373] shrink-0" />
+            <ChevronDown className="w-3 h-3 text-[#94A3B8] shrink-0" />
           )}
         </button>
 
@@ -272,7 +272,7 @@ export const SetRow: React.FC<SetRowProps> = ({
             e.stopPropagation();
             onDelete();
           }}
-          className="p-1 text-[#737373] hover:text-rose-400 transition-colors cursor-pointer shrink-0 rounded-md hover:bg-[#0a0a0a]"
+          className="p-1 text-[#94A3B8] hover:text-[#E11D48] transition-colors cursor-pointer shrink-0 rounded-md hover:bg-[#FFF1F2]"
           title="Delete set"
           aria-label="Delete set"
         >
@@ -282,10 +282,10 @@ export const SetRow: React.FC<SetRowProps> = ({
 
       {/* Expanded Section: Last 3 Results */}
       {showExpanded && (
-        <div className="mt-2 p-3 rounded-[12px] bg-[#0a0a0a] border border-[#404040] space-y-2.5">
-          <div className="flex items-center justify-between border-b border-[#262626] pb-2">
-            <div className="flex items-center gap-1.5 text-xs font-semibold text-[#fafafa]">
-              <History className="w-3.5 h-3.5 text-[#34d399] shrink-0" />
+        <div className="mt-2 p-3 rounded-[14px] bg-[#F8F7FC] border border-[#ECEAF6] space-y-2.5">
+          <div className="flex items-center justify-between border-b border-[#ECEAF6] pb-2">
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-[#1E1B4B]">
+              <History className="w-3.5 h-3.5 text-[#6D28D9] shrink-0" />
               <span className="truncate">
                 {isFallback
                   ? t('activeWorkout.setRecordsFallbackTitle') || 'Последние результаты'
@@ -299,15 +299,15 @@ export const SetRow: React.FC<SetRowProps> = ({
                 e.stopPropagation();
                 setIsExpanded(false);
               }}
-              className="p-1 text-[#a3a3a3] hover:text-[#fafafa] rounded-md hover:bg-[#171717] transition-colors cursor-pointer"
-              title="Свернуть"
+              className="p-1 text-[#6B7280] hover:text-[#1E1B4B] rounded-md hover:bg-white transition-colors cursor-pointer"
+              title={t('common.close')}
             >
               <ChevronUp className="w-3.5 h-3.5" />
             </button>
           </div>
 
           {effectiveTopRecords.length === 0 ? (
-            <div className="py-2 text-center text-[#737373] text-xs">
+            <div className="py-2 text-center text-[#94A3B8] text-xs">
               {t('activeWorkout.noRecordsYet')}
             </div>
           ) : (
@@ -319,25 +319,25 @@ export const SetRow: React.FC<SetRowProps> = ({
                 return (
                   <div
                     key={uniqueKey}
-                    className="p-2.5 rounded-[10px] bg-[#171717] border border-[#262626] flex items-center justify-between gap-2"
+                    className="p-2.5 rounded-[12px] bg-white border border-[#ECEAF6] flex items-center justify-between gap-2"
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
-                      <span className="w-5 h-5 rounded-md bg-[#0a0a0a] border border-[#262626] text-[#a3a3a3] text-[11px] font-semibold tabular-nums flex items-center justify-center shrink-0">
+                      <span className="w-5 h-5 rounded-md bg-[#F0EFFE] border border-[#DDD6FE] text-[#6D28D9] text-[11px] font-semibold tabular-nums flex items-center justify-center shrink-0">
                         {rIdx + 1}
                       </span>
                       <div className="min-w-0">
                         <div className="flex items-baseline gap-1.5 flex-wrap">
-                          <span className="text-xs font-semibold tabular-nums text-[#fafafa]">
+                          <span className="text-xs font-bold tabular-nums text-[#1E1B4B]">
                             {formatWeight(rec.weightKg, unit)} × {rec.reps}
                           </span>
                           {rec.e1rmKg > 0 && (
-                            <span className="text-[10px] font-medium tabular-nums text-[#34d399] bg-[#022c22] px-1.5 py-0.5 rounded border border-[#064e3b]">
+                            <span className="text-[10px] font-semibold tabular-nums text-[#059669] bg-[#ECFDF5] px-1.5 py-0.5 rounded border border-[#A7F3D0]">
                               1RM: {formatWeight(rec.e1rmKg, unit)}
                             </span>
                           )}
                         </div>
 
-                        <div className="text-[10px] text-[#737373] flex items-center gap-1 truncate mt-0.5">
+                        <div className="text-[10px] text-[#6B7280] flex items-center gap-1 truncate mt-0.5">
                           <Calendar className="w-2.5 h-2.5 inline shrink-0" />
                           <span>{formatDate(rec.date)}</span>
                           {rec.workoutName && (
@@ -358,8 +358,8 @@ export const SetRow: React.FC<SetRowProps> = ({
                       }}
                       className={`h-8 px-2.5 rounded-[8px] text-[11px] font-semibold transition-colors flex items-center gap-1 shrink-0 cursor-pointer border ${
                         isApplied
-                          ? 'bg-[#34d399] text-[#0a0a0a] border-[#34d399]'
-                          : 'bg-[#0a0a0a] hover:bg-[#022c22] hover:text-[#34d399] text-[#fafafa] border-[#404040]'
+                          ? 'bg-[#10B981] text-white border-[#10B981]'
+                          : 'bg-[#F8F7FC] hover:bg-[#F0EFFE] hover:text-[#6D28D9] text-[#1E1B4B] border-[#E2E0F0]'
                       }`}
                       title={t('activeWorkout.useValues')}
                     >
@@ -388,7 +388,7 @@ export const SetRow: React.FC<SetRowProps> = ({
                 e.stopPropagation();
                 onOpenHistoryMenu(set.setNumber);
               }}
-              className="w-full h-9 px-3 rounded-[10px] bg-[#171717] hover:bg-[#022c22] text-[#34d399] border border-[#404040] hover:border-[#064e3b] text-xs font-medium flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+              className="w-full h-9 px-3 rounded-[10px] bg-white hover:bg-[#F0EFFE] text-[#6D28D9] border border-[#DDD6FE] text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
             >
               <History className="w-3.5 h-3.5 shrink-0" />
               <span className="truncate">{t('activeWorkout.openHistoryMenu')}</span>

@@ -93,29 +93,29 @@ export const CoachWorkoutCard: React.FC<CoachWorkoutCardProps> = ({ workout, com
   };
 
   return (
-    <div className="w-full max-w-full min-w-0 overflow-hidden rounded-[14px] bg-[#171717] border border-[#404040] p-3.5 space-y-2.5">
+    <div className="w-full max-w-full min-w-0 overflow-hidden rounded-[18px] bg-white border border-[#ECEAF6] p-3.5 space-y-2.5 royal-card-shadow">
       {/* Header */}
       <div className="flex flex-wrap items-start justify-between gap-2 min-w-0">
         <div className="min-w-0">
           <div className="flex items-center gap-1.5 flex-wrap">
-            <Dumbbell className="w-3.5 h-3.5 text-[#34d399] shrink-0" />
-            <h4 className="text-xs sm:text-sm font-extrabold text-white truncate">{workout.title}</h4>
+            <Dumbbell className="w-3.5 h-3.5 text-[#6D28D9] shrink-0" />
+            <h4 className="text-xs sm:text-sm font-bold text-[#1E1B4B] truncate">{workout.title}</h4>
           </div>
           {workout.subtitle && (
-            <p className="text-[11px] text-[#a3a3a3] truncate mt-0.5">{workout.subtitle}</p>
+            <p className="text-[11px] text-[#6B7280] truncate mt-0.5">{workout.subtitle}</p>
           )}
         </div>
 
         <div className="flex items-center gap-1 shrink-0">
           {workout.target_rir && (
-            <span className="px-2 py-0.5 rounded-[6px] bg-[#022c22] text-[#34d399] border border-[#064e3b] text-[10px] font-mono tabular-nums font-semibold flex items-center gap-1">
+            <span className="px-2 py-0.5 rounded-[8px] bg-[#F0EFFE] text-[#6D28D9] border border-[#DDD6FE] text-[10px] font-mono tabular-nums font-bold flex items-center gap-1">
               <Zap className="w-2.5 h-2.5" />
               {workout.target_rir}
             </span>
           )}
           {workout.estimated_minutes > 0 && (
-            <span className="px-2 py-0.5 rounded-[6px] bg-[#0a0a0a] text-[#a3a3a3] border border-[#404040] text-[10px] font-mono tabular-nums flex items-center gap-1">
-              <Clock className="w-2.5 h-2.5 text-[#737373]" />
+            <span className="px-2 py-0.5 rounded-[8px] bg-[#F8F7FC] text-[#6B7280] border border-[#ECEAF6] text-[10px] font-mono tabular-nums flex items-center gap-1">
+              <Clock className="w-2.5 h-2.5 text-[#94A3B8]" />
               {workout.estimated_minutes} {labels.min}
             </span>
           )}
@@ -127,20 +127,20 @@ export const CoachWorkoutCard: React.FC<CoachWorkoutCardProps> = ({ workout, com
         {workout.exercises.map((ex, i) => (
           <div
             key={i}
-            className="px-3 py-2 rounded-[10px] bg-[#0a0a0a] border border-[#262626] flex items-center justify-between gap-2 text-xs"
+            className="px-3 py-2 rounded-[12px] bg-[#F8F7FC] border border-[#ECEAF6] flex items-center justify-between gap-2 text-xs"
           >
             <div className="flex items-center gap-1.5 min-w-0">
-              <span className="w-5 h-5 rounded-[6px] bg-[#171717] border border-[#262626] text-[#34d399] font-mono tabular-nums text-[10px] font-semibold flex items-center justify-center shrink-0">
+              <span className="w-5 h-5 rounded-[6px] bg-white border border-[#ECEAF6] text-[#6D28D9] font-mono tabular-nums text-[10px] font-bold flex items-center justify-center shrink-0">
                 {i + 1}
               </span>
-              <span className="text-[#fafafa] font-medium truncate">{ex.exercise_name}</span>
+              <span className="text-[#1E1B4B] font-semibold truncate">{ex.exercise_name}</span>
             </div>
             <div className="flex items-center gap-1.5 shrink-0 font-mono">
-              <span className="text-[#a3a3a3] font-mono tabular-nums text-[11px]">
+              <span className="text-[#6B7280] font-mono tabular-nums text-[11px]">
                 {ex.target_sets}×{ex.target_reps}
               </span>
               {ex.target_weight_kg && ex.target_weight_kg > 0 ? (
-                <span className="px-1.5 py-0.5 rounded-[6px] bg-[#022c22] text-[#34d399] font-mono tabular-nums font-semibold text-[10px] border border-[#064e3b]">
+                <span className="px-1.5 py-0.5 rounded-[6px] bg-[#F0EFFE] text-[#6D28D9] font-mono tabular-nums font-semibold text-[10px] border border-[#DDD6FE]">
                   {ex.target_weight_kg} кг
                 </span>
               ) : null}
@@ -154,7 +154,7 @@ export const CoachWorkoutCard: React.FC<CoachWorkoutCardProps> = ({ workout, com
         <button
           type="button"
           onClick={handleStart}
-          className="flex-1 min-h-[44px] py-2 px-3 rounded-[10px] bg-[#34d399] hover:bg-[#34d399]/90 text-[#0a0a0a] font-semibold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+          className="flex-1 min-h-[40px] py-2 px-3 rounded-[12px] violet-btn-gradient text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm transition-opacity hover:opacity-95 cursor-pointer"
         >
           <Play className="w-3.5 h-3.5 fill-current" />
           <span>{labels.start}</span>
@@ -164,20 +164,20 @@ export const CoachWorkoutCard: React.FC<CoachWorkoutCardProps> = ({ workout, com
           type="button"
           onClick={handleSaveRoutine}
           disabled={isSaving || isSaved}
-          className={`min-h-[44px] py-2 px-3 rounded-[10px] border text-xs font-medium flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
+          className={`min-h-[40px] py-2 px-3 rounded-[12px] border text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
             isSaved
-              ? 'bg-[#022c22] border-[#064e3b] text-[#34d399]'
-              : 'bg-[#0a0a0a] hover:bg-[#262626] border-[#404040] text-[#fafafa]'
+              ? 'bg-[#ECFDF5] border-[#A7F3D0] text-[#059669]'
+              : 'bg-[#F8F7FC] hover:bg-[#F0EFFE] border-[#ECEAF6] text-[#1E1B4B]'
           }`}
         >
           {isSaved ? (
             <>
-              <Check className="w-3.5 h-3.5 text-emerald-400" />
+              <Check className="w-3.5 h-3.5 text-[#10B981]" />
               <span>{labels.saved}</span>
             </>
           ) : (
             <>
-              <BookmarkPlus className="w-3.5 h-3.5 text-[#34d399]" />
+              <BookmarkPlus className="w-3.5 h-3.5 text-[#6D28D9]" />
               <span>{labels.save}</span>
             </>
           )}

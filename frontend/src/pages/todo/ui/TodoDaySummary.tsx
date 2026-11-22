@@ -37,26 +37,26 @@ export const TodoDaySummary: React.FC<TodoDaySummaryProps> = ({
         {/* Top KPIs Row */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-[10px] bg-[#022c22] border border-[#064e3b] flex items-center justify-center text-[#34d399] shrink-0">
+            <div className="w-8 h-8 rounded-[10px] bg-[#F0EFFE] border border-[#DDD6FE] flex items-center justify-center text-[#6D28D9] shrink-0">
               <CheckCircle2 className="w-4 h-4" />
             </div>
-            <div className="text-[13px] font-semibold text-[#fafafa] flex items-center gap-2">
+            <div className="text-[13px] font-bold text-[#1E1B4B] flex items-center gap-2">
               <span>{t('todo.dayProgress') || 'Прогресс дня'}</span>
-              <span className="font-mono tabular-nums text-[#34d399] bg-[#022c22] border border-[#064e3b] px-2 py-0.5 rounded-[6px] text-[12px]">
+              <span className="font-mono tabular-nums text-[#6D28D9] bg-[#F0EFFE] border border-[#DDD6FE] px-2 py-0.5 rounded-[8px] text-[12px]">
                 {completedTasks}/{totalTasks} ({taskProgress}%)
               </span>
             </div>
           </div>
 
-          <div className="flex items-center gap-3 text-[12px] text-[#a3a3a3] font-mono tabular-nums">
+          <div className="flex items-center gap-3 text-[12px] text-[#6B7280] font-mono tabular-nums">
             <span className="flex items-center gap-1.5">
-              <Clock className="w-3.5 h-3.5 text-[#a3a3a3]" />
+              <Clock className="w-3.5 h-3.5 text-[#6B7280]" />
               <span>
                 {t('todo.plannedTime') || 'План'}: {plannedHours > 0 ? `${plannedHours}${hUnit} ` : ''}{plannedMins}{mUnit}
               </span>
             </span>
-            <span className="text-[#404040]">·</span>
-            <span className="flex items-center gap-1.5 text-[#34d399] font-semibold">
+            <span className="text-[#CBD5E1]">·</span>
+            <span className="flex items-center gap-1.5 text-[#6D28D9] font-bold">
               <Flame className="w-3.5 h-3.5" />
               <span>
                 {t('todo.actualTime') || 'Факт'}: {spentHours > 0 ? `${spentHours}${hUnit} ` : ''}{spentMins}{mUnit} ({timeProgress}%)
@@ -66,28 +66,28 @@ export const TodoDaySummary: React.FC<TodoDaySummaryProps> = ({
         </div>
 
         {/* Dual Progress Bars */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2.5 border-t border-[#262626]">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2.5 border-t border-[#ECEAF6]">
           <div className="space-y-1.5">
-            <div className="flex items-center justify-between text-[12px] text-[#a3a3a3]">
+            <div className="flex items-center justify-between text-[12px] text-[#6B7280]">
               <span>{t('todo.tasksCompletedLabel') || 'Выполнение задач'}</span>
-              <span className="font-mono tabular-nums text-[#fafafa]">{completedTasks} / {totalTasks}</span>
+              <span className="font-mono tabular-nums font-bold text-[#1E1B4B]">{completedTasks} / {totalTasks}</span>
             </div>
-            <div className="h-1.5 w-full rounded-full bg-[#262626] overflow-hidden">
+            <div className="h-2 w-full rounded-full bg-[#ECEAF6] overflow-hidden">
               <div
-                className="h-full rounded-full bg-[#34d399] transition-all duration-300"
+                className="h-full rounded-full bg-[#6D28D9] transition-all duration-300"
                 style={{ width: `${taskProgress}%` }}
               />
             </div>
           </div>
 
           <div className="space-y-1.5">
-            <div className="flex items-center justify-between text-[12px] text-[#a3a3a3]">
+            <div className="flex items-center justify-between text-[12px] text-[#6B7280]">
               <span>{t('todo.focusTimeLabel') || 'Время работы'}</span>
-              <span className="font-mono tabular-nums text-[#fafafa]">{totalSpentMinutes} / {totalPlannedMinutes} {mUnit}</span>
+              <span className="font-mono tabular-nums font-bold text-[#1E1B4B]">{totalSpentMinutes} / {totalPlannedMinutes} {mUnit}</span>
             </div>
-            <div className="h-1.5 w-full rounded-full bg-[#262626] overflow-hidden">
+            <div className="h-2 w-full rounded-full bg-[#ECFEFF] overflow-hidden">
               <div
-                className="h-full rounded-full bg-[#34d399] transition-all duration-300"
+                className="h-full rounded-full bg-[#0891B2] transition-all duration-300"
                 style={{ width: `${timeProgress}%` }}
               />
             </div>

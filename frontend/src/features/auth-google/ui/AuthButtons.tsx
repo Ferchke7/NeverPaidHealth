@@ -85,11 +85,11 @@ export const GoogleSignInButton: React.FC = () => {
         if (googleBtnRef.current) {
           googleBtnRef.current.innerHTML = '';
           window.google.accounts.id.renderButton(googleBtnRef.current, {
-            theme: 'filled_black',
+            theme: 'outline',
             size: 'large',
             width: '100%',
             text: 'continue_with',
-            shape: 'rectangular',
+            shape: 'pill',
           });
         }
       } catch (e) {
@@ -121,7 +121,7 @@ export const GoogleSignInButton: React.FC = () => {
         <div ref={googleBtnRef} className="w-full flex justify-center min-h-[44px]">
           <button
             type="button"
-            className="w-full h-[44px] flex items-center justify-center gap-2.5 bg-[#34d399] hover:bg-[#34d399]/90 text-[#0a0a0a] rounded-[10px] px-4 font-medium text-[14px] transition-colors disabled:opacity-60 cursor-pointer"
+            className="w-full h-[46px] flex items-center justify-center gap-2.5 bg-gradient-to-r from-[#8B5CF6] to-[#6D28D9] hover:from-[#7C3AED] hover:to-[#5B21B6] text-white rounded-[14px] px-4 font-semibold text-[14px] shadow-[0_8px_18px_rgba(109,40,217,0.24)] transition-all disabled:opacity-60 cursor-pointer"
             onClick={handleManualClick}
             disabled={loading}
           >
@@ -132,7 +132,7 @@ export const GoogleSignInButton: React.FC = () => {
       ) : (
         <button
           type="button"
-          className="w-full h-[44px] flex items-center justify-center gap-2.5 bg-[#34d399] hover:bg-[#34d399]/90 text-[#0a0a0a] rounded-[10px] px-4 font-medium text-[14px] transition-colors disabled:opacity-60 cursor-pointer"
+          className="w-full h-[46px] flex items-center justify-center gap-2.5 bg-gradient-to-r from-[#8B5CF6] to-[#6D28D9] hover:from-[#7C3AED] hover:to-[#5B21B6] text-white rounded-[14px] px-4 font-semibold text-[14px] shadow-[0_8px_18px_rgba(109,40,217,0.24)] transition-all disabled:opacity-60 cursor-pointer"
           onClick={handleManualClick}
           disabled={loading}
         >
@@ -142,7 +142,7 @@ export const GoogleSignInButton: React.FC = () => {
       )}
 
       {error && (
-        <div className="bg-[#262626] rounded-[10px] px-4 py-3 text-[13px] text-[#fafafa]">
+        <div className="bg-rose-50 border border-rose-200 rounded-[12px] px-4 py-3 text-[13px] text-rose-700 font-medium">
           {error}
         </div>
       )}

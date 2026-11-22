@@ -40,14 +40,14 @@ export const StrengthStandardsBarChart: React.FC<StrengthStandardsBarChartProps>
       animationDuration: 500,
       tooltip: {
         trigger: 'axis',
-        backgroundColor: '#171717',
-        borderColor: '#404040',
+        backgroundColor: '#FFFFFF',
+        borderColor: '#ECEAF6',
         borderWidth: 1,
-        borderRadius: 10,
+        borderRadius: 12,
         padding: [10, 12],
         axisPointer: {
           type: 'shadow',
-          shadowStyle: { color: 'rgba(255, 255, 255, 0.03)' },
+          shadowStyle: { color: 'rgba(109, 40, 217, 0.05)' },
         },
         formatter: (params: any) => {
           if (!Array.isArray(params) || params.length === 0) return '';
@@ -56,22 +56,22 @@ export const StrengthStandardsBarChart: React.FC<StrengthStandardsBarChartProps>
 
           return `
             <div style="min-width: 170px;">
-              <div style="font-size: 13px; font-weight: 700; color: #fafafa; margin-bottom: 6px;">
+              <div style="font-size: 13px; font-weight: 700; color: #1E1B4B; margin-bottom: 6px;">
                 ${std.name}
               </div>
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                <span style="font-size: 11px; color: #a3a3a3;">1RM:</span>
-                <span style="font-size: 13px; font-weight: 700; color: #34d399;">
+                <span style="font-size: 11px; color: #6B7280;">1RM:</span>
+                <span style="font-size: 13px; font-weight: 700; color: #6D28D9;">
                   ${std.best1RM > 0 ? `${toUnit(std.best1RM)} ${unitPref}` : '—'}
                 </span>
               </div>
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                <span style="font-size: 11px; color: #a3a3a3;">Level:</span>
-                <span style="font-size: 11px; font-weight: 600; color: #fafafa; text-transform: uppercase;">
+                <span style="font-size: 11px; color: #6B7280;">Level:</span>
+                <span style="font-size: 11px; font-weight: 600; color: #1E1B4B; text-transform: uppercase;">
                   ${std.level}
                 </span>
               </div>
-              <div style="border-top: 1px solid #262626; padding-top: 4px; font-size: 10px; color: #737373;">
+              <div style="border-top: 1px solid #ECEAF6; padding-top: 4px; font-size: 10px; color: #6B7280;">
                 Nov: ${toUnit(std.beginner)}${unitPref} · Adv: ${toUnit(std.advanced)}${unitPref} · Elite: ${toUnit(std.elite)}${unitPref}
               </div>
             </div>
@@ -90,13 +90,13 @@ export const StrengthStandardsBarChart: React.FC<StrengthStandardsBarChartProps>
         axisLine: { show: false },
         axisTick: { show: false },
         axisLabel: {
-          color: '#737373',
+          color: '#6B7280',
           fontSize: 10,
           formatter: `{value} ${unitPref}`,
         },
         splitLine: {
           lineStyle: {
-            color: '#262626',
+            color: '#ECEAF6',
             type: 'solid',
           },
         },
@@ -104,10 +104,10 @@ export const StrengthStandardsBarChart: React.FC<StrengthStandardsBarChartProps>
       yAxis: {
         type: 'category',
         data: liftNames,
-        axisLine: { lineStyle: { color: '#262626' } },
+        axisLine: { lineStyle: { color: '#ECEAF6' } },
         axisTick: { show: false },
         axisLabel: {
-          color: '#d4d4d4',
+          color: '#1E1B4B',
           fontSize: 11,
           fontWeight: 'bold',
           width: 140,
@@ -122,8 +122,8 @@ export const StrengthStandardsBarChart: React.FC<StrengthStandardsBarChartProps>
           barMaxWidth: 18,
           barGap: '-100%',
           itemStyle: {
-            color: '#262626',
-            borderRadius: [0, 4, 4, 0],
+            color: '#F4F3FA',
+            borderRadius: [0, 6, 6, 0],
           },
           tooltip: { show: false },
         },
@@ -133,14 +133,14 @@ export const StrengthStandardsBarChart: React.FC<StrengthStandardsBarChartProps>
           data: athleteValues,
           barMaxWidth: 18,
           itemStyle: {
-            borderRadius: [0, 4, 4, 0],
-            color: '#34d399',
+            borderRadius: [0, 6, 6, 0],
+            color: '#6D28D9',
           },
           label: {
             show: true,
             position: 'right',
             formatter: (p: any) => (p.value > 0 ? `${p.value} ${unitPref}` : ''),
-            color: '#d4d4d4',
+            color: '#1E1B4B',
             fontSize: 10,
             fontWeight: 'bold',
           },
@@ -151,15 +151,15 @@ export const StrengthStandardsBarChart: React.FC<StrengthStandardsBarChartProps>
 
   return (
     <div className={`space-y-4 ${className}`}>
-      <div className="bg-[#171717] rounded-[14px] border border-[#404040] p-5 space-y-3">
-        <div className="flex items-center justify-between pb-2 border-b border-[#262626]">
+      <div className="bg-white rounded-[22px] border border-[#ECEAF6] p-5 space-y-3 royal-card-shadow">
+        <div className="flex items-center justify-between pb-2 border-b border-[#ECEAF6]">
           <div className="flex items-center gap-2">
-            <Shield className="w-4 h-4 text-[#34d399]" />
-            <h4 className="text-xs font-semibold uppercase tracking-wider text-[#fafafa]">
+            <Shield className="w-4 h-4 text-[#6D28D9]" />
+            <h4 className="text-xs font-bold uppercase tracking-wider text-[#1E1B4B]">
               Силовая классификация атлета
             </h4>
           </div>
-          <span className="text-[11px] text-[#737373]">Шкала до Elite</span>
+          <span className="text-[11px] font-medium text-[#6B7280]">Шкала до Elite</span>
         </div>
 
         <EChartsReact

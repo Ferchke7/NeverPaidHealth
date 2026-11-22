@@ -143,14 +143,14 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onNavigateToBody }) =>
     };
   }, [language]);
 
-  // Summary queries
+  // Summary queries (aligned with workouts / progress / nutrition cache keys)
   const { data: workoutsData } = useQuery<{ items: any[] }>({
-    queryKey: ['workouts', 'history'],
+    queryKey: ['workouts'],
     queryFn: () => apiClient.get('/workouts?limit=100'),
   });
 
   const { data: recordsData } = useQuery<any[]>({
-    queryKey: ['progress', 'records'],
+    queryKey: ['records'],
     queryFn: () => apiClient.get('/progress/records'),
   });
 
@@ -244,7 +244,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onNavigateToBody }) =>
         : {}),
     });
 
-    void queryClient.invalidateQueries({ queryKey: ['nutrition', 'today'] });
+    void queryClient.invalidateQueries({ queryKey: ['nutrition'] });
     void queryClient.invalidateQueries({ queryKey: ['body-trend'] });
 
     if (unitPref !== user?.unit_preference) {
@@ -269,7 +269,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onNavigateToBody }) =>
     downloadAnchor.setAttribute('href', dataStr);
     downloadAnchor.setAttribute(
       'download',
-      `neverpaidhealth_backup_${new Date().toISOString().slice(0, 10)}.json`
+      `duda_backup_${new Date().toISOString().slice(0, 10)}.json`
     );
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
@@ -283,77 +283,101 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onNavigateToBody }) =>
 
   return (
     <div className="space-y-6">
-      {/* 1. Page Header */}
+      {/* 1. Royal Violet Profile Hero + Overlapping Floating 3-Col Athlete Stats (Figma Screen 10/16) */}
       <div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-[#fafafa] tracking-tight">
-          {t('profile.title')}
-        </h1>
-        <p className="text-sm text-[#a3a3a3] mt-1">{t('profile.subtitle')}</p>
-      </div>
-
-      {/* 2. Athlete KPI Summary Strip */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <Card className="p-4 sm:p-5 bg-[#171717] border-[#404040] flex items-center gap-3.5">
-          <div className="w-10 h-10 rounded-[10px] bg-[#0a0a0a] border border-[#262626] flex items-center justify-center text-[#34d399] shrink-0">
-            <Dumbbell className="w-5 h-5" />
-          </div>
-          <div>
-            <div className="text-2xl font-bold font-mono tabular-nums text-[#fafafa]">
-              {totalWorkouts}
+        <div className="royal-hero-gradient rounded-[28px] p-5 sm:p-6 pb-14 text-white shadow-lg">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-4 min-w-0">
+              <UserAvatar
+                user={user}
+                size="lg"
+                className="w-16 h-16 text-xl shrink-0 ring-2 ring-white/30"
+              />
+              <div className="min-w-0">
+                <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight truncate">
+                  {displayName || user?.display_name || 'duda.uz'}
+                </h1>
+                <p className="text-sm text-[#DDD6FE] truncate mt-0.5">{user?.email || t('profile.subtitle')}</p>
+                <div className="flex flex-wrap items-center gap-2 mt-2">
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-white/15 border border-white/25 text-[11px] font-semibold text-white">
+                    <Shield className="w-3 h-3 text-[#34D399]" />
+                    {t('profile.googleAuth')}
+                  </span>
+                  {user?.created_at && (
+                    <span className="text-[11px] font-mono tabular-nums text-[#DDD6FE]">
+                      {labels.joined} {new Date(user.created_at).getFullYear()}
+                    </span>
+                  )}
+                </div>
+              </div>
             </div>
-            <div className="text-xs text-[#a3a3a3]">{labels.completedWorkouts}</div>
           </div>
-        </Card>
+        </div>
 
-        <Card className="p-4 sm:p-5 bg-[#171717] border-[#404040] flex items-center gap-3.5">
-          <div className="w-10 h-10 rounded-[10px] bg-[#0a0a0a] border border-[#262626] flex items-center justify-center text-[#34d399] shrink-0">
-            <Flame className="w-5 h-5" />
-          </div>
-          <div>
-            <div className="text-2xl font-bold font-mono tabular-nums text-[#34d399]">
-              {(totalVolumeKg / 1000).toFixed(1)} t
+        {/* Floating Athlete KPI Summary Dock */}
+        <div className="-mt-8 mx-2 sm:mx-4 bg-white border border-[#ECEAF6] rounded-[22px] p-4 royal-float-shadow grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-[#ECEAF6] gap-3 sm:gap-0">
+          <div className="sm:px-4 flex items-center gap-3.5">
+            <div className="w-10 h-10 rounded-[12px] bg-[#F0EFFE] border border-[#DDD6FE] flex items-center justify-center text-[#6D28D9] shrink-0">
+              <Dumbbell className="w-5 h-5" />
             </div>
-            <div className="text-xs text-[#a3a3a3]">{labels.totalVolume}</div>
+            <div>
+              <div className="text-2xl font-extrabold font-mono tabular-nums text-[#1E1B4B]">
+                {totalWorkouts}
+              </div>
+              <div className="text-xs text-[#6B7280]">{labels.completedWorkouts}</div>
+            </div>
           </div>
-        </Card>
 
-        <Card className="p-4 sm:p-5 bg-[#171717] border-[#404040] flex items-center gap-3.5">
-          <div className="w-10 h-10 rounded-[10px] bg-[#0a0a0a] border border-[#262626] flex items-center justify-center text-[#34d399] shrink-0">
-            <Trophy className="w-5 h-5" />
-          </div>
-          <div>
-            <div className="text-2xl font-bold font-mono tabular-nums text-[#fafafa]">
-              {totalPRs}
+          <div className="sm:px-4 pt-3 sm:pt-0 flex items-center gap-3.5">
+            <div className="w-10 h-10 rounded-[12px] bg-[#ECFEFF] border border-[#A5F3FC] flex items-center justify-center text-[#0891B2] shrink-0">
+              <Flame className="w-5 h-5" />
             </div>
-            <div className="text-xs text-[#a3a3a3]">{labels.personalRecords}</div>
+            <div>
+              <div className="text-2xl font-extrabold font-mono tabular-nums text-[#6D28D9]">
+                {(totalVolumeKg / 1000).toFixed(1)} t
+              </div>
+              <div className="text-xs text-[#6B7280]">{labels.totalVolume}</div>
+            </div>
           </div>
-        </Card>
+
+          <div className="sm:px-4 pt-3 sm:pt-0 flex items-center gap-3.5">
+            <div className="w-10 h-10 rounded-[12px] bg-[#ECFDF5] border border-[#A7F3D0] flex items-center justify-center text-[#059669] shrink-0">
+              <Trophy className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="text-2xl font-extrabold font-mono tabular-nums text-[#1E1B4B]">
+                {totalPRs}
+              </div>
+              <div className="text-xs text-[#6B7280]">{labels.personalRecords}</div>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* 3. Preferences Form: Account + Workouts + Nutrition/Body Targets */}
       <form onSubmit={handleSaveSettings} className="space-y-4">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
           {/* Card A: Account */}
-          <Card className="p-4 sm:p-5 bg-[#171717] border-[#404040] space-y-4">
-            <CardHeader className="pb-3 border-b border-[#262626] mb-0">
-              <CardTitle className="text-base">{t('profile.accountCard')}</CardTitle>
+          <Card className="p-4 sm:p-5 bg-white border-[#ECEAF6] royal-card-shadow space-y-4">
+            <CardHeader className="pb-3 border-b border-[#ECEAF6] mb-0">
+              <CardTitle className="text-base text-[#1E1B4B]">{t('profile.accountCard')}</CardTitle>
             </CardHeader>
 
             <CardContent className="space-y-4">
-              <div className="flex flex-wrap items-center gap-3.5 p-3 rounded-[12px] bg-[#0a0a0a] border border-[#262626]">
+              <div className="flex flex-wrap items-center gap-3.5 p-3 rounded-[14px] bg-[#F8F7FC] border border-[#ECEAF6]">
                 <UserAvatar user={user} size="lg" className="w-14 h-14 text-xl shrink-0" />
                 <div className="flex-1 min-w-0">
-                  <div className="text-base font-semibold text-[#fafafa] truncate">
-                    {displayName || user?.display_name || 'NeverPaidHealth Athlete'}
+                  <div className="text-base font-bold text-[#1E1B4B] truncate">
+                    {displayName || user?.display_name || 'duda.uz'}
                   </div>
-                  <div className="text-xs text-[#a3a3a3] truncate">{user?.email}</div>
+                  <div className="text-xs text-[#6B7280] truncate">{user?.email}</div>
                   <div className="flex flex-wrap items-center gap-2 mt-1.5">
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[6px] bg-[#022c22] border border-[#064e3b] text-[11px] font-medium text-[#34d399]">
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[6px] bg-[#F0EFFE] border border-[#DDD6FE] text-[11px] font-semibold text-[#6D28D9]">
                       <Shield className="w-3 h-3" />
                       {t('profile.googleAuth')}
                     </span>
                     {user?.created_at && (
-                      <span className="text-[11px] font-mono tabular-nums text-[#737373]">
+                      <span className="text-[11px] font-mono tabular-nums text-[#6B7280]">
                         {labels.joined} {new Date(user.created_at).getFullYear()}
                       </span>
                     )}
@@ -369,7 +393,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onNavigateToBody }) =>
               />
 
               <div className="space-y-1.5">
-                <label className="block text-xs font-medium text-[#a3a3a3]">
+                <label className="block text-xs font-semibold text-[#6B7280]">
                   {t('profile.languagePreference')}
                 </label>
                 <LanguageSwitchToggle variant="inline" />
@@ -378,14 +402,14 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onNavigateToBody }) =>
           </Card>
 
           {/* Card B: Workouts & Rest Timer */}
-          <Card className="p-4 sm:p-5 bg-[#171717] border-[#404040] space-y-4">
-            <CardHeader className="pb-3 border-b border-[#262626] mb-0">
-              <CardTitle className="text-base">{t('profile.workoutsCard')}</CardTitle>
+          <Card className="p-4 sm:p-5 bg-white border-[#ECEAF6] royal-card-shadow space-y-4">
+            <CardHeader className="pb-3 border-b border-[#ECEAF6] mb-0">
+              <CardTitle className="text-base text-[#1E1B4B]">{t('profile.workoutsCard')}</CardTitle>
             </CardHeader>
 
             <CardContent className="space-y-4">
               <div className="space-y-1.5">
-                <label className="block text-xs font-medium text-[#a3a3a3]">
+                <label className="block text-xs font-semibold text-[#6B7280]">
                   {t('profile.unitPreference')}
                 </label>
                 <div className="grid grid-cols-2 gap-2">
@@ -394,8 +418,8 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onNavigateToBody }) =>
                     onClick={() => setUnitPref('kg')}
                     className={`min-h-[44px] px-3 rounded-[10px] border text-xs font-semibold transition-colors cursor-pointer ${
                       unitPref === 'kg'
-                        ? 'bg-[#022c22] border-[#064e3b] text-[#34d399]'
-                        : 'bg-[#0a0a0a] border-[#404040] text-[#a3a3a3] hover:text-[#fafafa]'
+                        ? 'bg-[#F0EFFE] border-[#DDD6FE] text-[#6D28D9]'
+                        : 'bg-[#F8F7FC] border-[#ECEAF6] text-[#6B7280] hover:text-[#1E1B4B]'
                     }`}
                   >
                     {labels.metricKg}
@@ -405,8 +429,8 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onNavigateToBody }) =>
                     onClick={() => setUnitPref('lb')}
                     className={`min-h-[44px] px-3 rounded-[10px] border text-xs font-semibold transition-colors cursor-pointer ${
                       unitPref === 'lb'
-                        ? 'bg-[#022c22] border-[#064e3b] text-[#34d399]'
-                        : 'bg-[#0a0a0a] border-[#404040] text-[#a3a3a3] hover:text-[#fafafa]'
+                        ? 'bg-[#F0EFFE] border-[#DDD6FE] text-[#6D28D9]'
+                        : 'bg-[#F8F7FC] border-[#ECEAF6] text-[#6B7280] hover:text-[#1E1B4B]'
                     }`}
                   >
                     {labels.imperialLb}
@@ -415,7 +439,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onNavigateToBody }) =>
               </div>
 
               <div className="space-y-1.5">
-                <label className="block text-xs font-medium text-[#a3a3a3]">
+                <label className="block text-xs font-semibold text-[#6B7280]">
                   {t('profile.defaultRestTimer')}
                 </label>
                 <div className="grid grid-cols-5 gap-1.5">
@@ -426,8 +450,8 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onNavigateToBody }) =>
                       onClick={() => setDefaultRestSecs(secs)}
                       className={`min-h-[44px] rounded-[10px] text-xs font-mono tabular-nums font-semibold border transition-colors cursor-pointer ${
                         defaultRestSecs === secs
-                          ? 'bg-[#022c22] border-[#064e3b] text-[#34d399]'
-                          : 'bg-[#0a0a0a] border-[#404040] text-[#a3a3a3] hover:text-[#fafafa]'
+                          ? 'bg-[#F0EFFE] border-[#DDD6FE] text-[#6D28D9]'
+                          : 'bg-[#F8F7FC] border-[#ECEAF6] text-[#6B7280] hover:text-[#1E1B4B]'
                       }`}
                     >
                       {secs}s
@@ -436,10 +460,10 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onNavigateToBody }) =>
                 </div>
               </div>
 
-              <div className="p-3.5 rounded-[12px] bg-[#0a0a0a] border border-[#262626] flex items-center justify-between gap-3">
+              <div className="p-3.5 rounded-[14px] bg-[#F8F7FC] border border-[#ECEAF6] flex items-center justify-between gap-3">
                 <div className="min-w-0">
-                  <div className="text-sm font-medium text-[#fafafa]">{labels.soundLabel}</div>
-                  <div className="text-xs text-[#a3a3a3] mt-0.5">{labels.soundDesc}</div>
+                  <div className="text-sm font-semibold text-[#1E1B4B]">{labels.soundLabel}</div>
+                  <div className="text-xs text-[#6B7280] mt-0.5">{labels.soundDesc}</div>
                 </div>
                 <Switch isSelected={soundEnabled} onValueChange={setSoundEnabled} />
               </div>
@@ -448,10 +472,10 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onNavigateToBody }) =>
         </div>
 
         {/* Full-Width Card: Nutrition & Body Targets */}
-        <Card className="p-4 sm:p-5 bg-[#171717] border-[#404040] space-y-4">
-          <CardHeader className="pb-3 border-b border-[#262626] mb-0 flex flex-col sm:flex-row sm:items-center items-start justify-between gap-1.5">
-            <CardTitle className="text-base">{t('profile.targetsCard')}</CardTitle>
-            <CardDescription>{t('profile.nutritionTargetsDesc')}</CardDescription>
+        <Card className="p-4 sm:p-5 bg-white border-[#ECEAF6] royal-card-shadow space-y-4">
+          <CardHeader className="pb-3 border-b border-[#ECEAF6] mb-0 flex flex-col sm:flex-row sm:items-center items-start justify-between gap-1.5">
+            <CardTitle className="text-base text-[#1E1B4B]">{t('profile.targetsCard')}</CardTitle>
+            <CardDescription className="text-[#6B7280]">{t('profile.nutritionTargetsDesc')}</CardDescription>
           </CardHeader>
 
           <CardContent className="space-y-4">
@@ -490,19 +514,19 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onNavigateToBody }) =>
               />
             </div>
 
-            <div className="px-3.5 py-2.5 rounded-[10px] bg-[#0a0a0a] border border-[#262626] flex flex-wrap items-center justify-between gap-2 text-xs font-mono tabular-nums">
-              <span className="text-[#a3a3a3]">
+            <div className="px-3.5 py-2.5 rounded-[12px] bg-[#FAF9FE] border border-[#DDD6FE] flex flex-wrap items-center justify-between gap-2 text-xs font-mono tabular-nums">
+              <span className="text-[#6B7280]">
                 {Math.round(macroP)}×4 + {Math.round(macroC)}×4 + {Math.round(macroF)}×9
               </span>
               <div className="flex items-center gap-2">
-                <span className="text-[#34d399] font-semibold">
+                <span className="text-[#6D28D9] font-bold">
                   = {formulaKcal} {t('nutrition.kcalUnit')}
                 </span>
                 {formulaKcal > 0 && String(formulaKcal) !== profileTargetCalories && (
                   <button
                     type="button"
                     onClick={() => setProfileTargetCalories(String(formulaKcal))}
-                    className="min-h-[44px] px-2.5 -my-2 rounded-[8px] border border-[#404040] bg-[#171717] hover:border-[#34d399]/60 text-[11px] font-sans text-[#fafafa] cursor-pointer"
+                    className="min-h-[44px] px-2.5 -my-2 rounded-[8px] border border-[#DDD6FE] bg-white hover:bg-[#F0EFFE] text-[11px] font-sans font-semibold text-[#6D28D9] cursor-pointer"
                   >
                     = {formulaKcal}
                   </button>
@@ -537,10 +561,10 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onNavigateToBody }) =>
               />
             </div>
 
-            <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-[#262626]">
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-[#ECEAF6]">
               <div className="text-xs">
                 {saveSuccess && (
-                  <span className="inline-flex items-center gap-1.5 text-[#34d399] font-medium">
+                  <span className="inline-flex items-center gap-1.5 text-[#059669] font-semibold">
                     <CheckCircle2 className="w-4 h-4" />
                     {labels.savedMsg}
                   </span>
@@ -559,9 +583,9 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onNavigateToBody }) =>
       {/* 4. Bottom 2-Column Grid: Data & App + Community Feedback */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
         {/* Left: Data, Navigation, PWA & Explicit Sign Out */}
-        <Card className="p-4 sm:p-5 bg-[#171717] border-[#404040] space-y-4">
-          <CardHeader className="pb-3 border-b border-[#262626] mb-0">
-            <CardTitle className="text-base">{t('profile.dataAndApp')}</CardTitle>
+        <Card className="p-4 sm:p-5 bg-white border-[#ECEAF6] royal-card-shadow space-y-4">
+          <CardHeader className="pb-3 border-b border-[#ECEAF6] mb-0">
+            <CardTitle className="text-base text-[#1E1B4B]">{t('profile.dataAndApp')}</CardTitle>
           </CardHeader>
 
           <CardContent className="space-y-3">
@@ -569,26 +593,26 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onNavigateToBody }) =>
               <button
                 type="button"
                 onClick={() => (onNavigateToBody ? onNavigateToBody() : navigate('/body'))}
-                className="min-h-[44px] px-3.5 py-2.5 rounded-[10px] bg-[#0a0a0a] border border-[#404040] hover:border-[#34d399]/60 flex items-center justify-between text-xs font-medium text-[#fafafa] transition-colors cursor-pointer"
+                className="min-h-[44px] px-3.5 py-2.5 rounded-[12px] bg-[#F8F7FC] border border-[#ECEAF6] hover:border-[#6D28D9]/50 hover:bg-[#F0EFFE]/60 flex items-center justify-between text-xs font-semibold text-[#1E1B4B] transition-colors cursor-pointer"
               >
                 <span>{t('profile.quickNavBody')}</span>
-                <ArrowRight className="w-3.5 h-3.5 text-[#34d399]" />
+                <ArrowRight className="w-3.5 h-3.5 text-[#6D28D9]" />
               </button>
 
               <button
                 type="button"
                 onClick={() => navigate('/history')}
-                className="min-h-[44px] px-3.5 py-2.5 rounded-[10px] bg-[#0a0a0a] border border-[#404040] hover:border-[#34d399]/60 flex items-center justify-between text-xs font-medium text-[#fafafa] transition-colors cursor-pointer"
+                className="min-h-[44px] px-3.5 py-2.5 rounded-[12px] bg-[#F8F7FC] border border-[#ECEAF6] hover:border-[#6D28D9]/50 hover:bg-[#F0EFFE]/60 flex items-center justify-between text-xs font-semibold text-[#1E1B4B] transition-colors cursor-pointer"
               >
                 <span>{t('profile.quickNavHistory')}</span>
-                <ArrowRight className="w-3.5 h-3.5 text-[#34d399]" />
+                <ArrowRight className="w-3.5 h-3.5 text-[#6D28D9]" />
               </button>
             </div>
 
-            <div className="p-3.5 rounded-[12px] bg-[#0a0a0a] border border-[#262626] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="p-3.5 rounded-[14px] bg-[#F8F7FC] border border-[#ECEAF6] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="min-w-0">
-                <div className="text-sm font-medium text-[#fafafa]">{labels.exportTitle}</div>
-                <div className="text-xs text-[#a3a3a3] mt-0.5">{labels.exportDesc}</div>
+                <div className="text-sm font-semibold text-[#1E1B4B]">{labels.exportTitle}</div>
+                <div className="text-xs text-[#6B7280] mt-0.5">{labels.exportDesc}</div>
               </div>
               <Button
                 type="button"
@@ -609,19 +633,19 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onNavigateToBody }) =>
               <Button
                 type="button"
                 variant="outline"
-                className="w-full text-red-400 border-[#404040] hover:border-red-900 hover:bg-red-950/30"
+                className="w-full text-rose-600 border-rose-200 hover:border-rose-300 hover:bg-rose-50"
                 onClick={() => setConfirmSignOut(true)}
               >
                 <LogOut className="w-4 h-4 mr-1.5" />
                 {t('profile.signOutTrigger')}
               </Button>
             ) : (
-              <div className="p-3.5 rounded-[12px] bg-[#0a0a0a] border border-red-900 space-y-2.5">
+              <div className="p-3.5 rounded-[14px] bg-rose-50 border border-rose-200 space-y-2.5">
                 <div>
-                  <div className="text-sm font-semibold text-[#fafafa]">
+                  <div className="text-sm font-bold text-[#1E1B4B]">
                     {t('profile.signOutPromptTitle')}
                   </div>
-                  <div className="text-xs text-[#a3a3a3] mt-0.5">
+                  <div className="text-xs text-[#6B7280] mt-0.5">
                     {t('profile.signOutPromptDesc')}
                   </div>
                 </div>
@@ -652,14 +676,14 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onNavigateToBody }) =>
         </Card>
 
         {/* Right: Community Ideas & Platform Telemetry */}
-        <Card className="p-4 sm:p-5 bg-[#171717] border-[#404040] space-y-4">
-          <CardHeader className="pb-3 border-b border-[#262626] mb-0 flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+        <Card className="p-4 sm:p-5 bg-white border-[#ECEAF6] royal-card-shadow space-y-4">
+          <CardHeader className="pb-3 border-b border-[#ECEAF6] mb-0 flex flex-col sm:flex-row sm:items-start justify-between gap-3">
             <div className="min-w-0">
-              <CardTitle className="text-base flex items-center gap-2">
-                <MessageSquare className="w-4 h-4 text-[#34d399]" />
+              <CardTitle className="text-base text-[#1E1B4B] flex items-center gap-2">
+                <MessageSquare className="w-4 h-4 text-[#6D28D9]" />
                 {t('profile.feedbackTitle')}
               </CardTitle>
-              <CardDescription className="mt-0.5">
+              <CardDescription className="mt-0.5 text-[#6B7280]">
                 {t('profile.feedbackSubtitle')}
               </CardDescription>
             </div>
@@ -678,29 +702,29 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onNavigateToBody }) =>
           <CardContent className="space-y-3">
             {platformStats && (
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                <div className="p-2.5 rounded-[10px] bg-[#0a0a0a] border border-[#262626]">
-                  <div className="text-[11px] text-[#a3a3a3]">30d</div>
-                  <div className="text-sm font-mono tabular-nums font-semibold text-[#fafafa] mt-0.5">
+                <div className="p-2.5 rounded-[12px] bg-[#F8F7FC] border border-[#ECEAF6]">
+                  <div className="text-[11px] text-[#6B7280]">30d</div>
+                  <div className="text-sm font-mono tabular-nums font-bold text-[#1E1B4B] mt-0.5">
                     {platformStats.active_athletes_30d ?? 1}
                   </div>
                 </div>
-                <div className="p-2.5 rounded-[10px] bg-[#0a0a0a] border border-[#262626]">
-                  <div className="text-[11px] text-[#a3a3a3]">{labels.completedWorkouts}</div>
-                  <div className="text-sm font-mono tabular-nums font-semibold text-[#fafafa] mt-0.5">
+                <div className="p-2.5 rounded-[12px] bg-[#F8F7FC] border border-[#ECEAF6]">
+                  <div className="text-[11px] text-[#6B7280]">{labels.completedWorkouts}</div>
+                  <div className="text-sm font-mono tabular-nums font-bold text-[#1E1B4B] mt-0.5">
                     {platformStats.total_workouts ?? 0}
                   </div>
                 </div>
-                <div className="p-2.5 rounded-[10px] bg-[#0a0a0a] border border-[#262626]">
-                  <div className="text-[11px] text-[#a3a3a3]">{labels.totalVolume}</div>
-                  <div className="text-sm font-mono tabular-nums font-semibold text-[#34d399] mt-0.5">
+                <div className="p-2.5 rounded-[12px] bg-[#FAF9FE] border border-[#DDD6FE]">
+                  <div className="text-[11px] text-[#6D28D9]">{labels.totalVolume}</div>
+                  <div className="text-sm font-mono tabular-nums font-bold text-[#6D28D9] mt-0.5">
                     {(platformStats.total_tonnage_kg ?? 0) > 1000
                       ? `${((platformStats.total_tonnage_kg ?? 0) / 1000).toFixed(1)} t`
                       : `${platformStats.total_tonnage_kg ?? 0} kg`}
                   </div>
                 </div>
-                <div className="p-2.5 rounded-[10px] bg-[#0a0a0a] border border-[#262626]">
-                  <div className="text-[11px] text-[#a3a3a3]">PWA</div>
-                  <div className="text-sm font-mono tabular-nums font-semibold text-[#fafafa] mt-0.5">
+                <div className="p-2.5 rounded-[12px] bg-[#F8F7FC] border border-[#ECEAF6]">
+                  <div className="text-[11px] text-[#6B7280]">PWA</div>
+                  <div className="text-sm font-mono tabular-nums font-bold text-[#1E1B4B] mt-0.5">
                     {platformStats.total_installs ?? 0}
                   </div>
                 </div>
@@ -709,24 +733,24 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onNavigateToBody }) =>
 
             <div className="space-y-2 max-h-[320px] overflow-y-auto pr-1">
               {feedbacks.length === 0 ? (
-                <div className="p-5 rounded-[10px] bg-[#0a0a0a] border border-[#262626] text-center text-xs text-[#a3a3a3]">
+                <div className="p-5 rounded-[12px] bg-[#F8F7FC] border border-[#ECEAF6] text-center text-xs text-[#6B7280]">
                   {t('profile.communityIdeas')}
                 </div>
               ) : (
                 feedbacks.slice(0, 10).map((fb) => (
                   <div
                     key={fb.id}
-                    className="p-3 rounded-[10px] bg-[#0a0a0a] border border-[#262626] flex items-start justify-between gap-3"
+                    className="p-3 rounded-[14px] bg-[#F8F7FC] border border-[#ECEAF6] flex items-start justify-between gap-3"
                   >
                     <div className="flex-1 min-w-0 space-y-1">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span
-                          className={`text-[10px] font-medium px-2 py-0.5 rounded-full border ${
+                          className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${
                             fb.category === 'bug'
-                              ? 'bg-red-950/40 text-red-400 border-red-900'
+                              ? 'bg-rose-50 text-rose-700 border-rose-200'
                               : fb.category === 'feature'
-                              ? 'bg-amber-950/40 text-amber-400 border-amber-900'
-                              : 'bg-[#022c22] text-[#34d399] border-[#064e3b]'
+                              ? 'bg-amber-50 text-amber-700 border-amber-200'
+                              : 'bg-[#F0EFFE] text-[#6D28D9] border-[#DDD6FE]'
                           }`}
                         >
                           {fb.category === 'bug'
@@ -735,14 +759,14 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onNavigateToBody }) =>
                             ? 'Idea'
                             : 'UI/UX'}
                         </span>
-                        <h4 className="text-xs font-semibold text-[#fafafa] truncate">
+                        <h4 className="text-xs font-bold text-[#1E1B4B] truncate">
                           {fb.title}
                         </h4>
                       </div>
 
-                      <p className="text-xs text-[#a3a3a3] leading-relaxed">{fb.description}</p>
+                      <p className="text-xs text-[#4B5563] leading-relaxed">{fb.description}</p>
 
-                      <div className="text-[11px] font-mono tabular-nums text-[#737373] flex items-center gap-2">
+                      <div className="text-[11px] font-mono tabular-nums text-[#6B7280] flex items-center gap-2">
                         <span className="font-sans">{fb.author_name || fb.user_name || t('coach.athleteDefault')}</span>
                         <span>·</span>
                         <span>{new Date(fb.created_at).toLocaleDateString()}</span>
@@ -752,7 +776,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onNavigateToBody }) =>
                     <button
                       type="button"
                       onClick={() => upvoteMutation.mutate(fb.id)}
-                      className="min-w-[44px] min-h-[44px] px-2.5 py-1.5 rounded-[10px] bg-[#171717] hover:bg-[#022c22] border border-[#404040] hover:border-[#064e3b] text-[#a3a3a3] hover:text-[#34d399] flex flex-col items-center justify-center shrink-0 transition-colors cursor-pointer"
+                      className="min-w-[44px] min-h-[44px] px-2.5 py-1.5 rounded-[10px] bg-white hover:bg-[#F0EFFE] border border-[#ECEAF6] hover:border-[#DDD6FE] text-[#6B7280] hover:text-[#6D28D9] flex flex-col items-center justify-center shrink-0 transition-colors cursor-pointer"
                     >
                       <ThumbsUp className="w-3.5 h-3.5" />
                       <span className="text-[11px] font-semibold font-mono tabular-nums mt-0.5">

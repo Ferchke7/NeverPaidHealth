@@ -208,21 +208,21 @@ export const FloatingActiveWorkoutPill: React.FC<FloatingActiveWorkoutPillProps>
         isDragging ? 'opacity-95' : ''
       }`}
     >
-      <div className="flex items-center gap-2.5 px-3 py-2 rounded-[14px] bg-[#171717] border border-[#404040] hover:border-[#34d399] transition-colors">
-        <div className="text-[#737373] group-hover:text-[#a3a3a3] transition-colors shrink-0 -ml-0.5">
+      <div className="flex items-center gap-2.5 px-3 py-2 rounded-[16px] bg-white border border-[#DDD6FE] royal-float-shadow hover:border-[#6D28D9] transition-colors">
+        <div className="text-[#94A3B8] group-hover:text-[#6D28D9] transition-colors shrink-0 -ml-0.5">
           <GripVertical className="w-3.5 h-3.5" />
         </div>
 
-        <div className="w-8 h-8 rounded-[10px] bg-[#022c22] border border-[#064e3b] text-[#34d399] flex items-center justify-center shrink-0">
+        <div className="w-8 h-8 rounded-[10px] bg-[#F0EFFE] border border-[#DDD6FE] text-[#6D28D9] flex items-center justify-center shrink-0">
           <Dumbbell className="w-4 h-4" />
         </div>
 
         <div className="min-w-0 pr-1">
-          <h4 className="text-xs font-semibold text-[#fafafa] tracking-tight leading-none truncate max-w-[125px] sm:max-w-[160px]">
+          <h4 className="text-xs font-bold text-[#1E1B4B] tracking-tight leading-none truncate max-w-[125px] sm:max-w-[160px]">
             {workout.name}
           </h4>
-          <div className="flex items-center gap-1.5 text-[11px] text-[#a3a3a3] tabular-nums mt-1">
-            <span className="flex items-center gap-0.5 text-[#34d399] font-semibold">
+          <div className="flex items-center gap-1.5 text-[11px] text-[#6B7280] tabular-nums mt-1">
+            <span className="flex items-center gap-0.5 text-[#6D28D9] font-semibold">
               <Clock className="w-3 h-3" />
               {formatDuration(elapsedSeconds)}
             </span>
@@ -231,7 +231,7 @@ export const FloatingActiveWorkoutPill: React.FC<FloatingActiveWorkoutPillProps>
             {isRestTimerActive && (
               <>
                 <span>·</span>
-                <span className="text-[#34d399] font-semibold flex items-center gap-0.5">
+                <span className="text-[#10B981] font-semibold flex items-center gap-0.5">
                   <Timer className="w-3 h-3" />
                   {restRemaining}s
                 </span>
@@ -246,7 +246,7 @@ export const FloatingActiveWorkoutPill: React.FC<FloatingActiveWorkoutPillProps>
             e.stopPropagation();
             onOpen();
           }}
-          className="ml-0.5 shrink-0 h-9 px-3 rounded-[10px] bg-[#34d399] hover:bg-[#10b981] text-[#0a0a0a] font-semibold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+          className="ml-0.5 shrink-0 h-9 px-3 rounded-[11px] violet-btn-gradient text-white font-semibold text-xs flex items-center gap-1.5 shadow-sm transition-opacity hover:opacity-95 cursor-pointer"
         >
           <span>{t('workouts.startShort') || t('workouts.start')}</span>
           <Maximize2 className="w-3 h-3" />

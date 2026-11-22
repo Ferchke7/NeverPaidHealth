@@ -151,6 +151,15 @@ export const BodyPage: React.FC = () => {
   });
   const [goalsSaved, setGoalsSaved] = useState(false);
 
+  // Sync displayed target weight input when unit preference or stored target weight changes
+  useEffect(() => {
+    const targetKg = user?.target_weight_kg || Number(localStorage.getItem('np_target_weight_kg') || 75);
+    if (targetKg > 0) {
+      const displayVal = unitPref === 'lb' ? kgToLb(targetKg) : targetKg;
+      setTargetWeightInput(displayVal.toFixed(1));
+    }
+  }, [unitPref, user?.target_weight_kg]);
+
   // Macro inputs (seeded from stored profile or computed formula)
   const [macroProteinInput, setMacroProteinInput] = useState<string>(() => {
     return String(
@@ -342,7 +351,7 @@ export const BodyPage: React.FC = () => {
       target_carbs_g: c,
     });
 
-    void queryClient.invalidateQueries({ queryKey: ['nutrition', 'today'] });
+    void queryClient.invalidateQueries({ queryKey: ['nutrition'] });
     void queryClient.invalidateQueries({ queryKey: ['coach-insights'] });
 
     setMacrosSaved(true);
@@ -383,88 +392,140 @@ export const BodyPage: React.FC = () => {
     (parseFloat(macroCarbInput) || 0) * 4 +
     (parseFloat(macroFatInput) || 0) * 9;
 
+  const latestGirthLog = useMemo(() => {
+    const sorted = [...logs].sort((a, b) => b.log_date.localeCompare(a.log_date));
+    return (
+      sorted.find(
+        (l) =>
+          (l.chest_cm && l.chest_cm > 0) ||
+          (l.waist_cm && l.waist_cm > 0) ||
+          (l.arms_cm && l.arms_cm > 0) ||
+          (l.thighs_cm && l.thighs_cm > 0)
+      ) || sorted[0]
+    );
+  }, [logs]);
+
   return (
     <div className="space-y-6">
-      {/* 1. Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-[#fafafa] tracking-tight">
-            {t('body.title')}
-          </h1>
-          <p className="text-sm text-[#a3a3a3] mt-1">{t('body.subtitle')}</p>
+      {/* 1. Royal Violet Body Hero + Overlapping Floating 4-Col Girths Dock (Figma Screen 09) */}
+      <div>
+        <div className="royal-hero-gradient rounded-[28px] p-5 sm:p-6 pb-14 text-white shadow-lg relative overflow-hidden">
+          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+                {t('body.title')}
+              </h1>
+              <p className="text-sm text-[#DDD6FE] mt-1">{t('body.subtitle')}</p>
+            </div>
+
+            {currentBMI > 0 && (
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/15 border border-white/25 backdrop-blur-sm text-xs font-mono tabular-nums text-white self-start sm:self-auto">
+                <span className="text-[#DDD6FE]">{t('body.bmi')}</span>
+                <span className="text-[#34D399] font-bold">{currentBMI.toFixed(1)}</span>
+                <span className="text-white/40">·</span>
+                <span className="font-sans text-white font-medium">{getBMICategory(currentBMI).label}</span>
+              </div>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-5">
+            <div className="bg-white/10 border border-white/15 rounded-[18px] p-4 backdrop-blur-sm space-y-1">
+              <div className="flex items-center justify-between text-xs text-[#DDD6FE]">
+                <span>{t('body.currentWeight')}</span>
+                <Scale className="w-4 h-4 text-[#C4B5FD]" />
+              </div>
+              <div className="text-2xl sm:text-3xl font-extrabold font-mono tabular-nums text-white">
+                {currentWeightKg > 0 ? formatWeight(currentWeightKg, unitPref) : '—'}
+              </div>
+              {trend?.delta_30day_kg !== undefined && trend.delta_30day_kg !== null ? (
+                <div
+                  className={`text-xs font-mono tabular-nums inline-flex items-center gap-1 ${
+                    trend.delta_30day_kg < 0
+                      ? 'text-[#34D399]'
+                      : trend.delta_30day_kg > 0
+                      ? 'text-amber-300'
+                      : 'text-white/70'
+                  }`}
+                >
+                  {trend.delta_30day_kg > 0 ? (
+                    <TrendingUp className="w-3.5 h-3.5" />
+                  ) : trend.delta_30day_kg < 0 ? (
+                    <TrendingDown className="w-3.5 h-3.5" />
+                  ) : null}
+                  <span>
+                    30d: {trend.delta_30day_kg > 0 ? '+' : ''}
+                    {formatWeight(trend.delta_30day_kg, unitPref)}
+                  </span>
+                </div>
+              ) : (
+                <p className="text-xs text-[#DDD6FE]">{t('body.current')}</p>
+              )}
+            </div>
+
+            <div className="bg-white/10 border border-white/15 rounded-[18px] p-4 backdrop-blur-sm space-y-1">
+              <div className="text-xs text-[#DDD6FE]">{t('body.targetWeight')}</div>
+              <div className="text-2xl sm:text-3xl font-extrabold font-mono tabular-nums text-[#34D399]">
+                {targetWeightKg > 0 ? formatWeight(targetWeightKg, unitPref) : '—'}
+              </div>
+              <p className="text-xs font-mono tabular-nums text-white/80">
+                {remainingKg !== null
+                  ? Math.abs(remainingKg) < 0.1
+                    ? t('body.goalAchieved')
+                    : `${t('body.remainingToGoal')}: ${remainingKg > 0 ? '+' : ''}${formatWeight(
+                        remainingKg,
+                        unitPref
+                      )}`
+                  : '—'}
+              </p>
+            </div>
+
+            <div className="bg-white/10 border border-white/15 rounded-[18px] p-4 backdrop-blur-sm space-y-1">
+              <div className="text-xs text-[#DDD6FE]">{smaLabel}</div>
+              <div className="text-2xl sm:text-3xl font-extrabold font-mono tabular-nums text-white">
+                {trend?.current_7day_sma_kg ? formatWeight(trend.current_7day_sma_kg, unitPref) : '—'}
+              </div>
+              <p className="text-xs font-mono tabular-nums text-white/80">
+                {t('body.bmi')}: {currentBMI > 0 ? currentBMI.toFixed(1) : '—'}
+              </p>
+            </div>
+          </div>
         </div>
 
-        {currentBMI > 0 && (
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#171717] border border-[#404040] text-xs font-mono tabular-nums text-[#fafafa] self-start sm:self-auto">
-            <span className="text-[#a3a3a3]">{t('body.bmi')}</span>
-            <span className="text-[#34d399] font-semibold">{currentBMI.toFixed(1)}</span>
-            <span className="text-[#737373]">·</span>
-            <span className="font-sans text-[#a3a3a3]">{getBMICategory(currentBMI).label}</span>
-          </div>
-        )}
-      </div>
-
-      {/* 2. Top 3 KPI Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <Card className="p-4 sm:p-5 bg-[#171717] border-[#404040] space-y-1.5">
-          <div className="flex items-center justify-between text-xs text-[#a3a3a3]">
-            <span>{t('body.currentWeight')}</span>
-            <Scale className="w-4 h-4 text-[#34d399]" />
-          </div>
-          <div className="text-2xl sm:text-3xl font-bold font-mono tabular-nums text-[#fafafa]">
-            {currentWeightKg > 0 ? formatWeight(currentWeightKg, unitPref) : '—'}
-          </div>
-          {trend?.delta_30day_kg !== undefined && trend.delta_30day_kg !== null ? (
-            <div
-              className={`text-xs font-mono tabular-nums inline-flex items-center gap-1 ${
-                trend.delta_30day_kg < 0
-                  ? 'text-[#34d399]'
-                  : trend.delta_30day_kg > 0
-                  ? 'text-amber-400'
-                  : 'text-[#737373]'
-              }`}
-            >
-              {trend.delta_30day_kg > 0 ? (
-                <TrendingUp className="w-3.5 h-3.5" />
-              ) : trend.delta_30day_kg < 0 ? (
-                <TrendingDown className="w-3.5 h-3.5" />
-              ) : null}
-              <span>
-                30d: {trend.delta_30day_kg > 0 ? '+' : ''}
-                {formatWeight(trend.delta_30day_kg, unitPref)}
-              </span>
+        {/* Overlapping Floating 4-Column Girths Card */}
+        <div className="-mt-8 mx-2 sm:mx-4 bg-white border border-[#ECEAF6] rounded-[22px] p-4 royal-float-shadow relative z-10 grid grid-cols-4 divide-x divide-[#ECEAF6] text-center">
+          <div className="px-2">
+            <div className="text-[11px] font-medium text-[#6B7280] truncate">
+              {t('body.chestCm').split(',')[0]}
             </div>
-          ) : (
-            <p className="text-xs text-[#737373]">{t('body.current')}</p>
-          )}
-        </Card>
-
-        <Card className="p-4 sm:p-5 bg-[#171717] border-[#404040] space-y-1.5">
-          <div className="text-xs text-[#a3a3a3]">{t('body.targetWeight')}</div>
-          <div className="text-2xl sm:text-3xl font-bold font-mono tabular-nums text-[#34d399]">
-            {targetWeightKg > 0 ? formatWeight(targetWeightKg, unitPref) : '—'}
+            <div className="text-sm sm:text-base font-extrabold font-mono tabular-nums text-[#1E1B4B] mt-0.5">
+              {latestGirthLog?.chest_cm ? `${latestGirthLog.chest_cm}` : '—'}
+            </div>
           </div>
-          <p className="text-xs font-mono tabular-nums text-[#a3a3a3]">
-            {remainingKg !== null
-              ? Math.abs(remainingKg) < 0.1
-                ? t('body.goalAchieved')
-                : `${t('body.remainingToGoal')}: ${remainingKg > 0 ? '+' : ''}${formatWeight(
-                    remainingKg,
-                    unitPref
-                  )}`
-              : '—'}
-          </p>
-        </Card>
-
-        <Card className="p-4 sm:p-5 bg-[#171717] border-[#404040] space-y-1.5">
-          <div className="text-xs text-[#a3a3a3]">{smaLabel}</div>
-          <div className="text-2xl sm:text-3xl font-bold font-mono tabular-nums text-[#fafafa]">
-            {trend?.current_7day_sma_kg ? formatWeight(trend.current_7day_sma_kg, unitPref) : '—'}
+          <div className="px-2">
+            <div className="text-[11px] font-medium text-[#6B7280] truncate">
+              {t('body.waistCm').split(',')[0]}
+            </div>
+            <div className="text-sm sm:text-base font-extrabold font-mono tabular-nums text-[#6D28D9] mt-0.5">
+              {latestGirthLog?.waist_cm ? `${latestGirthLog.waist_cm}` : '—'}
+            </div>
           </div>
-          <p className="text-xs font-mono tabular-nums text-[#a3a3a3]">
-            {t('body.bmi')}: {currentBMI > 0 ? currentBMI.toFixed(1) : '—'}
-          </p>
-        </Card>
+          <div className="px-2">
+            <div className="text-[11px] font-medium text-[#6B7280] truncate">
+              {t('body.armsCm').split(',')[0]}
+            </div>
+            <div className="text-sm sm:text-base font-extrabold font-mono tabular-nums text-[#1E1B4B] mt-0.5">
+              {latestGirthLog?.arms_cm ? `${latestGirthLog.arms_cm}` : '—'}
+            </div>
+          </div>
+          <div className="px-2">
+            <div className="text-[11px] font-medium text-[#6B7280] truncate">
+              {t('body.hipsCm').split(',')[0]}
+            </div>
+            <div className="text-sm sm:text-base font-extrabold font-mono tabular-nums text-[#0891B2] mt-0.5">
+              {latestGirthLog?.thighs_cm ? `${latestGirthLog.thighs_cm}` : '—'}
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* 3. Multi-mode Dynamics Chart */}
@@ -480,10 +541,10 @@ export const BodyPage: React.FC = () => {
       {/* 4. Middle Grid: Recent Measurements & Add Measurement */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
         {/* Left: Recent Logs */}
-        <Card className="p-4 sm:p-5 bg-[#171717] border-[#404040]">
-          <CardHeader className="pb-3 border-b border-[#262626] mb-3 flex flex-row items-center justify-between gap-2">
-            <CardTitle className="text-base">{t('body.recentLogs')}</CardTitle>
-            <span className="px-2 py-0.5 rounded-[6px] bg-[#0a0a0a] border border-[#262626] text-xs font-mono tabular-nums text-[#a3a3a3]">
+        <Card className="p-4 sm:p-5 bg-white border-[#ECEAF6] royal-card-shadow">
+          <CardHeader className="pb-3 border-b border-[#ECEAF6] mb-3 flex flex-row items-center justify-between gap-2">
+            <CardTitle className="text-base text-[#1E1B4B]">{t('body.recentLogs')}</CardTitle>
+            <span className="px-2.5 py-0.5 rounded-full bg-[#F0EFFE] border border-[#DDD6FE] text-xs font-mono tabular-nums font-bold text-[#6D28D9]">
               {logs.length}
             </span>
           </CardHeader>
@@ -494,12 +555,12 @@ export const BodyPage: React.FC = () => {
                 {[1, 2, 3].map((i) => (
                   <div
                     key={i}
-                    className="h-16 rounded-[10px] bg-[#0a0a0a] border border-[#262626] animate-pulse"
+                    className="h-16 rounded-[12px] bg-[#F8F7FC] border border-[#ECEAF6] animate-pulse"
                   />
                 ))}
               </div>
             ) : logs.length === 0 ? (
-              <div className="p-6 rounded-[10px] bg-[#0a0a0a] border border-[#262626] text-center text-xs text-[#a3a3a3]">
+              <div className="p-6 rounded-[12px] bg-[#F8F7FC] border border-[#ECEAF6] text-center text-xs text-[#6B7280]">
                 {emptyLogsLbl}
               </div>
             ) : (
@@ -507,18 +568,18 @@ export const BodyPage: React.FC = () => {
                 {logs.map((log) => (
                   <div
                     key={log.id || log.log_date}
-                    className="p-3 rounded-[10px] bg-[#0a0a0a] border border-[#262626] flex items-center justify-between gap-3"
+                    className="p-3 rounded-[14px] bg-[#F8F7FC] border border-[#ECEAF6] flex items-center justify-between gap-3 hover:border-[#DDD6FE] transition-colors"
                   >
                     <div className="min-w-0 space-y-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-xs font-mono tabular-nums text-[#a3a3a3]">
+                        <span className="text-xs font-mono tabular-nums text-[#6B7280]">
                           {log.log_date}
                         </span>
-                        <span className="text-sm font-mono tabular-nums font-semibold text-[#fafafa]">
+                        <span className="text-sm font-mono tabular-nums font-bold text-[#1E1B4B]">
                           {formatWeight(log.weight_kg, unitPref)}
                         </span>
                         {log.calculated_bmi != null && log.calculated_bmi > 0 && (
-                          <span className="px-2 py-0.5 rounded-[6px] bg-[#171717] border border-[#262626] text-[11px] font-mono tabular-nums text-[#34d399]">
+                          <span className="px-2 py-0.5 rounded-[6px] bg-[#F0EFFE] border border-[#DDD6FE] text-[11px] font-mono tabular-nums font-semibold text-[#6D28D9]">
                             BMI {log.calculated_bmi.toFixed(1)}
                           </span>
                         )}
@@ -530,7 +591,7 @@ export const BodyPage: React.FC = () => {
                         log.arms_cm ||
                         log.thighs_cm ||
                         log.neck_cm) && (
-                        <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] font-mono tabular-nums text-[#737373]">
+                        <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] font-mono tabular-nums text-[#6B7280]">
                           {log.body_fat_percentage != null && log.body_fat_percentage > 0 && (
                             <span>BF {log.body_fat_percentage}%</span>
                           )}
@@ -567,7 +628,7 @@ export const BodyPage: React.FC = () => {
                       type="button"
                       onClick={() => deleteMutation.mutate(log.log_date)}
                       disabled={deleteMutation.isPending}
-                      className="min-w-[44px] min-h-[44px] rounded-[10px] bg-[#171717] border border-[#404040] hover:border-red-900 hover:bg-red-950/30 text-[#a3a3a3] hover:text-red-400 flex items-center justify-center shrink-0 transition-colors cursor-pointer"
+                      className="min-w-[44px] min-h-[44px] rounded-[10px] bg-white border border-[#ECEAF6] hover:border-rose-200 hover:bg-rose-50 text-[#9CA3AF] hover:text-rose-600 flex items-center justify-center shrink-0 transition-colors cursor-pointer"
                       aria-label={t('common.delete')}
                       title={t('common.delete')}
                     >
@@ -581,9 +642,9 @@ export const BodyPage: React.FC = () => {
         </Card>
 
         {/* Right: Add Measurement Form */}
-        <Card className="p-4 sm:p-5 bg-[#171717] border-[#404040]">
-          <CardHeader className="pb-3 border-b border-[#262626] mb-3">
-            <CardTitle className="text-base">{t('body.addLogTitle')}</CardTitle>
+        <Card className="p-4 sm:p-5 bg-white border-[#ECEAF6] royal-card-shadow">
+          <CardHeader className="pb-3 border-b border-[#ECEAF6] mb-3">
+            <CardTitle className="text-base text-[#1E1B4B]">{t('body.addLogTitle')}</CardTitle>
           </CardHeader>
 
           <CardContent>
@@ -595,7 +656,7 @@ export const BodyPage: React.FC = () => {
               className="space-y-4"
             >
               {error && (
-                <div className="p-3 rounded-[10px] bg-red-950/40 border border-red-900 text-xs text-red-400">
+                <div className="p-3 rounded-[10px] bg-rose-50 border border-rose-200 text-xs text-rose-700">
                   {error}
                 </div>
               )}
@@ -628,16 +689,16 @@ export const BodyPage: React.FC = () => {
               </div>
 
               {formBMI > 0 && (
-                <div className="px-3 py-2 rounded-[10px] bg-[#0a0a0a] border border-[#262626] flex items-center justify-between text-xs font-mono tabular-nums">
-                  <span className="text-[#a3a3a3]">{t('body.bmi')}</span>
-                  <span className="text-[#34d399] font-semibold">
+                <div className="px-3 py-2 rounded-[10px] bg-[#FAF9FE] border border-[#DDD6FE] flex items-center justify-between text-xs font-mono tabular-nums">
+                  <span className="text-[#6B7280]">{t('body.bmi')}</span>
+                  <span className="text-[#6D28D9] font-semibold">
                     {formBMI.toFixed(1)} · {formBMICat.label}
                   </span>
                 </div>
               )}
 
-              <div className="space-y-2.5 pt-1 border-t border-[#262626]">
-                <p className="text-xs font-medium text-[#a3a3a3]">{t('body.optionalGirths')}</p>
+              <div className="space-y-2.5 pt-1 border-t border-[#ECEAF6]">
+                <p className="text-xs font-semibold text-[#6B7280]">{t('body.optionalGirths')}</p>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
                   <Input
                     type="number"
@@ -711,14 +772,14 @@ export const BodyPage: React.FC = () => {
       {/* 5. Bottom Grid: Calculator (BMI / BMR / TDEE) & Goals / Macro Targets */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
         {/* Left: Calculator */}
-        <Card className="p-4 sm:p-5 bg-[#171717] border-[#404040] space-y-4">
-          <CardHeader className="pb-3 border-b border-[#262626] mb-0 flex flex-row items-center justify-between gap-2">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Calculator className="w-4 h-4 text-[#34d399]" />
+        <Card className="p-4 sm:p-5 bg-white border-[#ECEAF6] royal-card-shadow space-y-4">
+          <CardHeader className="pb-3 border-b border-[#ECEAF6] mb-0 flex flex-row items-center justify-between gap-2">
+            <CardTitle className="text-base text-[#1E1B4B] flex items-center gap-2">
+              <Calculator className="w-4 h-4 text-[#6D28D9]" />
               {t('body.calculatorTitle')}
             </CardTitle>
             {estBodyFat > 0 && (
-              <span className="text-xs font-mono tabular-nums text-[#a3a3a3]">
+              <span className="text-xs font-mono tabular-nums text-[#6B7280] font-semibold">
                 ~{estBodyFat.toFixed(1)}% BF
               </span>
             )}
@@ -754,7 +815,7 @@ export const BodyPage: React.FC = () => {
               />
 
               <div className="space-y-1.5">
-                <label className="text-xs font-medium text-[#a3a3a3] block">
+                <label className="text-xs font-semibold text-[#6B7280] block">
                   {t('bmi.biologicalSex')}
                 </label>
                 <div className="grid grid-cols-2 gap-1.5">
@@ -763,10 +824,10 @@ export const BodyPage: React.FC = () => {
                       key={sex}
                       type="button"
                       onClick={() => setCalcGender(sex)}
-                      className={`min-h-[44px] rounded-[10px] border text-xs font-medium transition-colors cursor-pointer ${
+                      className={`min-h-[44px] rounded-[10px] border text-xs font-semibold transition-colors cursor-pointer ${
                         calcGender === sex
-                          ? 'bg-[#022c22] border-[#064e3b] text-[#34d399]'
-                          : 'bg-[#0a0a0a] border-[#404040] text-[#a3a3a3] hover:text-[#fafafa]'
+                          ? 'bg-[#F0EFFE] border-[#DDD6FE] text-[#6D28D9]'
+                          : 'bg-[#F8F7FC] border-[#ECEAF6] text-[#6B7280] hover:text-[#1E1B4B]'
                       }`}
                     >
                       {sex === 'male' ? t('bmi.male') : t('bmi.female')}
@@ -777,13 +838,13 @@ export const BodyPage: React.FC = () => {
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-[#a3a3a3] block">
+              <label className="text-xs font-semibold text-[#6B7280] block">
                 {t('body.activityFactor')}
               </label>
               <select
                 value={activityMult}
                 onChange={(e) => setActivityMult(parseFloat(e.target.value))}
-                className="w-full min-h-[44px] rounded-[10px] border border-[#404040] bg-[#0a0a0a] px-3 py-2 text-sm text-[#fafafa] focus:outline-none focus:border-[#34d399]"
+                className="w-full min-h-[44px] rounded-[10px] border border-[#ECEAF6] bg-[#F8F7FC] px-3 py-2 text-sm text-[#1E1B4B] focus:outline-none focus:border-[#6D28D9]"
               >
                 {activityOptions.map((opt) => (
                   <option key={opt.value} value={opt.value}>
@@ -794,40 +855,40 @@ export const BodyPage: React.FC = () => {
             </div>
 
             <div className="grid grid-cols-3 gap-2">
-              <div className="p-3 rounded-[10px] bg-[#0a0a0a] border border-[#262626]">
-                <div className="text-[11px] text-[#a3a3a3]">{t('body.bmi')}</div>
-                <div className="text-lg font-bold font-mono tabular-nums text-[#fafafa] mt-0.5">
+              <div className="p-3 rounded-[12px] bg-[#F8F7FC] border border-[#ECEAF6]">
+                <div className="text-[11px] text-[#6B7280]">{t('body.bmi')}</div>
+                <div className="text-lg font-bold font-mono tabular-nums text-[#1E1B4B] mt-0.5">
                   {calcBMI > 0 ? calcBMI.toFixed(1) : '—'}
                 </div>
               </div>
-              <div className="p-3 rounded-[10px] bg-[#0a0a0a] border border-[#262626]">
-                <div className="text-[11px] text-[#a3a3a3]">BMR</div>
-                <div className="text-lg font-bold font-mono tabular-nums text-[#fafafa] mt-0.5">
+              <div className="p-3 rounded-[12px] bg-[#F8F7FC] border border-[#ECEAF6]">
+                <div className="text-[11px] text-[#6B7280]">BMR</div>
+                <div className="text-lg font-bold font-mono tabular-nums text-[#1E1B4B] mt-0.5">
                   {calcBMR > 0 ? calcBMR.toLocaleString() : '—'}
                 </div>
               </div>
-              <div className="p-3 rounded-[10px] bg-[#0a0a0a] border border-[#262626]">
-                <div className="text-[11px] text-[#a3a3a3]">TDEE</div>
-                <div className="text-lg font-bold font-mono tabular-nums text-[#34d399] mt-0.5">
+              <div className="p-3 rounded-[12px] bg-[#FAF9FE] border border-[#DDD6FE]">
+                <div className="text-[11px] text-[#6D28D9] font-semibold">TDEE</div>
+                <div className="text-lg font-bold font-mono tabular-nums text-[#6D28D9] mt-0.5">
                   {calcTDEE > 0 ? calcTDEE.toLocaleString() : '—'}
                 </div>
               </div>
             </div>
 
             {idealRange.minKg > 0 && (
-              <div className="p-3 rounded-[10px] bg-[#0a0a0a] border border-[#262626] space-y-1 text-xs">
+              <div className="p-3 rounded-[12px] bg-[#F8F7FC] border border-[#ECEAF6] space-y-1 text-xs">
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-[#a3a3a3]">{t('bmi.idealWeightRange')}</span>
-                  <span className="font-mono tabular-nums font-semibold text-[#34d399]">
+                  <span className="text-[#6B7280]">{t('bmi.idealWeightRange')}</span>
+                  <span className="font-mono tabular-nums font-bold text-[#059669]">
                     {formatWeight(idealRange.minKg, unitPref)} – {formatWeight(idealRange.maxKg, unitPref)}
                   </span>
                 </div>
-                <p className="text-[#a3a3a3] leading-relaxed">{calcBMICat.advice}</p>
+                <p className="text-[#4B5563] leading-relaxed">{calcBMICat.advice}</p>
               </div>
             )}
 
             <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
-              <span className="text-[11px] text-[#737373]">{t('body.calcHint')}</span>
+              <span className="text-[11px] text-[#6B7280]">{t('body.calcHint')}</span>
               <Button type="button" variant="outline" onClick={handleCalculateApply}>
                 {t('body.calculateBtn')}
               </Button>
@@ -836,15 +897,15 @@ export const BodyPage: React.FC = () => {
         </Card>
 
         {/* Right: Goals & Macro Targets */}
-        <Card className="p-4 sm:p-5 bg-[#171717] border-[#404040] space-y-4">
-          <CardHeader className="pb-3 border-b border-[#262626] mb-0">
-            <CardTitle className="text-base">{t('body.goalsTitle')}</CardTitle>
+        <Card className="p-4 sm:p-5 bg-white border-[#ECEAF6] royal-card-shadow space-y-4">
+          <CardHeader className="pb-3 border-b border-[#ECEAF6] mb-0">
+            <CardTitle className="text-base text-[#1E1B4B]">{t('body.goalsTitle')}</CardTitle>
           </CardHeader>
 
           <CardContent className="space-y-5">
             <form onSubmit={handleSaveGoals} className="space-y-4">
               <div className="space-y-1.5">
-                <label className="text-xs font-medium text-[#a3a3a3] block">
+                <label className="text-xs font-semibold text-[#6B7280] block">
                   {t('body.dietMode')}
                 </label>
                 <div className="grid grid-cols-3 gap-1.5">
@@ -859,10 +920,10 @@ export const BodyPage: React.FC = () => {
                       key={mode.id}
                       type="button"
                       onClick={() => setDietGoal(mode.id)}
-                      className={`min-h-[44px] px-2.5 rounded-[10px] border text-xs font-medium transition-colors cursor-pointer ${
+                      className={`min-h-[44px] px-2.5 rounded-[10px] border text-xs font-semibold transition-colors cursor-pointer ${
                         dietGoal === mode.id
-                          ? 'bg-[#022c22] border-[#064e3b] text-[#34d399]'
-                          : 'bg-[#0a0a0a] border-[#404040] text-[#a3a3a3] hover:text-[#fafafa]'
+                          ? 'bg-[#F0EFFE] border-[#DDD6FE] text-[#6D28D9]'
+                          : 'bg-[#F8F7FC] border-[#ECEAF6] text-[#6B7280] hover:text-[#1E1B4B]'
                       }`}
                     >
                       {mode.label}
@@ -871,9 +932,9 @@ export const BodyPage: React.FC = () => {
                 </div>
               </div>
 
-              <div className="p-3 rounded-[10px] bg-[#0a0a0a] border border-[#262626] flex items-center justify-between text-xs">
-                <span className="text-[#a3a3a3]">{t('nutrition.calories')}</span>
-                <span className="font-mono tabular-nums text-base font-bold text-[#34d399]">
+              <div className="p-3 rounded-[12px] bg-[#FAF9FE] border border-[#DDD6FE] flex items-center justify-between text-xs">
+                <span className="text-[#4B5563] font-medium">{t('nutrition.calories')}</span>
+                <span className="font-mono tabular-nums text-base font-bold text-[#6D28D9]">
                   {recommendedCalories > 0
                     ? `${recommendedCalories.toLocaleString()} ${t('nutrition.kcalUnit')}`
                     : '—'}
@@ -890,7 +951,7 @@ export const BodyPage: React.FC = () => {
                 />
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-[#a3a3a3] block">
+                  <label className="text-xs font-semibold text-[#6B7280] block">
                     {t('body.weightUnitLabel')}
                   </label>
                   <div className="grid grid-cols-2 gap-1.5">
@@ -905,8 +966,8 @@ export const BodyPage: React.FC = () => {
                         }}
                         className={`min-h-[44px] rounded-[10px] border text-xs font-mono font-semibold uppercase transition-colors cursor-pointer ${
                           unitPref === unit
-                            ? 'bg-[#022c22] border-[#064e3b] text-[#34d399]'
-                            : 'bg-[#0a0a0a] border-[#404040] text-[#a3a3a3] hover:text-[#fafafa]'
+                            ? 'bg-[#F0EFFE] border-[#DDD6FE] text-[#6D28D9]'
+                            : 'bg-[#F8F7FC] border-[#ECEAF6] text-[#6B7280] hover:text-[#1E1B4B]'
                         }`}
                       >
                         {unit}
@@ -929,12 +990,12 @@ export const BodyPage: React.FC = () => {
             </form>
 
             {/* Macro Goals Sub-section */}
-            <div className="pt-4 border-t border-[#262626] space-y-3">
+            <div className="pt-4 border-t border-[#ECEAF6] space-y-3">
               <div className="flex items-center justify-between gap-2">
-                <span className="text-sm font-semibold text-[#fafafa]">
+                <span className="text-sm font-bold text-[#1E1B4B]">
                   {t('body.macroGoals')}
                 </span>
-                <span className="text-xs font-mono tabular-nums text-[#34d399]">
+                <span className="text-xs font-mono tabular-nums font-bold text-[#6D28D9]">
                   {Math.round(liveMacroKcal)} {t('nutrition.kcalUnit')}
                 </span>
               </div>
@@ -971,7 +1032,7 @@ export const BodyPage: React.FC = () => {
               >
                 {macrosSaved ? (
                   <>
-                    <CheckCircle2 className="w-4 h-4 mr-1.5 text-[#34d399]" />
+                    <CheckCircle2 className="w-4 h-4 mr-1.5 text-[#10B981]" />
                     {t('bmi.savedToProfile')}
                   </>
                 ) : (

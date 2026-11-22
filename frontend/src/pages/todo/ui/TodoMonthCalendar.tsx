@@ -161,48 +161,48 @@ export const TodoMonthCalendar: React.FC<TodoMonthCalendarProps> = ({
     <div className="space-y-4">
       {/* 1. Monthly Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <Card className="p-4 bg-gradient-to-br from-dark-900 to-brand-950/30 border-brand-500/30 shadow-lg">
+        <Card className="p-4 royal-hero-gradient border-[#4C1D95]/30 shadow-md">
           <div className="flex items-center gap-3.5">
-            <div className="w-11 h-11 rounded-2xl bg-brand-500/15 border border-brand-500/30 flex items-center justify-center text-brand-400 shrink-0">
+            <div className="w-11 h-11 rounded-2xl bg-white/15 border border-white/20 flex items-center justify-center text-white shrink-0">
               <CheckCircle2 className="w-5 h-5" />
             </div>
             <div>
-              <div className="text-xl sm:text-2xl font-black text-brand-400 font-mono">
+              <div className="text-xl sm:text-2xl font-black text-white font-mono tabular-nums">
                 {monthStats.completedCount} / {monthStats.totalTasks}
               </div>
-              <div className="text-xs text-zinc-400 font-medium">
+              <div className="text-xs text-[#DDD6FE] font-medium">
                 {t('todo.monthTasks') || 'Задач за месяц'}
               </div>
             </div>
           </div>
         </Card>
 
-        <Card className="p-4 bg-gradient-to-br from-dark-900 to-emerald-950/30 border-emerald-500/30 shadow-lg">
+        <Card className="p-4 bg-white border-[#ECEAF6] royal-card-shadow">
           <div className="flex items-center gap-3.5">
-            <div className="w-11 h-11 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
+            <div className="w-11 h-11 rounded-2xl bg-[#ECFDF5] border border-[#A7F3D0] flex items-center justify-center text-[#10B981] shrink-0">
               <Flame className="w-5 h-5" />
             </div>
             <div>
-              <div className="text-xl sm:text-2xl font-black text-emerald-400 font-mono">
+              <div className="text-xl sm:text-2xl font-black text-[#10B981] font-mono tabular-nums">
                 {Math.floor(monthStats.totalFocusMins / 60)}ч {monthStats.totalFocusMins % 60}м
               </div>
-              <div className="text-xs text-zinc-400 font-medium">
+              <div className="text-xs text-[#6B7280] font-medium">
                 {t('todo.focusTimeMonth') || 'Время фокуса'}
               </div>
             </div>
           </div>
         </Card>
 
-        <Card className="p-4 bg-gradient-to-br from-dark-900 to-blue-950/30 border-blue-500/30 shadow-lg">
+        <Card className="p-4 bg-white border-[#ECEAF6] royal-card-shadow">
           <div className="flex items-center gap-3.5">
-            <div className="w-11 h-11 rounded-2xl bg-blue-500/15 border border-blue-500/30 flex items-center justify-center text-blue-400 shrink-0">
+            <div className="w-11 h-11 rounded-2xl bg-[#F0EFFE] border border-[#DDD6FE] flex items-center justify-center text-[#6D28D9] shrink-0">
               <Trophy className="w-5 h-5" />
             </div>
             <div>
-              <div className="text-xl sm:text-2xl font-black text-blue-400 font-mono">
+              <div className="text-xl sm:text-2xl font-black text-[#6D28D9] font-mono tabular-nums">
                 {monthStats.activeDays}
               </div>
-              <div className="text-xs text-zinc-400 font-medium">
+              <div className="text-xs text-[#6B7280] font-medium">
                 {t('todo.activeDays') || 'Активных дней'}
               </div>
             </div>
@@ -211,14 +211,14 @@ export const TodoMonthCalendar: React.FC<TodoMonthCalendarProps> = ({
       </div>
 
       {/* 2. Calendar Grid Card */}
-      <Card className="p-3.5 sm:p-5 bg-dark-900 border-dark-800 shadow-xl space-y-3">
+      <Card className="p-3.5 sm:p-5 bg-white border-[#ECEAF6] royal-card-shadow space-y-3">
         {/* Navigation Bar */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-brand-500/15 border border-brand-500/30 flex items-center justify-center text-brand-400 font-bold">
+            <div className="w-7 h-7 rounded-lg bg-[#F0EFFE] border border-[#DDD6FE] flex items-center justify-center text-[#6D28D9] font-bold">
               <CalendarIcon className="w-4 h-4" />
             </div>
-            <h2 className="text-sm sm:text-base font-extrabold text-white tracking-tight capitalize">
+            <h2 className="text-sm sm:text-base font-extrabold text-[#1E1B4B] tracking-tight capitalize">
               {calendarDate.toLocaleString('ru-RU', { month: 'long', year: 'numeric' })}
             </h2>
           </div>
@@ -237,7 +237,7 @@ export const TodoMonthCalendar: React.FC<TodoMonthCalendarProps> = ({
         </div>
 
         {/* Weekday headers */}
-        <div className="grid grid-cols-7 gap-1 text-center text-[10px] sm:text-xs font-extrabold text-zinc-400 uppercase tracking-wider py-1 border-b border-dark-800/80">
+        <div className="grid grid-cols-7 gap-1 text-center text-[10px] sm:text-xs font-extrabold text-[#6B7280] uppercase tracking-wider py-1 border-b border-[#ECEAF6]">
           {[t('days.mon'), t('days.tue'), t('days.wed'), t('days.thu'), t('days.fri'), t('days.sat'), t('days.sun')].map((day, idx) => (
             <div key={idx} className="py-0.5">
               {day}
@@ -253,7 +253,7 @@ export const TodoMonthCalendar: React.FC<TodoMonthCalendarProps> = ({
             return (
               <div
                 key={`prev-${i}`}
-                className="min-h-[58px] sm:min-h-[72px] p-1.5 rounded-xl bg-dark-950/30 border border-dark-800/30 text-zinc-600 select-none opacity-40 text-xs"
+                className="min-h-[58px] sm:min-h-[72px] p-1.5 rounded-xl bg-[#F8F7FC]/60 border border-[#ECEAF6]/60 text-[#9CA3AF] select-none opacity-60 text-xs"
               >
                 <span>{dayNum}</span>
               </div>
@@ -279,31 +279,31 @@ export const TodoMonthCalendar: React.FC<TodoMonthCalendarProps> = ({
                 onClick={() => onSelectDate(dateKey)}
                 className={`min-h-[58px] sm:min-h-[72px] p-1.5 sm:p-2 rounded-xl border transition-all cursor-pointer flex flex-col justify-between select-none ${
                   isSelected
-                    ? 'bg-brand-500/15 border-brand-500 shadow-md ring-2 ring-brand-500/30'
+                    ? 'bg-[#F0EFFE] border-[#6D28D9] shadow-sm ring-2 ring-[#6D28D9]/20'
                     : isToday
-                    ? 'bg-dark-800 border-brand-500/50 hover:border-brand-400'
-                    : 'bg-dark-950/60 border-dark-800 hover:border-dark-700 hover:bg-dark-800/70'
+                    ? 'bg-[#FAF9FE] border-[#8B5CF6] hover:border-[#6D28D9]'
+                    : 'bg-[#F8F7FC] border-[#ECEAF6] hover:border-[#DDD6FE] hover:bg-white'
                 }`}
               >
                 <div className="flex items-center justify-between">
                   <span
                     className={`text-xs font-black ${
                       isToday
-                        ? 'w-5 h-5 rounded-full bg-brand-500 text-dark-950 flex items-center justify-center font-black'
+                        ? 'w-5 h-5 rounded-full bg-[#6D28D9] text-white flex items-center justify-center font-black'
                         : isSelected
-                        ? 'text-brand-400 font-black'
-                        : 'text-zinc-300'
+                        ? 'text-[#6D28D9] font-black'
+                        : 'text-[#1E1B4B]'
                     }`}
                   >
                     {dayNum}
                   </span>
 
                   {allDone ? (
-                    <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-sm shadow-emerald-500/50" />
+                    <span className="w-2 h-2 rounded-full bg-[#10B981] shadow-sm" />
                   ) : hasTasks ? (
-                    <span className="w-2 h-2 rounded-full bg-brand-400" />
+                    <span className="w-2 h-2 rounded-full bg-[#6D28D9]" />
                   ) : hasFocus ? (
-                    <span className="w-2 h-2 rounded-full bg-blue-400" />
+                    <span className="w-2 h-2 rounded-full bg-[#0891B2]" />
                   ) : null}
                 </div>
 
@@ -312,8 +312,8 @@ export const TodoMonthCalendar: React.FC<TodoMonthCalendarProps> = ({
                     <div
                       className={`text-[9px] sm:text-[10px] font-bold px-1 py-0.2 rounded truncate flex items-center gap-0.5 ${
                         allDone
-                          ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                          : 'bg-dark-800 text-zinc-300 border border-dark-700'
+                          ? 'bg-[#ECFDF5] text-[#059669] border border-[#A7F3D0]'
+                          : 'bg-white text-[#4B5563] border border-[#ECEAF6]'
                       }`}
                     >
                       <CheckCircle2 className="w-2.5 h-2.5 shrink-0" />
@@ -322,7 +322,7 @@ export const TodoMonthCalendar: React.FC<TodoMonthCalendarProps> = ({
                   )}
 
                   {hasFocus && (
-                    <div className="text-[9px] sm:text-[10px] font-bold px-1 py-0.2 rounded bg-amber-500/15 text-amber-400 border border-amber-500/30 truncate flex items-center gap-0.5">
+                    <div className="text-[9px] sm:text-[10px] font-bold px-1 py-0.2 rounded bg-amber-50 text-amber-600 border border-amber-200 truncate flex items-center gap-0.5">
                       <Flame className="w-2.5 h-2.5 shrink-0" />
                       <span>{dayLog.minutes}м</span>
                     </div>
@@ -335,12 +335,12 @@ export const TodoMonthCalendar: React.FC<TodoMonthCalendarProps> = ({
       </Card>
 
       {/* 3. Selected Day Tasks List */}
-      <Card className="bg-dark-900 border-dark-800 shadow-xl">
+      <Card className="bg-white border-[#ECEAF6] royal-card-shadow">
         <CardHeader className="p-3.5 sm:p-4 flex items-center justify-between">
-          <CardTitle className="text-sm sm:text-base flex items-center gap-2">
-            <CalendarIcon className="w-4 h-4 text-brand-400" />
+          <CardTitle className="text-sm sm:text-base flex items-center gap-2 text-[#1E1B4B]">
+            <CalendarIcon className="w-4 h-4 text-[#6D28D9]" />
             <span>{selectedDate}</span>
-            <span className="text-xs text-zinc-400 font-normal">
+            <span className="text-xs text-[#6B7280] font-normal">
               ({selectedDayData.items.length} {t('todo.tasksForDay', { count: selectedDayData.items.length }) || 'задач'})
             </span>
           </CardTitle>
@@ -358,7 +358,7 @@ export const TodoMonthCalendar: React.FC<TodoMonthCalendarProps> = ({
 
         <CardContent className="p-3.5 sm:p-4 pt-1 space-y-2">
           {selectedDayData.items.length === 0 ? (
-            <p className="text-xs text-zinc-400 py-4 text-center">
+            <p className="text-xs text-[#6B7280] py-4 text-center">
               {t('todo.noTasks', { date: selectedDate }) || 'Нет задач на этот день.'}
             </p>
           ) : (

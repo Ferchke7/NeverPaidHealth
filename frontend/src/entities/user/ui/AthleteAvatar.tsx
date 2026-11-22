@@ -30,7 +30,7 @@ export const AthleteAvatar: React.FC<AthleteAvatarProps> = ({
   const initial = (name.trim()[0] || 'А').toUpperCase();
   const isClickable = !!onClick;
   const cursorClass = isClickable
-    ? 'cursor-pointer hover:border-[#34d399]/60 transition-colors'
+    ? 'cursor-pointer hover:border-[#7C3AED] transition-colors'
     : '';
 
   const cleanUrl = avatarUrl && !imgError && avatarUrl.trim() !== '' ? avatarUrl.trim() : null;
@@ -39,7 +39,7 @@ export const AthleteAvatar: React.FC<AthleteAvatarProps> = ({
     <div
       onClick={onClick}
       title={title || name}
-      className={`relative shrink-0 rounded-full select-none overflow-hidden flex items-center justify-center font-semibold text-[#34d399] bg-[#022c22] border border-[#064e3b] ${sizeClass} ${cursorClass} ${className}`}
+      className={`relative shrink-0 rounded-full select-none overflow-hidden flex items-center justify-center font-bold text-[#6D28D9] bg-[#EDE9FE] border border-[#DDD6FE] ${sizeClass} ${cursorClass} ${className}`}
     >
       {cleanUrl ? (
         <img

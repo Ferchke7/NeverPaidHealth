@@ -100,7 +100,7 @@ export const ExercisePickerModal: React.FC<ExercisePickerModalProps> = ({
         onClose={onClose}
         size="lg"
         icon={
-          <div className="w-9 h-9 rounded-[10px] bg-[#022c22] text-[#34d399] border border-[#064e3b] flex items-center justify-center shrink-0">
+          <div className="w-9 h-9 rounded-[12px] bg-[#F0EFFE] text-[#6D28D9] border border-[#DDD6FE] flex items-center justify-center shrink-0">
             <Dumbbell className="w-4 h-4" />
           </div>
         }
@@ -113,7 +113,7 @@ export const ExercisePickerModal: React.FC<ExercisePickerModalProps> = ({
             placeholder={t('exercises.searchPlaceholder')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            startContent={<Search className="w-4 h-4 text-[#737373]" />}
+            startContent={<Search className="w-4 h-4 text-[#94A3B8]" />}
             size="sm"
           />
 
@@ -126,8 +126,8 @@ export const ExercisePickerModal: React.FC<ExercisePickerModalProps> = ({
                 onClick={() => setSelectedMuscle(mg)}
                 className={`h-9 px-3 rounded-[10px] text-xs font-semibold capitalize shrink-0 transition-colors cursor-pointer select-none border ${
                   selectedMuscle === mg
-                    ? 'bg-[#022c22] text-[#34d399] border-[#064e3b]'
-                    : 'bg-[#0a0a0a] text-[#a3a3a3] hover:text-[#fafafa] border-[#262626]'
+                    ? 'bg-[#6D28D9] text-white border-[#6D28D9]'
+                    : 'bg-[#F8F7FC] text-[#6B7280] hover:text-[#1E1B4B] border-[#ECEAF6]'
                 }`}
               >
                 {mg === 'all' ? t('exercises.allMuscles') : t(`exercises.${mg}` as any)}
@@ -144,8 +144,8 @@ export const ExercisePickerModal: React.FC<ExercisePickerModalProps> = ({
                 onClick={() => setSelectedEquipment(eq)}
                 className={`h-8 px-2.5 rounded-[8px] font-medium capitalize shrink-0 transition-colors cursor-pointer select-none border ${
                   selectedEquipment === eq
-                    ? 'bg-[#fafafa] text-[#0a0a0a] border-[#fafafa]'
-                    : 'bg-[#0a0a0a] text-[#a3a3a3] hover:text-[#fafafa] border-[#262626]'
+                    ? 'bg-[#1B1145] text-white border-[#1B1145]'
+                    : 'bg-[#F8F7FC] text-[#6B7280] hover:text-[#1E1B4B] border-[#ECEAF6]'
                 }`}
               >
                 {eq === 'all' ? t('exercises.allEquipment') : t(`exercises.${eq}` as any) || eq.replace('_', ' ')}
@@ -162,7 +162,7 @@ export const ExercisePickerModal: React.FC<ExercisePickerModalProps> = ({
                 ))}
               </div>
             ) : visibleExercises.length === 0 ? (
-              <div className="text-center py-8 text-xs text-[#737373]">
+              <div className="text-center py-8 text-xs text-[#94A3B8]">
                 {t('exercises.notFound')}
               </div>
             ) : (
@@ -174,7 +174,7 @@ export const ExercisePickerModal: React.FC<ExercisePickerModalProps> = ({
                       onSelectExercise(ex);
                       onClose();
                     }}
-                    className="p-3 rounded-[12px] bg-[#0a0a0a] border border-[#262626] hover:border-[#34d399] flex items-center justify-between gap-3 cursor-pointer transition-colors group"
+                    className="p-3 rounded-[14px] bg-[#F8F7FC] border border-[#ECEAF6] hover:border-[#6D28D9] hover:bg-white flex items-center justify-between gap-3 cursor-pointer transition-colors group"
                   >
                     <div className="flex items-center gap-3 min-w-0">
                       <ExerciseThumbnail
@@ -183,12 +183,12 @@ export const ExercisePickerModal: React.FC<ExercisePickerModalProps> = ({
                         size="sm"
                       />
                       <div className="min-w-0">
-                        <div className="font-semibold text-sm text-[#fafafa] truncate group-hover:text-[#34d399] transition-colors">
+                        <div className="font-semibold text-sm text-[#1E1B4B] truncate group-hover:text-[#6D28D9] transition-colors">
                           {ex.name}
                         </div>
-                        <div className="flex items-center gap-2 mt-0.5 text-xs text-[#a3a3a3]">
+                        <div className="flex items-center gap-2 mt-0.5 text-xs text-[#6B7280]">
                           <Badge variant="brand" size="sm">{ex.primary_muscle_group}</Badge>
-                          <span className="capitalize text-[11px] text-[#737373]">
+                          <span className="capitalize text-[11px] text-[#94A3B8]">
                             {ex.equipment.replace('_', ' ')}
                           </span>
                         </div>
@@ -202,7 +202,7 @@ export const ExercisePickerModal: React.FC<ExercisePickerModalProps> = ({
                           e.stopPropagation();
                           setInspectingExercise(ex);
                         }}
-                        className="w-10 h-10 flex items-center justify-center text-[#a3a3a3] hover:text-[#fafafa] rounded-[10px] hover:bg-[#171717] transition-colors"
+                        className="w-10 h-10 flex items-center justify-center text-[#6B7280] hover:text-[#6D28D9] rounded-[10px] hover:bg-[#F0EFFE] transition-colors cursor-pointer"
                         title={t('exercises.viewTechnique')}
                       >
                         <HelpCircle className="w-4 h-4" />

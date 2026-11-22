@@ -28,14 +28,14 @@ interface WorkoutCalendarProps {
 }
 
 const SPLIT_COLORS: Record<string, { bg: string; text: string; border: string; dot: string }> = {
-  push: { bg: 'bg-[#022c22]', text: 'text-[#34d399]', border: 'border-[#064e3b]', dot: 'bg-[#34d399]' },
-  pull: { bg: 'bg-[#022c22]', text: 'text-[#34d399]', border: 'border-[#064e3b]', dot: 'bg-[#34d399]' },
-  legs: { bg: 'bg-[#262626]', text: 'text-[#fafafa]', border: 'border-[#404040]', dot: 'bg-[#fafafa]' },
-  upper: { bg: 'bg-[#262626]', text: 'text-[#fafafa]', border: 'border-[#404040]', dot: 'bg-[#34d399]' },
-  lower: { bg: 'bg-[#262626]', text: 'text-[#fafafa]', border: 'border-[#404040]', dot: 'bg-[#34d399]' },
-  arms: { bg: 'bg-[#262626]', text: 'text-[#a3a3a3]', border: 'border-[#404040]', dot: 'bg-[#a3a3a3]' },
-  full: { bg: 'bg-[#022c22]', text: 'text-[#34d399]', border: 'border-[#064e3b]', dot: 'bg-[#34d399]' },
-  default: { bg: 'bg-[#171717]', text: 'text-[#a3a3a3]', border: 'border-[#404040]', dot: 'bg-[#737373]' },
+  push: { bg: 'bg-[#F0EFFE]', text: 'text-[#6D28D9]', border: 'border-[#DDD6FE]', dot: 'bg-[#6D28D9]' },
+  pull: { bg: 'bg-[#ECFEFF]', text: 'text-[#0891B2]', border: 'border-[#A5F3FC]', dot: 'bg-[#0891B2]' },
+  legs: { bg: 'bg-[#FFF7ED]', text: 'text-[#EA580C]', border: 'border-[#FED7AA]', dot: 'bg-[#EA580C]' },
+  upper: { bg: 'bg-[#EEF2FF]', text: 'text-[#4338CA]', border: 'border-[#C7D2FE]', dot: 'bg-[#4338CA]' },
+  lower: { bg: 'bg-[#ECFDF5]', text: 'text-[#059669]', border: 'border-[#A7F3D0]', dot: 'bg-[#059669]' },
+  arms: { bg: 'bg-[#F5F3FF]', text: 'text-[#7C3AED]', border: 'border-[#DDD6FE]', dot: 'bg-[#7C3AED]' },
+  full: { bg: 'bg-[#F0EFFE]', text: 'text-[#6D28D9]', border: 'border-[#DDD6FE]', dot: 'bg-[#6D28D9]' },
+  default: { bg: 'bg-[#F8F7FC]', text: 'text-[#6B7280]', border: 'border-[#ECEAF6]', dot: 'bg-[#94A3B8]' },
 };
 
 function getSplitColor(name: string) {
@@ -217,19 +217,19 @@ export const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workouts }) =>
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Top Streak & Consistency KPI Ribbon */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <Card className="p-4 bg-[#171717] border border-[#404040] rounded-[14px] flex items-center gap-3.5 shadow-none">
-          <div className="w-11 h-11 rounded-[10px] bg-[#022c22] border border-[#064e3b] flex items-center justify-center text-[#34d399] shrink-0">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+        <Card className="p-4 flex items-center gap-3.5">
+          <div className="w-11 h-11 rounded-[12px] bg-[#ECFDF5] border border-[#A7F3D0] flex items-center justify-center text-[#10B981] shrink-0">
             <Flame className="w-6 h-6" />
           </div>
           <div>
             <div className="flex items-baseline gap-1.5">
-              <span className="text-2xl font-bold text-[#34d399] font-mono tabular-nums">
+              <span className="text-2xl font-bold text-[#10B981] font-mono tabular-nums">
                 {streakStats.currentStreak}
               </span>
-              <span className="text-xs font-medium text-[#a3a3a3]">days streak</span>
+              <span className="text-xs font-medium text-[#6B7280]">days streak</span>
             </div>
-            <div className="text-[11px] text-[#a3a3a3]">
+            <div className="text-[11px] text-[#6B7280]">
               {streakStats.currentStreak > 0
                 ? 'Consistency on fire! Keep it rolling.'
                 : 'Log today to ignite your workout streak.'}
@@ -237,35 +237,35 @@ export const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workouts }) =>
           </div>
         </Card>
 
-        <Card className="p-4 bg-[#171717] border border-[#404040] rounded-[14px] flex items-center gap-3.5 shadow-none">
-          <div className="w-11 h-11 rounded-[10px] bg-[#0a0a0a] border border-[#404040] flex items-center justify-center text-[#fafafa] shrink-0">
+        <Card className="p-4 flex items-center gap-3.5">
+          <div className="w-11 h-11 rounded-[12px] bg-[#F0EFFE] border border-[#DDD6FE] flex items-center justify-center text-[#6D28D9] shrink-0">
             <CalendarIcon className="w-5 h-5" />
           </div>
           <div>
             <div className="flex items-baseline gap-1.5">
-              <span className="text-2xl font-bold text-[#fafafa] font-mono tabular-nums">
+              <span className="text-2xl font-bold text-[#1E1B4B] font-mono tabular-nums">
                 {streakStats.thisMonthCount}
               </span>
-              <span className="text-xs font-medium text-[#a3a3a3]">sessions</span>
+              <span className="text-xs font-medium text-[#6B7280]">sessions</span>
             </div>
-            <div className="text-[11px] text-[#a3a3a3]">
+            <div className="text-[11px] text-[#6B7280]">
               Completed in {currentDate.toLocaleString('default', { month: 'long' })}
             </div>
           </div>
         </Card>
 
-        <Card className="p-4 bg-[#171717] border border-[#404040] rounded-[14px] flex items-center gap-3.5 shadow-none">
-          <div className="w-11 h-11 rounded-[10px] bg-[#022c22] border border-[#064e3b] flex items-center justify-center text-[#34d399] shrink-0">
+        <Card className="p-4 flex items-center gap-3.5">
+          <div className="w-11 h-11 rounded-[12px] bg-[#ECFEFF] border border-[#A5F3FC] flex items-center justify-center text-[#0891B2] shrink-0">
             <Trophy className="w-5 h-5" />
           </div>
           <div>
             <div className="flex items-baseline gap-1.5">
-              <span className="text-2xl font-bold text-[#34d399] font-mono tabular-nums">
+              <span className="text-2xl font-bold text-[#6D28D9] font-mono tabular-nums">
                 {workouts.length}
               </span>
-              <span className="text-xs font-medium text-[#a3a3a3]">all-time logs</span>
+              <span className="text-xs font-medium text-[#6B7280]">all-time logs</span>
             </div>
-            <div className="text-[11px] text-[#a3a3a3]">
+            <div className="text-[11px] text-[#6B7280]">
               Total historical training sessions
             </div>
           </div>
@@ -273,14 +273,14 @@ export const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workouts }) =>
       </div>
 
       {/* Main Interactive Monthly Calendar */}
-      <Card className="p-5 bg-[#171717] border border-[#404040] shadow-none rounded-[14px] space-y-4">
+      <Card className="p-5 space-y-4">
         {/* Calendar Navigation Bar */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-[8px] bg-[#022c22] border border-[#064e3b] flex items-center justify-center text-[#34d399]">
+            <div className="w-8 h-8 rounded-[10px] bg-[#F0EFFE] border border-[#DDD6FE] flex items-center justify-center text-[#6D28D9]">
               <CalendarIcon className="w-4 h-4" />
             </div>
-            <h2 className="text-lg font-bold text-[#fafafa] tracking-tight">
+            <h2 className="text-lg font-bold text-[#1E1B4B] tracking-tight">
               {currentDate.toLocaleString('default', { month: 'long', year: 'numeric' })}
             </h2>
           </div>
@@ -288,20 +288,20 @@ export const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workouts }) =>
           <div className="flex items-center gap-1.5">
             <button
               onClick={handleToday}
-              className="min-h-[40px] px-3 text-xs font-medium rounded-[10px] bg-[#0a0a0a] hover:bg-[#262626] text-[#fafafa] transition-colors border border-[#404040] cursor-pointer"
+              className="min-h-[40px] px-3 text-xs font-semibold rounded-[10px] bg-[#F8F7FC] hover:bg-[#F0EFFE] text-[#6D28D9] transition-colors border border-[#ECEAF6] cursor-pointer"
             >
               Today
             </button>
             <button
               onClick={handlePrevMonth}
-              className="min-h-[40px] min-w-[40px] p-1.5 rounded-[10px] bg-[#0a0a0a] hover:bg-[#262626] text-[#fafafa] transition-colors border border-[#404040] flex items-center justify-center cursor-pointer"
+              className="min-h-[40px] min-w-[40px] p-1.5 rounded-[10px] bg-[#F8F7FC] hover:bg-[#F0EFFE] text-[#1E1B4B] transition-colors border border-[#ECEAF6] flex items-center justify-center cursor-pointer"
               title="Previous Month"
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
             <button
               onClick={handleNextMonth}
-              className="min-h-[40px] min-w-[40px] p-1.5 rounded-[10px] bg-[#0a0a0a] hover:bg-[#262626] text-[#fafafa] transition-colors border border-[#404040] flex items-center justify-center cursor-pointer"
+              className="min-h-[40px] min-w-[40px] p-1.5 rounded-[10px] bg-[#F8F7FC] hover:bg-[#F0EFFE] text-[#1E1B4B] transition-colors border border-[#ECEAF6] flex items-center justify-center cursor-pointer"
               title="Next Month"
             >
               <ChevronRight className="w-4 h-4" />
@@ -310,7 +310,7 @@ export const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workouts }) =>
         </div>
 
         {/* Days of Week Header */}
-        <div className="grid grid-cols-7 gap-1 text-center text-xs font-semibold text-[#737373] uppercase tracking-wider py-1 border-b border-[#262626]">
+        <div className="grid grid-cols-7 gap-1 text-center text-xs font-semibold text-[#94A3B8] uppercase tracking-wider py-1 border-b border-[#ECEAF6]">
           {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => (
             <div key={day} className="py-1">
               {day}
@@ -326,7 +326,7 @@ export const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workouts }) =>
             return (
               <div
                 key={`prev-${i}`}
-                className="min-h-[68px] sm:min-h-[84px] p-1.5 rounded-[10px] bg-[#0a0a0a]/40 border border-[#262626]/40 text-[#525252] select-none opacity-50 text-xs"
+                className="min-h-[68px] sm:min-h-[84px] p-1.5 rounded-[12px] bg-[#F8F7FC]/60 border border-[#ECEAF6]/60 text-[#CBD5E1] select-none opacity-60 text-xs"
               >
                 <span>{dayNum}</span>
               </div>
@@ -345,29 +345,29 @@ export const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workouts }) =>
               <div
                 key={dateKey}
                 onClick={() => setSelectedDateStr(dateKey)}
-                className={`min-h-[68px] sm:min-h-[84px] p-1.5 sm:p-2 rounded-[10px] border transition-colors cursor-pointer flex flex-col justify-between ${
+                className={`min-h-[68px] sm:min-h-[84px] p-1.5 sm:p-2 rounded-[12px] border transition-colors cursor-pointer flex flex-col justify-between ${
                   isSelected
-                    ? 'bg-[#022c22]/50 border-[#34d399]'
+                    ? 'bg-[#F0EFFE] border-[#6D28D9]'
                     : isToday
-                    ? 'bg-[#171717] border-[#737373] hover:border-[#a3a3a3]'
-                    : 'bg-[#0a0a0a] border-[#262626] hover:border-[#404040]'
+                    ? 'bg-white border-[#6D28D9]'
+                    : 'bg-[#F8F7FC] border-[#ECEAF6] hover:border-[#C4B5FD]'
                 }`}
               >
                 <div className="flex items-center justify-between">
                   <span
-                    className={`text-xs font-medium ${
+                    className={`text-xs font-semibold ${
                       isToday
-                        ? 'w-5 h-5 rounded-full bg-[#34d399] text-[#0a0a0a] flex items-center justify-center font-bold'
+                        ? 'w-5 h-5 rounded-full bg-[#6D28D9] text-white flex items-center justify-center font-bold'
                         : isSelected
-                        ? 'text-[#34d399] font-bold'
-                        : 'text-[#fafafa]'
+                        ? 'text-[#6D28D9] font-bold'
+                        : 'text-[#1E1B4B]'
                     }`}
                   >
                     {dayNum}
                   </span>
 
                   {dayWorkouts.length > 0 && (
-                    <span className="w-2 h-2 rounded-full bg-[#34d399]" />
+                    <span className="w-2 h-2 rounded-full bg-[#6D28D9]" />
                   )}
                 </div>
 
@@ -378,7 +378,7 @@ export const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workouts }) =>
                     return (
                       <div
                         key={wIdx}
-                        className={`text-[9px] sm:text-[10px] font-medium truncate px-1.5 py-0.5 rounded-[6px] border ${style.bg} ${style.text} ${style.border}`}
+                        className={`text-[9px] sm:text-[10px] font-semibold truncate px-1.5 py-0.5 rounded-[6px] border ${style.bg} ${style.text} ${style.border}`}
                         title={w.name}
                       >
                         {w.name}
@@ -386,7 +386,7 @@ export const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workouts }) =>
                     );
                   })}
                   {dayWorkouts.length > 2 && (
-                    <span className="text-[9px] font-mono text-[#a3a3a3] pl-1">
+                    <span className="text-[9px] font-mono text-[#6B7280] pl-1">
                       +{dayWorkouts.length - 2} more
                     </span>
                   )}
@@ -398,11 +398,11 @@ export const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workouts }) =>
       </Card>
 
       {/* Selected Date Workout Detail Inspector */}
-      <Card className="p-5 bg-[#171717] border border-[#404040] rounded-[14px] shadow-none space-y-4">
-        <div className="flex items-center justify-between border-b border-[#262626] pb-3">
+      <Card className="p-5 space-y-4">
+        <div className="flex items-center justify-between border-b border-[#ECEAF6] pb-3">
           <div className="flex items-center gap-2">
-            <CheckCircle2 className="w-5 h-5 text-[#34d399]" />
-            <h3 className="text-base font-bold text-[#fafafa]">
+            <CheckCircle2 className="w-5 h-5 text-[#6D28D9]" />
+            <h3 className="text-base font-bold text-[#1E1B4B]">
               Workouts for {new Date(selectedDateStr + 'T00:00:00').toLocaleDateString('default', {
                 weekday: 'long',
                 month: 'short',
@@ -411,13 +411,13 @@ export const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workouts }) =>
               })}
             </h3>
           </div>
-          <span className="text-xs font-mono text-[#a3a3a3] bg-[#0a0a0a] px-2.5 py-1 rounded-[8px] border border-[#404040]">
+          <span className="text-xs font-mono text-[#6D28D9] font-semibold bg-[#F0EFFE] px-2.5 py-1 rounded-[8px] border border-[#DDD6FE]">
             {selectedWorkouts.length} Session(s)
           </span>
         </div>
 
         {selectedWorkouts.length === 0 ? (
-          <div className="text-center py-8 text-[#a3a3a3] text-xs space-y-2">
+          <div className="text-center py-8 text-[#6B7280] text-xs space-y-2">
             <p>No training sessions were logged on this date.</p>
             <Button
               variant="outline"
@@ -429,9 +429,9 @@ export const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workouts }) =>
                   void startWorkout({ name: 'Quick Training Session' });
                 }
               }}
-              className="gap-1.5 text-xs text-[#34d399] border-[#404040]"
+              className="gap-1.5 text-xs"
             >
-              <Zap className="w-3.5 h-3.5" />
+              <Zap className="w-3.5 h-3.5 text-[#6D28D9]" />
               Start Workout Now
             </Button>
           </div>
@@ -442,12 +442,12 @@ export const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workouts }) =>
               return (
                 <div
                   key={w.id}
-                  className="p-4 rounded-[12px] bg-[#0a0a0a] border border-[#262626] space-y-3"
+                  className="p-4 rounded-[14px] bg-[#F8F7FC] border border-[#ECEAF6] space-y-3"
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <span className={`w-2.5 h-2.5 rounded-full ${style.dot}`} />
-                      <h4 className="text-sm font-bold text-[#fafafa]">{w.name}</h4>
+                      <h4 className="text-sm font-bold text-[#1E1B4B]">{w.name}</h4>
                     </div>
 
                     <Button
@@ -462,29 +462,29 @@ export const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workouts }) =>
                   </div>
 
                   {/* Summary Metrics */}
-                  <div className="flex flex-wrap items-center gap-4 text-xs font-mono text-[#a3a3a3]">
-                    <span className="flex items-center gap-1 text-[#34d399] font-semibold">
+                  <div className="flex flex-wrap items-center gap-4 text-xs font-mono text-[#6B7280]">
+                    <span className="flex items-center gap-1 text-[#6D28D9] font-semibold">
                       <Flame className="w-3.5 h-3.5" />
                       {formatWeight(w.total_volume_kg || 0, unitPref)}
                     </span>
-                    <span className="flex items-center gap-1 text-[#fafafa]">
-                      <Clock className="w-3.5 h-3.5 text-[#a3a3a3]" />
+                    <span className="flex items-center gap-1 text-[#1E1B4B]">
+                      <Clock className="w-3.5 h-3.5 text-[#6B7280]" />
                       {formatDuration(w.duration_seconds || 0)}
                     </span>
-                    <span className="flex items-center gap-1 text-[#a3a3a3]">
-                      <Dumbbell className="w-3.5 h-3.5 text-[#737373]" />
+                    <span className="flex items-center gap-1 text-[#6B7280]">
+                      <Dumbbell className="w-3.5 h-3.5 text-[#94A3B8]" />
                       {w.completed_sets_count || 0} completed sets
                     </span>
                   </div>
 
                   {/* Exercises and Sets Breakdown */}
                   {w.exercises && w.exercises.length > 0 && (
-                    <div className="space-y-2 pt-2 border-t border-[#262626]">
+                    <div className="space-y-2 pt-2 border-t border-[#ECEAF6]">
                       {w.exercises.map((ex, exIdx) => (
                         <div key={exIdx} className="space-y-1">
-                          <div className="text-xs font-semibold text-[#fafafa] flex items-center justify-between">
+                          <div className="text-xs font-semibold text-[#1E1B4B] flex items-center justify-between">
                             <span>{ex.exercise_name}</span>
-                            <span className="text-[10px] font-mono text-[#737373]">
+                            <span className="text-[10px] font-mono text-[#6B7280]">
                               {ex.sets?.length || 0} sets
                             </span>
                           </div>
@@ -492,7 +492,7 @@ export const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workouts }) =>
                             {ex.sets?.map((s, sIdx) => (
                               <span
                                 key={sIdx}
-                                className="px-2 py-0.5 rounded-[6px] bg-[#171717] text-[11px] font-mono text-[#fafafa] border border-[#262626]"
+                                className="px-2 py-0.5 rounded-[8px] bg-white text-[11px] font-mono text-[#1E1B4B] border border-[#ECEAF6]"
                               >
                                 {formatWeight(s.weight_kg, unitPref)} × {s.reps}
                               </span>
@@ -509,16 +509,16 @@ export const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workouts }) =>
         )}
       </Card>
 
-      {/* 52-Week GitHub Style Annual Activity Heatmap */}
-      <Card className="p-5 bg-[#171717] border border-[#404040] rounded-[14px] shadow-none space-y-3">
+      {/* 52-Week Annual Activity Heatmap */}
+      <Card className="p-5 space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-[#34d399]" />
-            <h3 className="text-sm font-bold text-[#fafafa] uppercase tracking-wider">
+            <Sparkles className="w-4 h-4 text-[#6D28D9]" />
+            <h3 className="text-sm font-bold text-[#1E1B4B] uppercase tracking-wider">
               Annual Consistency Heatmap (Past 52 Weeks)
             </h3>
           </div>
-          <span className="text-[11px] text-[#a3a3a3]">
+          <span className="text-[11px] text-[#6B7280]">
             {workouts.length} workouts logged in past 365 days
           </span>
         </div>
@@ -531,15 +531,15 @@ export const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workouts }) =>
                   <div
                     key={dIdx}
                     onClick={() => setSelectedDateStr(day.dateKey)}
-                    className={`w-3 h-3 rounded-[3px] transition-colors cursor-pointer ${
+                    className={`w-3 h-3 rounded-[4px] transition-colors cursor-pointer ${
                       day.level === 0
-                        ? 'bg-[#0a0a0a] border border-[#262626]'
+                        ? 'bg-[#F4F3FA] border border-[#ECEAF6]'
                         : day.level === 1
-                        ? 'bg-[#064e3b] border border-[#047857]'
+                        ? 'bg-[#DDD6FE] border border-[#C4B5FD]'
                         : day.level === 2
-                        ? 'bg-[#10b981] border border-[#34d399]'
-                        : 'bg-[#34d399] border border-[#34d399]'
-                    } ${selectedDateStr === day.dateKey ? 'ring-2 ring-[#fafafa]' : ''}`}
+                        ? 'bg-[#8B5CF6] border border-[#7C3AED]'
+                        : 'bg-[#6D28D9] border border-[#6D28D9]'
+                    } ${selectedDateStr === day.dateKey ? 'ring-2 ring-[#1B1145]' : ''}`}
                     title={`${day.dateKey}: ${day.count} workout(s)`}
                   />
                 ))}
@@ -548,12 +548,12 @@ export const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workouts }) =>
           </div>
         </div>
 
-        <div className="flex items-center justify-end gap-2 text-[10px] text-[#a3a3a3] pt-1">
+        <div className="flex items-center justify-end gap-2 text-[10px] text-[#6B7280] pt-1">
           <span>Less</span>
-          <span className="w-2.5 h-2.5 rounded-[2px] bg-[#0a0a0a] border border-[#262626]" />
-          <span className="w-2.5 h-2.5 rounded-[2px] bg-[#064e3b]" />
-          <span className="w-2.5 h-2.5 rounded-[2px] bg-[#10b981]" />
-          <span className="w-2.5 h-2.5 rounded-[2px] bg-[#34d399]" />
+          <span className="w-2.5 h-2.5 rounded-[3px] bg-[#F4F3FA] border border-[#ECEAF6]" />
+          <span className="w-2.5 h-2.5 rounded-[3px] bg-[#DDD6FE]" />
+          <span className="w-2.5 h-2.5 rounded-[3px] bg-[#8B5CF6]" />
+          <span className="w-2.5 h-2.5 rounded-[3px] bg-[#6D28D9]" />
           <span>More</span>
         </div>
       </Card>

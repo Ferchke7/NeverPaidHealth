@@ -186,13 +186,13 @@ export const ExercisesPage: React.FC<{ embedded?: boolean }> = ({ embedded = fal
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* Royal Violet Header */}
       {!embedded && (
-        <div>
-          <h1 className="text-[28px] sm:text-[32px] font-bold tracking-tight text-[#fafafa]">
+        <div className="royal-hero-gradient rounded-[24px] p-5 sm:p-7 text-white royal-card-shadow">
+          <h1 className="text-[26px] sm:text-[32px] font-extrabold tracking-tight text-white">
             {t('exercises.title')}
           </h1>
-          <p className="text-[14px] text-[#a3a3a3] mt-1">{t('exercises.catalogDesc')}</p>
+          <p className="text-[13px] sm:text-[14px] text-white/80 mt-1">{t('exercises.catalogDesc')}</p>
         </div>
       )}
 
@@ -216,10 +216,10 @@ export const ExercisesPage: React.FC<{ embedded?: boolean }> = ({ embedded = fal
           value={selectedMuscle}
           onChange={(e) => setSelectedMuscle(e.target.value as MuscleGroup | 'all')}
           aria-label={t('exercises.targetMuscle')}
-          className="h-[44px] bg-[#0a0a0a] border border-[#404040] rounded-[10px] px-3.5 text-[14px] font-medium text-[#fafafa] focus:outline-none focus:border-[#34d399] cursor-pointer"
+          className="h-[42px] bg-white border border-[#ECEAF6] rounded-[12px] px-3.5 text-[13px] font-semibold text-[#1E1B4B] focus:outline-none focus:border-[#6D28D9] cursor-pointer royal-card-shadow"
         >
           {MUSCLE_GROUPS.map((m) => (
-            <option key={m.value} value={m.value} className="bg-[#171717]">
+            <option key={m.value} value={m.value}>
               {m.value === 'all'
                 ? `${t('exercises.musclesFilterPrefix')} ${t('exercises.allValueShort')}`
                 : `${t('exercises.musclesFilterPrefix')} ${t(m.key as any)}`}
@@ -231,10 +231,10 @@ export const ExercisesPage: React.FC<{ embedded?: boolean }> = ({ embedded = fal
           value={selectedEquipment}
           onChange={(e) => setSelectedEquipment(e.target.value as Equipment | 'all')}
           aria-label={t('exercises.equipmentLabel')}
-          className="h-[44px] bg-[#0a0a0a] border border-[#404040] rounded-[10px] px-3.5 text-[14px] font-medium text-[#fafafa] focus:outline-none focus:border-[#34d399] cursor-pointer"
+          className="h-[42px] bg-white border border-[#ECEAF6] rounded-[12px] px-3.5 text-[13px] font-semibold text-[#1E1B4B] focus:outline-none focus:border-[#6D28D9] cursor-pointer royal-card-shadow"
         >
           {EQUIPMENT_LIST.map((eq) => (
-            <option key={eq.value} value={eq.value} className="bg-[#171717]">
+            <option key={eq.value} value={eq.value}>
               {eq.value === 'all'
                 ? `${t('exercises.equipmentFilterPrefix')} ${t('exercises.allValueShort')}`
                 : `${t('exercises.equipmentFilterPrefix')} ${t(eq.key as any)}`}
@@ -244,14 +244,14 @@ export const ExercisesPage: React.FC<{ embedded?: boolean }> = ({ embedded = fal
       </div>
 
       {/* All / Custom Switcher */}
-      <div className="flex items-center gap-1">
+      <div className="inline-flex items-center gap-1 bg-white p-1.5 rounded-[14px] border border-[#ECEAF6] royal-card-shadow">
         <button
           type="button"
           onClick={() => setOnlyCustom(false)}
-          className={`h-[44px] px-4 rounded-[10px] text-[14px] font-medium transition-colors cursor-pointer ${
+          className={`h-[38px] px-4 rounded-[10px] text-[13px] font-semibold transition-colors cursor-pointer ${
             !onlyCustom
-              ? 'bg-[#022c22] text-[#34d399]'
-              : 'text-[#a3a3a3] hover:text-[#fafafa] hover:bg-[#171717]'
+              ? 'bg-[#6D28D9] text-white'
+              : 'text-[#6B7280] hover:text-[#1E1B4B] hover:bg-[#F8F7FC]'
           }`}
         >
           {t('exercises.allExercises', { count: exercises.length })}
@@ -260,10 +260,10 @@ export const ExercisesPage: React.FC<{ embedded?: boolean }> = ({ embedded = fal
         <button
           type="button"
           onClick={() => setOnlyCustom(true)}
-          className={`h-[44px] px-4 rounded-[10px] text-[14px] font-medium transition-colors cursor-pointer ${
+          className={`h-[38px] px-4 rounded-[10px] text-[13px] font-semibold transition-colors cursor-pointer ${
             onlyCustom
-              ? 'bg-[#022c22] text-[#34d399]'
-              : 'text-[#a3a3a3] hover:text-[#fafafa] hover:bg-[#171717]'
+              ? 'bg-[#6D28D9] text-white'
+              : 'text-[#6B7280] hover:text-[#1E1B4B] hover:bg-[#F8F7FC]'
           }`}
         >
           {t('exercises.myExercises', { count: customCount })}
@@ -273,10 +273,10 @@ export const ExercisesPage: React.FC<{ embedded?: boolean }> = ({ embedded = fal
       {/* Library Section */}
       <section className="space-y-3">
         <div>
-          <h2 className="text-[20px] font-semibold tracking-tight text-[#fafafa]">
+          <h2 className="text-[20px] font-bold tracking-tight text-[#1E1B4B]">
             {t('exercises.title')}
           </h2>
-          <p className="text-[13px] text-[#a3a3a3] mt-0.5">
+          <p className="text-[13px] text-[#6B7280] mt-0.5">
             {t('exercises.movements', { count: filteredExercises.length })}
           </p>
         </div>
@@ -291,7 +291,7 @@ export const ExercisesPage: React.FC<{ embedded?: boolean }> = ({ embedded = fal
             onAction={openCreateModal}
           />
         ) : (
-          <Card className="divide-y divide-[#262626] overflow-hidden">
+          <Card className="divide-y divide-[#ECEAF6] overflow-hidden">
             {filteredExercises.map((exercise) => {
               const muscle = exercise.primary_muscle || exercise.primary_muscle_group || 'General';
               const equipment = exercise.equipment
@@ -301,13 +301,13 @@ export const ExercisesPage: React.FC<{ embedded?: boolean }> = ({ embedded = fal
               const visual = isExpanded ? getExerciseVisual(exercise.name, String(muscle)) : null;
 
               return (
-                <div key={exercise.id} className="p-4 sm:p-5 space-y-4">
+                <div key={exercise.id} className="p-4 sm:p-5 space-y-4 hover:bg-[#F8F7FC]/60 transition-colors">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div className="min-w-0 space-y-1">
-                      <h3 className="text-[15px] font-semibold text-[#fafafa] leading-snug">
+                      <h3 className="text-[15px] font-bold text-[#1E1B4B] leading-snug">
                         {exercise.name}
                       </h3>
-                      <div className="text-[13px] text-[#a3a3a3] capitalize">
+                      <div className="text-[13px] text-[#6B7280] capitalize">
                         {muscle} · {equipment}
                         {exercise.is_custom ? ` · ${t('exercises.customBadge')}` : ''}
                       </div>
@@ -365,23 +365,23 @@ export const ExercisesPage: React.FC<{ embedded?: boolean }> = ({ embedded = fal
                     </div>
                   </div>
 
-                  {/* Expandable Inline Technique Guide (Screen 03) */}
+                  {/* Expandable Inline Technique Guide */}
                   {isExpanded && visual && (
-                    <div className="pt-3 border-t border-[#262626] space-y-3">
+                    <div className="pt-3 border-t border-[#ECEAF6] space-y-3 bg-[#F8F7FC] p-4 rounded-[14px]">
                       <div className="flex flex-wrap items-center justify-between gap-2">
-                        <div className="text-[15px] font-semibold text-[#fafafa]">
+                        <div className="text-[15px] font-bold text-[#1E1B4B]">
                           {t('exercises.techniqueTitle', { name: exercise.name })}
                         </div>
                         <button
                           type="button"
                           onClick={() => setSelectedExerciseDetail(exercise)}
-                          className="text-[12px] font-medium text-[#34d399] hover:underline cursor-pointer"
+                          className="text-[12px] font-semibold text-[#6D28D9] hover:underline cursor-pointer"
                         >
                           {t('exercises.animation')} / 3D
                         </button>
                       </div>
 
-                      <p className="text-[13px] text-[#a3a3a3]">
+                      <p className="text-[13px] text-[#6B7280]">
                         {t('exercises.mainFocus')}: {visual.primaryMuscles.join(', ') || muscle}
                         {visual.secondaryMuscles && visual.secondaryMuscles.length > 0
                           ? ` · ${t('exercises.synergists')}: ${visual.secondaryMuscles.join(', ')}`
@@ -389,7 +389,7 @@ export const ExercisesPage: React.FC<{ embedded?: boolean }> = ({ embedded = fal
                       </p>
 
                       {visual.instructions && visual.instructions.length > 0 ? (
-                        <ol className="space-y-1.5 text-[13px] text-[#fafafa] leading-relaxed">
+                        <ol className="space-y-1.5 text-[13px] text-[#1E1B4B] leading-relaxed">
                           {visual.instructions.map((step, stepIdx) => (
                             <li key={stepIdx}>
                               {stepIdx + 1}. {step}
@@ -397,7 +397,7 @@ export const ExercisesPage: React.FC<{ embedded?: boolean }> = ({ embedded = fal
                           ))}
                         </ol>
                       ) : (
-                        <p className="text-[13px] text-[#a3a3a3]">
+                        <p className="text-[13px] text-[#6B7280]">
                           {t('exercises.defaultTechniqueTip')}
                         </p>
                       )}
@@ -503,7 +503,7 @@ export const ExercisesPage: React.FC<{ embedded?: boolean }> = ({ embedded = fal
       >
         <div className="space-y-4">
           {formError && (
-            <div className="p-3 bg-[#262626] border border-red-500/40 rounded-[10px] text-red-300 text-xs">
+            <div className="p-3 bg-[#FEF2F2] border border-[#FECACA] rounded-[12px] text-[#DC2626] text-xs font-medium">
               {formError}
             </div>
           )}
@@ -518,13 +518,13 @@ export const ExercisesPage: React.FC<{ embedded?: boolean }> = ({ embedded = fal
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-[12px] font-medium text-[#a3a3a3] mb-1.5">
+              <label className="block text-[12px] font-semibold text-[#6B7280] mb-1.5">
                 {t('exercises.targetMuscle')}
               </label>
               <select
                 value={customMuscle}
                 onChange={(e) => setCustomMuscle(e.target.value as MuscleGroup)}
-                className="w-full h-11 bg-[#0a0a0a] border border-[#404040] rounded-[10px] px-3 text-[13px] text-[#fafafa] focus:outline-none focus:border-[#34d399]"
+                className="w-full h-11 bg-[#F8F7FC] border border-[#E2E0F0] rounded-[12px] px-3 text-[13px] font-medium text-[#1E1B4B] focus:outline-none focus:border-[#6D28D9]"
               >
                 <option value="chest">{t('exercises.chest')}</option>
                 <option value="back">{t('exercises.back')}</option>
@@ -541,13 +541,13 @@ export const ExercisesPage: React.FC<{ embedded?: boolean }> = ({ embedded = fal
             </div>
 
             <div>
-              <label className="block text-[12px] font-medium text-[#a3a3a3] mb-1.5">
+              <label className="block text-[12px] font-semibold text-[#6B7280] mb-1.5">
                 {t('exercises.equipmentLabel')}
               </label>
               <select
                 value={customEquipment}
                 onChange={(e) => setCustomEquipment(e.target.value as Equipment)}
-                className="w-full h-11 bg-[#0a0a0a] border border-[#404040] rounded-[10px] px-3 text-[13px] text-[#fafafa] focus:outline-none focus:border-[#34d399]"
+                className="w-full h-11 bg-[#F8F7FC] border border-[#E2E0F0] rounded-[12px] px-3 text-[13px] font-medium text-[#1E1B4B] focus:outline-none focus:border-[#6D28D9]"
               >
                 <option value="barbell">{t('exercises.barbell')}</option>
                 <option value="dumbbell">{t('exercises.dumbbell')}</option>
@@ -562,13 +562,13 @@ export const ExercisesPage: React.FC<{ embedded?: boolean }> = ({ embedded = fal
           </div>
 
           <div>
-            <label className="block text-[12px] font-medium text-[#a3a3a3] mb-1.5">
+            <label className="block text-[12px] font-semibold text-[#6B7280] mb-1.5">
               {t('exercises.trackingType')}
             </label>
             <select
               value={customType}
               onChange={(e) => setCustomType(e.target.value as MeasurementType)}
-              className="w-full h-11 bg-[#0a0a0a] border border-[#404040] rounded-[10px] px-3 text-[13px] text-[#fafafa] focus:outline-none focus:border-[#34d399]"
+              className="w-full h-11 bg-[#F8F7FC] border border-[#E2E0F0] rounded-[12px] px-3 text-[13px] font-medium text-[#1E1B4B] focus:outline-none focus:border-[#6D28D9]"
             >
               <option value="weight_reps">{t('exercises.weightReps')}</option>
               <option value="bodyweight_reps">{t('exercises.bodyweightReps')}</option>

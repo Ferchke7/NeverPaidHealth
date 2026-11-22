@@ -7,7 +7,7 @@ import {
   Users,
   Award,
   MessageCircle,
-  Heart,
+  CheckCircle2,
 } from 'lucide-react';
 import { Button } from '../../../shared/ui/button.tsx';
 import { Modal } from '../../../shared/ui/modal.tsx';
@@ -65,30 +65,6 @@ export const ProgramDetailModal: React.FC<ProgramDetailModalProps> = ({
   } | null>(null);
 
   const startWorkout = useStartWorkout();
-
-  // Fetch program like status
-  const { data: likeStatus } = useQuery<{ has_liked: boolean }>({
-    queryKey: ['program-like-status', program?.id],
-    queryFn: () => apiClient<{ has_liked: boolean }>(`/programs/${program?.id}/like`),
-    enabled: isOpen && !!program?.id,
-  });
-  const hasLiked = likeStatus?.has_liked ?? false;
-
-  const toggleLikeMutation = useMutation({
-    mutationFn: async () => {
-      if (!program) return;
-      return apiClient<{ likes_count: number; has_liked: boolean }>(`/programs/${program.id}/like`, {
-        method: 'POST',
-      });
-    },
-    onSuccess: (res) => {
-      if (res && program) {
-        program.likes_count = res.likes_count;
-      }
-      void queryClient.invalidateQueries({ queryKey: ['program-like-status', program?.id] });
-      void queryClient.invalidateQueries({ queryKey: ['programs'] });
-    },
-  });
 
   // Fetch comments count for this program
   const { data: rawComments } = useQuery<any[]>({
@@ -207,7 +183,7 @@ export const ProgramDetailModal: React.FC<ProgramDetailModalProps> = ({
         size="xl"
         title={
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-extrabold text-white">{program.name}</span>
+            <span className="font-bold text-[#1E1B4B]">{program.name}</span>
             <Badge variant="brand" size="sm">
               {getSplitLabel(program.split_type)}
             </Badge>
@@ -215,7 +191,7 @@ export const ProgramDetailModal: React.FC<ProgramDetailModalProps> = ({
               {getLevelLabel(program.level)}
             </Badge>
             {isActiveProgram && (
-              <span className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+              <span className="bg-[#ECFDF5] text-[#059669] border border-[#A7F3D0] text-[10px] font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1">
                 <Check className="w-3 h-3" />
                 {t('programs.activeSplit')}
               </span>
@@ -223,7 +199,7 @@ export const ProgramDetailModal: React.FC<ProgramDetailModalProps> = ({
           </div>
         }
         subtitle={
-          <div className="flex items-center gap-2 text-xs text-zinc-400 mt-1 flex-wrap">
+          <div className="flex items-center gap-2 text-xs text-[#6B7280] mt-1 flex-wrap">
             {program.author_name ? (
               <button
                 type="button"
@@ -234,14 +210,14 @@ export const ProgramDetailModal: React.FC<ProgramDetailModalProps> = ({
                     avatar: program.author_avatar_url,
                   })
                 }
-                className="flex items-center gap-1.5 font-semibold text-zinc-300 hover:text-brand-400 transition-colors group cursor-pointer"
-                title="Посмотреть профиль автора"
+                className="flex items-center gap-1.5 font-semibold text-[#1E1B4B] hover:text-[#6D28D9] transition-colors group cursor-pointer"
+                title={t('profile.subtitle')}
               >
                 <AthleteAvatar
                   name={program.author_name}
                   avatarUrl={program.author_avatar_url}
                   size="xs"
-                  className="ring-1 ring-zinc-700 group-hover:ring-brand-500 transition-all"
+                  className="ring-1 ring-[#DDD6FE] group-hover:ring-[#6D28D9] transition-all"
                 />
                 <span className="hover:underline">{program.author_name}</span>
               </button>
@@ -250,15 +226,11 @@ export const ProgramDetailModal: React.FC<ProgramDetailModalProps> = ({
             )}
             <span>•</span>
             <span>{t('programs.daysPerWeekCount', { count: program.days_per_week || days.length })}</span>
-            {program.installs_count > 0 && (
-              <>
-                <span>•</span>
-                <span className="flex items-center gap-1 text-zinc-400">
-                  <Users className="w-3 h-3 text-zinc-500" />
-                  {program.installs_count}
-                </span>
-              </>
-            )}
+            <span>•</span>
+            <span className="flex items-center gap-1 text-[#6D28D9] font-semibold">
+              <Users className="w-3 h-3" />
+              {program.installs_count || 0}
+            </span>
           </div>
         }
         footer={
@@ -268,13 +240,13 @@ export const ProgramDetailModal: React.FC<ProgramDetailModalProps> = ({
                 <Button
                   variant="outline"
                   size="sm"
-                  className="font-bold text-xs flex items-center justify-center gap-1.5"
+                  className="font-semibold text-xs flex items-center justify-center gap-1.5"
                   onClick={() => {
                     onClose();
                     onEditProgram(program);
                   }}
                 >
-                  <Edit3 className="w-3.5 h-3.5 text-brand-400" />
+                  <Edit3 className="w-3.5 h-3.5 text-[#6D28D9]" />
                   <span>{t('common.edit')}</span>
                 </Button>
               )}
@@ -284,10 +256,10 @@ export const ProgramDetailModal: React.FC<ProgramDetailModalProps> = ({
                   variant="outline"
                   size="sm"
                   isLoading={installMutation.isPending}
-                  className="font-bold text-xs flex items-center justify-center gap-1.5 border-brand-500/30 text-brand-400 hover:bg-brand-500/10"
+                  className="font-semibold text-xs flex items-center justify-center gap-1.5 border-[#DDD6FE] text-[#6D28D9] hover:bg-[#F0EFFE]"
                   onClick={() => installMutation.mutate({ setActive: true })}
                 >
-                  <Award className="w-3.5 h-3.5 text-brand-400" />
+                  <Award className="w-3.5 h-3.5 text-[#6D28D9]" />
                   <span>{isInstalled ? t('programs.setActiveProgram') : t('programs.installAndSetActive')}</span>
                 </Button>
               )}
@@ -297,7 +269,7 @@ export const ProgramDetailModal: React.FC<ProgramDetailModalProps> = ({
               <Button
                 variant="primary"
                 size="sm"
-                className="font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-brand-500/20"
+                className="font-bold text-xs flex items-center justify-center gap-2"
                 onClick={() => handleStartDayWorkout(currentDay)}
               >
                 <Play className="w-3.5 h-3.5 fill-current" />
@@ -312,8 +284,15 @@ export const ProgramDetailModal: React.FC<ProgramDetailModalProps> = ({
         }
       >
         <div className="space-y-4">
+          {isActiveProgram && (
+            <div className="flex items-center gap-2 bg-[#ECFDF5] border border-[#A7F3D0] text-[#059669] px-3.5 py-2.5 rounded-[12px] text-xs font-semibold">
+              <CheckCircle2 className="w-4 h-4 shrink-0 text-[#10B981]" />
+              <span>{t('programs.personalCopyAutoSave')}</span>
+            </div>
+          )}
+
           {program.description && (
-            <div className="bg-[#0a0a0a] p-3.5 rounded-[10px] border border-[#262626] text-[13px] text-[#a3a3a3]">
+            <div className="bg-[#F8F7FC] p-3.5 rounded-[12px] border border-[#ECEAF6] text-[13px] text-[#6B7280]">
               <p>{program.description}</p>
             </div>
           )}
@@ -321,10 +300,10 @@ export const ProgramDetailModal: React.FC<ProgramDetailModalProps> = ({
           {/* Days Tabs Header */}
           <div className="space-y-2.5">
             <div className="flex items-center justify-between">
-              <span className="text-[12px] font-semibold uppercase tracking-wider text-[#a3a3a3]">
+              <span className="text-[12px] font-bold uppercase tracking-wider text-[#6B7280]">
                 {t('programs.splitDaysOverview')}
               </span>
-              <span className="text-[12px] text-[#a3a3a3] font-mono">
+              <span className="text-[12px] text-[#6B7280] font-mono">
                 {days.length} {t('programs.daysCount')}
               </span>
             </div>
@@ -337,10 +316,10 @@ export const ProgramDetailModal: React.FC<ProgramDetailModalProps> = ({
                     key={idx}
                     type="button"
                     onClick={() => setSelectedDayIndex(idx)}
-                    className={`h-[44px] px-3.5 rounded-[10px] text-[13px] font-medium transition-colors whitespace-nowrap flex items-center gap-2 cursor-pointer ${
+                    className={`h-[42px] px-3.5 rounded-[12px] text-[13px] font-semibold transition-colors whitespace-nowrap flex items-center gap-2 cursor-pointer border ${
                       isSelected
-                        ? 'bg-[#022c22] text-[#34d399]'
-                        : 'bg-[#0a0a0a] text-[#a3a3a3] hover:text-[#fafafa] border border-[#404040]'
+                        ? 'bg-[#6D28D9] text-white border-[#6D28D9]'
+                        : 'bg-[#F8F7FC] text-[#6B7280] hover:text-[#1E1B4B] border-[#ECEAF6]'
                     }`}
                   >
                     <span>#{idx + 1}</span>
@@ -356,23 +335,23 @@ export const ProgramDetailModal: React.FC<ProgramDetailModalProps> = ({
 
           {/* Current Day Exercise List */}
           {currentDay && (
-            <div className="bg-[#0a0a0a] border border-[#404040] p-4 rounded-[14px] space-y-3">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 border-b border-[#262626] pb-3">
+            <div className="bg-[#F8F7FC] border border-[#ECEAF6] p-4 rounded-[16px] space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 border-b border-[#ECEAF6] pb-3">
                 <div>
-                  <h4 className="text-[15px] font-semibold text-[#fafafa]">
+                  <h4 className="text-[15px] font-bold text-[#1E1B4B]">
                     {t('programs.dayShort')} {selectedDayIndex + 1} · {currentDay.name}
                   </h4>
                   {currentDay.notes && (
-                    <p className="text-[12px] text-[#a3a3a3] mt-0.5">{currentDay.notes}</p>
+                    <p className="text-[12px] text-[#6B7280] mt-0.5">{currentDay.notes}</p>
                   )}
                 </div>
 
-                <div className="text-[12px] text-[#a3a3a3]">
+                <div className="text-[12px] font-semibold text-[#6D28D9]">
                   {currentDay.exercises?.length || 0} {t('programs.exercises')}
                 </div>
               </div>
 
-              <div className="divide-y divide-[#262626]">
+              <div className="divide-y divide-[#ECEAF6]">
                 {currentDay.exercises && currentDay.exercises.length > 0 ? (
                   currentDay.exercises.map((ex, exIdx) => {
                     const exName = ex.exercise_name || 'Exercise';
@@ -400,7 +379,7 @@ export const ProgramDetailModal: React.FC<ProgramDetailModalProps> = ({
                             exerciseName={exName}
                             fallbackMuscle={primaryMuscle}
                             size="md"
-                            className="rounded-[10px] border border-[#404040]"
+                            className="rounded-[12px] border border-[#ECEAF6]"
                           />
                         </button>
 
@@ -414,10 +393,10 @@ export const ProgramDetailModal: React.FC<ProgramDetailModalProps> = ({
                             })
                           }
                         >
-                          <div className="text-[14px] font-medium text-[#fafafa] group-hover:text-[#34d399] transition-colors truncate">
+                          <div className="text-[14px] font-semibold text-[#1E1B4B] group-hover:text-[#6D28D9] transition-colors truncate">
                             {targetSets} × {exName}
                           </div>
-                          <div className="text-[12px] text-[#a3a3a3] mt-0.5">
+                          <div className="text-[12px] text-[#6B7280] mt-0.5">
                             {primaryMuscle}
                             {ex.target_reps_min
                               ? ` · ${ex.target_reps_min}${
@@ -448,7 +427,7 @@ export const ProgramDetailModal: React.FC<ProgramDetailModalProps> = ({
                     );
                   })
                 ) : (
-                  <div className="text-center py-6 text-[13px] text-[#a3a3a3]">
+                  <div className="text-center py-6 text-[13px] text-[#6B7280]">
                     {t('programs.noExercisesInDay')}
                   </div>
                 )}
@@ -456,35 +435,31 @@ export const ProgramDetailModal: React.FC<ProgramDetailModalProps> = ({
             </div>
           )}
 
-          {/* Discussion & Likes Bar (Screen 14 Discussion) */}
-          <div className="bg-[#0a0a0a] border border-[#404040] p-4 rounded-[14px] space-y-3">
+          {/* Discussion & Installs Bar (Zero Likes!) */}
+          <div className="bg-[#F8F7FC] border border-[#ECEAF6] p-4 rounded-[16px] space-y-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2">
-                <Button
-                  variant={hasLiked ? 'flat' : 'outline'}
-                  size="sm"
-                  onClick={() => toggleLikeMutation.mutate()}
-                >
-                  <Heart
-                    className={`w-4 h-4 ${
-                      hasLiked ? 'fill-[#34d399] text-[#34d399]' : ''
-                    }`}
-                  />
-                  <span>{program.likes_count || 0}</span>
-                </Button>
+                <div className="h-9 px-3 rounded-[10px] bg-white border border-[#ECEAF6] text-xs font-semibold text-[#1E1B4B] inline-flex items-center gap-1.5">
+                  <Users className="w-3.5 h-3.5 text-[#6D28D9]" />
+                  <span>
+                    {program.installs_count || 0} {t('programs.installsCount')}
+                  </span>
+                </div>
 
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => setIsCommentsOpen(true)}
                 >
-                  <MessageCircle className="w-4 h-4" />
-                  <span>{comments.length}</span>
+                  <MessageCircle className="w-4 h-4 text-[#6D28D9]" />
+                  <span>
+                    {comments.length} {t('programs.commentsCount')}
+                  </span>
                 </Button>
               </div>
 
               {isActiveProgram ? (
-                <span className="text-[12px] font-medium text-[#34d399] bg-[#022c22] px-3 py-1.5 rounded-[8px]">
+                <span className="text-[12px] font-semibold text-[#059669] bg-[#ECFDF5] border border-[#A7F3D0] px-3 py-1.5 rounded-[10px]">
                   {t('programs.active')}
                 </span>
               ) : (
@@ -499,15 +474,15 @@ export const ProgramDetailModal: React.FC<ProgramDetailModalProps> = ({
               )}
             </div>
 
-            <div className="space-y-2.5 pt-2 border-t border-[#262626]">
+            <div className="space-y-2.5 pt-2 border-t border-[#ECEAF6]">
               {comments.slice(0, 3).map((c: any) => (
                 <button
                   key={c.id}
                   type="button"
                   onClick={() => setIsCommentsOpen(true)}
-                  className="text-[12px] text-[#a3a3a3] hover:text-[#fafafa] text-left truncate block w-full cursor-pointer"
+                  className="text-[12px] text-[#6B7280] hover:text-[#1E1B4B] text-left truncate block w-full cursor-pointer"
                 >
-                  <strong className="text-[#fafafa]">@{c.author_name || 'Атлет'}:</strong>{' '}
+                  <strong className="text-[#1E1B4B]">@{c.author_name || 'Атлет'}:</strong>{' '}
                   {c.content}
                 </button>
               ))}
@@ -525,8 +500,8 @@ export const ProgramDetailModal: React.FC<ProgramDetailModalProps> = ({
                   type="text"
                   value={quickComment}
                   onChange={(e) => setQuickComment(e.target.value)}
-                  placeholder="Оставить комментарий..."
-                  className="flex-1 h-[40px] bg-[#171717] border border-[#404040] focus:border-[#34d399] focus:outline-none rounded-[10px] px-3.5 text-[13px] text-[#fafafa] placeholder:text-[#737373]"
+                  placeholder={t('programs.commentPlaceholder') || 'Оставить комментарий...'}
+                  className="flex-1 h-[40px] bg-white border border-[#E2E0F0] focus:border-[#6D28D9] focus:outline-none rounded-[12px] px-3.5 text-[13px] text-[#1E1B4B] placeholder:text-[#94A3B8]"
                 />
                 <Button
                   type="submit"
@@ -535,18 +510,18 @@ export const ProgramDetailModal: React.FC<ProgramDetailModalProps> = ({
                   disabled={!quickComment.trim() || quickCommentMutation.isPending}
                   isLoading={quickCommentMutation.isPending}
                 >
-                  Отправить
+                  {t('common.save')}
                 </Button>
               </form>
 
               <button
                 type="button"
                 onClick={() => setIsCommentsOpen(true)}
-                className="w-full text-left text-[12px] text-[#34d399] hover:underline font-medium cursor-pointer pt-0.5"
+                className="w-full text-left text-[12px] text-[#6D28D9] hover:underline font-semibold cursor-pointer pt-0.5"
               >
                 {comments.length > 0
-                  ? `Посмотреть все комментарии (${comments.length}) →`
-                  : 'Открыть окно обсуждения →'}
+                  ? `${t('programs.commentsCount')} (${comments.length}) →`
+                  : `${t('programs.commentsCount')} →`}
               </button>
             </div>
           </div>

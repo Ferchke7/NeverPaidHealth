@@ -339,6 +339,18 @@ export const ProgressPage: React.FC = () => {
       [labels.core]: 0,
     };
 
+    const mapMuscleToLabel = (rawMuscle: string): string | null => {
+      const m = rawMuscle.toLowerCase().trim();
+      if (!m) return null;
+      if (m === 'chest' || m.includes('pec')) return labels.chest;
+      if (m === 'back' || m === 'lats' || m === 'traps' || m.includes('lower_back')) return labels.back;
+      if (m === 'legs' || m === 'quads' || m === 'hamstrings' || m === 'glutes' || m === 'calves') return labels.legs;
+      if (m === 'shoulders' || m.includes('delt')) return labels.shoulders;
+      if (m === 'arms' || m === 'biceps' || m === 'triceps' || m === 'forearms') return labels.arms;
+      if (m === 'core' || m === 'abs') return labels.core;
+      return null;
+    };
+
     for (const w of workouts) {
       totalTonnage += w.total_volume_kg || 0;
       totalSets += w.completed_sets_count || 0;
@@ -346,13 +358,33 @@ export const ProgressPage: React.FC = () => {
 
       for (const ex of w.exercises || []) {
         const name = (ex.exercise_name || '').toLowerCase();
-        let group = labels.chest;
-        if (name.includes('bench') || name.includes('chest') || name.includes('dip') || name.includes('fly') || name.includes('жим')) group = labels.chest;
-        else if (name.includes('pull') || name.includes('row') || name.includes('lat') || name.includes('deadlift') || name.includes('тяга') || name.includes('подтяг')) group = labels.back;
-        else if (name.includes('squat') || name.includes('leg') || name.includes('lunge') || name.includes('calf') || name.includes('присед')) group = labels.legs;
-        else if (name.includes('press') || name.includes('raise') || name.includes('shoulder') || name.includes('delt') || name.includes('мах')) group = labels.shoulders;
-        else if (name.includes('curl') || name.includes('tricep') || name.includes('bicep') || name.includes('extension') || name.includes('бицепс') || name.includes('трицепс')) group = labels.arms;
-        else if (name.includes('crunch') || name.includes('plank') || name.includes('ab') || name.includes('core') || name.includes('пресс') || name.includes('планк')) group = labels.core;
+        const catalogEx = exercises.find(
+          (e) =>
+            (ex.exercise_id && e.id === ex.exercise_id) ||
+            (name && e.name.toLowerCase().trim() === name.trim())
+        );
+        const mappedFromCatalog = catalogEx
+          ? mapMuscleToLabel(catalogEx.primary_muscle_group || catalogEx.primary_muscle || '')
+          : null;
+
+        let group = mappedFromCatalog;
+        if (!group) {
+          if (name.includes('leg press') || name.includes('жим ногами') || name.includes('squat') || name.includes('leg') || name.includes('lunge') || name.includes('calf') || name.includes('присед')) {
+            group = labels.legs;
+          } else if (name.includes('shoulder') || name.includes('overhead') || name.includes('military') || name.includes('arnold') || name.includes('delt') || name.includes('жим стоя') || name.includes('жим гантелей сидя') || name.includes('raise') || name.includes('мах')) {
+            group = labels.shoulders;
+          } else if (name.includes('pull') || name.includes('row') || name.includes('lat') || name.includes('deadlift') || name.includes('тяга') || name.includes('подтяг') || name.includes('становая')) {
+            group = labels.back;
+          } else if (name.includes('curl') || name.includes('tricep') || name.includes('bicep') || name.includes('extension') || name.includes('бицепс') || name.includes('трицепс')) {
+            group = labels.arms;
+          } else if (name.includes('crunch') || name.includes('plank') || name.includes('ab') || name.includes('core') || name.includes('пресс') || name.includes('планк')) {
+            group = labels.core;
+          } else if (name.includes('bench') || name.includes('chest') || name.includes('dip') || name.includes('fly') || name.includes('press') || name.includes('жим')) {
+            group = labels.chest;
+          } else {
+            group = labels.chest;
+          }
+        }
 
         muscleSets[group] = (muscleSets[group] || 0) + (ex.sets?.length || 0);
       }
@@ -368,7 +400,7 @@ export const ProgressPage: React.FC = () => {
       totalPRs,
       muscleSets,
     };
-  }, [workouts, recordGroups, labels]);
+  }, [workouts, recordGroups, exercises, labels]);
 
   // Strength Standards
   const strengthStandards = useMemo(() => {
@@ -446,13 +478,13 @@ export const ProgressPage: React.FC = () => {
 
   return (
     <div className="space-y-6 pb-10">
-      {/* Page Header & Tab Bar */}
-      <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
+      {/* Royal Violet Header & Tab Bar */}
+      <div className="royal-hero-gradient rounded-[24px] p-5 sm:p-7 text-white royal-card-shadow flex flex-col lg:flex-row lg:items-end justify-between gap-4">
         <div>
-          <h1 className="text-[28px] font-bold text-[#fafafa] tracking-[-0.02em] leading-tight">
+          <h1 className="text-[26px] sm:text-[32px] font-extrabold text-white tracking-[-0.02em] leading-tight">
             {labels.title}
           </h1>
-          <p className="text-[14px] text-[#a3a3a3] mt-1">{t('progress.subtitle')}</p>
+          <p className="text-[13px] sm:text-[14px] text-white/80 mt-1">{t('progress.subtitle')}</p>
         </div>
 
         <Tabs
@@ -463,34 +495,34 @@ export const ProgressPage: React.FC = () => {
         />
       </div>
 
-      {/* Top 4 KPI Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <div className="bg-[#171717] border border-[#404040] rounded-[14px] p-5 flex flex-col justify-between gap-1.5">
-          <div className="text-[24px] sm:text-[26px] font-bold text-[#fafafa] font-mono tabular-nums leading-none">
+      {/* Top 4 KPI Cards (Indigo + Teal Dual Feature Cards + Elevated White Cards matching Figma Screen 05/17) */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
+        <div className="indigo-card-gradient rounded-[20px] p-5 flex flex-col justify-between gap-1.5 text-white royal-card-shadow">
+          <div className="text-[24px] sm:text-[26px] font-extrabold text-white font-mono tabular-nums leading-none">
             {analyticsSummary.totalWorkouts}
           </div>
-          <div className="text-[12px] text-[#a3a3a3] font-medium">{labels.totalWorkouts}</div>
+          <div className="text-[12px] text-white/80 font-semibold">{labels.totalWorkouts}</div>
         </div>
 
-        <div className="bg-[#171717] border border-[#404040] rounded-[14px] p-5 flex flex-col justify-between gap-1.5">
-          <div className="text-[24px] sm:text-[26px] font-bold text-[#34d399] font-mono tabular-nums leading-none">
+        <div className="teal-card-gradient rounded-[20px] p-5 flex flex-col justify-between gap-1.5 text-white royal-card-shadow">
+          <div className="text-[24px] sm:text-[26px] font-extrabold text-white font-mono tabular-nums leading-none">
             {formattedTonnage}
           </div>
-          <div className="text-[12px] text-[#a3a3a3] font-medium">{labels.totalTonnage}</div>
+          <div className="text-[12px] text-white/85 font-semibold">{labels.totalTonnage}</div>
         </div>
 
-        <div className="bg-[#171717] border border-[#404040] rounded-[14px] p-5 flex flex-col justify-between gap-1.5">
-          <div className="text-[24px] sm:text-[26px] font-bold text-[#fafafa] font-mono tabular-nums leading-none">
+        <div className="bg-white border border-[#ECEAF6] rounded-[20px] p-5 flex flex-col justify-between gap-1.5 royal-card-shadow">
+          <div className="text-[24px] sm:text-[26px] font-extrabold text-[#6D28D9] font-mono tabular-nums leading-none">
             {analyticsSummary.totalPRs}
           </div>
-          <div className="text-[12px] text-[#a3a3a3] font-medium">{labels.personalRecords}</div>
+          <div className="text-[12px] text-[#6B7280] font-semibold">{labels.personalRecords}</div>
         </div>
 
-        <div className="bg-[#171717] border border-[#404040] rounded-[14px] p-5 flex flex-col justify-between gap-1.5">
-          <div className="text-[24px] sm:text-[26px] font-bold text-[#fafafa] font-mono tabular-nums leading-none">
+        <div className="bg-white border border-[#ECEAF6] rounded-[20px] p-5 flex flex-col justify-between gap-1.5 royal-card-shadow">
+          <div className="text-[24px] sm:text-[26px] font-extrabold text-[#1E1B4B] font-mono tabular-nums leading-none">
             {analyticsSummary.totalHours} {labels.hrs}
           </div>
-          <div className="text-[12px] text-[#a3a3a3] font-medium">{labels.timeUnderLoad}</div>
+          <div className="text-[12px] text-[#6B7280] font-semibold">{labels.timeUnderLoad}</div>
         </div>
       </div>
 
@@ -498,17 +530,17 @@ export const ProgressPage: React.FC = () => {
       {activeTab === 'progression' && (
         <div className="space-y-5">
           {/* Exercise Progression Curve Card */}
-          <div className="bg-[#171717] border border-[#404040] rounded-[14px] p-5 space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#262626]">
+          <div className="bg-white border border-[#ECEAF6] rounded-[22px] p-5 space-y-4 royal-card-shadow">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#ECEAF6]">
               <div>
-                <h2 className="text-[16px] font-semibold text-[#fafafa]">{labels.progressionTitle}</h2>
-                <p className="text-[12px] text-[#a3a3a3] mt-0.5">{labels.progressionDesc}</p>
+                <h2 className="text-[16px] font-bold text-[#1E1B4B]">{labels.progressionTitle}</h2>
+                <p className="text-[12px] text-[#6B7280] mt-0.5">{labels.progressionDesc}</p>
               </div>
 
               <select
                 value={activeExerciseId}
                 onChange={(e) => setSelectedExerciseId(e.target.value)}
-                className="min-h-[44px] bg-[#0a0a0a] border border-[#404040] text-[#fafafa] text-[13px] font-medium rounded-[10px] px-3.5 focus:outline-none focus:border-[#34d399] max-w-xs cursor-pointer"
+                className="min-h-[42px] bg-[#F8F7FC] border border-[#E2E0F0] text-[#1E1B4B] text-[13px] font-semibold rounded-[12px] px-3.5 focus:outline-none focus:border-[#6D28D9] max-w-xs cursor-pointer"
               >
                 {exercises.map((ex) => (
                   <option key={ex.id} value={ex.id}>
@@ -525,18 +557,18 @@ export const ProgressPage: React.FC = () => {
                 unitPref={unitPref}
               />
             ) : (
-              <div className="bg-[#0a0a0a] border border-dashed border-[#404040] rounded-[12px] py-10 text-center text-[13px] text-[#a3a3a3]">
+              <div className="bg-[#F8F7FC] border border-dashed border-[#DDD6FE] rounded-[14px] py-10 text-center text-[13px] text-[#6B7280]">
                 {labels.noHistoryData}
               </div>
             )}
           </div>
 
           {/* Personal Records Table */}
-          <div className="bg-[#171717] border border-[#404040] rounded-[14px] p-5 space-y-4">
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pb-3 border-b border-[#262626]">
-              <h2 className="text-[16px] font-semibold text-[#fafafa]">
+          <div className="bg-white border border-[#ECEAF6] rounded-[22px] p-5 space-y-4 royal-card-shadow">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pb-3 border-b border-[#ECEAF6]">
+              <h2 className="text-[16px] font-bold text-[#1E1B4B]">
                 {labels.prHallTitle}{' '}
-                <span className="text-[#a3a3a3] font-mono font-normal">
+                <span className="text-[#6B7280] font-mono font-normal">
                   ({filteredRecordGroups.length})
                 </span>
               </h2>
@@ -549,10 +581,10 @@ export const ProgressPage: React.FC = () => {
                       key={filter.id}
                       type="button"
                       onClick={() => setSelectedMuscle(filter.id)}
-                      className={`min-h-[44px] px-3 rounded-[10px] border text-[12px] font-medium whitespace-nowrap transition-colors cursor-pointer ${
+                      className={`min-h-[40px] px-3.5 rounded-[10px] border text-[12px] font-semibold whitespace-nowrap transition-colors cursor-pointer ${
                         isActive
-                          ? 'bg-[#022c22] border-[#064e3b] text-[#34d399]'
-                          : 'bg-[#0a0a0a] border-[#404040] text-[#a3a3a3] hover:text-[#fafafa]'
+                          ? 'bg-[#6D28D9] border-[#6D28D9] text-white'
+                          : 'bg-[#F8F7FC] border-[#ECEAF6] text-[#6B7280] hover:text-[#1E1B4B]'
                       }`}
                     >
                       {filter.label}
@@ -563,7 +595,7 @@ export const ProgressPage: React.FC = () => {
             </div>
 
             {filteredRecordGroups.length === 0 ? (
-              <div className="text-center py-8 text-[#a3a3a3] text-[13px]">
+              <div className="text-center py-8 text-[#6B7280] text-[13px]">
                 {t('progress.noMuscleRecords')}
               </div>
             ) : (
@@ -572,7 +604,7 @@ export const ProgressPage: React.FC = () => {
                 <div className="hidden md:block overflow-x-auto">
                   <table className="w-full text-left border-collapse">
                     <thead>
-                      <tr className="border-b border-[#262626] text-[11px] font-semibold uppercase tracking-[0.06em] text-[#a3a3a3]">
+                      <tr className="border-b border-[#ECEAF6] text-[11px] font-bold uppercase tracking-[0.06em] text-[#6B7280]">
                         <th className="pb-3 pr-4">{labels.progressionTitle.split(' ')[0]}</th>
                         <th className="pb-3 px-4">{labels.heaviestWeight}</th>
                         <th className="pb-3 px-4">{labels.bestE1rm}</th>
@@ -580,30 +612,30 @@ export const ProgressPage: React.FC = () => {
                         <th className="pb-3 pl-4 text-right">{labels.maxReps}</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-[#262626] text-[13px]">
+                    <tbody className="divide-y divide-[#ECEAF6] text-[13px]">
                       {filteredRecordGroups.map((group) => (
                         <tr
                           key={group.exercise_id}
                           onClick={() => setSelectedExerciseId(group.exercise_id)}
-                          className="hover:bg-[#0a0a0a]/60 transition-colors cursor-pointer"
+                          className="hover:bg-[#F8F7FC] transition-colors cursor-pointer"
                         >
-                          <td className="py-3.5 pr-4 font-semibold text-[#fafafa]">
+                          <td className="py-3.5 pr-4 font-semibold text-[#1E1B4B]">
                             {group.exercise_name}
                           </td>
-                          <td className="py-3.5 px-4 font-mono font-bold text-[#34d399] tabular-nums">
+                          <td className="py-3.5 px-4 font-mono font-bold text-[#6D28D9] tabular-nums">
                             {group.best_weight_kg ? formatWeight(group.best_weight_kg, unitPref) : '—'}
                           </td>
-                          <td className="py-3.5 px-4 font-mono text-[#fafafa] tabular-nums">
+                          <td className="py-3.5 px-4 font-mono font-semibold text-[#1E1B4B] tabular-nums">
                             {group.best_e1rm_kg
                               ? formatWeight(Math.round(group.best_e1rm_kg * 10) / 10, unitPref)
                               : '—'}
                           </td>
-                          <td className="py-3.5 px-4 font-mono text-[#a3a3a3] tabular-nums">
+                          <td className="py-3.5 px-4 font-mono text-[#6B7280] tabular-nums">
                             {group.max_volume_set_kg
                               ? formatWeight(group.max_volume_set_kg, unitPref)
                               : '—'}
                           </td>
-                          <td className="py-3.5 pl-4 text-right font-mono text-[#a3a3a3] tabular-nums">
+                          <td className="py-3.5 pl-4 text-right font-mono text-[#6B7280] tabular-nums">
                             {group.max_reps ? `${group.max_reps} ${labels.repsUnit}` : '—'}
                           </td>
                         </tr>
@@ -618,37 +650,37 @@ export const ProgressPage: React.FC = () => {
                     <div
                       key={group.exercise_id}
                       onClick={() => setSelectedExerciseId(group.exercise_id)}
-                      className="p-4 rounded-[12px] bg-[#0a0a0a] border border-[#262626] space-y-3 cursor-pointer"
+                      className="p-4 rounded-[14px] bg-[#F8F7FC] border border-[#ECEAF6] space-y-3 cursor-pointer"
                     >
-                      <div className="text-[14px] font-semibold text-[#fafafa]">
+                      <div className="text-[14px] font-bold text-[#1E1B4B]">
                         {group.exercise_name}
                       </div>
                       <div className="grid grid-cols-2 gap-2.5 text-[12px]">
                         <div>
-                          <div className="text-[#a3a3a3] text-[11px]">{labels.heaviestWeight}</div>
-                          <div className="font-mono font-bold text-[#34d399] mt-0.5">
+                          <div className="text-[#6B7280] text-[11px]">{labels.heaviestWeight}</div>
+                          <div className="font-mono font-bold text-[#6D28D9] mt-0.5">
                             {group.best_weight_kg ? formatWeight(group.best_weight_kg, unitPref) : '—'}
                           </div>
                         </div>
                         <div>
-                          <div className="text-[#a3a3a3] text-[11px]">{labels.bestE1rm}</div>
-                          <div className="font-mono text-[#fafafa] mt-0.5">
+                          <div className="text-[#6B7280] text-[11px]">{labels.bestE1rm}</div>
+                          <div className="font-mono font-semibold text-[#1E1B4B] mt-0.5">
                             {group.best_e1rm_kg
                               ? formatWeight(Math.round(group.best_e1rm_kg * 10) / 10, unitPref)
                               : '—'}
                           </div>
                         </div>
                         <div>
-                          <div className="text-[#a3a3a3] text-[11px]">{labels.maxSetVolume}</div>
-                          <div className="font-mono text-[#a3a3a3] mt-0.5">
+                          <div className="text-[#6B7280] text-[11px]">{labels.maxSetVolume}</div>
+                          <div className="font-mono text-[#6B7280] mt-0.5">
                             {group.max_volume_set_kg
                               ? formatWeight(group.max_volume_set_kg, unitPref)
                               : '—'}
                           </div>
                         </div>
                         <div>
-                          <div className="text-[#a3a3a3] text-[11px]">{labels.maxReps}</div>
-                          <div className="font-mono text-[#a3a3a3] mt-0.5">
+                          <div className="text-[#6B7280] text-[11px]">{labels.maxReps}</div>
+                          <div className="font-mono text-[#6B7280] mt-0.5">
                             {group.max_reps ? `${group.max_reps} ${labels.repsUnit}` : '—'}
                           </div>
                         </div>
@@ -674,24 +706,24 @@ export const ProgressPage: React.FC = () => {
       {activeTab === 'standards' && (
         <div className="space-y-5">
           {/* 1RM & Working Percentages Card */}
-          <div className="bg-[#171717] border border-[#404040] rounded-[14px] p-5 space-y-5">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#262626]">
+          <div className="bg-white border border-[#ECEAF6] rounded-[22px] p-5 space-y-5 royal-card-shadow">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#ECEAF6]">
               <div>
-                <h2 className="text-[16px] font-semibold text-[#fafafa] flex items-center gap-2">
-                  <Calculator className="w-4 h-4 text-[#34d399]" />
+                <h2 className="text-[16px] font-bold text-[#1E1B4B] flex items-center gap-2">
+                  <Calculator className="w-4 h-4 text-[#6D28D9]" />
                   <span>{labels.calcTitle}</span>
                 </h2>
-                <p className="text-[12px] text-[#a3a3a3] mt-0.5">{labels.calcDesc}</p>
+                <p className="text-[12px] text-[#6B7280] mt-0.5">{labels.calcDesc}</p>
               </div>
 
-              <div className="flex items-center gap-1 p-1 bg-[#0a0a0a] border border-[#404040] rounded-[10px] self-start">
+              <div className="flex items-center gap-1 p-1 bg-[#F4F3FA] border border-[#ECEAF6] rounded-[12px] self-start">
                 <button
                   type="button"
                   onClick={() => setCalcFormula('brzycki')}
-                  className={`px-3 py-1.5 rounded-[8px] text-[12px] font-medium transition-colors cursor-pointer ${
+                  className={`px-3 py-1.5 rounded-[9px] text-[12px] font-semibold transition-colors cursor-pointer ${
                     calcFormula === 'brzycki'
-                      ? 'bg-[#022c22] text-[#34d399] border border-[#064e3b]'
-                      : 'text-[#a3a3a3] hover:text-[#fafafa]'
+                      ? 'bg-white text-[#6D28D9] shadow-xs'
+                      : 'text-[#6B7280] hover:text-[#1E1B4B]'
                   }`}
                 >
                   Brzycki
@@ -699,10 +731,10 @@ export const ProgressPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setCalcFormula('epley')}
-                  className={`px-3 py-1.5 rounded-[8px] text-[12px] font-medium transition-colors cursor-pointer ${
+                  className={`px-3 py-1.5 rounded-[9px] text-[12px] font-semibold transition-colors cursor-pointer ${
                     calcFormula === 'epley'
-                      ? 'bg-[#022c22] text-[#34d399] border border-[#064e3b]'
-                      : 'text-[#a3a3a3] hover:text-[#fafafa]'
+                      ? 'bg-white text-[#6D28D9] shadow-xs'
+                      : 'text-[#6B7280] hover:text-[#1E1B4B]'
                   }`}
                 >
                   Epley
@@ -716,7 +748,7 @@ export const ProgressPage: React.FC = () => {
                 type="number"
                 value={calcWeight}
                 onChange={(e) => setCalcWeight(Number(e.target.value))}
-                className="font-mono text-[16px] font-bold text-[#fafafa]"
+                className="font-mono text-[16px] font-bold"
               />
 
               <Input
@@ -724,17 +756,17 @@ export const ProgressPage: React.FC = () => {
                 type="number"
                 value={calcReps}
                 onChange={(e) => setCalcReps(Number(e.target.value))}
-                className="font-mono text-[16px] font-bold text-[#fafafa]"
+                className="font-mono text-[16px] font-bold"
               />
 
-              <div className="p-4 rounded-[12px] bg-[#022c22]/50 border border-[#064e3b] flex flex-col justify-center items-center text-center">
-                <div className="text-[11px] font-semibold uppercase tracking-[0.06em] text-[#a3a3a3]">
+              <div className="p-4 rounded-[16px] bg-[#F0EFFE] border border-[#DDD6FE] flex flex-col justify-center items-center text-center">
+                <div className="text-[11px] font-bold uppercase tracking-[0.06em] text-[#6D28D9]">
                   {labels.estimated1RM}
                 </div>
-                <div className="text-[26px] font-bold text-[#34d399] font-mono tabular-nums mt-1">
+                <div className="text-[26px] font-extrabold text-[#1E1B4B] font-mono tabular-nums mt-1">
                   {formatWeight(calculated1RM, unitPref)}
                 </div>
-                <div className="text-[11px] font-mono text-[#a3a3a3] mt-1">
+                <div className="text-[11px] font-mono text-[#6B7280] mt-1">
                   {calcFormula === 'brzycki'
                     ? `Epley: ${formatWeight(epley1RM, unitPref)}`
                     : `Brzycki: ${formatWeight(brzycki1RM, unitPref)}`}
@@ -743,22 +775,22 @@ export const ProgressPage: React.FC = () => {
             </div>
 
             <div className="space-y-2.5">
-              <div className="text-[12px] font-semibold uppercase tracking-[0.06em] text-[#a3a3a3]">
+              <div className="text-[12px] font-bold uppercase tracking-[0.06em] text-[#6B7280]">
                 {labels.workingMatrix}
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2.5">
                 {percentageTable.map((item) => (
                   <div
                     key={item.percentage}
-                    className="p-3 rounded-[10px] bg-[#0a0a0a] border border-[#262626] flex flex-col justify-between gap-1"
+                    className="p-3 rounded-[12px] bg-[#F8F7FC] border border-[#ECEAF6] flex flex-col justify-between gap-1"
                   >
                     <div className="flex items-center justify-between text-[12px]">
-                      <span className="font-semibold text-[#fafafa]">{item.percentage}%</span>
-                      <span className="text-[10px] text-[#737373] font-mono">
+                      <span className="font-bold text-[#1E1B4B]">{item.percentage}%</span>
+                      <span className="text-[10px] text-[#6B7280] font-mono">
                         {item.repsGoal} {labels.repsUnit}
                       </span>
                     </div>
-                    <div className="text-[14px] font-bold text-[#34d399] font-mono tabular-nums">
+                    <div className="text-[14px] font-bold text-[#6D28D9] font-mono tabular-nums">
                       {formatWeight(item.weightKg, unitPref)}
                     </div>
                   </div>
@@ -770,37 +802,37 @@ export const ProgressPage: React.FC = () => {
           <StrengthStandardsBarChart standards={strengthStandards} unitPref={unitPref} />
 
           {/* Strength Standards Classification Rows */}
-          <div className="bg-[#171717] border border-[#404040] rounded-[14px] p-5 space-y-4">
-            <div className="pb-3 border-b border-[#262626]">
-              <h2 className="text-[16px] font-semibold text-[#fafafa]">{labels.standardsTitle}</h2>
-              <p className="text-[12px] text-[#a3a3a3] mt-0.5">{labels.standardsDesc}</p>
+          <div className="bg-white border border-[#ECEAF6] rounded-[22px] p-5 space-y-4 royal-card-shadow">
+            <div className="pb-3 border-b border-[#ECEAF6]">
+              <h2 className="text-[16px] font-bold text-[#1E1B4B]">{labels.standardsTitle}</h2>
+              <p className="text-[12px] text-[#6B7280] mt-0.5">{labels.standardsDesc}</p>
             </div>
 
             <div className="space-y-3">
               {strengthStandards.map((std, idx) => (
                 <div
                   key={idx}
-                  className="p-4 rounded-[12px] bg-[#0a0a0a] border border-[#262626] space-y-2.5"
+                  className="p-4 rounded-[14px] bg-[#F8F7FC] border border-[#ECEAF6] space-y-2.5"
                 >
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <div>
-                      <h3 className="text-[14px] font-semibold text-[#fafafa]">{std.name}</h3>
-                      <div className="text-[12px] text-[#a3a3a3] font-mono mt-0.5">
+                      <h3 className="text-[14px] font-bold text-[#1E1B4B]">{std.name}</h3>
+                      <div className="text-[12px] text-[#6B7280] font-mono mt-0.5">
                         {labels.currentBest}{' '}
-                        <span className="text-[#34d399] font-semibold">
+                        <span className="text-[#6D28D9] font-bold">
                           {std.best1RM > 0 ? formatWeight(std.best1RM, unitPref) : labels.notLogged}
                         </span>
                       </div>
                     </div>
 
-                    <span className="px-2.5 py-1 rounded-[8px] bg-[#022c22] border border-[#064e3b] text-[#34d399] text-[12px] font-medium self-start sm:self-center">
+                    <span className="px-2.5 py-1 rounded-[10px] bg-[#F0EFFE] border border-[#DDD6FE] text-[#6D28D9] text-[12px] font-bold self-start sm:self-center">
                       {std.level}
                     </span>
                   </div>
 
                   <div className="space-y-1.5">
                     <ProgressBar value={std.progressPct} color="brand" size="sm" />
-                    <div className="flex justify-between text-[11px] text-[#737373] font-mono">
+                    <div className="flex justify-between text-[11px] text-[#6B7280] font-mono">
                       <span>01 Beg ({std.beginner}kg)</span>
                       <span>02 Nov ({std.intermediate}kg)</span>
                       <span>03 Adv ({std.advanced}kg)</span>
@@ -815,47 +847,47 @@ export const ProgressPage: React.FC = () => {
       )}
 
       {/* Bottom Navigation Strip */}
-      <div className="pt-4 border-t border-[#262626] grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div className="pt-4 border-t border-[#ECEAF6] grid grid-cols-1 sm:grid-cols-2 gap-3">
         <button
           type="button"
           onClick={() => navigate('/history')}
-          className="min-h-[60px] p-4 rounded-[14px] bg-[#171717] hover:bg-[#262626]/70 border border-[#404040] flex items-center justify-between text-left cursor-pointer transition-colors"
+          className="min-h-[60px] p-4 rounded-[18px] bg-white hover:border-[#C4B5FD] border border-[#ECEAF6] royal-card-shadow flex items-center justify-between text-left cursor-pointer transition-all"
         >
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-10 h-10 rounded-[10px] bg-[#022c22] border border-[#064e3b] flex items-center justify-center text-[#34d399] shrink-0">
+            <div className="w-10 h-10 rounded-[12px] bg-[#F0EFFE] border border-[#DDD6FE] flex items-center justify-center text-[#6D28D9] shrink-0">
               <CalendarIcon className="w-4 h-4" />
             </div>
             <div className="min-w-0">
-              <div className="text-[14px] font-semibold text-[#fafafa] truncate">
+              <div className="text-[14px] font-bold text-[#1E1B4B] truncate">
                 {t('progress.backToHistory')}
               </div>
-              <div className="text-[12px] text-[#a3a3a3] truncate">
+              <div className="text-[12px] text-[#6B7280] truncate">
                 {t('progress.historyCardDesc')}
               </div>
             </div>
           </div>
-          <ChevronRight className="w-4 h-4 text-[#a3a3a3] shrink-0" />
+          <ChevronRight className="w-4 h-4 text-[#6B7280] shrink-0" />
         </button>
 
         <button
           type="button"
           onClick={() => navigate('/body')}
-          className="min-h-[60px] p-4 rounded-[14px] bg-[#171717] hover:bg-[#262626]/70 border border-[#404040] flex items-center justify-between text-left cursor-pointer transition-colors"
+          className="min-h-[60px] p-4 rounded-[18px] bg-white hover:border-[#C4B5FD] border border-[#ECEAF6] royal-card-shadow flex items-center justify-between text-left cursor-pointer transition-all"
         >
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-10 h-10 rounded-[10px] bg-[#0a0a0a] border border-[#404040] flex items-center justify-center text-[#fafafa] shrink-0">
+            <div className="w-10 h-10 rounded-[12px] bg-[#ECFEFF] border border-[#A5F3FC] flex items-center justify-center text-[#0891B2] shrink-0">
               <Scale className="w-4 h-4" />
             </div>
             <div className="min-w-0">
-              <div className="text-[14px] font-semibold text-[#fafafa] truncate">
+              <div className="text-[14px] font-bold text-[#1E1B4B] truncate">
                 {t('progress.toBodyMetrics')}
               </div>
-              <div className="text-[12px] text-[#a3a3a3] truncate">
+              <div className="text-[12px] text-[#6B7280] truncate">
                 {t('progress.bodyCardDesc')}
               </div>
             </div>
           </div>
-          <ChevronRight className="w-4 h-4 text-[#a3a3a3] shrink-0" />
+          <ChevronRight className="w-4 h-4 text-[#6B7280] shrink-0" />
         </button>
       </div>
     </div>

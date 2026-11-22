@@ -308,7 +308,7 @@ export const ProgramEditorModal: React.FC<ProgramEditorModalProps> = ({
       >
         <div className="space-y-4">
           {error && (
-            <div className="p-3 bg-[#262626] border border-red-500/40 rounded-[10px] text-red-300 text-xs">
+            <div className="p-3 bg-[#FEF2F2] border border-[#FECACA] rounded-[12px] text-[#DC2626] text-xs font-medium">
               {error}
             </div>
           )}
@@ -332,13 +332,13 @@ export const ProgramEditorModal: React.FC<ProgramEditorModalProps> = ({
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
-                <label className="text-[12px] font-medium text-[#a3a3a3] block mb-1.5">
+                <label className="text-[12px] font-medium text-[#6B7280] block mb-1.5">
                   {t('programs.splitType')}
                 </label>
                 <select
                   value={splitType}
                   onChange={(e) => setSplitType(e.target.value as SplitType)}
-                  className="w-full h-11 bg-[#0a0a0a] border border-[#404040] rounded-[10px] px-3 text-[13px] text-[#fafafa] focus:outline-none focus:border-[#34d399]"
+                  className="w-full h-11 bg-[#F8F7FC] border border-[#E2E0F0] rounded-[12px] px-3 text-[13px] font-medium text-[#1E1B4B] focus:outline-none focus:border-[#6D28D9]"
                 >
                   <option value="ppl">{t('programs.splitPpl')}</option>
                   <option value="upper_lower">{t('programs.splitUpperLower')}</option>
@@ -349,13 +349,13 @@ export const ProgramEditorModal: React.FC<ProgramEditorModalProps> = ({
               </div>
 
               <div>
-                <label className="text-[12px] font-medium text-[#a3a3a3] block mb-1.5">
+                <label className="text-[12px] font-medium text-[#6B7280] block mb-1.5">
                   {t('programs.level')}
                 </label>
                 <select
                   value={level}
                   onChange={(e) => setLevel(e.target.value as ProgramLevel)}
-                  className="w-full h-11 bg-[#0a0a0a] border border-[#404040] rounded-[10px] px-3 text-[13px] text-[#fafafa] focus:outline-none focus:border-[#34d399]"
+                  className="w-full h-11 bg-[#F8F7FC] border border-[#E2E0F0] rounded-[12px] px-3 text-[13px] font-medium text-[#1E1B4B] focus:outline-none focus:border-[#6D28D9]"
                 >
                   <option value="beginner">{t('programs.levelBeginner')}</option>
                   <option value="intermediate">{t('programs.levelIntermediate')}</option>
@@ -364,16 +364,16 @@ export const ProgramEditorModal: React.FC<ProgramEditorModalProps> = ({
               </div>
 
               <div>
-                <label className="text-[12px] font-medium text-[#a3a3a3] block mb-1.5">
+                <label className="text-[12px] font-medium text-[#6B7280] block mb-1.5">
                   {t('programs.sharing')}
                 </label>
                 <button
                   type="button"
                   onClick={() => setIsPublic(!isPublic)}
-                  className={`w-full h-11 flex items-center justify-between px-3 rounded-[10px] border text-[13px] font-medium transition-colors cursor-pointer ${
+                  className={`w-full h-11 flex items-center justify-between px-3 rounded-[12px] border text-[13px] font-semibold transition-colors cursor-pointer ${
                     isPublic
-                      ? 'bg-[#022c22] border-[#34d399]/30 text-[#34d399]'
-                      : 'bg-[#0a0a0a] border-[#404040] text-[#a3a3a3] hover:text-[#fafafa]'
+                      ? 'bg-[#F0EFFE] border-[#DDD6FE] text-[#6D28D9]'
+                      : 'bg-[#F8F7FC] border-[#E2E0F0] text-[#6B7280] hover:text-[#1E1B4B]'
                   }`}
                 >
                   <span className="flex items-center gap-1.5 truncate">
@@ -390,9 +390,9 @@ export const ProgramEditorModal: React.FC<ProgramEditorModalProps> = ({
           </div>
 
           {/* Multi-Day Split Section */}
-          <div className="pt-3 border-t border-[#262626] space-y-3">
+          <div className="pt-3 border-t border-[#ECEAF6] space-y-3">
             <div className="flex items-center justify-between gap-2">
-              <span className="text-[12px] font-semibold uppercase tracking-wider text-[#a3a3a3]">
+              <span className="text-[12px] font-semibold uppercase tracking-wider text-[#6B7280]">
                 {t('programs.trainingDays', { count: days.length })}
               </span>
               <Button
@@ -414,10 +414,10 @@ export const ProgramEditorModal: React.FC<ProgramEditorModalProps> = ({
                     key={idx}
                     type="button"
                     onClick={() => setActiveDayIndex(idx)}
-                    className={`h-[40px] px-3.5 rounded-[8px] text-[13px] font-medium transition-colors whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
+                    className={`h-[40px] px-3.5 rounded-[10px] text-[13px] font-semibold transition-colors whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
                       isActive
-                        ? 'bg-[#022c22] text-[#34d399]'
-                        : 'bg-[#0a0a0a] border border-[#404040] text-[#a3a3a3] hover:text-[#fafafa]'
+                        ? 'bg-[#6D28D9] text-white'
+                        : 'bg-[#F8F7FC] border border-[#ECEAF6] text-[#6B7280] hover:text-[#1E1B4B]'
                     }`}
                   >
                     <span>
@@ -432,7 +432,7 @@ export const ProgramEditorModal: React.FC<ProgramEditorModalProps> = ({
             </div>
 
             {currentDay && (
-              <div className="bg-[#0a0a0a] border border-[#404040] p-4 rounded-[14px] space-y-4">
+              <div className="bg-[#F8F7FC] border border-[#ECEAF6] p-4 rounded-[16px] space-y-4">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                   <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <input
@@ -440,14 +440,14 @@ export const ProgramEditorModal: React.FC<ProgramEditorModalProps> = ({
                       value={currentDay.name}
                       onChange={(e) => updateCurrentDay({ name: e.target.value })}
                       placeholder={t('programs.dayNamePlaceholder')}
-                      className="h-11 bg-[#171717] border border-[#404040] rounded-[10px] px-3 text-[13px] text-[#fafafa] font-medium focus:outline-none focus:border-[#34d399]"
+                      className="h-11 bg-white border border-[#E2E0F0] rounded-[10px] px-3 text-[13px] text-[#1E1B4B] font-semibold focus:outline-none focus:border-[#6D28D9]"
                     />
                     <input
                       type="text"
                       value={currentDay.notes || ''}
                       onChange={(e) => updateCurrentDay({ notes: e.target.value })}
                       placeholder={t('programs.dayNotesPlaceholder')}
-                      className="h-11 bg-[#171717] border border-[#404040] rounded-[10px] px-3 text-[13px] text-[#a3a3a3] focus:outline-none focus:border-[#34d399]"
+                      className="h-11 bg-white border border-[#E2E0F0] rounded-[10px] px-3 text-[13px] text-[#6B7280] focus:outline-none focus:border-[#6D28D9]"
                     />
                   </div>
 
@@ -466,7 +466,7 @@ export const ProgramEditorModal: React.FC<ProgramEditorModalProps> = ({
 
                 <div className="space-y-3 pt-1">
                   <div className="flex items-center justify-between">
-                    <span className="text-[12px] font-medium text-[#a3a3a3]">
+                    <span className="text-[12px] font-medium text-[#6B7280]">
                       {t('programs.exercisesForDay', { count: currentDay.exercises.length })}
                     </span>
                     <Button
@@ -484,11 +484,11 @@ export const ProgramEditorModal: React.FC<ProgramEditorModalProps> = ({
                   </div>
 
                   {currentDay.exercises.length === 0 ? (
-                    <div className="text-center py-6 border border-[#404040] rounded-[12px] p-4 bg-[#171717]">
-                      <p className="text-[13px] font-medium text-[#fafafa]">
+                    <div className="text-center py-6 border border-[#ECEAF6] rounded-[14px] p-4 bg-white">
+                      <p className="text-[13px] font-semibold text-[#1E1B4B]">
                         {t('programs.noExercisesInDay')}
                       </p>
-                      <p className="text-[12px] text-[#a3a3a3] mt-1 mb-3">
+                      <p className="text-[12px] text-[#6B7280] mt-1 mb-3">
                         {t('programs.noExercisesInDayDesc')}
                       </p>
                       <Button
@@ -509,7 +509,7 @@ export const ProgramEditorModal: React.FC<ProgramEditorModalProps> = ({
                       {currentDay.exercises.map((item, exIdx) => (
                         <div
                           key={`${item.exercise_id}-${exIdx}`}
-                          className="bg-[#171717] border border-[#404040] p-3 rounded-[12px] space-y-2.5"
+                          className="bg-white border border-[#ECEAF6] p-3 rounded-[14px] space-y-2.5"
                         >
                           <div className="flex items-center justify-between gap-2">
                             <div className="flex items-center gap-2.5 min-w-0 flex-1">
@@ -520,10 +520,10 @@ export const ProgramEditorModal: React.FC<ProgramEditorModalProps> = ({
                               />
                               <div className="min-w-0 flex-1">
                                 <div className="flex items-center gap-1.5">
-                                  <span className="text-xs font-medium text-[#34d399] shrink-0">
+                                  <span className="text-xs font-bold text-[#6D28D9] shrink-0">
                                     #{exIdx + 1}
                                   </span>
-                                  <span className="text-[14px] font-medium text-[#fafafa] truncate">
+                                  <span className="text-[14px] font-semibold text-[#1E1B4B] truncate">
                                     {item.exercise_name}
                                   </span>
                                 </div>
@@ -537,7 +537,7 @@ export const ProgramEditorModal: React.FC<ProgramEditorModalProps> = ({
                                   setReplacingExerciseIndex(exIdx);
                                   setIsPickerOpen(true);
                                 }}
-                                className="text-[#a3a3a3] hover:text-[#34d399] p-2 rounded-[8px] hover:bg-[#262626] transition-colors cursor-pointer"
+                                className="text-[#6B7280] hover:text-[#6D28D9] p-2 rounded-[8px] hover:bg-[#F0EFFE] transition-colors cursor-pointer"
                                 title={t('routines.replaceExercise')}
                               >
                                 <ArrowLeftRight className="w-3.5 h-3.5" />
@@ -546,7 +546,7 @@ export const ProgramEditorModal: React.FC<ProgramEditorModalProps> = ({
                                 type="button"
                                 disabled={exIdx === 0}
                                 onClick={() => moveExercise(exIdx, 'up')}
-                                className="text-[#a3a3a3] hover:text-[#fafafa] disabled:opacity-30 p-2 rounded-[8px] hover:bg-[#262626] transition-colors cursor-pointer"
+                                className="text-[#6B7280] hover:text-[#1E1B4B] disabled:opacity-30 p-2 rounded-[8px] hover:bg-[#F4F3FA] transition-colors cursor-pointer"
                                 title={t('routines.moveUp')}
                               >
                                 <ChevronUp className="w-3.5 h-3.5" />
@@ -555,7 +555,7 @@ export const ProgramEditorModal: React.FC<ProgramEditorModalProps> = ({
                                 type="button"
                                 disabled={exIdx === currentDay.exercises.length - 1}
                                 onClick={() => moveExercise(exIdx, 'down')}
-                                className="text-[#a3a3a3] hover:text-[#fafafa] disabled:opacity-30 p-2 rounded-[8px] hover:bg-[#262626] transition-colors cursor-pointer"
+                                className="text-[#6B7280] hover:text-[#1E1B4B] disabled:opacity-30 p-2 rounded-[8px] hover:bg-[#F4F3FA] transition-colors cursor-pointer"
                                 title={t('routines.moveDown')}
                               >
                                 <ChevronDown className="w-3.5 h-3.5" />
@@ -563,7 +563,7 @@ export const ProgramEditorModal: React.FC<ProgramEditorModalProps> = ({
                               <button
                                 type="button"
                                 onClick={() => removeExercise(exIdx)}
-                                className="text-[#a3a3a3] hover:text-red-400 p-2 rounded-[8px] hover:bg-[#262626] transition-colors cursor-pointer"
+                                className="text-[#6B7280] hover:text-[#EF4444] p-2 rounded-[8px] hover:bg-[#FEF2F2] transition-colors cursor-pointer"
                                 title={t('common.delete')}
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
@@ -571,9 +571,9 @@ export const ProgramEditorModal: React.FC<ProgramEditorModalProps> = ({
                             </div>
                           </div>
 
-                          <div className="grid grid-cols-3 gap-2 pt-2 border-t border-[#262626]">
+                          <div className="grid grid-cols-3 gap-2 pt-2 border-t border-[#ECEAF6]">
                             <div>
-                              <label className="text-[11px] font-medium text-[#a3a3a3] block mb-1">
+                              <label className="text-[11px] font-medium text-[#6B7280] block mb-1">
                                 {t('routines.sets')}
                               </label>
                               <input
@@ -586,11 +586,11 @@ export const ProgramEditorModal: React.FC<ProgramEditorModalProps> = ({
                                     target_sets: Math.max(1, parseInt(e.target.value) || 1),
                                   })
                                 }
-                                className="w-full h-10 bg-[#0a0a0a] border border-[#404040] rounded-[8px] px-2 text-center font-mono text-[13px] text-[#fafafa] focus:outline-none focus:border-[#34d399]"
+                                className="w-full h-10 bg-[#F8F7FC] border border-[#E2E0F0] rounded-[8px] px-2 text-center font-mono text-[13px] text-[#1E1B4B] focus:outline-none focus:border-[#6D28D9]"
                               />
                             </div>
                             <div>
-                              <label className="text-[11px] font-medium text-[#a3a3a3] block mb-1">
+                              <label className="text-[11px] font-medium text-[#6B7280] block mb-1">
                                 {t('routines.minReps')}
                               </label>
                               <input
@@ -603,11 +603,11 @@ export const ProgramEditorModal: React.FC<ProgramEditorModalProps> = ({
                                     target_reps_min: Math.max(1, parseInt(e.target.value) || 1),
                                   })
                                 }
-                                className="w-full h-10 bg-[#0a0a0a] border border-[#404040] rounded-[8px] px-2 text-center font-mono text-[13px] text-[#fafafa] focus:outline-none focus:border-[#34d399]"
+                                className="w-full h-10 bg-[#F8F7FC] border border-[#E2E0F0] rounded-[8px] px-2 text-center font-mono text-[13px] text-[#1E1B4B] focus:outline-none focus:border-[#6D28D9]"
                               />
                             </div>
                             <div>
-                              <label className="text-[11px] font-medium text-[#a3a3a3] block mb-1">
+                              <label className="text-[11px] font-medium text-[#6B7280] block mb-1">
                                 {t('routines.maxReps')}
                               </label>
                               <input
@@ -620,7 +620,7 @@ export const ProgramEditorModal: React.FC<ProgramEditorModalProps> = ({
                                     target_reps_max: Math.max(1, parseInt(e.target.value) || 1),
                                   })
                                 }
-                                className="w-full h-10 bg-[#0a0a0a] border border-[#404040] rounded-[8px] px-2 text-center font-mono text-[13px] text-[#fafafa] focus:outline-none focus:border-[#34d399]"
+                                className="w-full h-10 bg-[#F8F7FC] border border-[#E2E0F0] rounded-[8px] px-2 text-center font-mono text-[13px] text-[#1E1B4B] focus:outline-none focus:border-[#6D28D9]"
                               />
                             </div>
                           </div>

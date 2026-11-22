@@ -30,14 +30,14 @@ export const SystemStateCard: React.FC<SystemStateCardProps> = ({
     <Card className={`p-5 sm:p-6 ${className}`}>
       <div className="space-y-3">
         {eyebrow && (
-          <div className="text-[12px] font-medium text-[#a3a3a3]">{eyebrow}</div>
+          <div className="text-[11px] font-bold uppercase tracking-[0.06em] text-[#7C3AED]">{eyebrow}</div>
         )}
-        <div className="text-[18px] font-semibold text-[#fafafa] tracking-tight">
+        <div className="text-[18px] font-bold text-[#130F26] tracking-tight">
           {title}
         </div>
         {children}
         {description && (
-          <p className="text-[13px] text-[#a3a3a3] leading-relaxed">{description}</p>
+          <p className="text-[13px] text-[#5A5575] leading-relaxed">{description}</p>
         )}
         {(actionLabel || secondaryActionLabel) && (
           <div className="flex flex-wrap items-center gap-2 pt-1">
@@ -72,8 +72,8 @@ export const LoadingStateCard: React.FC<{
   <SystemStateCard eyebrow={eyebrow} title={title} description={subtitle} className={className}>
     <div className="space-y-2.5 pt-1">
       <Skeleton className="h-3 w-36 rounded-full" />
-      <Skeleton className="h-9 w-full rounded-[10px]" />
-      <Skeleton className="h-9 w-full rounded-[10px]" />
+      <Skeleton className="h-9 w-full rounded-[12px]" />
+      <Skeleton className="h-9 w-full rounded-[12px]" />
     </div>
   </SystemStateCard>
 );
@@ -106,9 +106,9 @@ export const ErrorStateCard: React.FC<{
 }) => (
   <Card className={`p-5 sm:p-6 ${className}`}>
     <div className="space-y-3">
-      {eyebrow && <div className="text-[12px] font-medium text-[#a3a3a3]">{eyebrow}</div>}
-      <div className="text-[18px] font-semibold text-[#fafafa] tracking-tight">{title}</div>
-      <p className="text-[13px] text-[#a3a3a3] leading-relaxed">{description}</p>
+      {eyebrow && <div className="text-[11px] font-bold uppercase tracking-[0.06em] text-rose-600">{eyebrow}</div>}
+      <div className="text-[18px] font-bold text-[#130F26] tracking-tight">{title}</div>
+      <p className="text-[13px] text-[#5A5575] leading-relaxed">{description}</p>
       {onRetry && (
         <div className="pt-1">
           <Button variant="outline" size="md" onClick={onRetry}>
@@ -120,39 +120,9 @@ export const ErrorStateCard: React.FC<{
   </Card>
 );
 
-export const OfflineStateCard: React.FC<{
-  eyebrow?: string;
-  title?: string;
-  draftTitle?: string;
-  draftStatus?: string;
-  description?: string;
-  retryLabel?: string;
-  onRetry?: () => void;
+export const ValidationHint: React.FC<{
+  message: string;
   className?: string;
-}> = ({
-  eyebrow,
-  title = 'Нет подключения',
-  draftTitle = 'Черновик на устройстве',
-  draftStatus = 'Несинхронизировано',
-  description = 'Проверьте сеть и повторите попытку.',
-  retryLabel = 'Повторить',
-  onRetry,
-  className = '',
-}) => (
-  <Card className={`p-5 sm:p-6 ${className}`}>
-    <div className="space-y-3">
-      {eyebrow && <div className="text-[12px] font-medium text-[#a3a3a3]">{eyebrow}</div>}
-      <div className="text-[18px] font-semibold text-[#fafafa] tracking-tight">{title}</div>
-      <div className="bg-[#262626] rounded-[10px] p-3.5 space-y-1">
-        <div className="text-[14px] font-medium text-[#fafafa]">{draftTitle}</div>
-        <div className="text-[12px] text-[#a3a3a3]">{draftStatus}</div>
-      </div>
-      <p className="text-[13px] text-[#a3a3a3]">{description}</p>
-      {onRetry && (
-        <Button variant="outline" size="md" onClick={onRetry}>
-          {retryLabel}
-        </Button>
-      )}
-    </div>
-  </Card>
+}> = ({ message, className = '' }) => (
+  <p className={`text-[12px] font-medium text-rose-600 ${className}`}>{message}</p>
 );

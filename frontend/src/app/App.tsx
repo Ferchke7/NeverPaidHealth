@@ -25,7 +25,7 @@ const ProfilePage = lazy(() => import('../pages/profile/ui/ProfilePage.tsx'));
 
 const PageFallback: React.FC = () => (
   <div className="flex items-center justify-center min-h-[50vh]">
-    <div className="w-8 h-8 rounded-full border-2 border-[#34d399] border-t-transparent animate-spin" />
+    <div className="w-8 h-8 rounded-full border-2 border-[#7C3AED] border-t-transparent animate-spin" />
   </div>
 );
 
@@ -100,8 +100,8 @@ export const App: React.FC = () => {
 
   if (isInitializing) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="w-8 h-8 rounded-full border-2 border-[#34d399] border-t-transparent animate-spin" />
+      <div className="min-h-screen bg-[#F4F3FA] flex items-center justify-center">
+        <div className="w-8 h-8 rounded-full border-2 border-[#7C3AED] border-t-transparent animate-spin" />
       </div>
     );
   }

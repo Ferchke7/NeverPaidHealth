@@ -59,68 +59,68 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose })
       size="md"
       title={
         <div className="flex items-center gap-2">
-          <MessageSquarePlus className="w-5 h-5 text-[#34d399]" />
-          <span className="font-extrabold text-white">Обратная связь и баги</span>
+          <MessageSquarePlus className="w-5 h-5 text-[#6D28D9]" />
+          <span className="font-extrabold text-[#1E1B4B]">Обратная связь и баги</span>
         </div>
       }
       subtitle="Помогите нам сделать платформу лучше: сообщите о проблеме или предложите идею"
     >
       {isSuccess ? (
         <div className="py-8 text-center space-y-2 animate-fade-in">
-          <div className="w-12 h-12 rounded-full bg-[#022c22] border border-[#064e3b] text-[#34d399] mx-auto flex items-center justify-center">
+          <div className="w-12 h-12 rounded-full bg-[#ECFDF5] border border-[#A7F3D0] text-[#10B981] mx-auto flex items-center justify-center">
             <CheckCircle2 className="w-6 h-6" />
           </div>
-          <h4 className="text-sm font-bold text-white">Спасибо за ваш отзыв!</h4>
-          <p className="text-xs text-[#a3a3a3]">Мы внимательно изучаем каждый отчёт и улучшаем платформу.</p>
+          <h4 className="text-sm font-bold text-[#1E1B4B]">Спасибо за ваш отзыв!</h4>
+          <p className="text-xs text-[#6B7280]">Мы внимательно изучаем каждый отчёт и улучшаем платформу.</p>
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-[#a3a3a3]">Тип обращения</label>
+            <label className="text-xs font-semibold text-[#6B7280]">Тип обращения</label>
             <div className="grid grid-cols-3 gap-2">
               <button
                 type="button"
                 onClick={() => setCategory('bug')}
-                className={`min-h-[44px] py-2 px-3 rounded-[10px] text-xs font-medium border flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
+                className={`min-h-[44px] py-2 px-3 rounded-[10px] text-xs font-semibold border flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
                   category === 'bug'
-                    ? 'bg-red-950/50 border-red-900 text-red-400'
-                    : 'bg-[#0a0a0a] border-[#404040] text-[#a3a3a3] hover:text-[#fafafa]'
+                    ? 'bg-rose-50 border-rose-200 text-rose-700'
+                    : 'bg-[#F8F7FC] border-[#ECEAF6] text-[#6B7280] hover:text-[#1E1B4B]'
                 }`}
               >
-                <Bug className="w-3.5 h-3.5 text-rose-400" />
+                <Bug className="w-3.5 h-3.5 text-rose-500" />
                 <span>Баг</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => setCategory('feature')}
-                className={`min-h-[44px] py-2 px-3 rounded-[10px] text-xs font-medium border flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
+                className={`min-h-[44px] py-2 px-3 rounded-[10px] text-xs font-semibold border flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
                   category === 'feature'
-                    ? 'bg-amber-950/40 border-amber-900 text-amber-400'
-                    : 'bg-[#0a0a0a] border-[#404040] text-[#a3a3a3] hover:text-[#fafafa]'
+                    ? 'bg-amber-50 border-amber-200 text-amber-700'
+                    : 'bg-[#F8F7FC] border-[#ECEAF6] text-[#6B7280] hover:text-[#1E1B4B]'
                 }`}
               >
-                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
                 <span>Идея</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => setCategory('improvement')}
-                className={`min-h-[44px] py-2 px-3 rounded-[10px] text-xs font-medium border flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
+                className={`min-h-[44px] py-2 px-3 rounded-[10px] text-xs font-semibold border flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
                   category === 'improvement'
-                    ? 'bg-[#022c22] border-[#064e3b] text-[#34d399]'
-                    : 'bg-[#0a0a0a] border-[#404040] text-[#a3a3a3] hover:text-[#fafafa]'
+                    ? 'bg-[#F0EFFE] border-[#DDD6FE] text-[#6D28D9]'
+                    : 'bg-[#F8F7FC] border-[#ECEAF6] text-[#6B7280] hover:text-[#1E1B4B]'
                 }`}
               >
-                <Zap className="w-3.5 h-3.5 text-[#34d399]" />
+                <Zap className="w-3.5 h-3.5 text-[#6D28D9]" />
                 <span>UI / UX</span>
               </button>
             </div>
           </div>
 
           <div>
-            <label className="text-xs font-medium text-[#a3a3a3] block mb-1.5">Краткая суть</label>
+            <label className="text-xs font-semibold text-[#6B7280] block mb-1.5">Краткая суть</label>
             <Input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
@@ -130,14 +130,14 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose })
           </div>
 
           <div>
-            <label className="text-xs font-medium text-[#a3a3a3] block mb-1.5">Подробности</label>
+            <label className="text-xs font-semibold text-[#6B7280] block mb-1.5">Подробности</label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Опишите, что именно произошло, как воспроизвести или как должна работать новая возможность..."
               rows={4}
               required
-              className="w-full bg-[#0a0a0a] border border-[#404040] rounded-[10px] px-3 py-2 text-sm text-[#fafafa] placeholder-[#737373] focus:outline-none focus:border-[#34d399] transition-colors resize-none"
+              className="w-full bg-[#F8F7FC] border border-[#ECEAF6] rounded-[12px] px-3 py-2 text-sm text-[#1E1B4B] placeholder-[#9CA3AF] focus:outline-none focus:border-[#6D28D9] transition-colors resize-none"
             />
           </div>
 

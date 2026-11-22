@@ -96,12 +96,12 @@ export const MuscleBalanceRadarChart: React.FC<MuscleBalanceRadarChartProps> = (
       animationDuration: 500,
       tooltip: {
         trigger: 'item',
-        backgroundColor: '#171717',
-        borderColor: '#404040',
+        backgroundColor: '#FFFFFF',
+        borderColor: '#ECEAF6',
         borderWidth: 1,
-        borderRadius: 10,
+        borderRadius: 12,
         padding: [10, 12],
-        textStyle: { color: '#fafafa', fontSize: 12 },
+        textStyle: { color: '#1E1B4B', fontSize: 12 },
       },
       radar: {
         indicator: indicatorList,
@@ -110,13 +110,13 @@ export const MuscleBalanceRadarChart: React.FC<MuscleBalanceRadarChartProps> = (
         center: ['50%', '50%'],
         radius: '68%',
         axisName: {
-          color: '#d4d4d4',
+          color: '#1E1B4B',
           fontSize: 11,
           fontWeight: 'bold',
         },
-        splitLine: { lineStyle: { color: '#262626' } },
+        splitLine: { lineStyle: { color: '#ECEAF6' } },
         splitArea: { show: false },
-        axisLine: { lineStyle: { color: '#262626' } },
+        axisLine: { lineStyle: { color: '#ECEAF6' } },
       },
       series: [
         {
@@ -127,16 +127,16 @@ export const MuscleBalanceRadarChart: React.FC<MuscleBalanceRadarChartProps> = (
               value: benchmarkValues,
               name: `${targetSets}`,
               symbol: 'none',
-              lineStyle: { width: 1.5, color: '#737373', type: 'dashed' },
+              lineStyle: { width: 1.5, color: '#94A3B8', type: 'dashed' },
             },
             {
               value: actualValues,
               name: lbl.title,
               symbol: 'circle',
               symbolSize: 5,
-              itemStyle: { color: '#34d399' },
-              lineStyle: { width: 2, color: '#34d399' },
-              areaStyle: { color: 'rgba(52, 211, 153, 0.2)' },
+              itemStyle: { color: '#6D28D9' },
+              lineStyle: { width: 2.5, color: '#6D28D9' },
+              areaStyle: { color: 'rgba(109, 40, 217, 0.16)' },
             },
           ],
         },
@@ -145,22 +145,22 @@ export const MuscleBalanceRadarChart: React.FC<MuscleBalanceRadarChartProps> = (
   }, [entries, maxSetsFound, targetSets, lbl]);
 
   return (
-    <section className={`bg-[#171717] border border-[#404040] rounded-[14px] p-5 space-y-4 ${className}`}>
+    <section className={`bg-white border border-[#ECEAF6] rounded-[22px] p-5 space-y-4 royal-card-shadow ${className}`}>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="space-y-1">
-          <h3 className="text-lg font-bold text-[#fafafa]">{lbl.title}</h3>
-          <p className="text-xs text-[#a3a3a3]">{lbl.subtitle}</p>
-          <p className="text-xs font-medium text-[#fafafa] pt-1">{lbl.targetNote}</p>
+          <h3 className="text-lg font-bold text-[#1E1B4B]">{lbl.title}</h3>
+          <p className="text-xs text-[#6B7280]">{lbl.subtitle}</p>
+          <p className="text-xs font-semibold text-[#1E1B4B] pt-1">{lbl.targetNote}</p>
         </div>
 
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 bg-[#F4F3FA] p-1 rounded-[12px] border border-[#ECEAF6]">
           <button
             type="button"
             onClick={() => setViewMode('bars')}
-            className={`min-h-[44px] px-3 rounded-[8px] text-xs font-semibold transition-colors cursor-pointer ${
+            className={`min-h-[38px] px-3 rounded-[9px] text-xs font-semibold transition-colors cursor-pointer ${
               viewMode === 'bars'
-                ? 'bg-[#022c22] text-[#34d399] border border-[#064e3b]'
-                : 'text-[#a3a3a3] hover:text-[#fafafa]'
+                ? 'bg-white text-[#6D28D9] shadow-xs'
+                : 'text-[#6B7280] hover:text-[#1E1B4B]'
             }`}
           >
             {t('progress.barsToggle')}
@@ -168,10 +168,10 @@ export const MuscleBalanceRadarChart: React.FC<MuscleBalanceRadarChartProps> = (
           <button
             type="button"
             onClick={() => setViewMode('radar')}
-            className={`min-h-[44px] px-3 rounded-[8px] text-xs font-semibold transition-colors cursor-pointer ${
+            className={`min-h-[38px] px-3 rounded-[9px] text-xs font-semibold transition-colors cursor-pointer ${
               viewMode === 'radar'
-                ? 'bg-[#022c22] text-[#34d399] border border-[#064e3b]'
-                : 'text-[#a3a3a3] hover:text-[#fafafa]'
+                ? 'bg-white text-[#6D28D9] shadow-xs'
+                : 'text-[#6B7280] hover:text-[#1E1B4B]'
             }`}
           >
             {t('progress.radarToggle')}
@@ -185,21 +185,23 @@ export const MuscleBalanceRadarChart: React.FC<MuscleBalanceRadarChartProps> = (
             {entries.map((item) => (
               <div key={item.muscle} className="space-y-1.5">
                 <div className="flex items-center justify-between gap-2 text-sm">
-                  <span className="font-semibold text-[#fafafa]">{item.muscle}</span>
+                  <span className="font-semibold text-[#1E1B4B]">{item.muscle}</span>
                   <span
-                    className={`tabular-nums font-medium ${
-                      item.isOptimal ? 'text-[#34d399]' : 'text-[#fafafa]'
+                    className={`tabular-nums font-bold ${
+                      item.isOptimal ? 'text-[#10B981]' : 'text-[#6D28D9]'
                     }`}
                   >
                     {item.sets} / 12–16 {lbl.setsSuffix}
                   </span>
                 </div>
-                <div className={`text-xs ${item.isOptimal ? 'text-[#34d399]' : 'text-[#a3a3a3]'}`}>
+                <div className={`text-xs ${item.isOptimal ? 'text-[#059669]' : 'text-[#6B7280]'}`}>
                   {item.statusLabel}
                 </div>
-                <div className="w-full h-1.5 rounded-full bg-[#262626] overflow-hidden">
+                <div className="w-full h-2 rounded-full bg-[#ECEAF6] overflow-hidden">
                   <div
-                    className="h-full bg-[#34d399] rounded-full transition-all duration-300"
+                    className={`h-full rounded-full transition-all duration-300 ${
+                      item.isOptimal ? 'bg-[#10B981]' : 'bg-[#6D28D9]'
+                    }`}
                     style={{ width: `${item.pct}%` }}
                   />
                 </div>
@@ -207,7 +209,7 @@ export const MuscleBalanceRadarChart: React.FC<MuscleBalanceRadarChartProps> = (
             ))}
           </div>
 
-          <p className="text-xs text-[#737373] pt-1">{lbl.scaleNote}</p>
+          <p className="text-xs text-[#94A3B8] pt-1">{lbl.scaleNote}</p>
         </>
       ) : (
         <EChartsReact

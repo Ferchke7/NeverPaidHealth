@@ -663,13 +663,13 @@ export const ActiveWorkoutSheet: React.FC = () => {
       {/* 2. Workspace Active Workout View (renders inline inside DashboardLayout) */}
       {workout && isOpen && (
         <div className="space-y-6 pb-8">
-          {/* Page Header */}
+          {/* Page Header + Royal Violet Session Telemetry Card */}
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0">
-              <h1 className="text-[28px] sm:text-[30px] font-bold tracking-[-0.02em] text-[#fafafa] leading-tight">
+              <h1 className="text-[26px] sm:text-[30px] font-bold tracking-[-0.02em] text-[#1E1B4B] leading-tight">
                 {t('activeWorkout.sessionHeading')}
               </h1>
-              <p className="text-sm text-[#a3a3a3] mt-1 truncate">
+              <p className="text-sm font-medium text-[#6B7280] mt-1 truncate">
                 {workout.name}
               </p>
             </div>
@@ -685,89 +685,88 @@ export const ActiveWorkoutSheet: React.FC = () => {
             </Button>
           </div>
 
-          {/* Session Telemetry & Actions Card */}
-          <section className="bg-[#171717] border border-[#404040] rounded-[14px] p-5 space-y-5">
+          {/* Royal Violet Session Telemetry & Actions Card */}
+          <section className="royal-hero-gradient rounded-[22px] p-5 sm:p-6 space-y-5 text-white royal-card-shadow">
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 sm:gap-6">
               <div>
-                <div className="text-[11px] font-semibold uppercase tracking-wider text-[#a3a3a3]">
+                <div className="text-[11px] font-semibold uppercase tracking-wider text-white/75">
                   {t('activeWorkout.duration').toUpperCase()}
                 </div>
-                <div className="text-2xl font-bold tabular-nums text-[#fafafa] mt-1">
+                <div className="text-2xl font-extrabold tabular-nums text-white mt-1">
                   {formatDuration(elapsedSeconds)}
                 </div>
               </div>
               <div>
-                <div className="text-[11px] font-semibold uppercase tracking-wider text-[#a3a3a3]">
+                <div className="text-[11px] font-semibold uppercase tracking-wider text-white/75">
                   {t('activeWorkout.volumeLabel')}
                 </div>
-                <div className="text-2xl font-bold tabular-nums text-[#fafafa] mt-1">
+                <div className="text-2xl font-extrabold tabular-nums text-white mt-1">
                   {formatWeight(liveVolume, unitPref)}
                 </div>
               </div>
               <div className="col-span-2 sm:col-span-1">
-                <div className="text-[11px] font-semibold uppercase tracking-wider text-[#a3a3a3]">
+                <div className="text-[11px] font-semibold uppercase tracking-wider text-white/75">
                   {t('activeWorkout.exercisesLabel')}
                 </div>
-                <div className="text-2xl font-bold tabular-nums text-[#fafafa] mt-1">
+                <div className="text-2xl font-extrabold tabular-nums text-white mt-1">
                   {workout.exercises.length}
                 </div>
               </div>
             </div>
 
             <div className="flex flex-wrap items-center gap-2.5">
-              <Button
-                variant="primary"
-                size="md"
-                isLoading={isSubmitting}
+              <button
+                type="button"
+                disabled={isSubmitting}
                 onClick={handleFinishWorkout}
+                className="min-h-[42px] px-4 rounded-[12px] bg-[#10B981] hover:bg-[#059669] disabled:opacity-60 text-white font-bold text-sm inline-flex items-center justify-center transition-colors cursor-pointer shadow-sm"
               >
                 {t('activeWorkout.finishBtn')}
-              </Button>
-              <Button
-                variant="outline"
-                size="md"
+              </button>
+              <button
+                type="button"
                 onClick={() => setIsDiscardConfirmOpen(true)}
+                className="min-h-[42px] px-4 rounded-[12px] bg-white/15 hover:bg-white/25 text-white border border-white/25 font-semibold text-sm transition-colors cursor-pointer"
               >
                 {t('common.discard')}
-              </Button>
-              <Button
-                variant="outline"
-                size="md"
+              </button>
+              <button
+                type="button"
                 onClick={handleToggleWorkoutNote}
-                className={
+                className={`min-h-[42px] px-4 rounded-[12px] border font-semibold text-sm inline-flex items-center transition-colors cursor-pointer ${
                   isWorkoutNoteUnread || isWorkoutNoteOpen
-                    ? 'border-[#34d399] text-[#34d399]'
-                    : undefined
-                }
+                    ? 'bg-white text-[#3B0CA3] border-white'
+                    : 'bg-white/10 hover:bg-white/20 text-white border-white/25'
+                }`}
               >
                 <span>{t('activeWorkout.sessionNoteBtn')}</span>
                 {isWorkoutNoteUnread && (
-                  <span className="ml-1.5 inline-flex items-center justify-center px-1.5 py-0.5 rounded bg-[#022c22] text-[#34d399] text-[10px] font-bold">
+                  <span className="ml-1.5 inline-flex items-center justify-center px-1.5 py-0.5 rounded bg-[#10B981] text-white text-[10px] font-bold">
                     1
                   </span>
                 )}
-              </Button>
+              </button>
             </div>
 
             {isWorkoutNoteOpen && (
-              <div className="p-4 rounded-[12px] bg-[#0a0a0a] border border-[#262626] space-y-3">
+              <div className="p-4 rounded-[16px] bg-white text-[#1E1B4B] border border-[#ECEAF6] space-y-3">
                 {prevWorkoutNote?.note && (
-                  <div className="p-3 rounded-[10px] bg-[#171717] border border-[#262626] space-y-1">
-                    <div className="flex items-center justify-between gap-2 text-[11px] font-semibold text-[#34d399]">
+                  <div className="p-3 rounded-[12px] bg-[#F5F3FF] border border-[#DDD6FE] space-y-1">
+                    <div className="flex items-center justify-between gap-2 text-[11px] font-semibold text-[#6D28D9]">
                       <span>
                         {noteLabels.fromPrevWorkout}
                         {prevWorkoutNote.started_at ? ` · ${formatDate(prevWorkoutNote.started_at)}` : ''}
                       </span>
                       <span>{noteLabels.readBadge}</span>
                     </div>
-                    <p className="text-xs text-[#fafafa] leading-relaxed whitespace-pre-wrap">
+                    <p className="text-xs text-[#1E1B4B] leading-relaxed whitespace-pre-wrap">
                       {prevWorkoutNote.note}
                     </p>
                   </div>
                 )}
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-[#a3a3a3] block">
+                  <label className="text-xs font-semibold text-[#6B7280] block">
                     {noteLabels.leaveForNext}
                   </label>
                   <textarea
@@ -775,30 +774,30 @@ export const ActiveWorkoutSheet: React.FC = () => {
                     value={workout.workoutNotes || ''}
                     onChange={(e) => updateWorkoutNotes(e.target.value)}
                     placeholder={noteLabels.workoutNotePlaceholder}
-                    className="w-full rounded-[10px] bg-[#171717] border border-[#404040] focus:border-[#34d399] focus:outline-none px-3 py-2.5 text-sm text-[#fafafa] placeholder:text-[#737373] resize-none"
+                    className="w-full rounded-[12px] bg-[#F8F7FC] border border-[#E2E0F0] focus:border-[#6D28D9] focus:outline-none px-3 py-2.5 text-sm text-[#1E1B4B] placeholder:text-[#94A3B8] resize-none"
                   />
                 </div>
               </div>
             )}
           </section>
 
-          {/* Active Rest Timer Card (Matches 15 · 01 / ОТДЫХ) */}
+          {/* Active Rest Timer Card */}
           {isRestTimerActive && (
-            <section className="bg-[#171717] border border-[#404040] rounded-[14px] p-5 space-y-4">
+            <section className="bg-white border border-[#DDD6FE] rounded-[20px] p-5 space-y-4 royal-card-shadow">
               <div className="space-y-1">
-                <div className="text-[11px] font-semibold uppercase tracking-wider text-[#34d399]">
+                <div className="text-[11px] font-bold uppercase tracking-wider text-[#6D28D9]">
                   {t('activeWorkout.restEyebrow')}
                 </div>
-                <h2 className="text-lg font-bold text-[#fafafa]">
+                <h2 className="text-lg font-bold text-[#1E1B4B]">
                   {t('activeWorkout.restTitle')}
                 </h2>
               </div>
 
               <div className="space-y-2">
-                <div className="text-[36px] sm:text-[40px] font-bold leading-none tabular-nums text-[#fafafa]">
+                <div className="text-[36px] sm:text-[40px] font-extrabold leading-none tabular-nums text-[#6D28D9]">
                   {formatDuration(restRemaining)}
                 </div>
-                <p className="text-xs text-[#a3a3a3]">
+                <p className="text-xs text-[#6B7280]">
                   {t('activeWorkout.restRemainingSec', { sec: restRemaining })}
                 </p>
                 <ProgressBar value={restProgressValue} />
@@ -820,12 +819,12 @@ export const ActiveWorkoutSheet: React.FC = () => {
 
           {/* Exercise Grid (2-col on Desktop, 1-col on Mobile) */}
           {workout.exercises.length === 0 ? (
-            <div className="bg-[#171717] border border-[#404040] rounded-[14px] p-8 text-center space-y-4">
-              <div className="w-12 h-12 rounded-[12px] bg-[#0a0a0a] border border-[#262626] text-[#a3a3a3] flex items-center justify-center mx-auto">
+            <div className="bg-white border border-[#ECEAF6] rounded-[20px] p-8 text-center space-y-4 royal-card-shadow">
+              <div className="w-12 h-12 rounded-[14px] bg-[#F0EFFE] border border-[#DDD6FE] text-[#6D28D9] flex items-center justify-center mx-auto">
                 <Dumbbell className="w-6 h-6" />
               </div>
               <div className="space-y-1">
-                <h3 className="text-base font-semibold text-[#fafafa]">
+                <h3 className="text-base font-bold text-[#1E1B4B]">
                   {t('activeWorkout.emptyWorkoutWarning')}
                 </h3>
               </div>
@@ -906,18 +905,18 @@ export const ActiveWorkoutSheet: React.FC = () => {
                 return (
                   <article
                     key={exercise.instanceId || exercise.exerciseId || exIndex}
-                    className="bg-[#171717] border border-[#404040] rounded-[14px] p-5 space-y-4"
+                    className="bg-white border border-[#ECEAF6] rounded-[20px] p-5 space-y-4 royal-card-shadow"
                   >
                     {/* Header: Index, Name, PR, Actions */}
                     <div className="space-y-3">
                       <div className="flex items-start justify-between gap-2">
                         <div className="space-y-1 min-w-0">
-                          <div className="text-[11px] font-semibold uppercase tracking-wider text-[#a3a3a3]">
+                          <div className="text-[11px] font-bold uppercase tracking-wider text-[#6D28D9]">
                             {indexLabel}
                           </div>
                           <h3
                             onClick={() => setInspectingExerciseName(exercise.exerciseName)}
-                            className="text-xl font-bold text-[#fafafa] tracking-tight hover:text-[#34d399] cursor-pointer transition-colors leading-snug"
+                            className="text-xl font-bold text-[#1E1B4B] tracking-tight hover:text-[#6D28D9] cursor-pointer transition-colors leading-snug"
                           >
                             {exercise.exerciseName}
                           </h3>
@@ -935,7 +934,7 @@ export const ActiveWorkoutSheet: React.FC = () => {
                                   history: exerciseHistory,
                                 })
                               }
-                              className="text-[13px] font-medium text-[#34d399] hover:underline cursor-pointer text-left block"
+                              className="text-[13px] font-semibold text-[#10B981] hover:underline cursor-pointer text-left block"
                             >
                               {t('activeWorkout.prPrefix', {
                                 weight: formatWeight(prRecord.weightKg, unitPref),
@@ -948,7 +947,7 @@ export const ActiveWorkoutSheet: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => setInspectingExerciseName(exercise.exerciseName)}
-                          className="w-10 h-10 rounded-[10px] border border-[#262626] bg-[#0a0a0a] text-[#a3a3a3] hover:text-[#fafafa] flex items-center justify-center shrink-0 cursor-pointer transition-colors"
+                          className="w-10 h-10 rounded-[12px] border border-[#ECEAF6] bg-[#F8F7FC] text-[#6B7280] hover:text-[#6D28D9] hover:border-[#DDD6FE] flex items-center justify-center shrink-0 cursor-pointer transition-colors"
                           title={t('exercises.viewTechnique')}
                           aria-label={t('exercises.viewTechnique')}
                         >
@@ -966,14 +965,14 @@ export const ActiveWorkoutSheet: React.FC = () => {
                           }}
                           className={
                             hasUnreadNote || isNoteExpanded || Boolean(exercise.notes?.trim() || prevNote?.note)
-                              ? 'border-[#34d399] text-[#34d399]'
+                              ? 'border-[#6D28D9] text-[#6D28D9] bg-[#F5F3FF]'
                               : undefined
                           }
                         >
                           <MessageSquare className="w-3.5 h-3.5 mr-1.5" />
                           <span>{t('activeWorkout.commentBtn')}</span>
                           {hasUnreadNote && (
-                            <span className="ml-1.5 inline-flex items-center justify-center px-1.5 py-0.5 rounded bg-[#022c22] text-[#34d399] text-[10px] font-bold">
+                            <span className="ml-1.5 inline-flex items-center justify-center px-1.5 py-0.5 rounded bg-[#6D28D9] text-white text-[10px] font-bold">
                               1
                             </span>
                           )}
@@ -1003,14 +1002,14 @@ export const ActiveWorkoutSheet: React.FC = () => {
 
                     {/* Inline Unread Banner / Saved Comment Preview / Expandable Note Box */}
                     {(hasUnreadNote || isNoteExpanded || Boolean(exercise.notes?.trim())) && (
-                      <div className="p-3.5 rounded-[12px] bg-[#0a0a0a] border border-[#262626] space-y-3">
+                      <div className="p-3.5 rounded-[14px] bg-[#F8F7FC] border border-[#ECEAF6] space-y-3">
                         {hasUnreadNote && !isNoteExpanded && prevNote && (
                           <>
                             <div className="space-y-1">
-                              <div className="text-[13px] font-semibold text-[#34d399]">
+                              <div className="text-[13px] font-semibold text-[#6D28D9]">
                                 {t('activeWorkout.noteUnreadCount')}
                               </div>
-                              <p className="text-xs text-[#fafafa] leading-relaxed whitespace-pre-wrap">
+                              <p className="text-xs text-[#1E1B4B] leading-relaxed whitespace-pre-wrap">
                                 {prevNote.note}
                               </p>
                             </div>
@@ -1046,14 +1045,14 @@ export const ActiveWorkoutSheet: React.FC = () => {
                               handleToggleExerciseNote(exercise.instanceId, noteLookupKeys, prevNote?.note);
                               setTimeout(() => document.getElementById(noteTextareaId)?.focus(), 50);
                             }}
-                            className="w-full text-left flex items-center justify-between gap-2 text-xs text-[#fafafa] cursor-pointer"
+                            className="w-full text-left flex items-center justify-between gap-2 text-xs text-[#1E1B4B] cursor-pointer"
                           >
                             <span className="truncate">
-                              <strong className="text-[#34d399] mr-1.5">Комментарий:</strong>
+                              <strong className="text-[#6D28D9] mr-1.5">{t('activeWorkout.commentBtn')}:</strong>
                               {exercise.notes}
                             </span>
-                            <span className="text-[#34d399] text-[11px] font-medium shrink-0">
-                              Изменить
+                            <span className="text-[#6D28D9] text-[11px] font-semibold shrink-0">
+                              {t('common.edit')}
                             </span>
                           </button>
                         )}
@@ -1061,19 +1060,19 @@ export const ActiveWorkoutSheet: React.FC = () => {
                         {isNoteExpanded && (
                           <div className="space-y-2.5">
                             {prevNote?.note && (
-                              <div className="space-y-1 pb-2.5 border-b border-[#262626]">
-                                <div className="flex items-center justify-between gap-2 text-xs font-semibold text-[#34d399]">
+                              <div className="space-y-1 pb-2.5 border-b border-[#ECEAF6]">
+                                <div className="flex items-center justify-between gap-2 text-xs font-semibold text-[#6D28D9]">
                                   <span>{noteLabels.fromPrevWorkout}</span>
-                                  <span className="text-[11px] font-normal text-[#a3a3a3]">
+                                  <span className="text-[11px] font-normal text-[#6B7280]">
                                     {noteLabels.readBadge}
                                   </span>
                                 </div>
-                                <p className="text-xs text-[#fafafa] leading-relaxed whitespace-pre-wrap">
+                                <p className="text-xs text-[#1E1B4B] leading-relaxed whitespace-pre-wrap">
                                   {prevNote.note}
                                 </p>
                               </div>
                             )}
-                            <label className="text-xs font-medium text-[#a3a3a3] block">
+                            <label className="text-xs font-semibold text-[#6B7280] block">
                               {noteLabels.leaveForNext}
                             </label>
                             <textarea
@@ -1082,7 +1081,7 @@ export const ActiveWorkoutSheet: React.FC = () => {
                               value={exercise.notes || ''}
                               onChange={(e) => updateExerciseNotes(exercise.instanceId, e.target.value)}
                               placeholder={noteLabels.placeholder}
-                              className="w-full rounded-[10px] bg-[#171717] border border-[#404040] focus:border-[#34d399] focus:outline-none px-3 py-2 text-xs text-[#fafafa] placeholder:text-[#737373] resize-none"
+                              className="w-full rounded-[12px] bg-white border border-[#E2E0F0] focus:border-[#6D28D9] focus:outline-none px-3 py-2 text-xs text-[#1E1B4B] placeholder:text-[#94A3B8] resize-none"
                             />
                             <div className="flex justify-end">
                               <Button
@@ -1103,7 +1102,7 @@ export const ActiveWorkoutSheet: React.FC = () => {
                     {/* Set Type Segmented Selector */}
                     {activeSet && (
                       <div className="space-y-2">
-                        <div className="text-xs text-[#a3a3a3]">
+                        <div className="text-xs font-medium text-[#6B7280]">
                           {t('activeWorkout.setTypeOfSet', { number: activeSet.setNumber })}
                         </div>
                         <div className="flex flex-wrap items-center gap-1.5">
@@ -1118,8 +1117,8 @@ export const ActiveWorkoutSheet: React.FC = () => {
                                 }
                                 className={`h-9 px-3 rounded-[10px] text-xs font-semibold transition-colors cursor-pointer ${
                                   isActive
-                                    ? 'bg-[#022c22] text-[#34d399] border border-[#064e3b]'
-                                    : 'bg-transparent text-[#a3a3a3] hover:text-[#fafafa] border border-transparent'
+                                    ? 'bg-[#6D28D9] text-white border border-[#6D28D9]'
+                                    : 'bg-[#F8F7FC] text-[#6B7280] hover:text-[#1E1B4B] border border-[#ECEAF6]'
                                 }`}
                               >
                                 {opt.label}
@@ -1132,11 +1131,11 @@ export const ActiveWorkoutSheet: React.FC = () => {
 
                     {/* Set Table Header + Rows */}
                     <div>
-                      <div className="grid grid-cols-[28px_1fr_1fr_44px] gap-2.5 text-[11px] font-medium text-[#a3a3a3] pb-2 border-b border-[#262626] items-center">
+                      <div className="grid grid-cols-[28px_1fr_1fr_44px] gap-2.5 text-[11px] font-semibold text-[#6B7280] pb-2 border-b border-[#ECEAF6] items-center">
                         <span className="text-center">№</span>
                         <span>
                           {t('activeWorkout.weightKgCol', {
-                            unit: unitPref === 'lb' ? 'lb' : 'кг',
+                            unit: unitPref === 'lb' ? 'lb' : t('common.kg'),
                           })}
                         </span>
                         <span>
@@ -1215,7 +1214,7 @@ export const ActiveWorkoutSheet: React.FC = () => {
                     {/* Quick Reps Presets */}
                     {quickReps.length > 0 && activeSet && (
                       <div className="space-y-1.5">
-                        <div className="text-xs text-[#a3a3a3]">{t('activeWorkout.quickReps')}</div>
+                        <div className="text-xs font-medium text-[#6B7280]">{t('activeWorkout.quickReps')}</div>
                         <div className="flex flex-wrap items-center gap-1.5">
                           {quickReps.map((qRep) => {
                             const isSelectedRep = activeSet.reps === qRep;
@@ -1228,8 +1227,8 @@ export const ActiveWorkoutSheet: React.FC = () => {
                                 }
                                 className={`min-w-[36px] h-9 px-2.5 rounded-[8px] text-xs font-semibold tabular-nums transition-colors cursor-pointer ${
                                   isSelectedRep
-                                    ? 'bg-[#022c22] text-[#34d399] border border-[#064e3b]'
-                                    : 'bg-transparent text-[#a3a3a3] hover:text-[#fafafa] border border-[#262626]'
+                                    ? 'bg-[#6D28D9] text-white border border-[#6D28D9]'
+                                    : 'bg-[#F8F7FC] text-[#6B7280] hover:text-[#1E1B4B] border border-[#ECEAF6]'
                                 }`}
                               >
                                 {qRep}
@@ -1273,7 +1272,7 @@ export const ActiveWorkoutSheet: React.FC = () => {
                                 [exercise.instanceId]: !prev[exercise.instanceId],
                               }))
                             }
-                            className={showPlateMath ? 'border-[#34d399] text-[#34d399]' : undefined}
+                            className={showPlateMath ? 'border-[#6D28D9] text-[#6D28D9] bg-[#F5F3FF]' : undefined}
                           >
                             {t('activeWorkout.platesBtn')}
                           </Button>
@@ -1294,7 +1293,7 @@ export const ActiveWorkoutSheet: React.FC = () => {
                           onClick={() =>
                             handleToggleExerciseNote(exercise.instanceId, noteLookupKeys, prevNote?.note)
                           }
-                          className={isNoteExpanded || exercise.notes?.trim() ? 'border-[#34d399] text-[#34d399]' : undefined}
+                          className={isNoteExpanded || exercise.notes?.trim() ? 'border-[#6D28D9] text-[#6D28D9] bg-[#F5F3FF]' : undefined}
                         >
                           {t('activeWorkout.noteBtn')}
                         </Button>
@@ -1306,14 +1305,14 @@ export const ActiveWorkoutSheet: React.FC = () => {
             </div>
           )}
 
-          {/* Collapsed Remaining Exercises Banner Card (matches Figma 04 bottom block) */}
+          {/* Collapsed Remaining Exercises Banner Card */}
           {hiddenExerciseCount > 0 && (
-            <div className="bg-[#171717] border border-[#404040] rounded-[14px] p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="bg-white border border-[#ECEAF6] rounded-[20px] p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 royal-card-shadow">
               <div>
-                <h3 className="text-base font-bold text-[#fafafa]">
+                <h3 className="text-base font-bold text-[#1E1B4B]">
                   {t('activeWorkout.moreExercisesTitle', { count: hiddenExerciseCount })}
                 </h3>
-                <p className="text-xs text-[#a3a3a3] mt-1">
+                <p className="text-xs text-[#6B7280] mt-1">
                   {t('activeWorkout.moreExercisesSubtitle')}
                 </p>
               </div>
@@ -1337,7 +1336,7 @@ export const ActiveWorkoutSheet: React.FC = () => {
                 onClick={() => setIsPickerOpen(true)}
                 className="flex items-center gap-2"
               >
-                <Plus className="w-4 h-4 text-[#34d399]" />
+                <Plus className="w-4 h-4 text-[#6D28D9]" />
                 <span>{t('activeWorkout.addExercise')}</span>
               </Button>
               {showAllExercises && workout.exercises.length > 2 && (
@@ -1356,7 +1355,7 @@ export const ActiveWorkoutSheet: React.FC = () => {
         </div>
       )}
 
-      {/* Unfinished Sets Confirmation Modal (Matches Figma 15 State 03) */}
+      {/* Unfinished Sets Confirmation Modal */}
       <Modal
         isOpen={isUnfinishedModalOpen}
         onClose={() => setIsUnfinishedModalOpen(false)}
@@ -1385,10 +1384,10 @@ export const ActiveWorkoutSheet: React.FC = () => {
         }
       >
         <div className="space-y-2">
-          <div className="text-[11px] font-semibold uppercase tracking-wider text-[#a3a3a3]">
+          <div className="text-[11px] font-bold uppercase tracking-wider text-[#6D28D9]">
             {t('activeWorkout.unfinishedEyebrow')}
           </div>
-          <p className="text-xs text-[#a3a3a3] leading-relaxed">
+          <p className="text-xs text-[#6B7280] leading-relaxed">
             {t('activeWorkout.unfinishedDesc')}
           </p>
         </div>
@@ -1407,16 +1406,16 @@ export const ActiveWorkoutSheet: React.FC = () => {
         }
       >
         <div className="space-y-2">
-          <div className="text-[11px] font-semibold uppercase tracking-wider text-[#a3a3a3]">
+          <div className="text-[11px] font-bold uppercase tracking-wider text-[#6D28D9]">
             {t('activeWorkout.emptyCheckEyebrow')}
           </div>
-          <p className="text-xs text-[#a3a3a3] leading-relaxed">
+          <p className="text-xs text-[#6B7280] leading-relaxed">
             {t('activeWorkout.atLeastOneCompletedSet') || t('activeWorkout.emptyWorkoutWarning')}
           </p>
         </div>
       </Modal>
 
-      {/* Discard Confirmation Modal (Matches Figma 15 State 04 with high-contrast white button) */}
+      {/* Discard Confirmation Modal */}
       <Modal
         isOpen={isDiscardConfirmOpen}
         onClose={() => setIsDiscardConfirmOpen(false)}
@@ -1432,9 +1431,8 @@ export const ActiveWorkoutSheet: React.FC = () => {
               {t('common.cancel')}
             </Button>
             <Button
-              variant="outline"
+              variant="danger"
               size="md"
-              className="!bg-[#fafafa] !text-[#0a0a0a] !border-[#fafafa] hover:!bg-[#e5e5e5]"
               onClick={handleDiscard}
             >
               {t('activeWorkout.resetConfirmBtn')}
@@ -1443,10 +1441,10 @@ export const ActiveWorkoutSheet: React.FC = () => {
         }
       >
         <div className="space-y-2">
-          <div className="text-[11px] font-semibold uppercase tracking-wider text-[#a3a3a3]">
+          <div className="text-[11px] font-bold uppercase tracking-wider text-[#EF4444]">
             {t('activeWorkout.resetEyebrow')}
           </div>
-          <p className="text-xs text-[#a3a3a3] leading-relaxed">
+          <p className="text-xs text-[#6B7280] leading-relaxed">
             {t('activeWorkout.resetDesc')}
           </p>
         </div>
