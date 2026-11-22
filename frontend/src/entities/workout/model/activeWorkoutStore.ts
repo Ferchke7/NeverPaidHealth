@@ -15,7 +15,15 @@ export interface ReplaceExercisePayload {
 interface ActiveWorkoutState {
   workout: ActiveWorkout | null;
   isOpen: boolean;
-  startWorkout: (id: string, name: string, routineId?: string, initialExercises?: ActiveExercise[]) => void;
+  startWorkout: (
+    id: string,
+    name: string,
+    routineId?: string,
+    initialExercises?: ActiveExercise[],
+    programId?: string,
+    programDayNumber?: number
+  ) => void;
+  setWorkoutProgramId: (programId: string) => void;
   openSheet: () => void;
   closeSheet: () => void;
   addExercise: (exerciseId: string, exerciseName: string, measurementType: string) => void;
@@ -115,7 +123,7 @@ export const useActiveWorkoutStore = create<ActiveWorkoutState>((set, get) => ({
   workout: loadInitialState(),
   isOpen: false,
 
-  startWorkout: (id, name, routineId, initialExercises = []) => {
+  startWorkout: (id, name, routineId, initialExercises = [], programId, programDayNumber) => {
     const sanitizedExercises: ActiveExercise[] = initialExercises.map((ex) => ({
       ...ex,
       instanceId: ex.instanceId || generateUUID(),
@@ -125,11 +133,22 @@ export const useActiveWorkoutStore = create<ActiveWorkoutState>((set, get) => ({
       id,
       name,
       routineId,
+      programId,
+      programDayNumber,
       startedAt: new Date().toISOString(),
       exercises: sanitizedExercises,
     };
     persistState(newWorkout);
     set({ workout: newWorkout, isOpen: true });
+  },
+
+  setWorkoutProgramId: (programId) => {
+    set((state) => {
+      if (!state.workout) return state;
+      const updated: ActiveWorkout = { ...state.workout, programId };
+      persistState(updated);
+      return { workout: updated };
+    });
   },
 
   openSheet: () => set({ isOpen: true }),

@@ -39,12 +39,18 @@ type CreateProgramInput struct {
 }
 
 type CreateProgramHandler struct {
-	repo  application.ProgramRepo
-	clock application.Clock
+	repo         application.ProgramRepo
+	userProgRepo application.UserProgramRepo
+	clock        application.Clock
 }
 
 func NewCreateProgramHandler(repo application.ProgramRepo, clock application.Clock) *CreateProgramHandler {
 	return &CreateProgramHandler{repo: repo, clock: clock}
+}
+
+func (h *CreateProgramHandler) WithUserProgramRepo(userProgRepo application.UserProgramRepo) *CreateProgramHandler {
+	h.userProgRepo = userProgRepo
+	return h
 }
 
 func (h *CreateProgramHandler) Handle(ctx context.Context, in CreateProgramInput) (*program.Program, error) {
@@ -103,6 +109,16 @@ func (h *CreateProgramHandler) Handle(ctx context.Context, in CreateProgramInput
 			}
 			if err := h.repo.Save(ctx, forked); err != nil {
 				return nil, err
+			}
+			if h.userProgRepo != nil {
+				if installed, err := h.userProgRepo.ListByUserID(ctx, in.UserID); err == nil {
+					for _, up := range installed {
+						if up.ProgramID() == existing.ID() {
+							up.SetProgramID(forked.ID())
+							_ = h.userProgRepo.Save(ctx, up)
+						}
+					}
+				}
 			}
 			return forked, nil
 		}
@@ -206,6 +222,19 @@ func (h *InstallProgramHandler) Handle(ctx context.Context, in InstallProgramInp
 	prog, err := h.progRepo.GetByID(ctx, in.ProgramID)
 	if err != nil {
 		return nil, err
+	}
+
+	if existingList, err := h.userProgRepo.ListByUserID(ctx, in.UserID); err == nil {
+		for _, up := range existingList {
+			if up.ProgramID() == prog.ID() {
+				if in.SetActive {
+					up.SetActive(true)
+					_ = h.userProgRepo.SetActive(ctx, in.UserID, up.ID())
+				}
+				_ = h.userProgRepo.Save(ctx, up)
+				return up, nil
+			}
+		}
 	}
 
 	prog.IncrementInstalls()

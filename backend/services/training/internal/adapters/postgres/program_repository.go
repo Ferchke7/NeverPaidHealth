@@ -382,6 +382,7 @@ func (r *UserProgramRepository) Save(ctx context.Context, up *program.UserProgra
 		INSERT INTO user_programs (id, user_id, program_id, custom_name, is_active, current_day_index, installed_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7)
 		ON CONFLICT (id) DO UPDATE SET
+			program_id = EXCLUDED.program_id,
 			custom_name = EXCLUDED.custom_name,
 			is_active = EXCLUDED.is_active,
 			current_day_index = EXCLUDED.current_day_index

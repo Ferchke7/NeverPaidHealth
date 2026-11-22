@@ -125,7 +125,7 @@ func main() {
 	deleteRotCmd := command.NewDeleteRoutineHandler(rRepo)
 	deleteWorkoutCmd := command.NewDeleteWorkoutHandler(wRepo)
 
-	createProgCmd := command.NewCreateProgramHandler(progRepo, clock)
+	createProgCmd := command.NewCreateProgramHandler(progRepo, clock).WithUserProgramRepo(userProgRepo)
 	publishProgCmd := command.NewPublishProgramHandler(progRepo, clock)
 	installProgCmd := command.NewInstallProgramHandler(progRepo, userProgRepo, clock)
 	setActiveProgCmd := command.NewSetActiveProgramHandler(userProgRepo)

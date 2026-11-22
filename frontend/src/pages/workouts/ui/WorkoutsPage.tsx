@@ -12,6 +12,7 @@ import { RoutineEditorModal } from '../../../features/routine-builder/ui/Routine
 import { RoutineDetailModal } from '../../../features/routine-preview/ui/RoutineDetailModal.tsx';
 import { ProgramDetailModal } from '../../../features/program-preview/ui/ProgramDetailModal.tsx';
 import { useStartWorkout } from '../../../features/start-workout/model/useStartWorkout.ts';
+import { applyProgramOverride } from '../../../entities/program/model/programWorkoutSync.ts';
 import { useTranslation } from '../../../shared/lib/i18n/i18n.ts';
 import { usePageSEO } from '../../../shared/lib/seo/usePageSEO.ts';
 import {
@@ -193,6 +194,8 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = ({ onNavigateToPrograms
   const handleStartProgramDay = async (program: Program, day: ProgramDay) => {
     await startWorkout({
       name: `${program.name} - ${day.name}`,
+      programId: program.id,
+      programDayNumber: day.day_number || selectedProgramDayIndex + 1,
       exercises: day.exercises,
     });
   };
@@ -224,7 +227,10 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = ({ onNavigateToPrograms
     });
   }, [userRoutines, searchQuery]);
 
-  const activeProgram = activeProgramData?.program;
+  const activeProgram = useMemo(
+    () => applyProgramOverride(activeProgramData?.program),
+    [activeProgramData?.program]
+  );
   const activeProgramDays = activeProgram?.days || [];
   const currentProgramDay = activeProgramDays[selectedProgramDayIndex] || activeProgramDays[0];
 

@@ -28,6 +28,27 @@ interface InstagramCommentsModalProps {
 
 const QUICK_EMOJIS = ['❤️', '🔥', '👏', '💪', '⚡', '🦾', '💯', '🏋️'];
 
+function loadLocalComments(programId: string): ProgramComment[] {
+  if (typeof window === 'undefined' || !programId) return [];
+  try {
+    const raw = localStorage.getItem(`np_program_comments_${programId}`);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveLocalComments(programId: string, list: ProgramComment[]): void {
+  if (typeof window === 'undefined' || !programId) return;
+  try {
+    localStorage.setItem(`np_program_comments_${programId}`, JSON.stringify(list));
+  } catch {
+    // ignore storage errors
+  }
+}
+
 export const InstagramCommentsModal: React.FC<InstagramCommentsModalProps> = ({
   isOpen,
   onClose,
@@ -42,6 +63,7 @@ export const InstagramCommentsModal: React.FC<InstagramCommentsModalProps> = ({
   const [commentText, setCommentText] = useState('');
   const [replyingTo, setReplyingTo] = useState<{ id: string; author_name: string } | null>(null);
   const [expandedReplies, setExpandedReplies] = useState<Record<string, boolean>>({});
+  const [localVersion, setLocalVersion] = useState(0);
 
   // Query comments
   const { data: rawComments, isLoading } = useQuery<ProgramComment[]>({
@@ -49,21 +71,56 @@ export const InstagramCommentsModal: React.FC<InstagramCommentsModalProps> = ({
     queryFn: () => apiClient<ProgramComment[]>(`/programs/${programId}/comments`),
     enabled: isOpen && !!programId,
   });
-  const comments = Array.isArray(rawComments) ? rawComments : [];
+
+  const comments = useMemo(() => {
+    const serverList = Array.isArray(rawComments) ? rawComments : [];
+    const localList = loadLocalComments(programId);
+    if (localList.length === 0) return serverList;
+    const seenIds = new Set(serverList.map((c) => c.id));
+    const merged = [...serverList];
+    for (const lc of localList) {
+      if (!seenIds.has(lc.id)) {
+        merged.push(lc);
+      }
+    }
+    return merged;
+  }, [rawComments, programId, localVersion]);
 
   // Mutations
   const postCommentMutation = useMutation({
     mutationFn: async () => {
-      if (!commentText.trim()) return;
-      return apiClient<ProgramComment>(`/programs/${programId}/comments`, {
-        method: 'POST',
-        body: JSON.stringify({
-          content: commentText.trim(),
-          parent_id: replyingTo?.id || null,
+      const trimmed = commentText.trim();
+      if (!trimmed) return;
+      try {
+        return await apiClient<ProgramComment>(`/programs/${programId}/comments`, {
+          method: 'POST',
+          body: JSON.stringify({
+            content: trimmed,
+            parent_id: replyingTo?.id || null,
+            author_name: user?.display_name || 'Атлет',
+            avatar_url: user?.avatar_url || '',
+          }),
+        });
+      } catch {
+        const fallbackComment: ProgramComment = {
+          id: `local-${Date.now()}`,
+          program_id: programId,
+          user_id: user?.id || 'local-user',
           author_name: user?.display_name || 'Атлет',
           avatar_url: user?.avatar_url || '',
-        }),
-      });
+          parent_id: replyingTo?.id || null,
+          content: trimmed,
+          upvotes: 0,
+          has_upvoted: false,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          is_deleted: false,
+        };
+        const currentLocal = loadLocalComments(programId);
+        saveLocalComments(programId, [...currentLocal, fallbackComment]);
+        setLocalVersion((v) => v + 1);
+        return fallbackComment;
+      }
     },
     onSuccess: () => {
       setCommentText('');

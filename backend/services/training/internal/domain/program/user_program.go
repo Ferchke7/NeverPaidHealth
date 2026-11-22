@@ -67,6 +67,12 @@ func (up *UserProgram) SetActive(active bool) {
 	up.isActive = active
 }
 
+func (up *UserProgram) SetProgramID(programID uuid.UUID) {
+	if programID != uuid.Nil {
+		up.programID = programID
+	}
+}
+
 func (up *UserProgram) SetCurrentDayIndex(index int) {
 	if index < 0 {
 		index = 0

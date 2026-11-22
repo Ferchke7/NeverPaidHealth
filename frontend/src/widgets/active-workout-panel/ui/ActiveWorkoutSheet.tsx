@@ -6,9 +6,11 @@ import {
   Plus,
   Dumbbell,
   HelpCircle,
+  MessageSquare,
 } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useActiveWorkoutStore } from '../../../entities/workout/model/activeWorkoutStore.ts';
+import { syncProgramAndRoutineFromWorkout } from '../../../entities/program/model/programWorkoutSync.ts';
 import { useRestTimerStore } from '../../../entities/workout/model/restTimerStore.ts';
 import { useExerciseNotesStore } from '../../../entities/workout/model/exerciseNotesStore.ts';
 import { PreviousExerciseNote, SetType, WorkoutHistoryItem } from '../../../entities/workout/model/types.ts';
@@ -535,6 +537,9 @@ export const ActiveWorkoutSheet: React.FC = () => {
         console.warn('Backend finish sync warning (saved locally):', err);
       }
 
+      // 2. Persist any exercise/set changes back to the user's active/installed Program day & Routine
+      await syncProgramAndRoutineFromWorkout(workout, queryClient);
+
       setSummary({
         id: workout.id,
         name: workout.name,
@@ -598,6 +603,12 @@ export const ActiveWorkoutSheet: React.FC = () => {
     setIsDiscardConfirmOpen(false);
   };
 
+  const triggerProgramSync = () => {
+    setTimeout(() => {
+      void syncProgramAndRoutineFromWorkout(useActiveWorkoutStore.getState().workout, queryClient);
+    }, 60);
+  };
+
   const handleSelectExercise = (exercise: Exercise) => {
     const measType =
       typeof exercise.measurement_type === 'string'
@@ -615,6 +626,7 @@ export const ActiveWorkoutSheet: React.FC = () => {
       addExercise(exercise.id, exercise.name, measType);
       setShowAllExercises(true);
     }
+    triggerProgramSync();
   };
 
   const defaultRestSecs =
@@ -949,6 +961,27 @@ export const ActiveWorkoutSheet: React.FC = () => {
                           variant="outline"
                           size="md"
                           onClick={() => {
+                            handleToggleExerciseNote(exercise.instanceId, noteLookupKeys, prevNote?.note);
+                            setTimeout(() => document.getElementById(noteTextareaId)?.focus(), 50);
+                          }}
+                          className={
+                            hasUnreadNote || isNoteExpanded || Boolean(exercise.notes?.trim() || prevNote?.note)
+                              ? 'border-[#34d399] text-[#34d399]'
+                              : undefined
+                          }
+                        >
+                          <MessageSquare className="w-3.5 h-3.5 mr-1.5" />
+                          <span>{t('activeWorkout.commentBtn')}</span>
+                          {hasUnreadNote && (
+                            <span className="ml-1.5 inline-flex items-center justify-center px-1.5 py-0.5 rounded bg-[#022c22] text-[#34d399] text-[10px] font-bold">
+                              1
+                            </span>
+                          )}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="md"
+                          onClick={() => {
                             setReplacingInstanceId(exercise.instanceId);
                             setIsPickerOpen(true);
                           }}
@@ -958,15 +991,18 @@ export const ActiveWorkoutSheet: React.FC = () => {
                         <Button
                           variant="outline"
                           size="md"
-                          onClick={() => removeExercise(exercise.instanceId)}
+                          onClick={() => {
+                            removeExercise(exercise.instanceId);
+                            triggerProgramSync();
+                          }}
                         >
                           {t('activeWorkout.removeShort')}
                         </Button>
                       </div>
                     </div>
 
-                    {/* Inline Unread Banner / Expandable Note Box */}
-                    {(hasUnreadNote || isNoteExpanded) && (
+                    {/* Inline Unread Banner / Saved Comment Preview / Expandable Note Box */}
+                    {(hasUnreadNote || isNoteExpanded || Boolean(exercise.notes?.trim())) && (
                       <div className="p-3.5 rounded-[12px] bg-[#0a0a0a] border border-[#262626] space-y-3">
                         {hasUnreadNote && !isNoteExpanded && prevNote && (
                           <>
@@ -982,9 +1018,10 @@ export const ActiveWorkoutSheet: React.FC = () => {
                               <Button
                                 variant="outline"
                                 size="md"
-                                onClick={() =>
-                                  handleToggleExerciseNote(exercise.instanceId, noteLookupKeys, prevNote.note)
-                                }
+                                onClick={() => {
+                                  const validKeys = noteLookupKeys.filter((k): k is string => Boolean(k && k.trim()));
+                                  markNoteAsRead(validKeys, prevNote.note);
+                                }}
                               >
                                 {t('activeWorkout.collapseNote')}
                               </Button>
@@ -1000,6 +1037,25 @@ export const ActiveWorkoutSheet: React.FC = () => {
                               </Button>
                             </div>
                           </>
+                        )}
+
+                        {!hasUnreadNote && !isNoteExpanded && Boolean(exercise.notes?.trim()) && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              handleToggleExerciseNote(exercise.instanceId, noteLookupKeys, prevNote?.note);
+                              setTimeout(() => document.getElementById(noteTextareaId)?.focus(), 50);
+                            }}
+                            className="w-full text-left flex items-center justify-between gap-2 text-xs text-[#fafafa] cursor-pointer"
+                          >
+                            <span className="truncate">
+                              <strong className="text-[#34d399] mr-1.5">Комментарий:</strong>
+                              {exercise.notes}
+                            </span>
+                            <span className="text-[#34d399] text-[11px] font-medium shrink-0">
+                              Изменить
+                            </span>
+                          </button>
                         )}
 
                         {isNoteExpanded && (
@@ -1135,7 +1191,10 @@ export const ActiveWorkoutSheet: React.FC = () => {
                                 });
                               }}
                               onUpdate={(updates) => updateSet(exercise.instanceId, set.id, updates)}
-                              onDelete={() => removeSet(exercise.instanceId, set.id)}
+                              onDelete={() => {
+                                removeSet(exercise.instanceId, set.id);
+                                triggerProgramSync();
+                              }}
                               onCompleteToggle={() => {
                                 const willBeCompleted = !set.completed;
                                 updateSet(exercise.instanceId, set.id, { completed: willBeCompleted });
@@ -1187,14 +1246,20 @@ export const ActiveWorkoutSheet: React.FC = () => {
                         <Button
                           variant="outline"
                           size="md"
-                          onClick={() => addSet(exercise.instanceId, 'normal')}
+                          onClick={() => {
+                            addSet(exercise.instanceId, 'normal');
+                            triggerProgramSync();
+                          }}
                         >
                           {t('activeWorkout.addNormalSet')}
                         </Button>
                         <Button
                           variant="outline"
                           size="md"
-                          onClick={() => addSet(exercise.instanceId, 'warmup')}
+                          onClick={() => {
+                            addSet(exercise.instanceId, 'warmup');
+                            triggerProgramSync();
+                          }}
                         >
                           {t('activeWorkout.addWarmupSet')}
                         </Button>

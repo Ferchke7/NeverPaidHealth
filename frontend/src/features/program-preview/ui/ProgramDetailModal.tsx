@@ -24,6 +24,8 @@ import { useStartWorkout } from '../../start-workout/model/useStartWorkout.ts';
 import { InstagramCommentsModal } from './InstagramCommentsModal.tsx';
 import { AthleteAvatar } from '../../../entities/user/ui/AthleteAvatar.tsx';
 import { AthleteProfileModal } from '../../../entities/user/ui/AthleteProfileModal.tsx';
+import { useAuthStore } from '../../../entities/user/model/authStore.ts';
+import { applyProgramOverride } from '../../../entities/program/model/programWorkoutSync.ts';
 
 interface ProgramDetailModalProps {
   isOpen: boolean;
@@ -47,9 +49,11 @@ export const ProgramDetailModal: React.FC<ProgramDetailModalProps> = ({
   onSelectProgram,
 }) => {
   const { t } = useTranslation();
+  const user = useAuthStore((s) => s.user);
   const queryClient = useQueryClient();
   const [selectedDayIndex, setSelectedDayIndex] = useState(0);
   const [isCommentsOpen, setIsCommentsOpen] = useState(false);
+  const [quickComment, setQuickComment] = useState('');
   const [inspectingExercise, setInspectingExercise] = useState<{
     name: string;
     muscle?: string;
@@ -94,6 +98,47 @@ export const ProgramDetailModal: React.FC<ProgramDetailModalProps> = ({
   });
   const comments = Array.isArray(rawComments) ? rawComments : [];
 
+  const quickCommentMutation = useMutation({
+    mutationFn: async (text: string) => {
+      if (!program || !text.trim()) return;
+      try {
+        return await apiClient(`/programs/${program.id}/comments`, {
+          method: 'POST',
+          body: JSON.stringify({
+            content: text.trim(),
+            parent_id: null,
+            author_name: user?.display_name || 'Атлет',
+            avatar_url: user?.avatar_url || '',
+          }),
+        });
+      } catch {
+        const key = `np_program_comments_${program.id}`;
+        const existing = JSON.parse(localStorage.getItem(key) || '[]');
+        const created = {
+          id: `local-${Date.now()}`,
+          program_id: program.id,
+          user_id: user?.id || 'local-user',
+          author_name: user?.display_name || 'Атлет',
+          avatar_url: user?.avatar_url || '',
+          parent_id: null,
+          content: text.trim(),
+          upvotes: 0,
+          has_upvoted: false,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          is_deleted: false,
+        };
+        localStorage.setItem(key, JSON.stringify([...existing, created]));
+        return created;
+      }
+    },
+    onSuccess: () => {
+      setQuickComment('');
+      void queryClient.invalidateQueries({ queryKey: ['program-comments', program?.id] });
+      void queryClient.invalidateQueries({ queryKey: ['programs'] });
+    },
+  });
+
   const installMutation = useMutation({
     mutationFn: async ({ setActive }: { setActive: boolean }) => {
       if (!program) return;
@@ -114,13 +159,16 @@ export const ProgramDetailModal: React.FC<ProgramDetailModalProps> = ({
 
   if (!isOpen || !program) return null;
 
-  const days: ProgramDay[] = program.days || [];
+  const effectiveProgram = applyProgramOverride(program) || program;
+  const days: ProgramDay[] = effectiveProgram.days || [];
   const currentDay: ProgramDay | undefined = days[selectedDayIndex] || days[0];
 
   const handleStartDayWorkout = async (day: ProgramDay) => {
     onClose();
     await startWorkout({
-      name: `${program.name} - ${day.name}`,
+      name: `${effectiveProgram.name} - ${day.name}`,
+      programId: effectiveProgram.id,
+      programDayNumber: day.day_number || selectedDayIndex + 1,
       exercises: day.exercises,
     });
   };
@@ -154,7 +202,7 @@ export const ProgramDetailModal: React.FC<ProgramDetailModalProps> = ({
   return (
     <>
       <Modal
-        isOpen={isOpen}
+        isOpen={isOpen && !isCommentsOpen && !inspectingExercise && !selectedAthlete}
         onClose={onClose}
         size="xl"
         title={
@@ -451,29 +499,54 @@ export const ProgramDetailModal: React.FC<ProgramDetailModalProps> = ({
               )}
             </div>
 
-            <div className="space-y-2 pt-2 border-t border-[#262626]">
-              {comments[0] && (
+            <div className="space-y-2.5 pt-2 border-t border-[#262626]">
+              {comments.slice(0, 3).map((c: any) => (
                 <button
+                  key={c.id}
                   type="button"
                   onClick={() => setIsCommentsOpen(true)}
                   className="text-[12px] text-[#a3a3a3] hover:text-[#fafafa] text-left truncate block w-full cursor-pointer"
                 >
-                  <strong className="text-[#fafafa]">@{comments[0].author_name}:</strong>{' '}
-                  {comments[0].content}
+                  <strong className="text-[#fafafa]">@{c.author_name || 'Атлет'}:</strong>{' '}
+                  {c.content}
                 </button>
-              )}
+              ))}
+
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (quickComment.trim()) {
+                    quickCommentMutation.mutate(quickComment);
+                  }
+                }}
+                className="flex items-center gap-2"
+              >
+                <input
+                  type="text"
+                  value={quickComment}
+                  onChange={(e) => setQuickComment(e.target.value)}
+                  placeholder="Оставить комментарий..."
+                  className="flex-1 h-[40px] bg-[#171717] border border-[#404040] focus:border-[#34d399] focus:outline-none rounded-[10px] px-3.5 text-[13px] text-[#fafafa] placeholder:text-[#737373]"
+                />
+                <Button
+                  type="submit"
+                  variant="primary"
+                  size="sm"
+                  disabled={!quickComment.trim() || quickCommentMutation.isPending}
+                  isLoading={quickCommentMutation.isPending}
+                >
+                  Отправить
+                </Button>
+              </form>
 
               <button
                 type="button"
                 onClick={() => setIsCommentsOpen(true)}
-                className="w-full h-[40px] bg-[#171717] border border-[#404040] hover:border-[#525252] rounded-[10px] px-3.5 text-[13px] text-[#a3a3a3] flex items-center justify-between transition-colors cursor-pointer"
+                className="w-full text-left text-[12px] text-[#34d399] hover:underline font-medium cursor-pointer pt-0.5"
               >
-                <span>
-                  {comments.length > 0
-                    ? `Посмотреть все комментарии (${comments.length})...`
-                    : 'Оставить первый комментарий...'}
-                </span>
-                <span className="text-[#34d399] font-medium text-[12px]">Открыть</span>
+                {comments.length > 0
+                  ? `Посмотреть все комментарии (${comments.length}) →`
+                  : 'Открыть окно обсуждения →'}
               </button>
             </div>
           </div>

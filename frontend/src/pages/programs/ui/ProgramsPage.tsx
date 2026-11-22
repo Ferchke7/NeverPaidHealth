@@ -15,8 +15,10 @@ import {
 } from '../../../entities/program/model/types.ts';
 import { ProgramEditorModal } from '../../../features/program-builder/ui/ProgramEditorModal.tsx';
 import { ProgramDetailModal } from '../../../features/program-preview/ui/ProgramDetailModal.tsx';
+import { InstagramCommentsModal } from '../../../features/program-preview/ui/InstagramCommentsModal.tsx';
 import { AthleteProfileModal } from '../../../entities/user/ui/AthleteProfileModal.tsx';
 import { useStartWorkout } from '../../../features/start-workout/model/useStartWorkout.ts';
+import { applyProgramOverride } from '../../../entities/program/model/programWorkoutSync.ts';
 
 interface ProgramsPageProps {
   onNavigateToWorkouts?: () => void;
@@ -38,6 +40,7 @@ export const ProgramsPage: React.FC<ProgramsPageProps> = ({
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [editingProgram, setEditingProgram] = useState<Program | null>(null);
   const [previewingProgram, setPreviewingProgram] = useState<Program | null>(null);
+  const [commentingProgram, setCommentingProgram] = useState<Program | null>(null);
   const [selectedAthlete, setSelectedAthlete] = useState<{
     id: string;
     name?: string;
@@ -81,15 +84,36 @@ export const ProgramsPage: React.FC<ProgramsPageProps> = ({
       return apiClient<Program[]>(`/programs?${params.toString()}`);
     },
   });
-  const programs = Array.isArray(rawPrograms) ? rawPrograms : [];
-
-  const activeProgram = activeProgramData?.program;
+  const activeProgram = useMemo(
+    () => applyProgramOverride(activeProgramData?.program),
+    [activeProgramData?.program]
+  );
   const activeProgramId = activeProgram?.id || activeProgramData?.user_program?.program_id;
   const installedProgramIds = useMemo(() => {
     return new Set(
       installedPrograms.map((item) => item.program?.id || item.user_program?.program_id)
     );
   }, [installedPrograms]);
+
+  const installedProgramNames = useMemo(() => {
+    const names = new Set<string>();
+    if (activeProgram?.name) names.add(activeProgram.name.toLowerCase().trim());
+    for (const item of installedPrograms) {
+      if (item.program?.name) names.add(item.program.name.toLowerCase().trim());
+    }
+    return names;
+  }, [activeProgram, installedPrograms]);
+
+  const programs = useMemo(() => {
+    const list = Array.isArray(rawPrograms) ? rawPrograms : [];
+    return list.map((p) => {
+      const isUserInstalled =
+        p.id === activeProgramId ||
+        installedProgramIds.has(p.id) ||
+        (p.name && installedProgramNames.has(p.name.toLowerCase().trim()));
+      return applyProgramOverride(p, Boolean(isUserInstalled)) || p;
+    });
+  }, [rawPrograms, activeProgramId, installedProgramIds, installedProgramNames]);
 
   const installMutation = useMutation({
     mutationFn: async ({ programId, setActive }: { programId: string; setActive: boolean }) => {
@@ -274,6 +298,8 @@ export const ProgramsPage: React.FC<ProgramsPageProps> = ({
                 onClick={() =>
                   startWorkout({
                     name: `${activeProgram.name} - ${activeProgram.days[0].name}`,
+                    programId: activeProgram.id,
+                    programDayNumber: activeProgram.days[0].day_number || 1,
                     exercises: activeProgram.days[0].exercises,
                   })
                 }
@@ -287,6 +313,13 @@ export const ProgramsPage: React.FC<ProgramsPageProps> = ({
               onClick={() => setPreviewingProgram(activeProgram)}
             >
               {t('programs.detailsBtn')}
+            </Button>
+            <Button
+              variant="outline"
+              size="md"
+              onClick={() => setCommentingProgram(activeProgram)}
+            >
+              💬 Комментарии ({activeProgram.comments_count || 0})
             </Button>
           </div>
         </Card>
@@ -373,31 +406,45 @@ export const ProgramsPage: React.FC<ProgramsPageProps> = ({
                         : t('programs.draftEmptyHint')}
                     </div>
 
-                    {/* Author & Social Info (for Community / public splits) */}
-                    {(prog.author_name || (prog.likes_count || 0) > 0 || (prog.comments_count || 0) > 0) && (
-                      <div
-                        className="flex flex-wrap items-center gap-2 text-[12px] text-[#a3a3a3]"
-                        onClick={(e) => e.stopPropagation()}
+                    {/* Author & Social Info */}
+                    <div
+                      className="flex flex-wrap items-center gap-3 text-[12px] text-[#a3a3a3]"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {prog.author_name && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setSelectedAthlete({
+                              id: prog.user_id || '',
+                              name: prog.author_name,
+                              avatar: prog.author_avatar_url,
+                            })
+                          }
+                          className="min-h-[36px] inline-flex items-center text-[#fafafa] hover:text-[#34d399] transition-colors cursor-pointer"
+                        >
+                          {prog.author_name}
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          void apiClient(`/programs/${prog.id}/like`, { method: 'POST' }).then(() => {
+                            void queryClient.invalidateQueries({ queryKey: ['programs'] });
+                          });
+                        }}
+                        className="min-h-[36px] inline-flex items-center gap-1 hover:text-[#34d399] transition-colors cursor-pointer"
                       >
-                        {prog.author_name && (
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setSelectedAthlete({
-                                id: prog.user_id || '',
-                                name: prog.author_name,
-                                avatar: prog.author_avatar_url,
-                              })
-                            }
-                            className="min-h-[44px] inline-flex items-center -my-2.5 text-[#fafafa] hover:text-[#34d399] transition-colors cursor-pointer"
-                          >
-                            {prog.author_name}
-                          </button>
-                        )}
-                        <span>· {prog.likes_count || 0} ♡</span>
-                        <span>· {prog.comments_count || 0} 💬</span>
-                      </div>
-                    )}
+                        <span>♡ {prog.likes_count || 0}</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setCommentingProgram(prog)}
+                        className="min-h-[36px] inline-flex items-center gap-1 hover:text-[#34d399] transition-colors cursor-pointer font-medium"
+                      >
+                        <span>💬 {prog.comments_count || 0} Комментарии</span>
+                      </button>
+                    </div>
                   </div>
 
                   {/* Footer Actions */}
@@ -516,6 +563,20 @@ export const ProgramsPage: React.FC<ProgramsPageProps> = ({
           setPreviewingProgram(p);
         }}
       />
+
+      {commentingProgram && (
+        <InstagramCommentsModal
+          isOpen={Boolean(commentingProgram)}
+          onClose={() => setCommentingProgram(null)}
+          programId={commentingProgram.id}
+          programTitle={commentingProgram.name}
+          programAuthorId={commentingProgram.user_id}
+          onOpenAthlete={(athleteId, name, avatar) => {
+            setCommentingProgram(null);
+            setSelectedAthlete({ id: athleteId, name, avatar });
+          }}
+        />
+      )}
 
       {selectedAthlete && (
         <AthleteProfileModal

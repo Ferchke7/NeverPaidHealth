@@ -19,6 +19,8 @@ export interface ExerciseDraft {
   targetReps?: number;
   target_reps_min?: number;
   targetRepsMin?: number;
+  target_reps_max?: number;
+  targetRepsMax?: number;
   target_weight_kg?: number;
   targetWeightKg?: number;
   sets?: ActiveSet[];
@@ -27,6 +29,8 @@ export interface ExerciseDraft {
 export interface WorkoutDraft {
   name: string;
   routineId?: string;
+  programId?: string;
+  programDayNumber?: number;
   exercises?: ExerciseDraft[];
 }
 
@@ -80,12 +84,21 @@ export function useStartWorkout() {
         exerciseId,
         exerciseName: ex.exercise_name || ex.exerciseName || ex.name || `Exercise ${idx + 1}`,
         measurementType: ex.measurement_type || ex.measurementType || 'weight_reps',
+        targetRepsMin: ex.target_reps_min || ex.targetRepsMin || ex.target_reps || ex.targetReps,
+        targetRepsMax: ex.target_reps_max || ex.targetRepsMax || ex.target_reps || ex.targetReps,
         sets,
       };
     });
 
     const workoutId = generateUUID();
-    startWorkout(workoutId, draft.name, draft.routineId, initialExercises);
+    startWorkout(
+      workoutId,
+      draft.name,
+      draft.routineId,
+      initialExercises,
+      draft.programId,
+      draft.programDayNumber
+    );
     openSheet();
 
     try {

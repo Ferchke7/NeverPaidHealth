@@ -24,6 +24,8 @@ export interface ActiveExercise {
   exerciseName: string;
   measurementType: string;
   notes?: string;
+  targetRepsMin?: number;
+  targetRepsMax?: number;
   sets: ActiveSet[];
 }
 
@@ -31,6 +33,8 @@ export interface ActiveWorkout {
   id: string;
   name: string;
   routineId?: string;
+  programId?: string;
+  programDayNumber?: number;
   startedAt: string;
   workoutNotes?: string;
   exercises: ActiveExercise[];
