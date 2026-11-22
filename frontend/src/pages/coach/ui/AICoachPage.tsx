@@ -4,13 +4,10 @@ import {
   Sparkles,
   Send,
   Trash2,
-  User,
   Camera,
   X,
-  ZoomIn,
   Activity,
   TrendingUp,
-  Utensils,
   Dumbbell,
   Copy,
   Check,
@@ -19,9 +16,6 @@ import {
   AlertTriangle,
   Play,
   Flame,
-  Zap,
-  ChevronDown,
-  ChevronUp,
 } from 'lucide-react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { apiClient } from '../../../shared/api/client.ts';
@@ -34,8 +28,7 @@ import {
 } from '../../../shared/ui/photo-picker/SmartPhotoPickerModal.tsx';
 import { Modal } from '../../../shared/ui/modal.tsx';
 import { Button } from '../../../shared/ui/button.tsx';
-import { Card, CardHeader, CardTitle, CardContent } from '../../../shared/ui/card.tsx';
-import { Textarea } from '../../../shared/ui/input.tsx';
+import { Card, CardContent } from '../../../shared/ui/card.tsx';
 import { useStartWorkout } from '../../../features/start-workout/model/useStartWorkout.ts';
 import { generateUUID } from '../../../shared/lib/uuid.ts';
 import { FormattedChatMessage } from './FormattedChatMessage.tsx';
@@ -139,7 +132,6 @@ export const AICoachPage: React.FC = () => {
   const startWorkout = useStartWorkout();
 
   const [showInsightsModal, setShowInsightsModal] = useState(false);
-  const [showBriefingCard, setShowBriefingCard] = useState(true);
   const [inputMessage, setInputMessage] = useState('');
   const [attachedPhoto, setAttachedPhoto] = useState<CompressedPhoto | null>(null);
   const [previewModalImg, setPreviewModalImg] = useState<string | null>(null);
@@ -409,7 +401,6 @@ export const AICoachPage: React.FC = () => {
     localStorage.removeItem('np_ai_coach_messages_v3');
     setMessages([]);
     setDynamicSuggestions([]);
-    setShowBriefingCard(true);
     setAttachedPhoto(null);
     setIsClearModalOpen(false);
     setTimeout(() => scrollToTop(), 50);
@@ -442,51 +433,50 @@ export const AICoachPage: React.FC = () => {
   const bodyComp = insights?.body_composition;
 
   return (
-    <div className="space-y-6 select-text max-w-full overflow-x-hidden">
-      {/* 1. Royal Violet Page Header */}
-      <div className="royal-hero-gradient rounded-[24px] p-5 sm:p-7 text-white royal-card-shadow flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2.5">
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight truncate">
+    <div className="flex flex-col h-[calc(100dvh-136px)] lg:h-[calc(100dvh-104px)] min-h-[480px] gap-3 select-text max-w-full overflow-hidden">
+      {/* 1. Compact Minimalist Coach Header */}
+      <div className="flex items-center justify-between gap-2 shrink-0">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="w-9 h-9 rounded-[12px] violet-btn-gradient text-white flex items-center justify-center shrink-0 shadow-sm">
+            <Bot className="w-4 h-4" />
+          </div>
+          <div className="min-w-0">
+            <h1 className="text-lg sm:text-xl font-extrabold text-[var(--text-primary)] tracking-tight truncate">
               {t('coach.title')}
             </h1>
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-white/15 text-white border border-white/25 shrink-0">
-              <Sparkles className="w-3 h-3 text-[#C4B5FD]" />
-              RAG 90d
-            </span>
           </div>
-          <p className="text-sm text-white/80 mt-1">{t('coach.subtitle')}</p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 shrink-0">
+        <div className="flex items-center gap-1.5 shrink-0">
           {insights?.recommended_workout && (
             <button
               type="button"
               onClick={handleQuickStartDailyWorkout}
               title={insights.recommended_workout.title}
-              className="min-h-[42px] px-4 rounded-[12px] bg-white text-[#3B0CA3] hover:bg-[#F5F3FF] font-bold text-xs inline-flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer"
+              className="h-9 px-3 rounded-full bg-[#10B981] hover:bg-[#059669] text-white font-bold text-xs inline-flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer"
             >
               <Play className="w-3.5 h-3.5 fill-current" />
-              {language === 'uz' ? 'Bugungi' : language === 'en' ? 'Start Day' : 'Старт дня'}
+              <span className="hidden sm:inline">
+                {language === 'uz' ? 'Bugungi' : language === 'en' ? 'Start Day' : 'Старт дня'}
+              </span>
             </button>
           )}
           <button
             type="button"
             onClick={() => setShowInsightsModal(true)}
             title={t('coach.telemetryTitle')}
-            className="min-h-[42px] px-3.5 rounded-[12px] bg-white/15 hover:bg-white/25 border border-white/25 text-white font-semibold text-xs inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+            className="h-9 px-3 rounded-full bg-[var(--bg-surface)] border border-[var(--border-subtle)] hover:border-[#8B5CF6] text-[var(--text-primary)] font-semibold text-xs inline-flex items-center gap-1.5 transition-colors cursor-pointer"
           >
-            <Activity className="w-4 h-4 text-[#6EE7B7]" />
-            <span className="font-mono tabular-nums font-bold">
-              {readinessScore}%
-            </span>
+            <Activity className="w-3.5 h-3.5 text-[#10B981]" />
+            <span className="font-mono tabular-nums font-bold">{readinessScore}%</span>
           </button>
           {messages.length > 0 && (
             <button
               type="button"
               onClick={() => setIsClearModalOpen(true)}
-              className="min-h-[42px] min-w-[42px] rounded-[12px] bg-white/10 hover:bg-white/20 border border-white/20 text-white/85 hover:text-white inline-flex items-center justify-center transition-colors cursor-pointer"
+              className="w-9 h-9 rounded-full bg-[var(--bg-surface)] border border-[var(--border-subtle)] hover:border-rose-400 text-[var(--text-muted)] hover:text-rose-500 inline-flex items-center justify-center transition-colors cursor-pointer"
               title={t('coach.clearHistory')}
+              aria-label={t('coach.clearHistory')}
             >
               <Trash2 className="w-4 h-4" />
             </button>
@@ -494,137 +484,33 @@ export const AICoachPage: React.FC = () => {
         </div>
       </div>
 
-      {/* 2. Royal Violet 2-Column Studio Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1.35fr_0.9fr] gap-4 items-start min-w-0">
-        {/* Left: Chat Room & Composer */}
-        <Card className="p-0 overflow-hidden bg-white border-[#ECEAF6] min-w-0 w-full">
-          <CardHeader className="px-4 sm:px-5 py-3.5 border-b border-[#ECEAF6] mb-0 flex flex-row flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-2.5 min-w-0 flex-1">
-              <div className="w-9 h-9 rounded-[12px] bg-[#F0EFFE] border border-[#DDD6FE] text-[#6D28D9] flex items-center justify-center shrink-0">
-                <Bot className="w-4 h-4" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <CardTitle className="text-base truncate">{t('coach.discussTitle')}</CardTitle>
-                <p className="text-[11px] font-mono tabular-nums text-[#6B7280] truncate">
-                  {t('coach.workoutsCount', { count: weeklyWorkouts })} · {weeklyVolumeTons} {t('summary.tons')} · ACWR{' '}
-                  {acwrValue.toFixed(2)}
-                </p>
-              </div>
-            </div>
-
-            {messages.length > 0 && (
-              <Button
-                type="button"
-                variant="outline"
-                size="md"
-                onClick={() => setIsClearModalOpen(true)}
-                className="shrink-0 text-xs"
-              >
-                <Trash2 className="w-3.5 h-3.5 mr-1.5 text-[#6B7280]" />
-                <span className="hidden sm:inline">{t('coach.clearHistory')}</span>
-              </Button>
-            )}
-          </CardHeader>
-
-          <CardContent className="p-0 flex flex-col relative min-w-0">
+      {/* 2. Messenger Workspace */}
+      <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-[1.4fr_0.85fr] gap-4 min-w-0">
+        {/* Left: Full-Height Sleek Chat Messenger */}
+        <Card className="p-0 overflow-hidden bg-[var(--bg-surface)] border-[var(--border-subtle)] flex flex-col min-h-0 min-w-0 w-full h-full">
+          <CardContent className="p-0 flex flex-col flex-1 min-h-0 relative min-w-0">
             {/* Scrollable Chat History */}
             <div
               ref={scrollContainerRef}
               onScroll={handleScroll}
               style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-y' }}
-              className="h-[440px] sm:h-[520px] lg:h-[560px] overflow-y-auto overflow-x-hidden px-3 sm:px-4 py-3.5 space-y-3 bg-[#F4F3FA] overscroll-y-contain relative select-text min-w-0"
+              className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-3 sm:px-5 py-4 space-y-3 bg-[var(--bg-canvas)]/45 overscroll-y-contain relative select-text min-w-0"
             >
-              {/* Collapsible Athlete Briefing */}
-              <div className="rounded-[16px] bg-white border border-[#ECEAF6] p-3.5 space-y-2.5 royal-card-shadow">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <div className="w-6 h-6 rounded-[8px] bg-[#F0EFFE] border border-[#DDD6FE] flex items-center justify-center text-[#6D28D9] shrink-0">
-                      <Zap className="w-3.5 h-3.5" />
-                    </div>
-                    <p className="text-xs font-bold text-[#1E1B4B] truncate">
+              {messages.length === 0 && (
+                <div className="h-full min-h-[220px] flex flex-col items-center justify-center text-center px-4 py-6 max-w-md mx-auto space-y-4">
+                  <div className="w-12 h-12 rounded-[16px] bg-[var(--bg-lilac)] border border-[var(--border-strong)] text-[#7C3AED] flex items-center justify-center">
+                    <Sparkles className="w-5 h-5" />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-sm font-semibold text-[var(--text-primary)] leading-snug">
                       {getInitialGreeting()}
                     </p>
+                    <p className="text-xs font-mono tabular-nums text-[var(--text-muted)]">
+                      ACWR {acwrValue.toFixed(2)} · {targetSplit}
+                    </p>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setShowBriefingCard((v) => !v)}
-                    className="min-w-[40px] min-h-[40px] -my-2 -mr-2 flex items-center justify-center rounded-[10px] text-[#6B7280] hover:text-[#1E1B4B] hover:bg-[#F8F7FC] transition-colors shrink-0 cursor-pointer"
-                    aria-label={t('coach.telemetryDetails')}
-                  >
-                    {showBriefingCard ? (
-                      <ChevronUp className="w-4 h-4" />
-                    ) : (
-                      <ChevronDown className="w-4 h-4" />
-                    )}
-                  </button>
                 </div>
-
-                {showBriefingCard && (
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[11px] pt-0.5">
-                    <button
-                      type="button"
-                      onClick={() => setShowInsightsModal(true)}
-                      className="min-h-[44px] p-2.5 rounded-[12px] bg-[#F8F7FC] border border-[#ECEAF6] hover:border-[#C4B5FD] text-left transition-colors cursor-pointer"
-                    >
-                      <div className="text-[10px] text-[#6B7280] flex items-center justify-between font-medium">
-                        <span>ЦНС / ACWR</span>
-                        <Activity className="w-3 h-3 text-[#6D28D9]" />
-                      </div>
-                      <div className="font-mono tabular-nums font-bold text-[#1E1B4B] mt-0.5">
-                        <span className="text-[#6D28D9]">{readinessScore}%</span>{' '}
-                        <span className="text-[#94A3B8]">·</span>{' '}
-                        <span>{acwrValue.toFixed(2)}</span>
-                      </div>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setShowInsightsModal(true)}
-                      className="min-h-[44px] p-2.5 rounded-[12px] bg-[#F8F7FC] border border-[#ECEAF6] hover:border-[#C4B5FD] text-left transition-colors cursor-pointer"
-                    >
-                      <div className="text-[10px] text-[#6B7280] flex items-center justify-between font-medium">
-                        <span>
-                          {language === 'uz'
-                            ? 'Mushaklar'
-                            : language === 'en'
-                            ? 'Ready'
-                            : 'Готовы'}
-                        </span>
-                        <Dumbbell className="w-3 h-3 text-[#0891B2]" />
-                      </div>
-                      <div className="font-semibold text-[#1E1B4B] truncate mt-0.5">
-                        {readyMuscles.length > 0
-                          ? readyMuscles.map((m) => localizeMuscle(m.muscle_group)).join(', ')
-                          : `${weeklyWorkouts} / ${weeklyVolumeTons} t`}
-                      </div>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => handleSendMessage(t('coach.prompt6').replace(/^[^\s]+\s/, ''))}
-                      className="min-h-[44px] p-2.5 rounded-[12px] bg-[#F8F7FC] border border-[#ECEAF6] hover:border-[#C4B5FD] text-left transition-colors cursor-pointer"
-                    >
-                      <div className="text-[10px] text-[#6B7280] flex items-center justify-between font-medium">
-                        <span>
-                          {language === 'uz'
-                            ? 'Oqsil / LBM'
-                            : language === 'en'
-                            ? 'Macros'
-                            : 'Белок LBM'}
-                        </span>
-                        <Utensils className="w-3 h-3 text-[#EA580C]" />
-                      </div>
-                      <div className="font-mono tabular-nums font-bold text-[#1E1B4B] truncate mt-0.5">
-                        {bodyComp && bodyComp.protein_target_min_g > 0
-                          ? `${Math.round(bodyComp.protein_target_min_g)}г · ${bodyComp.recommended_kcal}`
-                          : insights?.today_protein_g
-                          ? `${Math.round(insights.today_protein_g)}г / ${insights.today_calories || 0}`
-                          : 'КБЖУ →'}
-                      </div>
-                    </button>
-                  </div>
-                )}
-              </div>
+              )}
 
               {/* Conversation Thread */}
               {messages.map((msg) => {
@@ -632,43 +518,25 @@ export const AICoachPage: React.FC = () => {
                 return (
                   <div
                     key={msg.id}
-                    className={`flex gap-2.5 w-full max-w-full sm:max-w-[92%] min-w-0 ${
-                      isUser ? 'ml-auto flex-row-reverse' : 'mr-auto'
+                    className={`flex flex-col min-w-0 ${
+                      isUser ? 'items-end' : 'items-start'
                     }`}
                   >
                     <div
-                      className={`w-7 h-7 rounded-[10px] flex items-center justify-center shrink-0 mt-0.5 border ${
+                      className={`min-w-0 max-w-[88%] sm:max-w-[80%] overflow-hidden flex flex-col text-[13px] sm:text-sm px-3.5 py-2.5 space-y-2 ${
                         isUser
-                          ? 'bg-[#6D28D9] border-[#6D28D9] text-white'
-                          : 'bg-white border-[#ECEAF6] text-[#6D28D9]'
-                      }`}
-                    >
-                      {isUser ? <User className="w-3.5 h-3.5" /> : <Bot className="w-3.5 h-3.5" />}
-                    </div>
-
-                    <div
-                      className={`min-w-0 flex-1 overflow-hidden flex flex-col rounded-[16px] border text-xs sm:text-sm p-3 sm:p-3.5 space-y-2.5 ${
-                        isUser
-                          ? 'bg-[#F0EFFE] border-[#DDD6FE] text-[#1E1B4B]'
-                          : 'bg-white border-[#ECEAF6] text-[#1E1B4B] royal-card-shadow'
+                          ? 'violet-btn-gradient text-white rounded-[20px] rounded-br-[6px] shadow-sm'
+                          : 'bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-[var(--text-primary)] rounded-[20px] rounded-bl-[6px] royal-card-shadow'
                       }`}
                     >
                       {msg.imageUrl && (
-                        <div className="relative rounded-[12px] overflow-hidden border border-[#ECEAF6] bg-[#F8F7FC] max-w-xs">
+                        <div className="relative rounded-[12px] overflow-hidden border border-black/10 max-w-xs">
                           <img
                             src={msg.imageUrl}
                             alt="Attached"
                             className="max-h-48 sm:max-h-60 w-full object-cover cursor-pointer"
                             onClick={() => setPreviewModalImg(msg.imageUrl || null)}
                           />
-                          <button
-                            type="button"
-                            onClick={() => setPreviewModalImg(msg.imageUrl || null)}
-                            className="mt-1.5 mb-1.5 mx-1.5 min-h-[38px] px-3 rounded-[10px] bg-white border border-[#ECEAF6] text-[#1E1B4B] text-xs font-semibold inline-flex items-center gap-1.5 cursor-pointer"
-                          >
-                            <ZoomIn className="w-3.5 h-3.5 text-[#6D28D9]" />
-                            <span>Zoom</span>
-                          </button>
                         </div>
                       )}
 
@@ -685,45 +553,34 @@ export const AICoachPage: React.FC = () => {
                           <CoachWorkoutCard workout={msg.suggestedWorkout} />
                         </div>
                       )}
+                    </div>
 
-                      <div className="flex items-center justify-between gap-2 pt-2 border-t border-[#ECEAF6] text-[11px] font-mono tabular-nums text-[#94A3B8]">
-                        <span>{msg.timestamp}</span>
-
-                        {!isUser && (
-                          <button
-                            type="button"
-                            onClick={() => handleCopyMessage(msg.id, msg.content)}
-                            className="min-h-[36px] px-2.5 -my-1.5 rounded-[8px] hover:bg-[#F4F3FA] text-[#6B7280] hover:text-[#6D28D9] inline-flex items-center gap-1.5 transition-colors cursor-pointer"
-                            title={t('coach.copy')}
-                          >
-                            {copiedMessageId === msg.id ? (
-                              <>
-                                <Check className="w-3.5 h-3.5 text-[#10B981]" />
-                                <span className="text-[#10B981] font-sans font-semibold text-xs">
-                                  {t('coach.copied')}
-                                </span>
-                              </>
-                            ) : (
-                              <>
-                                <Copy className="w-3.5 h-3.5" />
-                                <span className="font-sans text-xs">{t('coach.copyReply')}</span>
-                              </>
-                            )}
-                          </button>
-                        )}
-                      </div>
+                    <div className={`flex items-center gap-2 mt-1 px-1 text-[10px] font-mono tabular-nums text-[var(--text-muted)] ${isUser ? 'justify-end' : 'justify-start'}`}>
+                      <span>{msg.timestamp}</span>
+                      {!isUser && (
+                        <button
+                          type="button"
+                          onClick={() => handleCopyMessage(msg.id, msg.content)}
+                          className="h-6 px-1.5 rounded-[6px] hover:bg-[var(--bg-lilac)] text-[var(--text-muted)] hover:text-[#7C3AED] inline-flex items-center gap-1 transition-colors cursor-pointer"
+                          title={t('coach.copy')}
+                          aria-label={t('coach.copy')}
+                        >
+                          {copiedMessageId === msg.id ? (
+                            <Check className="w-3 h-3 text-[#10B981]" />
+                          ) : (
+                            <Copy className="w-3 h-3" />
+                          )}
+                        </button>
+                      )}
                     </div>
                   </div>
                 );
               })}
 
               {chatMutation.isPending && (
-                <div className="flex gap-2.5 max-w-[85%] mr-auto items-center">
-                  <div className="w-7 h-7 rounded-[10px] bg-white border border-[#ECEAF6] flex items-center justify-center text-[#6D28D9] shrink-0">
-                    <Bot className="w-3.5 h-3.5 animate-pulse" />
-                  </div>
-                  <div className="px-3.5 py-2.5 rounded-[14px] bg-white text-[#1E1B4B] text-xs border border-[#ECEAF6] royal-card-shadow flex items-center gap-2">
-                    <Sparkles className="w-3.5 h-3.5 text-[#6D28D9] animate-spin" />
+                <div className="flex items-start">
+                  <div className="px-3.5 py-2.5 rounded-[20px] rounded-bl-[6px] bg-[var(--bg-surface)] text-[var(--text-primary)] text-xs border border-[var(--border-subtle)] royal-card-shadow flex items-center gap-2">
+                    <Sparkles className="w-3.5 h-3.5 text-[#7C3AED] animate-spin" />
                     <span className="font-semibold">
                       {attachedPhoto ? t('coach.evaluatingPhoto') : t('coach.generating')}
                     </span>
@@ -740,7 +597,7 @@ export const AICoachPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={scrollToTop}
-                      className="min-w-[40px] min-h-[40px] px-3 rounded-full bg-white hover:bg-[#F0EFFE] text-[#1E1B4B] border border-[#ECEAF6] royal-float-shadow flex items-center justify-center cursor-pointer"
+                      className="w-9 h-9 rounded-full bg-[var(--bg-surface)] hover:bg-[var(--bg-lilac)] text-[var(--text-primary)] border border-[var(--border-subtle)] royal-float-shadow flex items-center justify-center cursor-pointer"
                       title={t('coach.scrollToTop')}
                     >
                       <ArrowUp className="w-4 h-4" />
@@ -751,10 +608,10 @@ export const AICoachPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => scrollToBottom(true)}
-                      className={`min-w-[40px] min-h-[40px] px-3 rounded-full border royal-float-shadow flex items-center justify-center gap-1.5 cursor-pointer ${
+                      className={`h-9 px-3 rounded-full border royal-float-shadow flex items-center justify-center gap-1.5 cursor-pointer ${
                         hasUnreadResponse
                           ? 'bg-[#6D28D9] text-white font-semibold border-[#6D28D9]'
-                          : 'bg-white hover:bg-[#F0EFFE] text-[#1E1B4B] border-[#ECEAF6]'
+                          : 'bg-[var(--bg-surface)] hover:bg-[var(--bg-lilac)] text-[var(--text-primary)] border-[var(--border-subtle)]'
                       }`}
                       title={t('coach.scrollToBottom')}
                     >
@@ -768,10 +625,9 @@ export const AICoachPage: React.FC = () => {
               )}
             </div>
 
-            {/* Bottom Composer & Quick Prompts */}
-            <div className="border-t border-[#ECEAF6] p-3.5 sm:p-4 space-y-3 bg-white">
-              {/* Quick Prompts */}
-              <div className="flex flex-wrap gap-1.5">
+            {/* Bottom Sleek 1-Row Composer & Horizontal Scroll Chips */}
+            <div className="border-t border-[var(--border-subtle)] px-3 py-2.5 space-y-2 bg-[var(--bg-surface)] shrink-0">
+              <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5">
                 {quickPrompts.map((prompt, i) => {
                   const isPhotoPrompt = prompt.includes('📸');
                   return (
@@ -786,10 +642,10 @@ export const AICoachPage: React.FC = () => {
                         }
                       }}
                       disabled={chatMutation.isPending}
-                      className={`min-h-[38px] px-3 py-1.5 rounded-[10px] border text-xs transition-colors flex items-center gap-1.5 disabled:opacity-50 cursor-pointer font-medium ${
+                      className={`h-7 px-2.5 rounded-full border text-[11px] whitespace-nowrap shrink-0 transition-colors flex items-center gap-1 disabled:opacity-50 cursor-pointer font-semibold ${
                         isPhotoPrompt
-                          ? 'bg-[#F0EFFE] text-[#6D28D9] border-[#DDD6FE] hover:bg-[#DDD6FE]/60'
-                          : 'bg-[#F8F7FC] border-[#ECEAF6] text-[#1E1B4B] hover:border-[#C4B5FD]'
+                          ? 'bg-[var(--bg-lilac)] text-[#7C3AED] border-[var(--border-strong)] hover:opacity-85'
+                          : 'bg-[var(--bg-well)] border-[var(--border-subtle)] text-[var(--text-secondary)] hover:border-[#8B5CF6] hover:text-[var(--text-primary)]'
                       }`}
                     >
                       <span>{prompt}</span>
@@ -799,35 +655,31 @@ export const AICoachPage: React.FC = () => {
               </div>
 
               {photoError && (
-                <div className="p-2.5 rounded-[10px] bg-[#FEF2F2] border border-[#FECACA] text-xs text-[#DC2626]">
+                <div className="px-2.5 py-1.5 rounded-[10px] bg-rose-500/10 border border-rose-500/30 text-xs text-rose-500">
                   {photoError}
                 </div>
               )}
 
               {attachedPhoto && (
-                <div className="px-3 py-2 bg-[#F5F3FF] border border-[#DDD6FE] rounded-[12px] flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2.5 min-w-0">
+                <div className="px-2.5 py-1.5 bg-[var(--bg-lilac)] border border-[var(--border-strong)] rounded-[12px] flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
                     <img
                       src={attachedPhoto.dataUrl}
                       alt="Attached preview"
-                      className="w-10 h-10 object-cover rounded-[8px] border border-[#DDD6FE] cursor-pointer shrink-0"
+                      className="w-8 h-8 object-cover rounded-[8px] border border-[var(--border-strong)] cursor-pointer shrink-0"
                       onClick={() => setPreviewModalImg(attachedPhoto.dataUrl)}
                     />
-                    <div className="text-xs min-w-0">
-                      <p className="font-semibold text-[#1E1B4B] flex items-center gap-1 truncate">
-                        <Sparkles className="w-3.5 h-3.5 text-[#6D28D9] shrink-0" />
-                        {t('coach.photoAttached')}
-                      </p>
-                      <p className="text-[11px] text-[#6B7280] truncate">{t('coach.photoHint')}</p>
-                    </div>
+                    <span className="text-xs font-semibold text-[var(--text-primary)] truncate">
+                      {t('coach.photoAttached')}
+                    </span>
                   </div>
                   <button
                     type="button"
                     onClick={() => setAttachedPhoto(null)}
-                    className="min-w-[40px] min-h-[40px] rounded-[10px] text-[#6B7280] hover:text-[#EF4444] hover:bg-white flex items-center justify-center shrink-0 cursor-pointer"
+                    className="w-7 h-7 rounded-[8px] text-[var(--text-muted)] hover:text-rose-500 flex items-center justify-center shrink-0 cursor-pointer"
                     aria-label={t('coach.photoDelete')}
                   >
-                    <X className="w-4 h-4" />
+                    <X className="w-3.5 h-3.5" />
                   </button>
                 </div>
               )}
@@ -837,49 +689,49 @@ export const AICoachPage: React.FC = () => {
                   e.preventDefault();
                   handleSendMessage();
                 }}
-                className="space-y-2.5"
+                className="flex items-end gap-1.5"
               >
-                <Textarea
+                <button
+                  type="button"
+                  onClick={() => setIsPhotoPickerOpen(true)}
+                  disabled={chatMutation.isPending}
+                  className="w-10 h-10 rounded-full bg-[var(--bg-well)] border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-[#7C3AED] hover:border-[#8B5CF6] flex items-center justify-center shrink-0 transition-colors cursor-pointer disabled:opacity-50"
+                  title={t('coach.attachPhoto')}
+                  aria-label={t('coach.attachPhoto')}
+                >
+                  <Camera className="w-4 h-4" />
+                </button>
+
+                <textarea
                   ref={textareaRef}
-                  label={t('coach.yourQuestion')}
-                  rows={2}
+                  rows={1}
                   value={inputMessage}
                   onChange={(e) => setInputMessage(e.target.value)}
                   onKeyDown={handleKeyDown}
                   placeholder={attachedPhoto ? t('coach.photoQuestionPlaceholder') : t('coach.placeholder')}
+                  className="flex-1 min-w-0 max-h-28 min-h-[40px] px-3.5 py-2 rounded-[20px] bg-[var(--bg-well)] border border-[var(--border-subtle)] focus:border-[#8B5CF6] focus:outline-none text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] resize-none leading-snug"
                 />
 
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setIsPhotoPickerOpen(true)}
-                    disabled={chatMutation.isPending}
-                  >
-                    <Camera className="w-4 h-4 mr-1.5 text-[#6D28D9]" />
-                    {t('coach.attachPhoto')}
-                  </Button>
-
-                  <Button
-                    type="submit"
-                    variant="primary"
-                    disabled={(!inputMessage.trim() && !attachedPhoto) || chatMutation.isPending}
-                  >
-                    {chatMutation.isPending ? (
-                      <Sparkles className="w-4 h-4 mr-1.5 animate-spin" />
-                    ) : (
-                      <Send className="w-4 h-4 mr-1.5" />
-                    )}
-                    {t('coach.send')}
-                  </Button>
-                </div>
+                <button
+                  type="submit"
+                  disabled={(!inputMessage.trim() && !attachedPhoto) || chatMutation.isPending}
+                  className="w-10 h-10 rounded-full violet-btn-gradient text-white flex items-center justify-center shrink-0 shadow-sm disabled:opacity-40 cursor-pointer transition-opacity"
+                  aria-label={t('coach.send')}
+                  title={t('coach.send')}
+                >
+                  {chatMutation.isPending ? (
+                    <Sparkles className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Send className="w-4 h-4" />
+                  )}
+                </button>
               </form>
             </div>
           </CardContent>
         </Card>
 
-        {/* Right: Readiness, Overload Targets & Prescribed Workout */}
-        <div className="min-w-0 space-y-4">
+        {/* Right (Desktop): Readiness, Overload Targets & Prescribed Workout */}
+        <div className="hidden lg:block min-w-0 space-y-4 overflow-y-auto pr-1">
           {/* Card 1: Today's Readiness */}
           <Card className="p-4 sm:p-5 space-y-4">
             <div className="flex items-start justify-between gap-2">
@@ -1173,7 +1025,7 @@ export const AICoachPage: React.FC = () => {
           {bodyComp && bodyComp.current_weight_kg > 0 && (
             <div className="p-3 rounded-[12px] bg-[#ECFDF5] border border-[#A7F3D0] space-y-1">
               <span className="text-[11px] text-[#059669] flex items-center gap-1.5 font-bold">
-                <Utensils className="w-3.5 h-3.5" />
+                <Activity className="w-3.5 h-3.5" />
                 {language === 'uz'
                   ? 'Tana rekompozitsiyasi (LBM hisobi)'
                   : language === 'en'
@@ -1229,22 +1081,21 @@ export const AICoachPage: React.FC = () => {
         isOpen={isClearModalOpen}
         onClose={() => setIsClearModalOpen(false)}
         title={t('coach.clearModalTitle')}
-        description={t('coach.clearModalDesc')}
         headerIcon={<AlertTriangle className="w-5 h-5 text-[#EF4444]" />}
         size="sm"
         footer={
           <>
-            <Button variant="ghost" size="sm" onClick={() => setIsClearModalOpen(false)}>
+            <Button variant="outline" size="md" onClick={() => setIsClearModalOpen(false)}>
               {t('common.cancel')}
             </Button>
-            <Button variant="danger" size="sm" onClick={handleClearChatConfirm}>
+            <Button variant="danger" size="md" onClick={handleClearChatConfirm}>
               <Trash2 className="w-3.5 h-3.5 mr-1.5" />
               {t('coach.clearHistory')}
             </Button>
           </>
         }
       >
-        <p className="text-xs text-[#6B7280]">{t('coach.clearConfirm')}</p>
+        <p className="text-sm text-[var(--text-secondary)] leading-relaxed">{t('coach.clearConfirm')}</p>
       </Modal>
 
       {/* 5. Smart Photo Picker Modal */}

@@ -231,21 +231,21 @@ export const FloatingFocusTimer: React.FC = () => {
 
   // 2. Focused Timer Overlay Modal
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-[#1E1B4B]/40 backdrop-blur-sm">
-      <div className="bg-white border border-[#ECEAF6] w-full max-w-lg rounded-[24px] p-5 sm:p-6 flex flex-col items-center text-center relative max-h-[92vh] overflow-y-auto space-y-3 royal-float-shadow">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#070512]/65 backdrop-blur-md">
+      <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] w-full max-w-[400px] mx-auto rounded-[24px] p-5 sm:p-6 flex flex-col items-center text-center relative max-h-[90vh] overflow-y-auto space-y-3 royal-float-shadow">
         {/* Top Header Bar */}
         <div className="w-full flex items-center justify-between gap-2">
           <button
             type="button"
             onClick={closeModal}
-            className="min-h-[44px] min-w-[44px] rounded-[12px] bg-[#F8F7FC] hover:bg-[#F0EFFE] border border-[#ECEAF6] text-[#6B7280] hover:text-[#1E1B4B] flex items-center justify-center transition-colors cursor-pointer"
+            className="w-10 h-10 rounded-[12px] bg-[var(--bg-well)] hover:bg-[var(--bg-lilac)] border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] flex items-center justify-center transition-colors cursor-pointer"
             title={t('focusTimer.minimize')}
             aria-label={t('focusTimer.minimize')}
           >
             <Minimize2 className="w-4 h-4" />
           </button>
 
-          <span className="px-3 py-1.5 rounded-[10px] bg-[#F0EFFE] border border-[#DDD6FE] text-[#6D28D9] text-[12px] font-semibold flex items-center gap-1.5">
+          <span className="px-3 py-1 rounded-full bg-[var(--bg-lilac)] border border-[var(--border-strong)] text-[#7C3AED] text-[12px] font-semibold flex items-center gap-1.5">
             <Sparkles className="w-3.5 h-3.5" />
             <span>{getPhaseName()}</span>
           </span>
@@ -253,7 +253,7 @@ export const FloatingFocusTimer: React.FC = () => {
           <button
             type="button"
             onClick={() => setConfirmingDiscard((prev) => !prev)}
-            className="min-h-[44px] min-w-[44px] rounded-[12px] bg-[#F8F7FC] hover:bg-rose-50 border border-[#ECEAF6] hover:border-rose-200 text-[#6B7280] hover:text-rose-600 flex items-center justify-center transition-colors cursor-pointer"
+            className="w-10 h-10 rounded-[12px] bg-[var(--bg-well)] hover:bg-rose-500/10 border border-[var(--border-subtle)] hover:border-rose-400/40 text-[var(--text-secondary)] hover:text-rose-500 flex items-center justify-center transition-colors cursor-pointer"
             title={t('focusTimer.cancel')}
             aria-label={t('focusTimer.cancel')}
           >
@@ -263,15 +263,15 @@ export const FloatingFocusTimer: React.FC = () => {
 
         {/* Inline Discard Confirmation Strip */}
         {confirmingDiscard && (
-          <div className="w-full p-3 rounded-[12px] bg-rose-50 border border-rose-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-left">
-            <span className="text-[12px] text-rose-800 font-medium">
+          <div className="w-full p-3 rounded-[12px] bg-rose-500/10 border border-rose-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-left">
+            <span className="text-[12px] text-rose-500 font-medium">
               {t('focusTimer.confirmDiscard')}
             </span>
             <div className="flex items-center gap-2 shrink-0">
               <button
                 type="button"
                 onClick={() => setConfirmingDiscard(false)}
-                className="min-h-[44px] px-3 rounded-[10px] bg-white border border-[#ECEAF6] text-[12px] text-[#1E1B4B] font-medium cursor-pointer"
+                className="min-h-[38px] px-3 rounded-[10px] bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-[12px] text-[var(--text-primary)] font-medium cursor-pointer"
               >
                 {t('common.cancel')}
               </button>
@@ -281,7 +281,7 @@ export const FloatingFocusTimer: React.FC = () => {
                   setConfirmingDiscard(false);
                   discard();
                 }}
-                className="min-h-[44px] px-3 rounded-[10px] bg-rose-600 hover:bg-rose-700 text-white text-[12px] font-semibold cursor-pointer"
+                className="min-h-[38px] px-3 rounded-[10px] bg-rose-600 hover:bg-rose-700 text-white text-[12px] font-semibold cursor-pointer"
               >
                 {t('focusTimer.confirmDiscardYes')}
               </button>
@@ -290,14 +290,14 @@ export const FloatingFocusTimer: React.FC = () => {
         )}
 
         {/* Mode Switcher Tabs */}
-        <div className="w-full grid grid-cols-3 bg-[#F4F3FA] p-1 rounded-[12px] border border-[#ECEAF6] text-[12px] font-medium gap-1">
+        <div className="w-full grid grid-cols-3 bg-[var(--bg-well)] p-1 rounded-[12px] border border-[var(--border-subtle)] text-[12px] font-medium gap-1">
           <button
             type="button"
             onClick={() => setMode('pomodoro')}
-            className={`min-h-[44px] px-2 rounded-[10px] transition-colors cursor-pointer truncate ${
+            className={`min-h-[40px] px-2 rounded-[10px] transition-colors cursor-pointer truncate ${
               mode === 'pomodoro'
-                ? 'bg-white text-[#6D28D9] border border-[#DDD6FE] font-semibold shadow-sm'
-                : 'text-[#6B7280] hover:text-[#1E1B4B]'
+                ? 'bg-[var(--bg-surface)] text-[#7C3AED] border border-[var(--border-strong)] font-semibold shadow-sm'
+                : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
             }`}
           >
             {t('focusTimer.modePomodoro')}
@@ -305,9 +305,9 @@ export const FloatingFocusTimer: React.FC = () => {
           <button
             type="button"
             onClick={() => setMode('target_timer')}
-            className={`min-h-[44px] px-2 rounded-[10px] transition-colors cursor-pointer truncate ${
+            className={`min-h-[40px] px-2 rounded-[10px] transition-colors cursor-pointer truncate ${
               mode === 'target_timer'
-                ? 'bg-white text-[#6D28D9] border border-[#DDD6FE] font-semibold shadow-sm'
+                ? 'bg-[var(--bg-surface)] text-[#7C3AED] border border-[var(--border-strong)] font-semibold shadow-sm'
                 : 'text-[#6B7280] hover:text-[#1E1B4B]'
             }`}
           >

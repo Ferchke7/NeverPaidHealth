@@ -47,17 +47,17 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       primary:
         'bg-gradient-to-r from-[#8B5CF6] to-[#6D28D9] hover:from-[#7C3AED] hover:to-[#5B21B6] active:scale-[0.99] text-white border border-transparent font-semibold shadow-[0_8px_18px_rgba(109,40,217,0.24)]',
       secondary:
-        'bg-[#F4F1FE] hover:bg-[#EDE9FE] text-[#6D28D9] border border-[#DDD6FE] font-semibold shadow-none',
+        'bg-[var(--bg-lilac)] hover:opacity-90 text-[var(--accent-primary)] border border-[var(--border-strong)] font-semibold shadow-none',
       outline:
-        'bg-[#FFFFFF] hover:bg-[#F8F7FC] text-[#130F26] border border-[#E4E0F5] hover:border-[#C4B5FD] font-semibold shadow-none',
+        'bg-[var(--bg-surface)] hover:bg-[var(--bg-well)] text-[var(--text-primary)] border border-[var(--border-subtle)] hover:border-[var(--border-strong)] font-semibold shadow-none',
       ghost:
-        'bg-transparent hover:bg-[#F1EFFA] text-[#5A5575] hover:text-[#130F26] border border-transparent font-semibold shadow-none',
+        'bg-transparent hover:bg-[var(--bg-well)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-transparent font-semibold shadow-none',
       flat:
-        'bg-[#EDE9FE] hover:bg-[#DDD6FE] text-[#6D28D9] border border-[#DDD6FE] font-semibold shadow-none',
+        'bg-[var(--bg-lilac)] hover:opacity-90 text-[var(--accent-primary)] border border-[var(--border-strong)] font-semibold shadow-none',
       success:
-        'bg-[#ECFDF5] hover:bg-[#D1FAE5] text-[#047857] border border-[#A7F3D0] font-semibold shadow-none',
+        'bg-[#ECFDF5] dark:bg-emerald-500/15 hover:bg-[#D1FAE5] dark:hover:bg-emerald-500/25 text-[#047857] dark:text-emerald-300 border border-[#A7F3D0] dark:border-emerald-500/30 font-semibold shadow-none',
       danger:
-        'bg-[#FFF1F2] hover:bg-[#FFE4E6] text-[#E11D48] border border-[#FECDD3] font-semibold shadow-none',
+        'bg-[#FFF1F2] dark:bg-rose-500/15 hover:bg-[#FFE4E6] dark:hover:bg-rose-500/25 text-[#E11D48] dark:text-rose-300 border border-[#FECDD3] dark:border-rose-500/30 font-semibold shadow-none',
     };
 
     const sizeStyles: Record<NonNullable<ButtonProps['size']>, string> = {

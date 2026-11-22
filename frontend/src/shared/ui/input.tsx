@@ -44,16 +44,16 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
     }[size];
 
     const variantStyles = {
-      flat: 'bg-[#F8F7FC] border border-[#ECEAF6] focus-within:border-[#7C3AED] focus-within:bg-[#FFFFFF]',
+      flat: 'bg-[var(--bg-well)] border border-[var(--border-subtle)] focus-within:border-[#7C3AED] focus-within:bg-[var(--bg-surface)]',
       bordered:
-        'bg-[#FFFFFF] border border-[#E4E0F5] focus-within:border-[#7C3AED] focus-within:ring-2 focus-within:ring-[#7C3AED]/15',
-      underlined: 'bg-transparent border-b border-[#E4E0F5] rounded-none px-0 focus-within:border-[#7C3AED]',
+        'bg-[var(--bg-surface)] border border-[var(--border-subtle)] focus-within:border-[#7C3AED] focus-within:ring-2 focus-within:ring-[#7C3AED]/15',
+      underlined: 'bg-transparent border-b border-[var(--border-subtle)] rounded-none px-0 focus-within:border-[#7C3AED]',
     }[variant];
 
     return (
       <div className="w-full space-y-1.5">
         {label && (
-          <label htmlFor={inputId} className="block text-[12px] font-semibold text-[#5A5575]">
+          <label htmlFor={inputId} className="block text-[12px] font-semibold text-[var(--text-secondary)]">
             {label}
           </label>
         )}
@@ -66,7 +66,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
           } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
           {startContent && (
-            <div className="pl-3.5 pr-1 text-[#8F8AA8] flex items-center shrink-0">
+            <div className="pl-3.5 pr-1 text-[var(--text-muted)] flex items-center shrink-0">
               {startContent}
             </div>
           )}
@@ -77,7 +77,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
             aria-describedby={activeError || description ? messageId : props['aria-describedby']}
             ref={ref}
             disabled={disabled}
-            className={`w-full bg-transparent text-[#130F26] placeholder-[#8F8AA8] focus:outline-none font-medium ${sizeStyles} ${className}`}
+            className={`w-full bg-transparent text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none font-medium ${sizeStyles} ${className}`}
             {...props}
           />
 
@@ -136,15 +136,15 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
     const activeError = errorMessage || error;
 
     const variantStyles = {
-      flat: 'bg-[#F8F7FC] border border-[#ECEAF6] focus:border-[#7C3AED] focus:bg-[#FFFFFF]',
+      flat: 'bg-[var(--bg-well)] border border-[var(--border-subtle)] focus:border-[#7C3AED] focus:bg-[var(--bg-surface)]',
       bordered:
-        'bg-[#FFFFFF] border border-[#E4E0F5] focus:border-[#7C3AED] focus:ring-2 focus:ring-[#7C3AED]/15',
+        'bg-[var(--bg-surface)] border border-[var(--border-subtle)] focus:border-[#7C3AED] focus:ring-2 focus:ring-[#7C3AED]/15',
     }[variant];
 
     return (
       <div className="w-full space-y-1.5">
         {label && (
-          <label htmlFor={inputId} className="block text-[12px] font-semibold text-[#5A5575]">
+          <label htmlFor={inputId} className="block text-[12px] font-semibold text-[var(--text-secondary)]">
             {label}
           </label>
         )}
@@ -155,7 +155,7 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
           aria-describedby={activeError || description ? messageId : props['aria-describedby']}
           ref={ref}
           disabled={disabled}
-          className={`w-full rounded-[14px] p-3.5 text-[14px] text-[#130F26] placeholder-[#8F8AA8] focus:outline-none font-normal transition-all duration-150 resize-none ${variantStyles} ${
+          className={`w-full rounded-[14px] p-3.5 text-[14px] text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none font-normal transition-all duration-150 resize-none ${variantStyles} ${
             isError ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-500/20' : ''
           } ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${className}`}
           {...props}

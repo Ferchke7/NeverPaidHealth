@@ -32,12 +32,12 @@ export const SystemStateCard: React.FC<SystemStateCardProps> = ({
         {eyebrow && (
           <div className="text-[11px] font-bold uppercase tracking-[0.06em] text-[#7C3AED]">{eyebrow}</div>
         )}
-        <div className="text-[18px] font-bold text-[#130F26] tracking-tight">
+        <div className="text-[18px] font-bold text-[var(--text-primary)] tracking-tight">
           {title}
         </div>
         {children}
         {description && (
-          <p className="text-[13px] text-[#5A5575] leading-relaxed">{description}</p>
+          <p className="text-[13px] text-[var(--text-secondary)] leading-relaxed">{description}</p>
         )}
         {(actionLabel || secondaryActionLabel) && (
           <div className="flex flex-wrap items-center gap-2 pt-1">

@@ -7,6 +7,10 @@ import {
   Dumbbell,
   HelpCircle,
   MessageSquare,
+  MoreHorizontal,
+  RefreshCw,
+  Trash2,
+  Clock,
 } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useActiveWorkoutStore } from '../../../entities/workout/model/activeWorkoutStore.ts';
@@ -83,6 +87,7 @@ export const ActiveWorkoutSheet: React.FC = () => {
   const [showAllExercises, setShowAllExercises] = useState(false);
   const [selectedSetByInstance, setSelectedSetByInstance] = useState<Record<string, string>>({});
   const [plateMathInstances, setPlateMathInstances] = useState<Record<string, boolean>>({});
+  const [openActionMenuId, setOpenActionMenuId] = useState<string | null>(null);
 
   const noteLabels = {
     unreadBanner:
@@ -662,89 +667,84 @@ export const ActiveWorkoutSheet: React.FC = () => {
 
       {/* 2. Workspace Active Workout View (renders inline inside DashboardLayout) */}
       {workout && isOpen && (
-        <div className="space-y-6 pb-8">
-          {/* Page Header + Royal Violet Session Telemetry Card */}
-          <div className="flex items-start justify-between gap-4">
-            <div className="min-w-0">
-              <h1 className="text-[26px] sm:text-[30px] font-bold tracking-[-0.02em] text-[#1E1B4B] leading-tight">
-                {t('activeWorkout.sessionHeading')}
-              </h1>
-              <p className="text-sm font-medium text-[#6B7280] mt-1 truncate">
-                {workout.name}
-              </p>
-            </div>
-            <Button
-              variant="outline"
-              size="md"
+        <div className="space-y-5 pb-8">
+          {/* Page Header */}
+          <div className="flex items-center justify-between gap-3">
+            <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight text-[var(--text-primary)] truncate">
+              {workout.name}
+            </h1>
+            <button
+              type="button"
               onClick={closeSheet}
-              className="shrink-0 flex items-center gap-1.5"
-              title="Minimize workout"
+              className="w-10 h-10 rounded-[12px] bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-[#7C3AED] flex items-center justify-center shrink-0 transition-colors cursor-pointer"
+              title={t('activeWorkout.minimizeBtn')}
+              aria-label={t('activeWorkout.minimizeBtn')}
             >
               <ChevronDown className="w-4 h-4" />
-              <span className="hidden sm:inline">{t('activeWorkout.minimizeBtn')}</span>
-            </Button>
+            </button>
           </div>
 
-          {/* Royal Violet Session Telemetry & Actions Card */}
-          <section className="royal-hero-gradient rounded-[22px] p-5 sm:p-6 space-y-5 text-white royal-card-shadow">
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 sm:gap-6">
+          {/* Compact Royal Violet Telemetry & Actions Card */}
+          <section className="royal-hero-gradient rounded-[22px] p-4 sm:p-5 space-y-4 text-white royal-card-shadow">
+            <div className="grid grid-cols-3 gap-3 text-center sm:text-left">
               <div>
-                <div className="text-[11px] font-semibold uppercase tracking-wider text-white/75">
-                  {t('activeWorkout.duration').toUpperCase()}
+                <div className="text-[11px] font-medium text-white/75">
+                  {t('activeWorkout.duration')}
                 </div>
-                <div className="text-2xl font-extrabold tabular-nums text-white mt-1">
+                <div className="text-lg sm:text-2xl font-extrabold font-mono tabular-nums text-white mt-0.5">
                   {formatDuration(elapsedSeconds)}
                 </div>
               </div>
               <div>
-                <div className="text-[11px] font-semibold uppercase tracking-wider text-white/75">
+                <div className="text-[11px] font-medium text-white/75">
                   {t('activeWorkout.volumeLabel')}
                 </div>
-                <div className="text-2xl font-extrabold tabular-nums text-white mt-1">
+                <div className="text-lg sm:text-2xl font-extrabold font-mono tabular-nums text-white mt-0.5 truncate">
                   {formatWeight(liveVolume, unitPref)}
                 </div>
               </div>
-              <div className="col-span-2 sm:col-span-1">
-                <div className="text-[11px] font-semibold uppercase tracking-wider text-white/75">
+              <div>
+                <div className="text-[11px] font-medium text-white/75">
                   {t('activeWorkout.exercisesLabel')}
                 </div>
-                <div className="text-2xl font-extrabold tabular-nums text-white mt-1">
+                <div className="text-lg sm:text-2xl font-extrabold font-mono tabular-nums text-white mt-0.5">
                   {workout.exercises.length}
                 </div>
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2.5">
+            <div className="flex items-center gap-2">
               <button
                 type="button"
                 disabled={isSubmitting}
                 onClick={handleFinishWorkout}
-                className="min-h-[42px] px-4 rounded-[12px] bg-[#10B981] hover:bg-[#059669] disabled:opacity-60 text-white font-bold text-sm inline-flex items-center justify-center transition-colors cursor-pointer shadow-sm"
+                className="flex-1 sm:flex-none h-10 px-5 rounded-[12px] bg-[#10B981] hover:bg-[#059669] disabled:opacity-60 text-white font-bold text-sm inline-flex items-center justify-center transition-colors cursor-pointer shadow-sm"
               >
                 {t('activeWorkout.finishBtn')}
               </button>
               <button
                 type="button"
-                onClick={() => setIsDiscardConfirmOpen(true)}
-                className="min-h-[42px] px-4 rounded-[12px] bg-white/15 hover:bg-white/25 text-white border border-white/25 font-semibold text-sm transition-colors cursor-pointer"
+                onClick={handleToggleWorkoutNote}
+                className={`h-10 px-3.5 rounded-[12px] border font-semibold text-xs inline-flex items-center gap-1.5 transition-colors cursor-pointer shrink-0 ${
+                  isWorkoutNoteUnread || isWorkoutNoteOpen
+                    ? 'bg-white text-[#3B0CA3] border-white'
+                    : 'bg-white/15 hover:bg-white/25 text-white border-white/25'
+                }`}
+                title={t('activeWorkout.sessionNoteBtn')}
               >
-                {t('common.discard')}
+                <MessageSquare className="w-3.5 h-3.5" />
+                {isWorkoutNoteUnread && (
+                  <span className="w-2 h-2 rounded-full bg-[#10B981]" />
+                )}
               </button>
               <button
                 type="button"
-                onClick={handleToggleWorkoutNote}
-                className={`min-h-[42px] px-4 rounded-[12px] border font-semibold text-sm inline-flex items-center transition-colors cursor-pointer ${
-                  isWorkoutNoteUnread || isWorkoutNoteOpen
-                    ? 'bg-white text-[#3B0CA3] border-white'
-                    : 'bg-white/10 hover:bg-white/20 text-white border-white/25'
-                }`}
+                onClick={() => setIsDiscardConfirmOpen(true)}
+                className="w-10 h-10 rounded-[12px] bg-white/15 hover:bg-rose-500/80 text-white border border-white/25 flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                title={t('common.discard')}
+                aria-label={t('common.discard')}
               >
-                <span>{t('activeWorkout.sessionNoteBtn')}</span>
-                {isWorkoutNoteUnread && (
-                  <span className="ml-1.5 inline-flex items-center justify-center px-1.5 py-0.5 rounded bg-[#10B981] text-white text-[10px] font-bold">
-                    1
-                  </span>
-                )}
+                <Trash2 className="w-4 h-4" />
               </button>
             </div>
 
@@ -944,59 +944,108 @@ export const ActiveWorkoutSheet: React.FC = () => {
                           )}
                         </div>
 
-                        <button
-                          type="button"
-                          onClick={() => setInspectingExerciseName(exercise.exerciseName)}
-                          className="w-10 h-10 rounded-[12px] border border-[#ECEAF6] bg-[#F8F7FC] text-[#6B7280] hover:text-[#6D28D9] hover:border-[#DDD6FE] flex items-center justify-center shrink-0 cursor-pointer transition-colors"
-                          title={t('exercises.viewTechnique')}
-                          aria-label={t('exercises.viewTechnique')}
-                        >
-                          <HelpCircle className="w-4 h-4" />
-                        </button>
-                      </div>
+                        <div className="flex items-center gap-1.5 shrink-0 relative">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              handleToggleExerciseNote(exercise.instanceId, noteLookupKeys, prevNote?.note);
+                              setTimeout(() => document.getElementById(noteTextareaId)?.focus(), 50);
+                            }}
+                            className={`relative w-9 h-9 rounded-[11px] border flex items-center justify-center cursor-pointer transition-colors ${
+                              hasUnreadNote || isNoteExpanded || Boolean(exercise.notes?.trim() || prevNote?.note)
+                                ? 'bg-[var(--bg-lilac)] border-[#8B5CF6] text-[#7C3AED]'
+                                : 'bg-[var(--bg-well)] border-[var(--border-subtle)] text-[var(--text-muted)] hover:text-[#7C3AED]'
+                            }`}
+                            title={t('activeWorkout.commentBtn')}
+                            aria-label={t('activeWorkout.commentBtn')}
+                          >
+                            <MessageSquare className="w-4 h-4" />
+                            {hasUnreadNote && (
+                              <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-[#10B981] ring-2 ring-[var(--bg-surface)]" />
+                            )}
+                          </button>
 
-                      <div className="flex flex-wrap items-center gap-2">
-                        <Button
-                          variant="outline"
-                          size="md"
-                          onClick={() => {
-                            handleToggleExerciseNote(exercise.instanceId, noteLookupKeys, prevNote?.note);
-                            setTimeout(() => document.getElementById(noteTextareaId)?.focus(), 50);
-                          }}
-                          className={
-                            hasUnreadNote || isNoteExpanded || Boolean(exercise.notes?.trim() || prevNote?.note)
-                              ? 'border-[#6D28D9] text-[#6D28D9] bg-[#F5F3FF]'
-                              : undefined
-                          }
-                        >
-                          <MessageSquare className="w-3.5 h-3.5 mr-1.5" />
-                          <span>{t('activeWorkout.commentBtn')}</span>
-                          {hasUnreadNote && (
-                            <span className="ml-1.5 inline-flex items-center justify-center px-1.5 py-0.5 rounded bg-[#6D28D9] text-white text-[10px] font-bold">
-                              1
-                            </span>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setOpenActionMenuId((prev) =>
+                                prev === exercise.instanceId ? null : exercise.instanceId
+                              )
+                            }
+                            className="w-9 h-9 rounded-[11px] border border-[var(--border-subtle)] bg-[var(--bg-well)] text-[var(--text-secondary)] hover:text-[#7C3AED] hover:border-[#8B5CF6] flex items-center justify-center cursor-pointer transition-colors"
+                            aria-label="Actions"
+                          >
+                            <MoreHorizontal className="w-4 h-4" />
+                          </button>
+
+                          {openActionMenuId === exercise.instanceId && (
+                            <div className="absolute right-0 top-11 z-30 w-52 p-1.5 rounded-[16px] bg-[var(--bg-surface)] border border-[var(--border-subtle)] royal-float-shadow space-y-0.5 text-xs">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  addSet(exercise.instanceId, 'warmup');
+                                  triggerProgramSync();
+                                  setOpenActionMenuId(null);
+                                }}
+                                className="w-full min-h-[38px] px-2.5 rounded-[10px] hover:bg-[var(--bg-well)] text-[var(--text-primary)] flex items-center gap-2 text-left font-medium cursor-pointer"
+                              >
+                                <Plus className="w-3.5 h-3.5 text-[#7C3AED]" />
+                                <span>{t('activeWorkout.addWarmupSet')}</span>
+                              </button>
+                              {exercise.measurementType === 'weight_reps' && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setPlateMathInstances((prev) => ({
+                                      ...prev,
+                                      [exercise.instanceId]: !prev[exercise.instanceId],
+                                    }));
+                                    setOpenActionMenuId(null);
+                                  }}
+                                  className="w-full min-h-[38px] px-2.5 rounded-[10px] hover:bg-[var(--bg-well)] text-[var(--text-primary)] flex items-center gap-2 text-left font-medium cursor-pointer"
+                                >
+                                  <Dumbbell className="w-3.5 h-3.5 text-[#7C3AED]" />
+                                  <span>{t('activeWorkout.platesBtn')}</span>
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setInspectingExerciseName(exercise.exerciseName);
+                                  setOpenActionMenuId(null);
+                                }}
+                                className="w-full min-h-[38px] px-2.5 rounded-[10px] hover:bg-[var(--bg-well)] text-[var(--text-primary)] flex items-center gap-2 text-left font-medium cursor-pointer"
+                              >
+                                <HelpCircle className="w-3.5 h-3.5 text-[#7C3AED]" />
+                                <span>{t('exercises.viewTechnique')}</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setReplacingInstanceId(exercise.instanceId);
+                                  setIsPickerOpen(true);
+                                  setOpenActionMenuId(null);
+                                }}
+                                className="w-full min-h-[38px] px-2.5 rounded-[10px] hover:bg-[var(--bg-well)] text-[var(--text-primary)] flex items-center gap-2 text-left font-medium cursor-pointer"
+                              >
+                                <RefreshCw className="w-3.5 h-3.5 text-[#7C3AED]" />
+                                <span>{t('activeWorkout.replaceShort')}</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  removeExercise(exercise.instanceId);
+                                  triggerProgramSync();
+                                  setOpenActionMenuId(null);
+                                }}
+                                className="w-full min-h-[38px] px-2.5 rounded-[10px] hover:bg-rose-500/10 text-rose-500 flex items-center gap-2 text-left font-semibold cursor-pointer"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                                <span>{t('activeWorkout.removeShort')}</span>
+                              </button>
+                            </div>
                           )}
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="md"
-                          onClick={() => {
-                            setReplacingInstanceId(exercise.instanceId);
-                            setIsPickerOpen(true);
-                          }}
-                        >
-                          {t('activeWorkout.replaceShort')}
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="md"
-                          onClick={() => {
-                            removeExercise(exercise.instanceId);
-                            triggerProgramSync();
-                          }}
-                        >
-                          {t('activeWorkout.removeShort')}
-                        </Button>
+                        </div>
                       </div>
                     </div>
 
@@ -1239,65 +1288,29 @@ export const ActiveWorkoutSheet: React.FC = () => {
                       </div>
                     )}
 
-                    {/* Card Footer Action Row 1 & Row 2 */}
-                    <div className="space-y-2.5 pt-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <Button
-                          variant="outline"
-                          size="md"
-                          onClick={() => {
-                            addSet(exercise.instanceId, 'normal');
-                            triggerProgramSync();
-                          }}
-                        >
-                          {t('activeWorkout.addNormalSet')}
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="md"
-                          onClick={() => {
-                            addSet(exercise.instanceId, 'warmup');
-                            triggerProgramSync();
-                          }}
-                        >
-                          {t('activeWorkout.addWarmupSet')}
-                        </Button>
-                        {exercise.measurementType === 'weight_reps' && (
-                          <Button
-                            variant="outline"
-                            size="md"
-                            onClick={() =>
-                              setPlateMathInstances((prev) => ({
-                                ...prev,
-                                [exercise.instanceId]: !prev[exercise.instanceId],
-                              }))
-                            }
-                            className={showPlateMath ? 'border-[#6D28D9] text-[#6D28D9] bg-[#F5F3FF]' : undefined}
-                          >
-                            {t('activeWorkout.platesBtn')}
-                          </Button>
-                        )}
-                      </div>
-
-                      <div className="flex flex-wrap items-center gap-2">
-                        <Button
-                          variant="outline"
-                          size="md"
-                          onClick={() => startRestTimer(defaultRestSecs)}
-                        >
-                          {t('activeWorkout.restBtn', { time: formatDuration(defaultRestSecs) })}
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="md"
-                          onClick={() =>
-                            handleToggleExerciseNote(exercise.instanceId, noteLookupKeys, prevNote?.note)
-                          }
-                          className={isNoteExpanded || exercise.notes?.trim() ? 'border-[#6D28D9] text-[#6D28D9] bg-[#F5F3FF]' : undefined}
-                        >
-                          {t('activeWorkout.noteBtn')}
-                        </Button>
-                      </div>
+                    {/* Minimalist Card Footer: Add Set & Rest Timer */}
+                    <div className="flex items-center gap-2 pt-1">
+                      <Button
+                        variant="outline"
+                        size="md"
+                        className="flex-1"
+                        onClick={() => {
+                          addSet(exercise.instanceId, 'normal');
+                          triggerProgramSync();
+                        }}
+                      >
+                        <Plus className="w-3.5 h-3.5 mr-1" />
+                        {t('activeWorkout.addNormalSet')}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="md"
+                        className="shrink-0"
+                        onClick={() => startRestTimer(defaultRestSecs)}
+                      >
+                        <Clock className="w-3.5 h-3.5 mr-1 text-[#7C3AED]" />
+                        {t('activeWorkout.restBtn', { time: formatDuration(defaultRestSecs) })}
+                      </Button>
                     </div>
                   </article>
                 );
@@ -1362,35 +1375,28 @@ export const ActiveWorkoutSheet: React.FC = () => {
         title={t('activeWorkout.unfinishedTitle')}
         size="sm"
         footer={
-          <div className="flex flex-col sm:flex-row gap-2.5 w-full">
-            <Button
-              variant="primary"
-              size="md"
-              className="flex-1"
-              onClick={() => setIsUnfinishedModalOpen(false)}
-            >
-              {t('activeWorkout.returnToWorkout')}
-            </Button>
+          <>
             <Button
               variant="outline"
               size="md"
-              className="flex-1"
               isLoading={isSubmitting}
               onClick={commitFinishWorkout}
             >
               {t('activeWorkout.saveCompletedOnly')}
             </Button>
-          </div>
+            <Button
+              variant="primary"
+              size="md"
+              onClick={() => setIsUnfinishedModalOpen(false)}
+            >
+              {t('activeWorkout.returnToWorkout')}
+            </Button>
+          </>
         }
       >
-        <div className="space-y-2">
-          <div className="text-[11px] font-bold uppercase tracking-wider text-[#6D28D9]">
-            {t('activeWorkout.unfinishedEyebrow')}
-          </div>
-          <p className="text-xs text-[#6B7280] leading-relaxed">
-            {t('activeWorkout.unfinishedDesc')}
-          </p>
-        </div>
+        <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
+          {t('activeWorkout.unfinishedDesc')}
+        </p>
       </Modal>
 
       {/* No Completed Sets Alert Modal */}
@@ -1405,14 +1411,9 @@ export const ActiveWorkoutSheet: React.FC = () => {
           </Button>
         }
       >
-        <div className="space-y-2">
-          <div className="text-[11px] font-bold uppercase tracking-wider text-[#6D28D9]">
-            {t('activeWorkout.emptyCheckEyebrow')}
-          </div>
-          <p className="text-xs text-[#6B7280] leading-relaxed">
-            {t('activeWorkout.atLeastOneCompletedSet') || t('activeWorkout.emptyWorkoutWarning')}
-          </p>
-        </div>
+        <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
+          {t('activeWorkout.atLeastOneCompletedSet') || t('activeWorkout.emptyWorkoutWarning')}
+        </p>
       </Modal>
 
       {/* Discard Confirmation Modal */}
@@ -1440,14 +1441,9 @@ export const ActiveWorkoutSheet: React.FC = () => {
           </>
         }
       >
-        <div className="space-y-2">
-          <div className="text-[11px] font-bold uppercase tracking-wider text-[#EF4444]">
-            {t('activeWorkout.resetEyebrow')}
-          </div>
-          <p className="text-xs text-[#6B7280] leading-relaxed">
-            {t('activeWorkout.resetDesc')}
-          </p>
-        </div>
+        <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
+          {t('activeWorkout.resetDesc')}
+        </p>
       </Modal>
 
       {/* Exercise Picker Modal */}

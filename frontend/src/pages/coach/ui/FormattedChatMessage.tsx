@@ -123,8 +123,8 @@ export const FormattedChatMessage: React.FC<FormattedChatMessageProps> = ({ cont
       isOrderedList = false;
       const text = line.replace(/^[-*•]\s+/, '');
       currentListItems.push(
-        <li key={`bullet-item-${index}`} className="flex items-start gap-2 text-[#1E1B4B]">
-          <span className="w-1.5 h-1.5 rounded-full bg-[#6D28D9] shrink-0 mt-1.5" />
+        <li key={`bullet-item-${index}`} className="flex items-start gap-2 text-[var(--text-primary)]">
+          <span className="w-1.5 h-1.5 rounded-full bg-[#8B5CF6] shrink-0 mt-1.5" />
           <div className="flex-1 leading-snug break-words">{parseInlineFormatting(text)}</div>
         </li>
       );
@@ -134,7 +134,7 @@ export const FormattedChatMessage: React.FC<FormattedChatMessageProps> = ({ cont
     // Regular Paragraph Line
     flushList(index);
     renderedElements.push(
-      <p key={`p-${index}`} className="leading-snug text-[#1E1B4B] my-0.5 break-words">
+      <p key={`p-${index}`} className="leading-snug text-[var(--text-primary)] my-0.5 break-words">
         {parseInlineFormatting(line)}
       </p>
     );

@@ -13,7 +13,25 @@
     <meta name="author" content="duda.uz" />
     <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
     <meta name="theme-color" content="#3B0CA3" />
-    <meta name="color-scheme" content="light" />
+    <meta name="color-scheme" content="light dark" />
+    <script>
+      (function () {
+        try {
+          var t = localStorage.getItem('duda_theme_v1');
+          if (!t && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            t = 'dark';
+          }
+          if (t === 'dark') {
+            document.documentElement.setAttribute('data-theme', 'dark');
+            document.documentElement.classList.add('dark');
+            var m = document.querySelector('meta[name="theme-color"]');
+            if (m) m.setAttribute('content', '#090812');
+          } else {
+            document.documentElement.setAttribute('data-theme', 'light');
+          }
+        } catch (e) {}
+      })();
+    </script>
 
     <!-- Canonical & Multilingual Alternates -->
     <link rel="canonical" href="https://duda.uz/" />

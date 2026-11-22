@@ -8,7 +8,6 @@ import {
   Bot,
   Calendar,
   CalendarCheck,
-  CheckCircle2,
   Copy,
   Dumbbell,
   Flame,
@@ -466,8 +465,6 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = ({ onNavigateToPrograms
                   · {weeklyMetrics.weekSessions} {t('workouts.sessionsCountLabel')}
                 </span>
               </div>
-
-              <p className="text-[13px] text-white/75 max-w-xl">{t('workouts.subtitle')}</p>
             </div>
 
             <div className="flex flex-wrap items-center gap-2.5 shrink-0">
@@ -548,30 +545,29 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = ({ onNavigateToPrograms
         </div>
       </section>
 
-      {/* 2. Gym Tools 8-Tile Pastel Squircle Grid */}
-      <section className="space-y-3">
-        <div className="flex items-center justify-between px-1">
-          <h2 className="text-[16px] font-bold tracking-tight text-[#1E1B4B]">
-            {t('workouts.toolsTitle')}
-          </h2>
-          <span className="text-[12px] font-medium text-[#6B7280]">{t('workouts.allTools')}</span>
-        </div>
-
-        <Card className="p-4 sm:p-5">
-          <div className="grid grid-cols-4 sm:grid-cols-8 gap-3">
-            {gymTools.map((tool) => {
+      {/* 2. Secondary Tools Dock (Exercises, Progress, Nutrition, Plan, Body) */}
+      <Card className="p-3 sm:p-4">
+        <div className="grid grid-cols-5 gap-1.5 sm:gap-2">
+          {gymTools
+            .filter(
+              (tool) =>
+                tool.label !== t('nav.programs') &&
+                tool.label !== t('nav.history') &&
+                tool.label !== t('nav.coach')
+            )
+            .map((tool) => {
               const Icon = tool.icon;
               return (
                 <button
                   key={tool.label}
                   type="button"
                   onClick={tool.onClick}
-                  className="flex flex-col items-center gap-2 py-2 px-1 rounded-[14px] hover:bg-[#F8F7FC] transition-colors cursor-pointer group"
+                  className="flex flex-col items-center gap-1.5 py-2 px-1 rounded-[14px] hover:bg-[#F8F7FC] transition-colors cursor-pointer group"
                 >
                   <span
-                    className={`w-11 h-11 rounded-[14px] ${tool.bg} ${tool.fg} flex items-center justify-center transition-transform group-hover:-translate-y-0.5`}
+                    className={`w-10 h-10 rounded-[13px] ${tool.bg} ${tool.fg} flex items-center justify-center transition-transform group-hover:-translate-y-0.5`}
                   >
-                    <Icon className="w-5 h-5" />
+                    <Icon className="w-[18px] h-[18px]" />
                   </span>
                   <span className="text-[11px] font-semibold text-[#1E1B4B] text-center leading-tight line-clamp-1">
                     {tool.label}
@@ -579,22 +575,17 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = ({ onNavigateToPrograms
                 </button>
               );
             })}
-          </div>
-        </Card>
-      </section>
+        </div>
+      </Card>
 
       {/* 3. Active Personal Program Split Section (Indigo + Teal Cards with Auto-Save Badge) */}
       {activeProgram ? (
         <Card className="p-5 sm:p-6 space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-            <div className="space-y-1.5">
+            <div className="space-y-1">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-[#F0EFFE] text-[#6D28D9] border border-[#DDD6FE]">
                   {t('programs.activeBadge')}
-                </span>
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#ECFDF5] text-[#059669] border border-[#A7F3D0]">
-                  <CheckCircle2 className="w-3 h-3" />
-                  {t('programs.personalCopyAutoSave')}
                 </span>
               </div>
 

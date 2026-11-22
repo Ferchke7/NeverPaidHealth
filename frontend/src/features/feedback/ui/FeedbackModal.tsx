@@ -59,11 +59,10 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose })
       size="md"
       title={
         <div className="flex items-center gap-2">
-          <MessageSquarePlus className="w-5 h-5 text-[#6D28D9]" />
-          <span className="font-extrabold text-[#1E1B4B]">Обратная связь и баги</span>
+          <MessageSquarePlus className="w-5 h-5 text-[#7C3AED]" />
+          <span className="font-extrabold text-[var(--text-primary)]">Обратная связь</span>
         </div>
       }
-      subtitle="Помогите нам сделать платформу лучше: сообщите о проблеме или предложите идею"
     >
       {isSuccess ? (
         <div className="py-8 text-center space-y-2 animate-fade-in">

@@ -35,17 +35,17 @@ export const ConfirmDeleteModal: React.FC<ConfirmDeleteModalProps> = ({
       }
       title={title}
       footer={
-        <div className="flex items-center gap-2">
+        <>
           <Button variant="outline" size="md" onClick={onClose} disabled={isLoading}>
             {t('common.cancel')}
           </Button>
           <Button variant="danger" size="md" onClick={onConfirm} isLoading={isLoading}>
             {t('common.delete')}
           </Button>
-        </div>
+        </>
       }
     >
-      <p className="text-[13px] text-[#6B7280] leading-relaxed">
+      <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
         {description || t('common.deleteConfirm')}
       </p>
     </Modal>

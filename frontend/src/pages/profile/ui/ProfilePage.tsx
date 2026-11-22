@@ -23,6 +23,7 @@ import { Input } from '@/shared/ui';
 import { Switch } from '@/shared/ui';
 import { UserAvatar } from '@/entities/user/ui/UserAvatar.tsx';
 import { LanguageSwitchToggle } from '@/features/switch-language/ui/LanguageSwitchToggle.tsx';
+import { ThemeToggle } from '@/features/switch-theme/ui/ThemeToggle.tsx';
 import { PWAInstallButton } from '@/features/pwa-install/ui/PWAInstallButton.tsx';
 import { FeedbackModal } from '@/features/feedback/ui/FeedbackModal.tsx';
 import { useTranslation } from '@/shared/lib/i18n/i18n.ts';
@@ -393,10 +394,17 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onNavigateToBody }) =>
               />
 
               <div className="space-y-1.5">
-                <label className="block text-xs font-semibold text-[#6B7280]">
+                <label className="block text-xs font-semibold text-[var(--text-muted)]">
                   {t('profile.languagePreference')}
                 </label>
                 <LanguageSwitchToggle variant="inline" />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="block text-xs font-semibold text-[var(--text-muted)]">
+                  {language === 'ru' ? 'Тема оформления' : language === 'uz' ? 'Mavzu' : 'Appearance'}
+                </label>
+                <ThemeToggle variant="segmented" />
               </div>
             </CardContent>
           </Card>
@@ -609,10 +617,9 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onNavigateToBody }) =>
               </button>
             </div>
 
-            <div className="p-3.5 rounded-[14px] bg-[#F8F7FC] border border-[#ECEAF6] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="p-3.5 rounded-[14px] bg-[var(--bg-well)] border border-[var(--border-subtle)] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="min-w-0">
-                <div className="text-sm font-semibold text-[#1E1B4B]">{labels.exportTitle}</div>
-                <div className="text-xs text-[#6B7280] mt-0.5">{labels.exportDesc}</div>
+                <div className="text-sm font-semibold text-[var(--text-primary)]">{labels.exportTitle}</div>
               </div>
               <Button
                 type="button"
@@ -679,13 +686,10 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onNavigateToBody }) =>
         <Card className="p-4 sm:p-5 bg-white border-[#ECEAF6] royal-card-shadow space-y-4">
           <CardHeader className="pb-3 border-b border-[#ECEAF6] mb-0 flex flex-col sm:flex-row sm:items-start justify-between gap-3">
             <div className="min-w-0">
-              <CardTitle className="text-base text-[#1E1B4B] flex items-center gap-2">
-                <MessageSquare className="w-4 h-4 text-[#6D28D9]" />
+              <CardTitle className="text-base text-[var(--text-primary)] flex items-center gap-2">
+                <MessageSquare className="w-4 h-4 text-[#7C3AED]" />
                 {t('profile.feedbackTitle')}
               </CardTitle>
-              <CardDescription className="mt-0.5 text-[#6B7280]">
-                {t('profile.feedbackSubtitle')}
-              </CardDescription>
             </div>
             <Button
               type="button"

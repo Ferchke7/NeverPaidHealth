@@ -28,15 +28,15 @@ export const Card: React.FC<CardProps> = ({
   };
 
   const surfaceStyles: Record<NonNullable<CardProps['variant']>, string> = {
-    default: 'bg-[#FFFFFF] border border-[#ECEAF6] rounded-[22px] shadow-[0_10px_28px_rgba(27,5,82,0.06)]',
-    flat: 'bg-[#F8F7FC] border border-[#ECEAF6] rounded-[20px] shadow-none',
-    bordered: 'bg-[#FFFFFF] border border-[#E4E0F5] rounded-[20px] shadow-none',
-    glow: 'bg-[#FFFFFF] border border-[#C4B5FD] rounded-[22px] shadow-[0_12px_30px_rgba(124,58,237,0.12)]',
+    default: 'bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-[22px] royal-card-shadow',
+    flat: 'bg-[var(--bg-well)] border border-[var(--border-subtle)] rounded-[20px] shadow-none',
+    bordered: 'bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-[20px] shadow-none',
+    glow: 'bg-[var(--bg-surface)] border border-[var(--border-strong)] rounded-[22px] shadow-[0_12px_30px_rgba(124,58,237,0.12)]',
   };
 
   const extraStyles = [
     surfaceStyles[variant],
-    isHoverable ? 'hover:border-[#C4B5FD] hover:shadow-[0_14px_32px_rgba(27,5,82,0.09)] transition-all cursor-pointer' : '',
+    isHoverable ? 'hover:border-[var(--border-strong)] hover:shadow-[0_14px_32px_rgba(27,5,82,0.09)] transition-all cursor-pointer' : '',
     className,
   ]
     .filter(Boolean)
@@ -55,7 +55,7 @@ export const CardHeader: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({
   ...props
 }) => (
   <HeroCard.Header
-    className={`flex-row items-center justify-between pb-3 border-b border-[#ECEAF6] gap-2 ${className}`}
+    className={`flex-row items-center justify-between pb-3 border-b border-[var(--border-subtle)] gap-2 ${className}`}
     {...props}
   >
     {children}
@@ -67,7 +67,7 @@ export const CardTitle: React.FC<React.HTMLAttributes<HTMLHeadingElement>> = ({
   children,
   ...props
 }) => (
-  <HeroCard.Title className={`font-bold text-[#130F26] flex items-center gap-2 ${className}`} {...props}>
+  <HeroCard.Title className={`font-bold text-[var(--text-primary)] flex items-center gap-2 ${className}`} {...props}>
     {children}
   </HeroCard.Title>
 );
@@ -77,7 +77,7 @@ export const CardDescription: React.FC<React.HTMLAttributes<HTMLParagraphElement
   children,
   ...props
 }) => (
-  <HeroCard.Description className={`text-[13px] text-[#5A5575] mt-0.5 ${className}`} {...props}>
+  <HeroCard.Description className={`text-[13px] text-[var(--text-secondary)] mt-0.5 ${className}`} {...props}>
     {children}
   </HeroCard.Description>
 );

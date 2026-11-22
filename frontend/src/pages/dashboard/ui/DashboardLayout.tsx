@@ -23,6 +23,7 @@ import { useActiveWorkoutStore } from '../../../entities/workout/model/activeWor
 import { ActiveProgramResponse } from '../../../entities/program/model/types.ts';
 import { AthleteAvatar } from '../../../entities/user/ui/AthleteAvatar.tsx';
 import { LanguageSwitchToggle } from '../../../features/switch-language/ui/LanguageSwitchToggle.tsx';
+import { ThemeToggle } from '../../../features/switch-theme/ui/ThemeToggle.tsx';
 import { PWAInstallBanner } from '../../../features/pwa-install/ui/PWAInstallBanner.tsx';
 import { PWAInstallButton } from '../../../features/pwa-install/ui/PWAInstallButton.tsx';
 import { FeedbackModal } from '../../../features/feedback/ui/FeedbackModal.tsx';
@@ -160,11 +161,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               <Dumbbell className="w-5 h-5" />
             </div>
             <div>
-              <div className="text-[19px] font-bold tracking-tight text-[#130F26] leading-tight">
+              <div className="text-[19px] font-bold tracking-tight text-[var(--text-primary)] leading-tight">
                 duda.uz
-              </div>
-              <div className="text-[9px] font-bold uppercase tracking-[0.08em] text-[#7C3AED]">
-                GYM & STRENGTH PRO
               </div>
             </div>
           </button>
@@ -251,16 +249,17 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
             <button
               type="button"
               onClick={() => setIsFeedbackOpen(true)}
-              className="flex-1 h-[38px] px-2.5 flex items-center justify-center gap-1.5 rounded-[12px] text-[12px] font-semibold text-[#5A5575] hover:text-[#6D28D9] hover:bg-[#F4F1FE] transition-colors cursor-pointer"
+              className="flex-1 h-[38px] px-2.5 flex items-center justify-center gap-1.5 rounded-[12px] text-[12px] font-semibold text-[var(--text-secondary)] hover:text-[#7C3AED] hover:bg-[var(--bg-lilac)] transition-colors cursor-pointer"
               title={t('nav.feedbackTitle') || 'Feedback'}
             >
               <MessageSquarePlus className="w-3.5 h-3.5" />
               <span className="truncate">{t('nav.feedback') || 'Feedback'}</span>
             </button>
+            <ThemeToggle variant="icon" />
             <button
               type="button"
               onClick={logout}
-              className="h-[38px] w-[38px] flex items-center justify-center rounded-[12px] text-[#8F8AA8] hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+              className="h-[38px] w-[38px] flex items-center justify-center rounded-[12px] text-[var(--text-muted)] hover:text-rose-500 hover:bg-rose-500/10 transition-colors cursor-pointer"
               title={t('nav.logout')}
               aria-label={t('nav.logout')}
             >
@@ -283,17 +282,21 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           <span className="text-[18px] font-bold tracking-tight text-white">duda.uz</span>
         </button>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
           {activeWorkout && (
             <button
               type="button"
               onClick={openWorkoutSheet}
-              className="h-[34px] px-3 rounded-full bg-[#10B981] text-white text-[11px] font-bold flex items-center gap-1.5 shadow-sm cursor-pointer"
+              className="h-[34px] px-2.5 rounded-full bg-[#10B981] text-white text-[11px] font-bold flex items-center gap-1.5 shadow-sm cursor-pointer"
             >
               <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
               <span>LIVE</span>
             </button>
           )}
+          <ThemeToggle
+            variant="icon"
+            className="h-[38px] w-[38px] rounded-[12px] bg-white/15 hover:bg-white/25 text-white"
+          />
           <button
             type="button"
             onClick={() => setIsMobileMenuOpen(true)}
@@ -307,9 +310,9 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
 
       {/* Mobile Full Sections Drawer */}
       {isMobileMenuOpen && (
-        <div className="lg:hidden fixed inset-0 z-50 bg-[#F4F3FA] flex flex-col p-4 pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))] overflow-y-auto">
+        <div className="lg:hidden fixed inset-0 z-50 bg-[var(--bg-canvas)] flex flex-col p-4 pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))] overflow-y-auto">
           <div className="flex items-center justify-between pb-4">
-            <span className="text-[20px] font-bold tracking-tight text-[#130F26]">
+            <span className="text-[20px] font-bold tracking-tight text-[var(--text-primary)]">
               {t('nav.allSections')}
             </span>
             <Button
@@ -346,8 +349,11 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
 
           <div className="mt-4 bg-[#FFFFFF] border border-[#ECEAF6] rounded-[22px] p-4 space-y-3 shadow-[0_10px_28px_rgba(27,5,82,0.06)]">
             <div className="flex items-center justify-between gap-2">
-              <span className="text-[13px] font-semibold text-[#130F26] truncate">{displayName}</span>
-              <LanguageSwitchToggle variant="header" />
+              <span className="text-[13px] font-semibold text-[var(--text-primary)] truncate">{displayName}</span>
+              <div className="flex items-center gap-1.5">
+                <ThemeToggle variant="icon" />
+                <LanguageSwitchToggle variant="header" />
+              </div>
             </div>
             <PWAInstallButton variant="card" />
             <div className="grid grid-cols-2 gap-2">
@@ -373,17 +379,21 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
       <div className="flex-1 min-w-0 flex flex-col min-h-0">
         {/* Desktop Top Utility Bar */}
         <div className="hidden lg:flex items-center justify-between gap-4 px-8 pt-5 pb-1 w-full max-w-[1260px] shrink-0">
-          <div className="text-[13px] font-semibold text-[#8F8AA8]">
-            duda.uz  /  <span className="text-[#130F26] font-bold">{sectionTitleMap[currentTab]}</span>
+          <div className="text-[13px] font-semibold text-[var(--text-muted)]">
+            duda.uz  /  <span className="text-[var(--text-primary)] font-bold">{sectionTitleMap[currentTab]}</span>
           </div>
 
-          <div className="flex items-center gap-2.5 text-[13px] text-[#5A5575]">
+          <div className="flex items-center gap-2 text-[13px] text-[var(--text-secondary)]">
             <PWAInstallButton className="hidden xl:flex" />
+            <ThemeToggle
+              variant="icon"
+              className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-[#7C3AED] hover:border-[#C4B5FD]"
+            />
             <LanguageSwitchToggle variant="header" />
             <button
               type="button"
               onClick={() => setIsFeedbackOpen(true)}
-              className="min-h-[40px] px-3 inline-flex items-center rounded-[12px] bg-[#FFFFFF] border border-[#ECEAF6] text-[12px] font-semibold text-[#5A5575] hover:text-[#6D28D9] hover:border-[#C4B5FD] transition-colors cursor-pointer"
+              className="min-h-[40px] px-3 inline-flex items-center rounded-[12px] bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-[12px] font-semibold text-[var(--text-secondary)] hover:text-[#7C3AED] hover:border-[#C4B5FD] transition-colors cursor-pointer"
             >
               {t('nav.feedback') || 'Feedback'}
             </button>
@@ -407,7 +417,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
       <nav
         className={`${
           isCoachView ? 'shrink-0' : 'fixed bottom-0 left-0 right-0'
-        } z-40 bg-[#FFFFFF]/95 backdrop-blur-md border-t border-[#ECEAF6] rounded-t-[24px] shadow-[0_-8px_28px_rgba(27,5,82,0.08)] lg:hidden flex items-center justify-around px-2 pt-1.5 pb-[calc(0.45rem+env(safe-area-inset-bottom,0px))]`}
+        } z-40 bg-[var(--bg-surface)]/95 backdrop-blur-md border-t border-[var(--border-subtle)] rounded-t-[24px] shadow-[0_-8px_28px_rgba(27,5,82,0.08)] dark:shadow-[0_-8px_28px_rgba(0,0,0,0.45)] lg:hidden flex items-center justify-around px-2 pt-1.5 pb-[calc(0.45rem+env(safe-area-inset-bottom,0px))]`}
         aria-label="Mobile Navigation"
       >
         {[
@@ -441,7 +451,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               else handleNavClick('programs');
             }}
             aria-label={activeWorkout ? t('activeWorkout.sessionHeading') : t('nav.programs')}
-            className="w-12 h-12 rounded-full violet-btn-gradient text-white flex items-center justify-center shadow-[0_10px_24px_rgba(109,40,217,0.38)] ring-4 ring-[#FFFFFF] active:scale-95 transition-transform cursor-pointer"
+            className="w-12 h-12 rounded-full violet-btn-gradient text-white flex items-center justify-center shadow-[0_10px_24px_rgba(109,40,217,0.38)] ring-4 ring-[var(--bg-surface)] active:scale-95 transition-transform cursor-pointer"
           >
             {activeWorkout ? <Dumbbell className="w-5 h-5" /> : <BookOpen className="w-5 h-5" />}
           </button>

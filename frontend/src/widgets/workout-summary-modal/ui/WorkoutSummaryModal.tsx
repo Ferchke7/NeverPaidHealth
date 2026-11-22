@@ -73,10 +73,7 @@ export const WorkoutSummaryModal: React.FC<WorkoutSummaryModalProps> = ({
         {/* Figma E-Wallet Receipt Header Card */}
         <div className="relative overflow-hidden rounded-[22px] border border-[#ECEAF6] bg-white royal-card-shadow">
           <div className="royal-hero-gradient px-5 pt-5 pb-10 text-center">
-            <div className="text-[11px] font-bold uppercase tracking-wider text-white/75">
-              {t('summary.finishEyebrow')}
-            </div>
-            <div className="text-[28px] font-extrabold tracking-tight text-white tabular-nums mt-1">
+            <div className="text-[28px] font-extrabold tracking-tight text-white tabular-nums">
               {formattedCompactVolume}
             </div>
           </div>
