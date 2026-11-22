@@ -1,4 +1,4 @@
-const CACHE_NAME = 'duda-pwa-v3';
+const CACHE_NAME = 'duda-pwa-v0.0.3';
 const PRECACHE_ASSETS = [
   '/',
   '/index.html',
