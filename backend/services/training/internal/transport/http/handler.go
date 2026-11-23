@@ -17,6 +17,7 @@ type Handler struct {
 	updateSetCmd        *command.UpdateSetHandler
 	finishWorkoutCmd    *command.FinishWorkoutHandler
 	createRoutineCmd    *command.CreateRoutineHandler
+	updateRoutineCmd    *command.UpdateRoutineHandler
 	deleteRoutineCmd    *command.DeleteRoutineHandler
 	deleteWorkoutCmd    *command.DeleteWorkoutHandler
 	createProgramCmd    *command.CreateProgramHandler
@@ -36,6 +37,7 @@ func NewHandler(
 	updateSet *command.UpdateSetHandler,
 	finishWorkout *command.FinishWorkoutHandler,
 	createRoutine *command.CreateRoutineHandler,
+	updateRoutine *command.UpdateRoutineHandler,
 	deleteRoutine *command.DeleteRoutineHandler,
 	deleteWorkout *command.DeleteWorkoutHandler,
 	createProgram *command.CreateProgramHandler,
@@ -54,6 +56,7 @@ func NewHandler(
 		updateSetCmd:        updateSet,
 		finishWorkoutCmd:    finishWorkout,
 		createRoutineCmd:    createRoutine,
+		updateRoutineCmd:    updateRoutine,
 		deleteRoutineCmd:    deleteRoutine,
 		deleteWorkoutCmd:    deleteWorkout,
 		createProgramCmd:    createProgram,
@@ -113,6 +116,7 @@ func (h *Handler) Routes() http.Handler {
 	r.Get("/routines", httpx.RequireAuth(h.handleListRoutines))
 	r.Post("/routines", httpx.RequireAuth(h.handleCreateRoutine))
 	r.Get("/routines/{id}", httpx.RequireAuth(h.handleGetRoutineByID))
+	r.Put("/routines/{id}", httpx.RequireAuth(h.handleUpdateRoutine))
 	r.Delete("/routines/{id}", httpx.RequireAuth(h.handleDeleteRoutine))
 
 	// Workouts

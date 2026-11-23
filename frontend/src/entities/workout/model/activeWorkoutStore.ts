@@ -24,6 +24,7 @@ interface ActiveWorkoutState {
     programDayNumber?: number
   ) => void;
   setWorkoutProgramId: (programId: string) => void;
+  setWorkoutRoutineId: (routineId: string) => void;
   openSheet: () => void;
   closeSheet: () => void;
   addExercise: (exerciseId: string, exerciseName: string, measurementType: string) => void;
@@ -146,6 +147,15 @@ export const useActiveWorkoutStore = create<ActiveWorkoutState>((set, get) => ({
     set((state) => {
       if (!state.workout) return state;
       const updated: ActiveWorkout = { ...state.workout, programId };
+      persistState(updated);
+      return { workout: updated };
+    });
+  },
+
+  setWorkoutRoutineId: (routineId) => {
+    set((state) => {
+      if (!state.workout) return state;
+      const updated: ActiveWorkout = { ...state.workout, routineId };
       persistState(updated);
       return { workout: updated };
     });

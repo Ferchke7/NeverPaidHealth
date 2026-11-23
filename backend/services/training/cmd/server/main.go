@@ -106,6 +106,7 @@ func main() {
 	}
 
 	repo := postgres.NewTrainingRepository(pool)
+	repo.InitRoutineSchema(context.Background())
 	progRepo := postgres.NewProgramRepository(pool)
 	userProgRepo := postgres.NewUserProgramRepository(pool)
 	communityRepo := postgres.NewCommunityRepository(pool)
@@ -122,6 +123,7 @@ func main() {
 	updateSetCmd := command.NewUpdateSetHandler(wRepo)
 	finishCmd := command.NewFinishWorkoutHandler(wRepo, oRepo, clock)
 	createRotCmd := command.NewCreateRoutineHandler(rRepo, clock)
+	updateRotCmd := command.NewUpdateRoutineHandler(rRepo, clock)
 	deleteRotCmd := command.NewDeleteRoutineHandler(rRepo)
 	deleteWorkoutCmd := command.NewDeleteWorkoutHandler(wRepo)
 
@@ -141,6 +143,7 @@ func main() {
 		updateSetCmd,
 		finishCmd,
 		createRotCmd,
+		updateRotCmd,
 		deleteRotCmd,
 		deleteWorkoutCmd,
 		createProgCmd,

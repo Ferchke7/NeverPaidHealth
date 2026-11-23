@@ -241,10 +241,14 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = ({ onNavigateToPrograms
   };
 
   const handleStartRoutine = async (routine: Routine) => {
+    const isSystem = !routine.user_id || routine.user_id === '00000000-0000-0000-0000-000000000000';
+    const preferred = isSystem
+      ? userRoutines.find((u) => u.name.toLowerCase().trim() === routine.name.toLowerCase().trim()) || routine
+      : routine;
     await startWorkout({
-      name: routine.name,
-      routineId: routine.id,
-      exercises: routine.exercises,
+      name: preferred.name,
+      routineId: preferred.id,
+      exercises: preferred.exercises,
     });
   };
 

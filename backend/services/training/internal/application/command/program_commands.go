@@ -2,11 +2,53 @@ package command
 
 import (
 	"context"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/neverpaidhealth/backend/services/training/internal/application"
 	"github.com/neverpaidhealth/backend/services/training/internal/domain/program"
 )
+
+func (h *CreateProgramHandler) findExistingFork(ctx context.Context, userID uuid.UUID, names ...string) *program.Program {
+	userProgs, err := h.repo.ListByUserID(ctx, userID)
+	if err != nil {
+		return nil
+	}
+	targets := make(map[string]struct{}, len(names))
+	for _, n := range names {
+		if norm := strings.ToLower(strings.TrimSpace(n)); norm != "" {
+			targets[norm] = struct{}{}
+		}
+	}
+	var best *program.Program
+	for _, cand := range userProgs {
+		if cand.UserID() != userID {
+			continue
+		}
+		if _, ok := targets[strings.ToLower(strings.TrimSpace(cand.Name()))]; !ok {
+			continue
+		}
+		if best == nil || cand.UpdatedAt().After(best.UpdatedAt()) ||
+			(cand.UpdatedAt().Equal(best.UpdatedAt()) && cand.CreatedAt().After(best.CreatedAt())) {
+			best = cand
+		}
+	}
+	return best
+}
+
+func (h *CreateProgramHandler) repointInstalledProgram(ctx context.Context, userID, oldProgID, newProgID uuid.UUID) {
+	if h.userProgRepo == nil || oldProgID == newProgID {
+		return
+	}
+	if installed, err := h.userProgRepo.ListByUserID(ctx, userID); err == nil {
+		for _, up := range installed {
+			if up.ProgramID() == oldProgID {
+				up.SetProgramID(newProgID)
+				_ = h.userProgRepo.Save(ctx, up)
+			}
+		}
+	}
+}
 
 type ProgramExerciseInput struct {
 	ExerciseID    uuid.UUID `json:"exercise_id"`
@@ -87,8 +129,32 @@ func (h *CreateProgramHandler) Handle(ctx context.Context, in CreateProgramInput
 			return nil, err
 		}
 
-		// If editing a system program or another user's program, fork it into a new personal split
+		// If editing a system or public program owned by another user, reuse or create one personal fork.
 		if existing.UserID() != in.UserID {
+			if existingFork := h.findExistingFork(ctx, in.UserID, existing.Name(), in.Name); existingFork != nil {
+				if err := existingFork.Update(
+					in.Name,
+					in.Description,
+					program.SplitType(in.SplitType),
+					in.DaysPerWeek,
+					program.Level(in.Level),
+					existingFork.IsPublic(),
+					in.AuthorName,
+					days,
+					now,
+				); err != nil {
+					return nil, err
+				}
+				if in.AuthorAvatarURL != "" {
+					existingFork.SetAuthorAvatarURL(in.AuthorAvatarURL)
+				}
+				if err := h.repo.Save(ctx, existingFork); err != nil {
+					return nil, err
+				}
+				h.repointInstalledProgram(ctx, in.UserID, existing.ID(), existingFork.ID())
+				return existingFork, nil
+			}
+
 			forked, err := program.NewProgram(
 				in.UserID,
 				in.Name,
@@ -110,16 +176,7 @@ func (h *CreateProgramHandler) Handle(ctx context.Context, in CreateProgramInput
 			if err := h.repo.Save(ctx, forked); err != nil {
 				return nil, err
 			}
-			if h.userProgRepo != nil {
-				if installed, err := h.userProgRepo.ListByUserID(ctx, in.UserID); err == nil {
-					for _, up := range installed {
-						if up.ProgramID() == existing.ID() {
-							up.SetProgramID(forked.ID())
-							_ = h.userProgRepo.Save(ctx, up)
-						}
-					}
-				}
-			}
+			h.repointInstalledProgram(ctx, in.UserID, existing.ID(), forked.ID())
 			return forked, nil
 		}
 

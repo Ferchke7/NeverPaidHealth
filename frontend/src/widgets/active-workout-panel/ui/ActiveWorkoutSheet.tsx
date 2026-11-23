@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ChevronDown,
@@ -543,6 +543,10 @@ export const ActiveWorkoutSheet: React.FC = () => {
       }
 
       // 2. Persist any exercise/set changes back to the user's active/installed Program day & Routine
+      if (syncTimerRef.current !== null) {
+        window.clearTimeout(syncTimerRef.current);
+        syncTimerRef.current = null;
+      }
       await syncProgramAndRoutineFromWorkout(workout, queryClient);
 
       setSummary({
@@ -608,10 +612,25 @@ export const ActiveWorkoutSheet: React.FC = () => {
     setIsDiscardConfirmOpen(false);
   };
 
+  const syncTimerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (syncTimerRef.current !== null) {
+        window.clearTimeout(syncTimerRef.current);
+        syncTimerRef.current = null;
+      }
+    };
+  }, []);
+
   const triggerProgramSync = () => {
-    setTimeout(() => {
+    if (syncTimerRef.current !== null) {
+      window.clearTimeout(syncTimerRef.current);
+    }
+    syncTimerRef.current = window.setTimeout(() => {
+      syncTimerRef.current = null;
       void syncProgramAndRoutineFromWorkout(useActiveWorkoutStore.getState().workout, queryClient);
-    }, 60);
+    }, 150);
   };
 
   const handleSelectExercise = (exercise: Exercise) => {

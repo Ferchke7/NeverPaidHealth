@@ -11,6 +11,83 @@ import (
 	"github.com/neverpaidhealth/backend/services/training/internal/domain/routine"
 )
 
+// InitRoutineSchema performs safe, idempotent maintenance on routines at startup:
+// deduplicating identical personal copies created by earlier client retries while keeping
+// the most recently updated exercise list and preserving any notes/workout history links.
+func (r *TrainingRepository) InitRoutineSchema(ctx context.Context) {
+	if r.pool == nil {
+		return
+	}
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+
+	backfillNotesSQL := `
+		WITH ranked AS (
+			SELECT
+				id,
+				FIRST_VALUE(id) OVER (
+					PARTITION BY user_id, lower(btrim(name))
+					ORDER BY updated_at DESC, created_at DESC, id DESC
+				) AS keep_id,
+				FIRST_VALUE(NULLIF(btrim(notes), '')) OVER (
+					PARTITION BY user_id, lower(btrim(name))
+					ORDER BY (NULLIF(btrim(notes), '') IS NULL) ASC, updated_at DESC, created_at DESC, id DESC
+				) AS best_notes
+			FROM routines
+			WHERE user_id <> '00000000-0000-0000-0000-000000000000'
+		)
+		UPDATE routines r
+		SET notes = k.best_notes
+		FROM (SELECT DISTINCT keep_id, best_notes FROM ranked WHERE best_notes IS NOT NULL) k
+		WHERE r.id = k.keep_id AND NULLIF(btrim(r.notes), '') IS NULL
+	`
+	_, _ = tx.Exec(ctx, backfillNotesSQL)
+
+	repointWorkoutsSQL := `
+		WITH ranked AS (
+			SELECT
+				id,
+				FIRST_VALUE(id) OVER (
+					PARTITION BY user_id, lower(btrim(name))
+					ORDER BY updated_at DESC, created_at DESC, id DESC
+				) AS keep_id,
+				ROW_NUMBER() OVER (
+					PARTITION BY user_id, lower(btrim(name))
+					ORDER BY updated_at DESC, created_at DESC, id DESC
+				) AS rn
+			FROM routines
+			WHERE user_id <> '00000000-0000-0000-0000-000000000000'
+		)
+		UPDATE workouts w
+		SET routine_id = r.keep_id
+		FROM ranked r
+		WHERE r.rn > 1 AND w.routine_id = r.id
+	`
+	_, _ = tx.Exec(ctx, repointWorkoutsSQL)
+
+	dedupRoutinesSQL := `
+		WITH ranked AS (
+			SELECT
+				id,
+				ROW_NUMBER() OVER (
+					PARTITION BY user_id, lower(btrim(name))
+					ORDER BY updated_at DESC, created_at DESC, id DESC
+				) AS rn
+			FROM routines
+			WHERE user_id <> '00000000-0000-0000-0000-000000000000'
+		)
+		DELETE FROM routines r
+		USING ranked rk
+		WHERE r.id = rk.id AND rk.rn > 1
+	`
+	_, _ = tx.Exec(ctx, dedupRoutinesSQL)
+
+	_ = tx.Commit(ctx)
+}
+
 // GetByID retrieves a routine by ID.
 func (r *TrainingRepository) GetByID(ctx context.Context, id uuid.UUID) (*routine.Routine, error) {
 	query := `SELECT id, user_id, name, notes, exercises, created_at, updated_at FROM routines WHERE id = $1`

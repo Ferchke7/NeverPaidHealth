@@ -148,37 +148,108 @@ function resolveDayToUpdate(program: Program, workout: ActiveWorkout): number {
   return 0;
 }
 
-export async function syncProgramAndRoutineFromWorkout(
+interface RoutineLike {
+  id: string;
+  user_id?: string;
+  name: string;
+  notes?: string;
+  exercises?: ProgramDayExercise[];
+  created_at?: string;
+  updated_at?: string;
+}
+
+const routineForkAliases = new Map<string, string>();
+const programForkAliases = new Map<string, string>();
+let syncQueue: Promise<void> = Promise.resolve();
+
+export function resetSyncStateForTests(): void {
+  routineForkAliases.clear();
+  programForkAliases.clear();
+  syncQueue = Promise.resolve();
+}
+
+function resolveAliasedId(aliases: Map<string, string>, rawId?: string): string | undefined {
+  if (!rawId) return undefined;
+  let current = rawId;
+  const visited = new Set<string>();
+  while (aliases.has(current) && !visited.has(current)) {
+    visited.add(current);
+    current = aliases.get(current)!;
+  }
+  return current;
+}
+
+export function syncProgramAndRoutineFromWorkout(
   workout: ActiveWorkout | null | undefined,
   queryClient: QueryClient
 ): Promise<void> {
   if (!workout || !Array.isArray(workout.exercises) || workout.exercises.length === 0) {
-    return;
+    return syncQueue;
   }
 
-  // 1. Sync Routine if this workout was started from a user routine
+  const run = async () => {
+    await executeSync(workout, queryClient);
+  };
+
+  syncQueue = syncQueue.then(run, run);
+  return syncQueue;
+}
+
+async function executeSync(
+  inputWorkout: ActiveWorkout,
+  queryClient: QueryClient
+): Promise<void> {
+  const liveStoreWorkout = useActiveWorkoutStore.getState().workout;
+  const workout: ActiveWorkout =
+    liveStoreWorkout && liveStoreWorkout.id === inputWorkout.id
+      ? {
+          ...inputWorkout,
+          routineId:
+            resolveAliasedId(routineForkAliases, inputWorkout.routineId) ||
+            liveStoreWorkout.routineId ||
+            inputWorkout.routineId,
+          programId:
+            resolveAliasedId(programForkAliases, inputWorkout.programId) ||
+            liveStoreWorkout.programId ||
+            inputWorkout.programId,
+        }
+      : {
+          ...inputWorkout,
+          routineId: resolveAliasedId(routineForkAliases, inputWorkout.routineId),
+          programId: resolveAliasedId(programForkAliases, inputWorkout.programId),
+        };
+
+  // 1. Sync Routine in-place via PUT /routines/{id} (forks at most once if starting from a system routine)
   if (workout.routineId) {
+    const effectiveRoutineId = workout.routineId;
     try {
-      await apiClient('/routines', {
-        method: 'POST',
+      const savedRoutine = await apiClient<RoutineLike>(`/routines/${effectiveRoutineId}`, {
+        method: 'PUT',
         body: JSON.stringify({
-          id: workout.routineId,
           name: workout.name,
-          exercises: workout.exercises.map((ex, idx) => {
-            const workingSets = ex.sets.filter((s) => s.setType !== 'warmup');
-            const targetSets = Math.max(1, workingSets.length || ex.sets.length || 3);
-            const firstSet = workingSets[0] || ex.sets[0];
-            return {
-              exercise_id: ensureValidUuid(ex.exerciseId, ex.exerciseName),
-              exercise_name: ex.exerciseName,
-              order_index: idx,
-              target_sets: targetSets,
-              target_reps: firstSet?.reps || 10,
-              target_weight_kg: firstSet?.weightKg || 0,
-            };
-          }),
+          exercises: mapWorkoutExercisesToProgramDay(workout),
         }),
       });
+
+      if (savedRoutine && savedRoutine.id) {
+        if (savedRoutine.id !== effectiveRoutineId) {
+          routineForkAliases.set(effectiveRoutineId, savedRoutine.id);
+          if (inputWorkout.routineId && inputWorkout.routineId !== savedRoutine.id) {
+            routineForkAliases.set(inputWorkout.routineId, savedRoutine.id);
+          }
+          useActiveWorkoutStore.getState().setWorkoutRoutineId(savedRoutine.id);
+        }
+
+        queryClient.setQueryData<RoutineLike[] | undefined>(['routines'], (old) => {
+          if (!Array.isArray(old)) return old;
+          const idx = old.findIndex((r) => r.id === savedRoutine.id);
+          if (idx >= 0) {
+            return old.map((r, i) => (i === idx ? savedRoutine : r));
+          }
+          return [savedRoutine, ...old];
+        });
+      }
+
       void queryClient.invalidateQueries({ queryKey: ['routines'] });
     } catch {
       // Keep local state if routine update fails
@@ -325,6 +396,7 @@ export async function syncProgramAndRoutineFromWorkout(
     if (saved && saved.id) {
       saveProgramOverride(saved, originalProgramId);
       if (saved.id !== originalProgramId) {
+        programForkAliases.set(originalProgramId, saved.id);
         useActiveWorkoutStore.getState().setWorkoutProgramId(saved.id);
       }
       queryClient.setQueryData<ActiveProgramResponse | undefined>(['programs', 'active'], (old) => {

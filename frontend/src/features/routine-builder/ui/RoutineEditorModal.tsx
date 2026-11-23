@@ -42,6 +42,22 @@ interface RoutineEditorModalProps {
   } | null;
 }
 
+function normalizeRoutineBaseName(raw?: string): string {
+  let s = (raw || '').toLowerCase().trim();
+  const suffixes = ['(custom)', '(своя)', '(shaxsiy)'];
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const suffix of suffixes) {
+      if (s.endsWith(suffix)) {
+        s = s.slice(0, -suffix.length).trim();
+        changed = true;
+      }
+    }
+  }
+  return s;
+}
+
 export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
   isOpen,
   onClose,
@@ -61,18 +77,37 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
     !initialRoutine?.user_id ||
     initialRoutine?.user_id === '00000000-0000-0000-0000-000000000000';
 
+  const existingPersonalCopy = React.useMemo(() => {
+    if (!isOpen || !initialRoutine || !isSystemRoutine) return null;
+    const cached = queryClient.getQueryData<any[]>(['routines']);
+    if (!Array.isArray(cached)) return null;
+    const base = normalizeRoutineBaseName(initialRoutine.name);
+    if (!base) return null;
+    return (
+      cached.find(
+        (r) =>
+          r?.user_id &&
+          r.user_id !== '00000000-0000-0000-0000-000000000000' &&
+          normalizeRoutineBaseName(r.name) === base
+      ) || null
+    );
+  }, [isOpen, initialRoutine, isSystemRoutine, queryClient]);
+
+  const effectiveSource = existingPersonalCopy || initialRoutine;
+
   useEffect(() => {
-    if (isOpen && initialRoutine) {
+    if (isOpen && effectiveSource) {
       const customSuffix = t('routines.customSuffix');
-      const defaultName = isSystemRoutine
-        ? initialRoutine.name?.includes(customSuffix)
-          ? initialRoutine.name
-          : `${initialRoutine.name || t('routines.defaultName')} ${customSuffix}`
-        : initialRoutine.name || '';
+      const isEditingSystemDirectly = isSystemRoutine && !existingPersonalCopy;
+      const defaultName = isEditingSystemDirectly
+        ? effectiveSource.name?.includes(customSuffix)
+          ? effectiveSource.name
+          : `${effectiveSource.name || t('routines.defaultName')} ${customSuffix}`
+        : effectiveSource.name || '';
 
       setName(defaultName);
-      setNotes(initialRoutine.notes || '');
-      const initialExs = (initialRoutine.exercises || []).map((e) => ({
+      setNotes(effectiveSource.notes || '');
+      const initialExs = (effectiveSource.exercises || []).map((e: any) => ({
         exercise_id: e.exercise_id || e.exerciseId || e.id || '',
         exercise_name: e.exercise_name || e.exerciseName || e.name || t('routines.defaultName'),
         target_sets: e.target_sets || e.targetSets || 3,
@@ -85,7 +120,7 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
       setNotes('');
       setExercises([]);
     }
-  }, [isOpen, initialRoutine, isSystemRoutine, t]);
+  }, [isOpen, initialRoutine, effectiveSource, existingPersonalCopy, isSystemRoutine, t]);
 
   const saveMutation = useMutation({
     mutationFn: async () => {
@@ -98,7 +133,7 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
 
       const payload = {
         name: name.trim(),
-        notes: notes.trim() || undefined,
+        notes: notes.trim(),
         exercises: exercises.map((ex, idx) => ({
           exercise_id: ex.exercise_id,
           exercise_name: ex.exercise_name,
@@ -109,8 +144,9 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
         })),
       };
 
-      if (initialRoutine?.id && !isSystemRoutine) {
-        return apiClient(`/routines/${initialRoutine.id}`, {
+      const targetId = existingPersonalCopy?.id || initialRoutine?.id;
+      if (targetId) {
+        return apiClient(`/routines/${targetId}`, {
           method: 'PUT',
           body: JSON.stringify(payload),
         });
@@ -122,6 +158,16 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
       });
     },
     onSuccess: (data: any) => {
+      if (data?.id) {
+        queryClient.setQueryData<any[] | undefined>(['routines'], (old) => {
+          if (!Array.isArray(old)) return old;
+          const idx = old.findIndex((r) => r.id === data.id);
+          if (idx >= 0) {
+            return old.map((r, i) => (i === idx ? data : r));
+          }
+          return [data, ...old];
+        });
+      }
       void queryClient.invalidateQueries({ queryKey: ['routines'] });
       setName('');
       setNotes('');

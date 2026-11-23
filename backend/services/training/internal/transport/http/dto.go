@@ -48,8 +48,9 @@ type updateSetReq struct {
 }
 
 type createRoutineReq struct {
+	ID        *string                        `json:"id,omitempty"`
 	Name      string                         `json:"name"`
-	Notes     string                         `json:"notes,omitempty"`
+	Notes     *string                        `json:"notes,omitempty"`
 	Exercises []command.RoutineExerciseInput `json:"exercises"`
 }
 
@@ -226,5 +227,6 @@ func mapRoutineDTO(r *routine.Routine) map[string]any {
 		"notes":      r.Notes(),
 		"exercises":  exList,
 		"created_at": r.CreatedAt().Format("2006-01-02T15:04:05Z07:00"),
+		"updated_at": r.UpdatedAt().Format("2006-01-02T15:04:05Z07:00"),
 	}
 }

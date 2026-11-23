@@ -199,7 +199,7 @@ func (r *FakeTrainingRepo) ListByUserID(_ context.Context, userID uuid.UUID) ([]
 
 	var res []*routine.Routine
 	for _, rot := range r.routines {
-		if rot.UserID() == userID {
+		if rot.UserID() == userID || rot.UserID() == uuid.Nil {
 			res = append(res, rot)
 		}
 	}

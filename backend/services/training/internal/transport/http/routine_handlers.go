@@ -30,10 +30,24 @@ func (h *Handler) handleCreateRoutine(w http.ResponseWriter, r *http.Request, us
 		return
 	}
 
+	var idPtr *uuid.UUID
+	if req.ID != nil && *req.ID != "" {
+		if parsed, err := uuid.Parse(*req.ID); err == nil && parsed != uuid.Nil {
+			idPtr = &parsed
+		}
+	}
+
+	var notesStr string
+	if req.Notes != nil {
+		notesStr = *req.Notes
+	}
+
 	rot, err := h.createRoutineCmd.Handle(r.Context(), command.CreateRoutineInput{
+		ID:        idPtr,
 		UserID:    userID,
 		Name:      req.Name,
-		Notes:     req.Notes,
+		Notes:     notesStr,
+		NotesPtr:  req.Notes,
 		Exercises: req.Exercises,
 	})
 	if err != nil {
@@ -42,6 +56,40 @@ func (h *Handler) handleCreateRoutine(w http.ResponseWriter, r *http.Request, us
 	}
 
 	httpx.WriteJSON(w, http.StatusCreated, mapRoutineDTO(rot))
+}
+
+func (h *Handler) handleUpdateRoutine(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
+	id, ok := httpx.PathUUID(w, r, "id")
+	if !ok {
+		return
+	}
+
+	req, ok := httpx.DecodeJSON[createRoutineReq](w, r)
+	if !ok {
+		return
+	}
+
+	rot, err := h.updateRoutineCmd.Handle(r.Context(), command.UpdateRoutineInput{
+		UserID:    userID,
+		RoutineID: id,
+		Name:      req.Name,
+		Notes:     req.Notes,
+		Exercises: req.Exercises,
+	})
+	if err != nil {
+		if errors.Is(err, routine.ErrRoutineNotFound) {
+			httpx.WriteProblem(w, http.StatusNotFound, "Not Found", "Routine not found", "ERR_NOT_FOUND")
+			return
+		}
+		if errors.Is(err, routine.ErrUnauthorizedRoutineEdit) {
+			httpx.WriteProblem(w, http.StatusForbidden, "Forbidden", err.Error(), "ERR_FORBIDDEN")
+			return
+		}
+		httpx.WriteProblem(w, http.StatusBadRequest, "Bad Request", err.Error(), "ERR_UPDATE_ROUTINE")
+		return
+	}
+
+	httpx.WriteJSON(w, http.StatusOK, mapRoutineDTO(rot))
 }
 
 func (h *Handler) handleGetRoutineByID(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {

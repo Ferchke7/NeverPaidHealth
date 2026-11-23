@@ -70,3 +70,45 @@ func (r *Routine) Notes() string { return r.notes }
 func (r *Routine) Exercises() []*RoutineExercise { return r.exercises }
 func (r *Routine) CreatedAt() time.Time { return r.createdAt }
 func (r *Routine) UpdatedAt() time.Time { return r.updatedAt }
+
+// IsSystem reports whether this routine is a shared library template.
+func (r *Routine) IsSystem() bool {
+	return r.userID == uuid.Nil
+}
+
+// Update replaces the routine's mutable fields while preserving identity and ownership.
+func (r *Routine) Update(name string, notes string, exercises []*RoutineExercise, now time.Time) error {
+	trimmedName := strings.TrimSpace(name)
+	if trimmedName == "" {
+		return ErrEmptyRoutineName
+	}
+	if len(exercises) == 0 {
+		return ErrRoutineRequiresExercises
+	}
+
+	r.name = trimmedName
+	r.notes = notes
+	r.exercises = exercises
+	r.updatedAt = now
+	return nil
+}
+
+// NormalizeBaseName normalizes a routine name for matching a user's single customized version
+// against a library template while keeping explicit clones like "(Copy)" / "(Копия)" distinct.
+func NormalizeBaseName(name string) string {
+	s := strings.ToLower(strings.TrimSpace(name))
+	suffixes := []string{"(custom)", "(своя)", "(shaxsiy)"}
+	for {
+		trimmed := false
+		for _, suffix := range suffixes {
+			if strings.HasSuffix(s, suffix) {
+				s = strings.TrimSpace(strings.TrimSuffix(s, suffix))
+				trimmed = true
+			}
+		}
+		if !trimmed {
+			break
+		}
+	}
+	return s
+}
