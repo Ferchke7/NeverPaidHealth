@@ -167,8 +167,14 @@ export const TodoCalendarPage: React.FC = () => {
       try {
         const res = await apiClient<DailyScheduleResponse>(`/todos?date=${selectedDate}`);
         if (res && Array.isArray(res.todos)) {
+          const authUserId = useAuthStore.getState().user?.id;
           const backendIds = new Set(res.todos.map((item) => item.id));
-          const localOnly = local.todos.filter((item) => !backendIds.has(item.id));
+          const localOnly = local.todos.filter(
+            (item) =>
+              item.user_id !== 'local-user' &&
+              (!authUserId || item.user_id === authUserId) &&
+              !backendIds.has(item.id)
+          );
           const mergedTodos = [...localOnly, ...res.todos];
           return {
             ...res,
@@ -208,7 +214,7 @@ export const TodoCalendarPage: React.FC = () => {
   const createTodoMutation = useMutation({
     mutationFn: async (newTodo: Record<string, unknown>) => {
       setActionError(null);
-      return todoStorage.createTodo(newTodo as Parameters<typeof todoStorage.createTodo>[0]);
+      return todoStorage.createTodoAndSync(newTodo as Parameters<typeof todoStorage.createTodo>[0]);
     },
     onMutate: async (newTodo) => {
       await queryClient.cancelQueries({ queryKey: ['todos-daily', selectedDate] });
@@ -261,7 +267,7 @@ export const TodoCalendarPage: React.FC = () => {
   const updateTodoMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: Record<string, unknown> }) => {
       setActionError(null);
-      return todoStorage.updateTodo(id, data as Parameters<typeof todoStorage.updateTodo>[1]);
+      return todoStorage.updateTodoAndSync(id, data as Parameters<typeof todoStorage.updateTodo>[1]);
     },
     onError: (err: unknown) => {
       setActionError(
@@ -277,7 +283,7 @@ export const TodoCalendarPage: React.FC = () => {
 
   const toggleTodoMutation = useMutation({
     mutationFn: async (id: string) => {
-      return todoStorage.toggleTodo(id, selectedDate);
+      return todoStorage.toggleTodoAndSync(id, selectedDate);
     },
     onSuccess: ({ completed }) => {
       if (completed) {
@@ -291,12 +297,13 @@ export const TodoCalendarPage: React.FC = () => {
 
   const deleteTodoMutation = useMutation({
     mutationFn: async (id: string) => {
-      return todoStorage.deleteTodo(id);
+      return todoStorage.deleteTodoAndSync(id);
     },
     onSuccess: (_, id) => {
       if (editingTodo?.id === id) {
         setEditingTodo(null);
       }
+      useFocusTimerStore.setState((s) => (s.todoId === id ? { todoId: null } : s));
       invalidateTodoQueries(queryClient);
       setDeletingTodo(null);
     },
@@ -304,7 +311,7 @@ export const TodoCalendarPage: React.FC = () => {
 
   const deleteActivityLogMutation = useMutation({
     mutationFn: async (id: string) => {
-      return todoStorage.deleteActivityLog(id);
+      return todoStorage.deleteActivityLogAndSync(id);
     },
     onSuccess: () => {
       invalidateTodoQueries(queryClient);

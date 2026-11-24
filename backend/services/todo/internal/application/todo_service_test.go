@@ -377,3 +377,45 @@ func TestToggleTodo_ActivityLogRecordingAndCleanup(t *testing.T) {
 		t.Fatalf("expected 0 activity logs after unchecking task, got %d", len(logsAfter))
 	}
 }
+
+func TestLogFocusSession_MissingOrNilTodoIDFallsBackToStandaloneLog(t *testing.T) {
+	repo := newMockTodoRepo()
+	svc := application.NewTodoService(repo)
+	ctx := context.Background()
+	userID := uuid.New()
+
+	missingID := uuid.New()
+	log1, err := svc.LogFocusSession(ctx, userID, application.LogFocusSessionInput{
+		TodoID:          &missingID,
+		TaskTitle:       "Offline/Deleted Task",
+		Category:        "work",
+		DurationMinutes: 25,
+		SessionType:     "pomodoro",
+		Date:            "2026-11-24",
+		MarkCompleted:   true,
+	})
+	if err != nil {
+		t.Fatalf("expected missing todo_id to fall back cleanly, got err: %v", err)
+	}
+	if log1.TodoID != nil {
+		t.Fatalf("expected resolved TodoID to be nil for nonexistent todo, got %v", *log1.TodoID)
+	}
+	if log1.TaskTitle != "Offline/Deleted Task" {
+		t.Fatalf("expected TaskTitle preserved, got %q", log1.TaskTitle)
+	}
+
+	nilID := uuid.Nil
+	log2, err := svc.LogFocusSession(ctx, userID, application.LogFocusSessionInput{
+		TodoID:          &nilID,
+		TaskTitle:       "Nil UUID Session",
+		DurationMinutes: 15,
+		SessionType:     "target_timer",
+		Date:            "2026-11-24",
+	})
+	if err != nil {
+		t.Fatalf("expected uuid.Nil to fall back cleanly, got err: %v", err)
+	}
+	if log2.TodoID != nil {
+		t.Fatalf("expected resolved TodoID to be nil for uuid.Nil, got %v", *log2.TodoID)
+	}
+}

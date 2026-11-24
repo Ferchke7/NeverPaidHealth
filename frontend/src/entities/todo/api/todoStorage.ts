@@ -425,7 +425,7 @@ export const todoStorage = {
 
     // Background sync to backend ONLY if user is authenticated and online
     if (typeof window !== 'undefined' && useAuthStore.getState().isAuthenticated) {
-      apiClient.post('/todos', {
+      apiClient.post<TodoItem>('/todos', {
         title: newTodo.title,
         description: newTodo.description || undefined,
         category: newTodo.category,
@@ -436,6 +436,11 @@ export const todoStorage = {
         end_time: newTodo.end_time || undefined,
         target_duration_minutes: newTodo.target_duration_minutes,
         meeting_url: newTodo.meeting_url || undefined,
+      }).then((created) => {
+        if (!created?.id) return;
+        const current = loadStoredTodos().filter((t) => t.id !== newTodo.id && t.id !== created.id);
+        current.unshift(created);
+        saveStoredTodos(current);
       }).catch((err) => {
         console.warn('Backend sync failed, kept safely in local storage:', err);
       });
@@ -444,10 +449,61 @@ export const todoStorage = {
     return newTodo;
   },
 
-  toggleTodo(id: string, dateStr: string): { completed: boolean; todo: TodoItem | null } {
+  async createTodoAndSync(payload: {
+    title: string;
+    description?: string;
+    category?: TodoCategory;
+    priority?: TodoPriority;
+    target_duration_minutes?: number;
+    start_date?: string;
+    end_date?: string;
+    start_time?: string;
+    end_time?: string;
+    meeting_url?: string;
+  }): Promise<TodoItem> {
+    const title = (payload.title || '').trim();
+    if (!title) {
+      throw new Error('Title cannot be empty');
+    }
+
+    if (typeof window !== 'undefined' && useAuthStore.getState().isAuthenticated) {
+      const dateStr = payload.start_date || toLocalDateKey(new Date());
+      try {
+        const created = await apiClient.post<TodoItem>('/todos', {
+          title,
+          description: (payload.description || '').trim() || undefined,
+          category: payload.category || 'workout',
+          priority: payload.priority || 'medium',
+          start_date: dateStr,
+          end_date: payload.end_date || dateStr,
+          start_time: payload.start_time || undefined,
+          end_time: payload.end_time || undefined,
+          target_duration_minutes: Math.max(1, Number(payload.target_duration_minutes) || 25),
+          meeting_url: payload.meeting_url?.trim() || undefined,
+        });
+        if (created?.id) {
+          const allTodos = loadStoredTodos().filter((t) => t.id !== created.id);
+          allTodos.unshift(created);
+          saveStoredTodos(allTodos);
+          return created;
+        }
+      } catch (err) {
+        console.warn('Backend create failed, falling back to local storage:', err);
+      }
+    }
+
+    return this.createTodo(payload);
+  },
+
+  toggleTodo(id: string, dateStr: string, syncRemote = true): { completed: boolean; todo: TodoItem | null } {
     const allTodos = loadStoredTodos();
     const target = allTodos.find((t) => t.id === id);
-    if (!target) return { completed: false, todo: null };
+    if (!target) {
+      if (syncRemote && typeof window !== 'undefined' && useAuthStore.getState().isAuthenticated) {
+        apiClient.post(`/todos/${id}/toggle?date=${dateStr}`).catch(() => {});
+      }
+      return { completed: false, todo: null };
+    }
 
     const progressMap = loadProgressMap();
     const key = `${id}_${dateStr}`;
@@ -485,7 +541,7 @@ export const todoStorage = {
     saveStoredLogs(logs);
 
     // Background sync to backend ONLY if authenticated
-    if (typeof window !== 'undefined' && useAuthStore.getState().isAuthenticated) {
+    if (syncRemote && typeof window !== 'undefined' && useAuthStore.getState().isAuthenticated) {
       apiClient.post(`/todos/${id}/toggle?date=${dateStr}`).catch(() => {});
     }
 
@@ -495,13 +551,35 @@ export const todoStorage = {
     };
   },
 
+  async toggleTodoAndSync(id: string, dateStr: string): Promise<{ completed: boolean; todo: TodoItem | null }> {
+    if (typeof window !== 'undefined' && useAuthStore.getState().isAuthenticated) {
+      try {
+        const updated = await apiClient.post<TodoItem>(`/todos/${id}/toggle?date=${dateStr}`);
+        this.toggleTodo(id, dateStr, false);
+        return {
+          completed: updated.status === 'completed',
+          todo: updated,
+        };
+      } catch {
+        // Fallback safely to local storage
+      }
+    }
+    return this.toggleTodo(id, dateStr, false);
+  },
+
   updateTodo(
     id: string,
-    data: Partial<Omit<TodoItem, 'id' | 'created_at' | 'updated_at'>>
+    data: Partial<Omit<TodoItem, 'id' | 'created_at' | 'updated_at'>>,
+    syncRemote = true
   ): TodoItem | null {
     const allTodos = loadStoredTodos();
     const idx = allTodos.findIndex((t) => t.id === id);
-    if (idx === -1) return null;
+    if (idx === -1) {
+      if (syncRemote && typeof window !== 'undefined' && useAuthStore.getState().isAuthenticated) {
+        apiClient.put(`/todos/${id}`, data).catch(() => {});
+      }
+      return null;
+    }
 
     const updated: TodoItem = {
       ...allTodos[idx],
@@ -511,25 +589,58 @@ export const todoStorage = {
     allTodos[idx] = updated;
     saveStoredTodos(allTodos);
 
-    if (typeof window !== 'undefined' && useAuthStore.getState().isAuthenticated) {
+    if (syncRemote && typeof window !== 'undefined' && useAuthStore.getState().isAuthenticated) {
       apiClient.put(`/todos/${id}`, data).catch(() => {});
     }
 
     return updated;
   },
 
-  deleteTodo(id: string): boolean {
+  async updateTodoAndSync(
+    id: string,
+    data: Partial<Omit<TodoItem, 'id' | 'created_at' | 'updated_at'>>
+  ): Promise<TodoItem | null> {
+    if (typeof window !== 'undefined' && useAuthStore.getState().isAuthenticated) {
+      try {
+        const updated = await apiClient.put<TodoItem>(`/todos/${id}`, data);
+        this.updateTodo(id, data, false);
+        return updated;
+      } catch (err) {
+        if (!loadStoredTodos().some((t) => t.id === id)) {
+          throw err;
+        }
+      }
+    }
+    return this.updateTodo(id, data, false);
+  },
+
+  deleteTodo(id: string, syncRemote = true): boolean {
     const allTodos = loadStoredTodos();
     const filtered = allTodos.filter((t) => t.id !== id);
-    if (filtered.length === allTodos.length) return false;
-
-    saveStoredTodos(filtered);
-
-    if (typeof window !== 'undefined' && useAuthStore.getState().isAuthenticated) {
-      apiClient.delete(`/todos/${id}`).catch(() => {});
+    const removedLocal = filtered.length !== allTodos.length;
+    if (removedLocal) {
+      saveStoredTodos(filtered);
     }
 
-    return true;
+    if (syncRemote && typeof window !== 'undefined' && useAuthStore.getState().isAuthenticated) {
+      apiClient.delete(`/todos/${id}`).catch(() => {});
+      return true;
+    }
+
+    return removedLocal;
+  },
+
+  async deleteTodoAndSync(id: string): Promise<boolean> {
+    const removedLocal = this.deleteTodo(id, false);
+    if (typeof window !== 'undefined' && useAuthStore.getState().isAuthenticated) {
+      try {
+        await apiClient.delete(`/todos/${id}`);
+        return true;
+      } catch {
+        return removedLocal;
+      }
+    }
+    return removedLocal;
   },
 
   getActivityLogs(dateStr?: string): ActivityLogItem[] {
@@ -538,15 +649,27 @@ export const todoStorage = {
     return logs.filter((l) => l.log_date === dateStr || l.started_at?.startsWith(dateStr));
   },
 
-  deleteActivityLog(id: string): boolean {
+  deleteActivityLog(id: string, syncRemote = true): boolean {
     const logs = loadStoredLogs();
     const filtered = logs.filter((l) => l.id !== id);
     saveStoredLogs(filtered);
 
-    if (typeof window !== 'undefined' && useAuthStore.getState().isAuthenticated) {
+    if (syncRemote && typeof window !== 'undefined' && useAuthStore.getState().isAuthenticated) {
       apiClient.delete(`/todos/activity-logs/${id}`).catch(() => {});
     }
 
+    return true;
+  },
+
+  async deleteActivityLogAndSync(id: string): Promise<boolean> {
+    this.deleteActivityLog(id, false);
+    if (typeof window !== 'undefined' && useAuthStore.getState().isAuthenticated) {
+      try {
+        await apiClient.delete(`/todos/activity-logs/${id}`);
+      } catch {
+        // already removed locally
+      }
+    }
     return true;
   },
 };

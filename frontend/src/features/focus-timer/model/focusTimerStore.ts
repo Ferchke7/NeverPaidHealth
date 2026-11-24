@@ -609,9 +609,14 @@ export const useFocusTimerStore = create<FocusTimerState>()(
         const durationMins = Math.max(1, Math.round(finalTotalSec / 60));
         const localDate = toLocalDateKey(state.sessionStartedAt || now);
 
+        const normalizedTodoId =
+          state.todoId && state.todoId !== '00000000-0000-0000-0000-000000000000'
+            ? state.todoId
+            : undefined;
+
         try {
           await apiClient.post('/todos/focus-sessions', {
-            todo_id: state.todoId || undefined,
+            todo_id: normalizedTodoId,
             task_title: state.taskTitle,
             category: state.category,
             duration_minutes: durationMins,

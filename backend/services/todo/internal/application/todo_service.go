@@ -436,9 +436,15 @@ func (s *TodoService) LogFocusSession(ctx context.Context, userID uuid.UUID, in 
 		sessionDate = now.Format("2006-01-02")
 	}
 
-	if in.TodoID != nil {
+	var resolvedTodoID *uuid.UUID
+	if in.TodoID != nil && *in.TodoID != uuid.Nil {
 		item, err := s.repo.GetByID(ctx, userID, *in.TodoID)
-		if err == nil && item != nil {
+		if err != nil {
+			return nil, fmt.Errorf("failed to resolve todo: %w", err)
+		}
+		if item != nil {
+			id := item.ID
+			resolvedTodoID = &id
 			if taskTitle == "" {
 				taskTitle = item.Title
 			}
@@ -447,12 +453,12 @@ func (s *TodoService) LogFocusSession(ctx context.Context, userID uuid.UUID, in 
 			}
 
 			// Atomically add day & lifetime spent minutes
-			if err := s.repo.AddDaySpent(ctx, userID, *in.TodoID, sessionDate, in.DurationMinutes); err != nil {
+			if err := s.repo.AddDaySpent(ctx, userID, item.ID, sessionDate, in.DurationMinutes); err != nil {
 				return nil, fmt.Errorf("failed to record day spent minutes: %w", err)
 			}
 
 			if in.MarkCompleted {
-				_ = s.repo.SetDayStatus(ctx, userID, *in.TodoID, sessionDate, todo.StatusCompleted, &now)
+				_ = s.repo.SetDayStatus(ctx, userID, item.ID, sessionDate, todo.StatusCompleted, &now)
 			}
 		}
 	}
@@ -468,7 +474,7 @@ func (s *TodoService) LogFocusSession(ctx context.Context, userID uuid.UUID, in 
 	log := &todo.ActivityLog{
 		ID:              uuid.New(),
 		UserID:          userID,
-		TodoID:          in.TodoID,
+		TodoID:          resolvedTodoID,
 		TaskTitle:       taskTitle,
 		Category:        category,
 		LogDate:         sessionDate,

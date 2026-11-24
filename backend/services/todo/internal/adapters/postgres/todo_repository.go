@@ -386,7 +386,7 @@ func (r *TodoRepository) CreateActivityLog(ctx context.Context, log *todo.Activi
 			id, user_id, todo_id, task_title, category, log_date,
 			started_at, ended_at, duration_minutes, session_type, notes, created_at
 		) VALUES (
-			$1, $2, $3, $4, $5, $6::date,
+			$1, $2, (SELECT id FROM todos WHERE id = $3::uuid AND user_id = $2), $4, $5, $6::date,
 			$7, $8, $9, $10, $11, $12
 		)
 	`
@@ -395,9 +395,14 @@ func (r *TodoRepository) CreateActivityLog(ctx context.Context, log *todo.Activi
 		logDate = log.StartedAt.Format("2006-01-02")
 	}
 
+	var todoID *uuid.UUID
+	if log.TodoID != nil && *log.TodoID != uuid.Nil {
+		todoID = log.TodoID
+	}
+
 	_, err := r.pool.Exec(
 		ctx, query,
-		log.ID, log.UserID, log.TodoID, log.TaskTitle, log.Category, logDate,
+		log.ID, log.UserID, todoID, log.TaskTitle, log.Category, logDate,
 		log.StartedAt, log.EndedAt, log.DurationMinutes, log.SessionType, log.Notes, log.CreatedAt,
 	)
 	if err != nil {
