@@ -158,11 +158,15 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = ({ onNavigateToPrograms
   });
   const routines = Array.isArray(rawRoutines) ? rawRoutines : [];
 
-  const { data: rawWorkouts } = useQuery<WorkoutHistoryItem[]>({
+  const { data: rawWorkouts } = useQuery<WorkoutHistoryItem[] | { items?: WorkoutHistoryItem[] }>({
     queryKey: ['workouts'],
-    queryFn: () => apiClient<WorkoutHistoryItem[]>('/workouts?limit=40'),
+    queryFn: () => apiClient<WorkoutHistoryItem[] | { items?: WorkoutHistoryItem[] }>('/workouts?limit=40'),
   });
-  const workouts = Array.isArray(rawWorkouts) ? rawWorkouts : [];
+  const workouts = Array.isArray(rawWorkouts)
+    ? rawWorkouts
+    : Array.isArray(rawWorkouts?.items)
+    ? rawWorkouts.items
+    : [];
 
   const setActiveProgramMutation = useMutation({
     mutationFn: async (userProgramId: string) => {

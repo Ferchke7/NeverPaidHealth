@@ -12,6 +12,7 @@ import (
 
 type Handler struct {
 	startWorkoutCmd     *command.StartWorkoutHandler
+	updateWorkoutCmd    *command.UpdateActiveWorkoutHandler
 	addExerciseCmd      *command.AddExerciseHandler
 	logSetCmd           *command.LogSetHandler
 	updateSetCmd        *command.UpdateSetHandler
@@ -32,6 +33,7 @@ type Handler struct {
 
 func NewHandler(
 	startWorkout *command.StartWorkoutHandler,
+	updateWorkout *command.UpdateActiveWorkoutHandler,
 	addExercise *command.AddExerciseHandler,
 	logSet *command.LogSetHandler,
 	updateSet *command.UpdateSetHandler,
@@ -51,6 +53,7 @@ func NewHandler(
 ) *Handler {
 	return &Handler{
 		startWorkoutCmd:     startWorkout,
+		updateWorkoutCmd:    updateWorkout,
 		addExerciseCmd:      addExercise,
 		logSetCmd:           logSet,
 		updateSetCmd:        updateSet,
@@ -125,6 +128,7 @@ func (h *Handler) Routes() http.Handler {
 	r.Get("/workouts/active", httpx.RequireAuth(h.handleGetActiveWorkout))
 	r.Get("/workouts/previous", httpx.RequireAuth(h.handleGetPreviousSets))
 	r.Get("/workouts/{id}", httpx.RequireAuth(h.handleGetWorkoutByID))
+	r.Put("/workouts/{id}", httpx.RequireAuth(h.handleUpdateActiveWorkout))
 	r.Delete("/workouts/{id}", httpx.RequireAuth(h.handleCancelWorkout))
 	r.Post("/workouts/{id}/cancel", httpx.RequireAuth(h.handleCancelWorkout))
 	r.Post("/workouts/{id}/finish", httpx.RequireAuth(h.handleFinishWorkout))

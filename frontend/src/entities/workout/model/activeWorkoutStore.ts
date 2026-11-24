@@ -25,6 +25,7 @@ interface ActiveWorkoutState {
   ) => void;
   setWorkoutProgramId: (programId: string) => void;
   setWorkoutRoutineId: (routineId: string) => void;
+  hydrateRemoteWorkout: (remote: ActiveWorkout | null) => void;
   openSheet: () => void;
   closeSheet: () => void;
   addExercise: (exerciseId: string, exerciseName: string, measurementType: string) => void;
@@ -159,6 +160,19 @@ export const useActiveWorkoutStore = create<ActiveWorkoutState>((set, get) => ({
       persistState(updated);
       return { workout: updated };
     });
+  },
+
+  hydrateRemoteWorkout: (remote) => {
+    if (!remote) return;
+    const sanitized: ActiveWorkout = {
+      ...remote,
+      exercises: (remote.exercises || []).map((ex) => ({
+        ...ex,
+        instanceId: ex.instanceId || generateUUID(),
+      })),
+    };
+    persistState(sanitized);
+    set({ workout: sanitized });
   },
 
   openSheet: () => set({ isOpen: true }),

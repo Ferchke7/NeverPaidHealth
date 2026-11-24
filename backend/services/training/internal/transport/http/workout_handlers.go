@@ -11,6 +11,38 @@ import (
 	"github.com/neverpaidhealth/backend/services/training/internal/domain/workout"
 )
 
+func parseOptionalUUID(raw *string) *uuid.UUID {
+	if raw == nil || *raw == "" {
+		return nil
+	}
+	parsed, err := uuid.Parse(*raw)
+	if err != nil {
+		return nil
+	}
+	return &parsed
+}
+
+func toFinishExerciseInputs(items []finishExerciseReq) ([]command.FinishExerciseInput, error) {
+	if items == nil {
+		return nil, nil
+	}
+	out := make([]command.FinishExerciseInput, 0, len(items))
+	for _, ex := range items {
+		exUUID, err := uuid.Parse(ex.ExerciseID)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, command.FinishExerciseInput{
+			ExerciseID:      exUUID,
+			ExerciseName:    ex.ExerciseName,
+			MeasurementType: ex.MeasurementType,
+			Notes:           ex.Notes,
+			Sets:            ex.Sets,
+		})
+	}
+	return out, nil
+}
+
 func (h *Handler) handleStartWorkout(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
 	req, ok := httpx.DecodeJSON[startWorkoutReq](w, r)
 	if !ok {
@@ -27,19 +59,19 @@ func (h *Handler) handleStartWorkout(w http.ResponseWriter, r *http.Request, use
 		clientID = &parsed
 	}
 
-	var rotID *uuid.UUID
-	if req.RoutineID != nil && *req.RoutineID != "" {
-		if parsed, err := uuid.Parse(*req.RoutineID); err == nil {
-			rotID = &parsed
-		}
+	cmdExercises, err := toFinishExerciseInputs(req.Exercises)
+	if err != nil {
+		httpx.WriteProblem(w, http.StatusUnprocessableEntity, "Unprocessable Entity", "Invalid exercise_id format", "ERR_INVALID_EXERCISE_ID")
+		return
 	}
 
 	workoutRes, err := h.startWorkoutCmd.Handle(r.Context(), command.StartWorkoutInput{
 		ID:            clientID,
 		UserID:        userID,
-		RoutineID:     rotID,
+		RoutineID:     parseOptionalUUID(req.RoutineID),
 		Name:          req.Name,
 		ReplaceActive: req.ReplaceActive,
+		Exercises:     cmdExercises,
 	})
 	if err != nil {
 		var activeErr *command.ActiveWorkoutExistsError
@@ -60,6 +92,42 @@ func (h *Handler) handleStartWorkout(w http.ResponseWriter, r *http.Request, use
 	}
 
 	httpx.WriteJSON(w, http.StatusCreated, mapWorkoutDTO(workoutRes))
+}
+
+func (h *Handler) handleUpdateActiveWorkout(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
+	id, ok := httpx.PathUUID(w, r, "id")
+	if !ok {
+		return
+	}
+
+	req, ok := httpx.DecodeJSON[updateWorkoutReq](w, r)
+	if !ok {
+		return
+	}
+
+	cmdExercises, err := toFinishExerciseInputs(req.Exercises)
+	if err != nil {
+		httpx.WriteProblem(w, http.StatusUnprocessableEntity, "Unprocessable Entity", "Invalid exercise_id format", "ERR_INVALID_EXERCISE_ID")
+		return
+	}
+
+	updated, err := h.updateWorkoutCmd.Handle(r.Context(), command.UpdateActiveWorkoutInput{
+		WorkoutID: id,
+		UserID:    userID,
+		RoutineID: parseOptionalUUID(req.RoutineID),
+		Name:      req.Name,
+		Exercises: cmdExercises,
+	})
+	if err != nil {
+		if errors.Is(err, workout.ErrWorkoutNotFound) {
+			httpx.WriteProblem(w, http.StatusNotFound, "Not Found", "Workout not found", "ERR_NOT_FOUND")
+			return
+		}
+		httpx.WriteProblem(w, http.StatusBadRequest, "Bad Request", err.Error(), "ERR_UPDATE_WORKOUT")
+		return
+	}
+
+	httpx.WriteJSON(w, http.StatusOK, mapWorkoutDTO(updated))
 }
 
 func (h *Handler) handleGetActiveWorkout(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
@@ -129,20 +197,10 @@ func (h *Handler) handleFinishWorkout(w http.ResponseWriter, r *http.Request, us
 		return
 	}
 
-	cmdExercises := make([]command.FinishExerciseInput, 0, len(req.Exercises))
-	for _, ex := range req.Exercises {
-		exUUID, err := uuid.Parse(ex.ExerciseID)
-		if err != nil {
-			httpx.WriteProblem(w, http.StatusUnprocessableEntity, "Unprocessable Entity", "Invalid exercise_id format", "ERR_INVALID_EXERCISE_ID")
-			return
-		}
-		cmdExercises = append(cmdExercises, command.FinishExerciseInput{
-			ExerciseID:      exUUID,
-			ExerciseName:    ex.ExerciseName,
-			MeasurementType: ex.MeasurementType,
-			Notes:           ex.Notes,
-			Sets:            ex.Sets,
-		})
+	cmdExercises, err := toFinishExerciseInputs(req.Exercises)
+	if err != nil {
+		httpx.WriteProblem(w, http.StatusUnprocessableEntity, "Unprocessable Entity", "Invalid exercise_id format", "ERR_INVALID_EXERCISE_ID")
+		return
 	}
 
 	finished, err := h.finishWorkoutCmd.Handle(r.Context(), command.FinishWorkoutInput{

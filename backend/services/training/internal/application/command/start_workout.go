@@ -24,6 +24,7 @@ type StartWorkoutInput struct {
 	RoutineID     *uuid.UUID
 	Name          string
 	ReplaceActive bool
+	Exercises     []FinishExerciseInput
 }
 
 type StartWorkoutHandler struct {
@@ -70,7 +71,10 @@ func (h *StartWorkoutHandler) Handle(ctx context.Context, in StartWorkoutInput) 
 		workoutID = *in.ID
 	}
 
-	if in.RoutineID != nil {
+	if len(in.Exercises) > 0 {
+		w = workout.StartWorkoutWithID(workoutID, in.UserID, in.Name, in.RoutineID, now)
+		w.SetExercises(buildWorkoutExercises(in.Exercises))
+	} else if in.RoutineID != nil {
 		r, err := h.routineRepo.GetByID(ctx, *in.RoutineID)
 		if err != nil {
 			return nil, fmt.Errorf("failed to load routine: %w", err)

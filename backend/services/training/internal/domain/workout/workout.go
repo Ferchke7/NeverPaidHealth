@@ -147,6 +147,17 @@ func (w *Workout) SetExercises(exercises []*WorkoutExercise) {
 	w.exercises = exercises
 }
 
+func (w *Workout) Rename(name string) {
+	trimmed := strings.TrimSpace(name)
+	if trimmed != "" {
+		w.name = trimmed
+	}
+}
+
+func (w *Workout) SetRoutineID(routineID *uuid.UUID) {
+	w.routineID = routineID
+}
+
 func (w *Workout) Finish(now time.Time) (*calc.WorkoutSummary, error) {
 	return w.FinishWithDuration(now, nil)
 }

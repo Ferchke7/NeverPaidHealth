@@ -14,7 +14,10 @@ import {
 } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useActiveWorkoutStore } from '../../../entities/workout/model/activeWorkoutStore.ts';
-import { syncProgramAndRoutineFromWorkout } from '../../../entities/program/model/programWorkoutSync.ts';
+import {
+  syncProgramAndRoutineFromWorkout,
+  serializeWorkoutExercisesForApi,
+} from '../../../entities/program/model/programWorkoutSync.ts';
 import { useRestTimerStore } from '../../../entities/workout/model/restTimerStore.ts';
 import { useExerciseNotesStore } from '../../../entities/workout/model/exerciseNotesStore.ts';
 import { PreviousExerciseNote, SetType, WorkoutHistoryItem } from '../../../entities/workout/model/types.ts';
@@ -543,6 +546,10 @@ export const ActiveWorkoutSheet: React.FC = () => {
       }
 
       // 2. Persist any exercise/set changes back to the user's active/installed Program day & Routine
+      if (activeWorkoutSyncTimerRef.current !== null) {
+        window.clearTimeout(activeWorkoutSyncTimerRef.current);
+        activeWorkoutSyncTimerRef.current = null;
+      }
       if (syncTimerRef.current !== null) {
         window.clearTimeout(syncTimerRef.current);
         syncTimerRef.current = null;
@@ -602,6 +609,14 @@ export const ActiveWorkoutSheet: React.FC = () => {
 
   const handleDiscard = async () => {
     if (!workout) return;
+    if (activeWorkoutSyncTimerRef.current !== null) {
+      window.clearTimeout(activeWorkoutSyncTimerRef.current);
+      activeWorkoutSyncTimerRef.current = null;
+    }
+    if (syncTimerRef.current !== null) {
+      window.clearTimeout(syncTimerRef.current);
+      syncTimerRef.current = null;
+    }
     try {
       await apiClient(`/workouts/${workout.id}/cancel`, { method: 'POST' });
     } catch {
@@ -613,6 +628,7 @@ export const ActiveWorkoutSheet: React.FC = () => {
   };
 
   const syncTimerRef = useRef<number | null>(null);
+  const activeWorkoutSyncTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     return () => {
@@ -620,8 +636,35 @@ export const ActiveWorkoutSheet: React.FC = () => {
         window.clearTimeout(syncTimerRef.current);
         syncTimerRef.current = null;
       }
+      if (activeWorkoutSyncTimerRef.current !== null) {
+        window.clearTimeout(activeWorkoutSyncTimerRef.current);
+        activeWorkoutSyncTimerRef.current = null;
+      }
     };
   }, []);
+
+  // Push live active workout state (exercises, sets, weights, reps) so Mobile & Web stay synchronized
+  useEffect(() => {
+    if (!workout?.id) return;
+    if (activeWorkoutSyncTimerRef.current !== null) {
+      window.clearTimeout(activeWorkoutSyncTimerRef.current);
+    }
+    activeWorkoutSyncTimerRef.current = window.setTimeout(() => {
+      activeWorkoutSyncTimerRef.current = null;
+      const latest = useActiveWorkoutStore.getState().workout;
+      if (!latest || latest.id !== workout.id) return;
+      void apiClient(`/workouts/${latest.id}`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          name: latest.name,
+          routine_id: latest.routineId || undefined,
+          exercises: serializeWorkoutExercisesForApi(latest.exercises),
+        }),
+      }).catch(() => {
+        // Offline edits remain safely in localStorage until next sync
+      });
+    }, 500);
+  }, [workout?.id, workout?.name, workout?.routineId, workout?.exercises]);
 
   const triggerProgramSync = () => {
     if (syncTimerRef.current !== null) {

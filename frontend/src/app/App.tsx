@@ -1,4 +1,6 @@
-import { useActiveWorkoutStore } from '../entities/workout/model/activeWorkoutStore.ts';
+import { useActiveWorkoutStore, hasProgress } from '../entities/workout/model/activeWorkoutStore.ts';
+import { apiClient } from '../shared/api/client.ts';
+import { generateUUID } from '../shared/lib/uuid.ts';
 import { useRestTimerStore } from '@/entities/workout/model/restTimerStore.ts';
 import { useExerciseNotesStore } from '@/entities/workout/model/exerciseNotesStore.ts';
 import { useFocusTimerStore } from '@/features/focus-timer/model/focusTimerStore.ts';
@@ -33,6 +35,71 @@ const ProtectedLayout: React.FC = () => {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const isWorkoutOpen = useActiveWorkoutStore((s) => Boolean(s.workout && s.isOpen));
   const navigate = useNavigate();
+
+  React.useEffect(() => {
+    if (!isAuthenticated) return;
+    let cancelled = false;
+
+    const pullRemoteActiveWorkout = async () => {
+      try {
+        const remote = await apiClient<any>('/workouts/active');
+        if (cancelled) return;
+        const local = useActiveWorkoutStore.getState().workout;
+        if (remote && remote.id) {
+          if (!local || (local.id !== remote.id && !hasProgress(local))) {
+            useActiveWorkoutStore.getState().hydrateRemoteWorkout({
+              id: remote.id,
+              name: remote.name || 'Workout',
+              routineId: remote.routine_id || undefined,
+              startedAt: remote.started_at || new Date().toISOString(),
+              exercises: Array.isArray(remote.exercises)
+                ? remote.exercises.map((ex: any) => ({
+                    instanceId: generateUUID(),
+                    exerciseId: ex.exercise_id || ex.exerciseId || generateUUID(),
+                    exerciseName: ex.exercise_name || ex.exerciseName || 'Exercise',
+                    measurementType: ex.measurement_type || 'weight_reps',
+                    notes: ex.notes || '',
+                    sets: Array.isArray(ex.sets)
+                      ? ex.sets.map((s: any, sIdx: number) => ({
+                          id: s.id || generateUUID(),
+                          setNumber: s.set_number || sIdx + 1,
+                          setType: s.set_type || 'normal',
+                          weightKg: Number(s.weight_kg) || 0,
+                          reps: Number(s.reps) || 0,
+                          rpe: s.rpe,
+                          durationSeconds: s.duration_seconds,
+                          completed: Boolean(s.completed),
+                        }))
+                      : [],
+                  }))
+                : [],
+            });
+          }
+        } else if (local) {
+          const historyResp = await apiClient<{ items?: Array<{ id: string; status?: string }> }>(
+            '/workouts?limit=15'
+          );
+          if (cancelled) return;
+          const finishedRemotely = Array.isArray(historyResp?.items)
+            ? historyResp.items.some((w) => w.id === local.id && w.status === 'finished')
+            : false;
+          if (finishedRemotely) {
+            useActiveWorkoutStore.getState().discardWorkout();
+          }
+        }
+      } catch {
+        // Offline or network error -> keep local state
+      }
+    };
+
+    void pullRemoteActiveWorkout();
+    const onFocus = () => void pullRemoteActiveWorkout();
+    window.addEventListener('focus', onFocus);
+    return () => {
+      cancelled = true;
+      window.removeEventListener('focus', onFocus);
+    };
+  }, [isAuthenticated]);
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;

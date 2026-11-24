@@ -64,6 +64,7 @@ func TestHTTP_PutRoutine_UpdatesInPlaceAndForksSystemOnce(t *testing.T) {
 
 	h := NewHandler(
 		command.NewStartWorkoutHandler(repo, rRepo, clk),
+		command.NewUpdateActiveWorkoutHandler(repo),
 		command.NewAddExerciseHandler(repo, repo),
 		command.NewLogSetHandler(repo),
 		command.NewUpdateSetHandler(repo),
@@ -143,5 +144,102 @@ func TestHTTP_PutRoutine_UpdatesInPlaceAndForksSystemOnce(t *testing.T) {
 	}
 	if userOwned != 1 {
 		t.Fatalf("expected exactly 1 user routine, got %d (%v)", userOwned, list)
+	}
+}
+
+func TestHTTP_StartAndUpdateActiveWorkout_ReturnsInGetActive(t *testing.T) {
+	repo := memory.NewFakeTrainingRepo()
+	rRepo := httpRoutineRepo{fake: repo}
+	oRepo := httpOutboxRepo{fake: repo}
+	progRepo := memory.NewFakeProgramRepo()
+	userProgRepo := memory.NewFakeUserProgramRepo()
+	clk := application.RealClock{}
+
+	userID := uuid.New()
+	exID := uuid.New()
+	setID := uuid.New()
+	workoutID := uuid.New()
+
+	h := NewHandler(
+		command.NewStartWorkoutHandler(repo, rRepo, clk),
+		command.NewUpdateActiveWorkoutHandler(repo),
+		command.NewAddExerciseHandler(repo, repo),
+		command.NewLogSetHandler(repo),
+		command.NewUpdateSetHandler(repo),
+		command.NewFinishWorkoutHandler(repo, oRepo, clk),
+		command.NewCreateRoutineHandler(rRepo, clk),
+		command.NewUpdateRoutineHandler(rRepo, clk),
+		command.NewDeleteRoutineHandler(rRepo),
+		command.NewDeleteWorkoutHandler(repo),
+		command.NewCreateProgramHandler(progRepo, clk),
+		command.NewPublishProgramHandler(progRepo, clk),
+		command.NewInstallProgramHandler(progRepo, userProgRepo, clk),
+		command.NewSetActiveProgramHandler(userProgRepo),
+		command.NewDeleteProgramHandler(progRepo),
+		query.NewTrainingQueriesHandler(repo, rRepo),
+		query.NewProgramQueriesHandler(progRepo, userProgRepo),
+		nil,
+	)
+	router := h.Routes()
+
+	startBody, _ := json.Marshal(map[string]any{
+		"id":             workoutID.String(),
+		"name":           "Push Day",
+		"replace_active": true,
+		"exercises": []map[string]any{
+			{
+				"exercise_id":      exID.String(),
+				"exercise_name":    "Barbell Bench Press",
+				"measurement_type": "weight_reps",
+				"sets": []map[string]any{
+					{"id": setID.String(), "set_number": 1, "set_type": "normal", "weight_kg": 80, "reps": 8, "completed": false},
+				},
+			},
+		},
+	})
+	startReq := httptest.NewRequest(http.MethodPost, "/workouts", bytes.NewReader(startBody))
+	startReq.Header.Set("X-User-Id", userID.String())
+	startRec := httptest.NewRecorder()
+	router.ServeHTTP(startRec, startReq)
+	if startRec.Code != http.StatusCreated {
+		t.Fatalf("POST /workouts returned %d: %s", startRec.Code, startRec.Body.String())
+	}
+
+	putBody, _ := json.Marshal(map[string]any{
+		"name": "Push Day Updated",
+		"exercises": []map[string]any{
+			{
+				"exercise_id":      exID.String(),
+				"exercise_name":    "Barbell Bench Press",
+				"measurement_type": "weight_reps",
+				"sets": []map[string]any{
+					{"id": setID.String(), "set_number": 1, "set_type": "normal", "weight_kg": 85, "reps": 10, "completed": true},
+				},
+			},
+		},
+	})
+	putReq := httptest.NewRequest(http.MethodPut, "/workouts/"+workoutID.String(), bytes.NewReader(putBody))
+	putReq.Header.Set("X-User-Id", userID.String())
+	putRec := httptest.NewRecorder()
+	router.ServeHTTP(putRec, putReq)
+	if putRec.Code != http.StatusOK {
+		t.Fatalf("PUT /workouts/{id} returned %d: %s", putRec.Code, putRec.Body.String())
+	}
+
+	getReq := httptest.NewRequest(http.MethodGet, "/workouts/active", nil)
+	getReq.Header.Set("X-User-Id", userID.String())
+	getRec := httptest.NewRecorder()
+	router.ServeHTTP(getRec, getReq)
+	if getRec.Code != http.StatusOK {
+		t.Fatalf("GET /workouts/active returned %d", getRec.Code)
+	}
+	var activeDTO map[string]any
+	_ = json.Unmarshal(getRec.Body.Bytes(), &activeDTO)
+	if activeDTO["name"] != "Push Day Updated" {
+		t.Fatalf("expected updated name, got %v", activeDTO["name"])
+	}
+	exs := activeDTO["exercises"].([]any)
+	if len(exs) != 1 {
+		t.Fatalf("expected 1 exercise, got %d", len(exs))
 	}
 }

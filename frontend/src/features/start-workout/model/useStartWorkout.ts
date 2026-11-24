@@ -3,6 +3,7 @@ import { useActiveWorkoutStore, hasProgress } from '../../../entities/workout/mo
 import { ActiveExercise, ActiveSet } from '../../../entities/workout/model/types.ts';
 import { generateUUID } from '../../../shared/lib/uuid.ts';
 import { apiClient } from '../../../shared/api/client.ts';
+import { serializeWorkoutExercisesForApi } from '../../../entities/program/model/programWorkoutSync.ts';
 
 export interface ExerciseDraft {
   exercise_id?: string;
@@ -109,6 +110,7 @@ export function useStartWorkout() {
           routine_id: draft.routineId,
           name: draft.name,
           replace_active: true,
+          exercises: serializeWorkoutExercisesForApi(initialExercises),
         }),
       });
     } catch (err) {

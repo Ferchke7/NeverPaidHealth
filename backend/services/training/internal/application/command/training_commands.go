@@ -99,6 +99,103 @@ type FinishWorkoutInput struct {
 	Exercises       []FinishExerciseInput `json:"exercises,omitempty"`
 }
 
+type UpdateActiveWorkoutInput struct {
+	WorkoutID uuid.UUID
+	UserID    uuid.UUID
+	RoutineID *uuid.UUID
+	Name      string
+	Exercises []FinishExerciseInput
+}
+
+type UpdateActiveWorkoutHandler struct {
+	workoutRepo application.WorkoutRepo
+}
+
+func NewUpdateActiveWorkoutHandler(repo application.WorkoutRepo) *UpdateActiveWorkoutHandler {
+	return &UpdateActiveWorkoutHandler{workoutRepo: repo}
+}
+
+func (h *UpdateActiveWorkoutHandler) Handle(ctx context.Context, in UpdateActiveWorkoutInput) (*workout.Workout, error) {
+	w, err := h.workoutRepo.GetByID(ctx, in.WorkoutID)
+	if err != nil {
+		return nil, err
+	}
+	if in.UserID != uuid.Nil && w.UserID() != in.UserID {
+		return nil, workout.ErrWorkoutNotFound
+	}
+	if w.Status() != workout.WorkoutStatusInProgress {
+		return nil, workout.ErrWorkoutNotInProgress
+	}
+
+	if in.Name != "" {
+		w.Rename(in.Name)
+	}
+	if in.RoutineID != nil {
+		w.SetRoutineID(in.RoutineID)
+	}
+	if in.Exercises != nil {
+		w.SetExercises(buildWorkoutExercises(in.Exercises))
+	}
+
+	if err := h.workoutRepo.Save(ctx, w); err != nil {
+		return nil, fmt.Errorf("failed updating active workout: %w", err)
+	}
+	return w, nil
+}
+
+func buildWorkoutExercises(inputs []FinishExerciseInput) []*workout.WorkoutExercise {
+	exList := make([]*workout.WorkoutExercise, 0, len(inputs))
+	for idx, exIn := range inputs {
+		measType := exIn.MeasurementType
+		if measType == "" {
+			measType = "weight_reps"
+		}
+		name := exIn.ExerciseName
+		if name == "" {
+			name = "Exercise"
+		}
+		we := workout.NewWorkoutExercise(exIn.ExerciseID, name, measType, idx)
+		we.SetNotes(exIn.Notes)
+		for sIdx, sIn := range exIn.Sets {
+			st, err := measure.NewSetType(sIn.SetType)
+			if err != nil {
+				st = measure.SetTypeNormal
+			}
+			wKg, err := measure.NewWeightKg(sIn.WeightKg)
+			if err != nil {
+				wKg = measure.ZeroWeight()
+			}
+			reps, err := measure.NewReps(sIn.Reps)
+			if err != nil {
+				reps, _ = measure.NewReps(0)
+			}
+			var rpe *measure.RPE
+			if sIn.RPE != nil {
+				if r, err := measure.NewRPE(*sIn.RPE); err == nil {
+					rpe = &r
+				}
+			}
+			var dur *measure.Duration
+			if sIn.DurationSeconds != nil {
+				d := measure.NewDurationSeconds(*sIn.DurationSeconds)
+				dur = &d
+			}
+			setNum := sIn.SetNumber
+			if setNum <= 0 {
+				setNum = sIdx + 1
+			}
+			sID := sIn.ID
+			if sID == uuid.Nil {
+				sID = uuid.New()
+			}
+			e1rm := calc.CalculateE1RM(wKg, reps)
+			we.AppendSet(workout.ReconstituteSet(sID, setNum, st, wKg, reps, rpe, dur, sIn.Completed, e1rm))
+		}
+		exList = append(exList, we)
+	}
+	return exList
+}
+
 type FinishWorkoutHandler struct {
 	workoutRepo application.WorkoutRepo
 	outboxRepo  application.OutboxRepo
@@ -119,57 +216,7 @@ func (h *FinishWorkoutHandler) Handle(ctx context.Context, in FinishWorkoutInput
 	}
 
 	if len(in.Exercises) > 0 {
-		var exList []*workout.WorkoutExercise
-		for idx, exIn := range in.Exercises {
-			measType := exIn.MeasurementType
-			if measType == "" {
-				measType = "weight_reps"
-			}
-			name := exIn.ExerciseName
-			if name == "" {
-				name = "Exercise"
-			}
-			we := workout.NewWorkoutExercise(exIn.ExerciseID, name, measType, idx)
-			we.SetNotes(exIn.Notes)
-			for sIdx, sIn := range exIn.Sets {
-				st, err := measure.NewSetType(sIn.SetType)
-				if err != nil {
-					st = measure.SetTypeNormal
-				}
-				wKg, err := measure.NewWeightKg(sIn.WeightKg)
-				if err != nil {
-					wKg = measure.ZeroWeight()
-				}
-				reps, err := measure.NewReps(sIn.Reps)
-				if err != nil {
-					reps, _ = measure.NewReps(0)
-				}
-				var rpe *measure.RPE
-				if sIn.RPE != nil {
-					if r, err := measure.NewRPE(*sIn.RPE); err == nil {
-						rpe = &r
-					}
-				}
-				var dur *measure.Duration
-				if sIn.DurationSeconds != nil {
-					d := measure.NewDurationSeconds(*sIn.DurationSeconds)
-					dur = &d
-				}
-				setNum := sIn.SetNumber
-				if setNum <= 0 {
-					setNum = sIdx + 1
-				}
-				sID := sIn.ID
-				if sID == uuid.Nil {
-					sID = uuid.New()
-				}
-				completed := sIn.Completed
-				e1rm := calc.CalculateE1RM(wKg, reps)
-				we.AppendSet(workout.ReconstituteSet(sID, setNum, st, wKg, reps, rpe, dur, completed, e1rm))
-			}
-			exList = append(exList, we)
-		}
-		w.SetExercises(exList)
+		w.SetExercises(buildWorkoutExercises(in.Exercises))
 	}
 
 	now := h.clock.Now()

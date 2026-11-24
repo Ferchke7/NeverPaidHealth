@@ -45,21 +45,63 @@ export function loadProgramOverrides(): Record<string, Program> {
   }
 }
 
-export function saveProgramOverride(program: Program, aliasId?: string): void {
+export function serializeWorkoutExercisesForApi(
+  exercises: ActiveWorkout['exercises']
+) {
+  return (exercises || []).map((ex) => ({
+    exercise_id: ensureValidUuid(ex.exerciseId, ex.exerciseName),
+    exercise_name: ex.exerciseName,
+    measurement_type: ex.measurementType || 'weight_reps',
+    notes: ex.notes || '',
+    sets: (ex.sets || []).map((s, idx) => ({
+      id: ensureValidUuid(s.id, `${ex.exerciseId}-${idx}`),
+      set_number: s.setNumber || idx + 1,
+      set_type: s.setType || 'normal',
+      weight_kg: Number(s.weightKg) || 0,
+      reps: Number(s.reps) || 0,
+      rpe: s.rpe,
+      duration_seconds: s.durationSeconds,
+      completed: Boolean(s.completed),
+    })),
+  }));
+}
+
+export function saveProgramOverride(program: Program, aliasId?: string, fromServer = false): void {
   if (typeof window === 'undefined' || !window.localStorage || !program?.id) return;
   try {
     const map = loadProgramOverrides();
-    map[program.id] = program;
+    const record: Program = {
+      ...program,
+      updated_at: fromServer
+        ? program.updated_at || new Date().toISOString()
+        : new Date().toISOString(),
+    };
+    map[program.id] = record;
     if (aliasId && aliasId !== program.id) {
-      map[aliasId] = program;
+      map[aliasId] = record;
     }
     if (program.name) {
-      map[`__name__:${program.name.toLowerCase().trim()}`] = program;
+      map[`__name__:${program.name.toLowerCase().trim()}`] = record;
     }
     localStorage.setItem(PROGRAM_OVERRIDES_KEY, JSON.stringify(map));
   } catch {
     // ignore storage errors
   }
+}
+
+function isOverrideStrictlyNewer(overrideProg: Program | undefined, serverProg: Program): boolean {
+  if (!overrideProg || !Array.isArray(overrideProg.days) || overrideProg.days.length === 0) {
+    return false;
+  }
+  const serverTs = serverProg.updated_at ? Date.parse(serverProg.updated_at) : 0;
+  const overrideTs = overrideProg.updated_at ? Date.parse(overrideProg.updated_at) : 0;
+  if (!Number.isFinite(overrideTs) || overrideTs <= 0) {
+    return false;
+  }
+  if (!Number.isFinite(serverTs) || serverTs <= 0) {
+    return true;
+  }
+  return overrideTs > serverTs + 1000;
 }
 
 export function applyProgramOverride(
@@ -69,7 +111,7 @@ export function applyProgramOverride(
   if (!program) return undefined;
   const overrides = loadProgramOverrides();
   const byId = overrides[program.id];
-  if (byId && Array.isArray(byId.days) && byId.days.length > 0) {
+  if (isOverrideStrictlyNewer(byId, program)) {
     return {
       ...program,
       ...byId,
@@ -78,7 +120,7 @@ export function applyProgramOverride(
   }
   if (allowNameMatch && program.name) {
     const byName = overrides[`__name__:${program.name.toLowerCase().trim()}`];
-    if (byName && Array.isArray(byName.days) && byName.days.length > 0) {
+    if (isOverrideStrictlyNewer(byName, program)) {
       return {
         ...program,
         days: byName.days,
@@ -394,7 +436,7 @@ async function executeSync(
     });
 
     if (saved && saved.id) {
-      saveProgramOverride(saved, originalProgramId);
+      saveProgramOverride(saved, originalProgramId, true);
       if (saved.id !== originalProgramId) {
         programForkAliases.set(originalProgramId, saved.id);
         useActiveWorkoutStore.getState().setWorkoutProgramId(saved.id);

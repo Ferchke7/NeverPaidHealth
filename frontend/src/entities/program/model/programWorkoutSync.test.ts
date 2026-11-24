@@ -3,6 +3,8 @@ import { QueryClient } from '@tanstack/react-query';
 import {
   syncProgramAndRoutineFromWorkout,
   resetSyncStateForTests,
+  saveProgramOverride,
+  applyProgramOverride,
 } from './programWorkoutSync.ts';
 import { useActiveWorkoutStore } from '../../workout/model/activeWorkoutStore.ts';
 import { apiClient } from '../../../shared/api/client.ts';
@@ -119,5 +121,31 @@ describe('programWorkoutSync', () => {
     expect(personalRoutines).toHaveLength(1);
     expect(personalRoutines[0].id).toBe(personalId);
     expect(personalRoutines[0].exercises[0].exercise_name).toBe('Close-Grip Dumbbell Press');
+  });
+
+  it('prefers fresher server program over stale localStorage override', () => {
+    const staleOverride: any = {
+      id: 'prog-1',
+      name: 'Jeff Nippard PPL',
+      split_type: 'ppl',
+      days_per_week: 6,
+      level: 'advanced',
+      is_public: false,
+      likes_count: 0,
+      installs_count: 0,
+      days: [{ day_number: 1, name: 'Stale Day', exercises: [] }],
+    };
+    saveProgramOverride(staleOverride);
+
+    // Simulate newer server response 10 seconds later
+    const futureIso = new Date(Date.now() + 10_000).toISOString();
+    const freshServerProgram: any = {
+      ...staleOverride,
+      updated_at: futureIso,
+      days: [{ day_number: 1, name: 'Fresh Web Day', exercises: [] }],
+    };
+
+    const resolved = applyProgramOverride(freshServerProgram);
+    expect(resolved?.days[0].name).toBe('Fresh Web Day');
   });
 });

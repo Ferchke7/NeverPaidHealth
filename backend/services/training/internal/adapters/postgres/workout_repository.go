@@ -394,6 +394,7 @@ func (r *TrainingRepository) SaveWorkout(ctx context.Context, w *workout.Workout
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
 		ON CONFLICT (id) DO UPDATE SET
 			name = EXCLUDED.name,
+			routine_id = EXCLUDED.routine_id,
 			status = EXCLUDED.status,
 			finished_at = EXCLUDED.finished_at,
 			exercises = EXCLUDED.exercises,

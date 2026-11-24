@@ -20,10 +20,17 @@ type setActiveProgramReq struct {
 }
 
 type startWorkoutReq struct {
-	ID            *string `json:"id,omitempty"`
-	RoutineID     *string `json:"routine_id,omitempty"`
-	Name          string  `json:"name,omitempty"`
-	ReplaceActive bool    `json:"replace_active,omitempty"`
+	ID            *string             `json:"id,omitempty"`
+	RoutineID     *string             `json:"routine_id,omitempty"`
+	Name          string              `json:"name,omitempty"`
+	ReplaceActive bool                `json:"replace_active,omitempty"`
+	Exercises     []finishExerciseReq `json:"exercises,omitempty"`
+}
+
+type updateWorkoutReq struct {
+	RoutineID *string             `json:"routine_id,omitempty"`
+	Name      string              `json:"name,omitempty"`
+	Exercises []finishExerciseReq `json:"exercises,omitempty"`
 }
 
 type addExerciseReq struct {

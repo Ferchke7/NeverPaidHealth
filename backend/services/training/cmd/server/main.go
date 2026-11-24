@@ -118,6 +118,7 @@ func main() {
 	catalogACL := dummyCatalogACL{}
 
 	startWorkoutCmd := command.NewStartWorkoutHandler(wRepo, rRepo, clock)
+	updateWorkoutCmd := command.NewUpdateActiveWorkoutHandler(wRepo)
 	addExCmd := command.NewAddExerciseHandler(wRepo, catalogACL)
 	logSetCmd := command.NewLogSetHandler(wRepo)
 	updateSetCmd := command.NewUpdateSetHandler(wRepo)
@@ -138,6 +139,7 @@ func main() {
 
 	handler := transport.NewHandler(
 		startWorkoutCmd,
+		updateWorkoutCmd,
 		addExCmd,
 		logSetCmd,
 		updateSetCmd,
