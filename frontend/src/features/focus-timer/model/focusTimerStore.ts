@@ -6,7 +6,13 @@ import { t } from '../../../shared/lib/i18n/i18n.ts';
 import { toLocalDateKey } from '../../../shared/lib/dates.ts';
 import { queryClient } from '../../../app/providers/QueryProvider.tsx';
 import { invalidateTodoQueries } from '../../../entities/todo/api/todoQueries.ts';
-import { playFocusChimeSound } from '../../../shared/lib/audio/soundEffects.ts';
+import {
+  playFocusChimeSound,
+  playFocusStartCue,
+  playTaskCompleteSound,
+  stopFocusAlarm,
+  unlockAudioEngine,
+} from '../../../shared/lib/audio/soundEffects.ts';
 
 export type TimerMode = 'pomodoro' | 'target_timer' | 'stopwatch';
 export type PomodoroPhase = 'work' | 'short_break' | 'long_break';
@@ -229,7 +235,7 @@ export const useFocusTimerStore = create<FocusTimerState>()(
           isModalOpen: true,
         });
 
-        playChimeSound('work');
+        playFocusStartCue();
       },
 
       startQuickSession: (
@@ -271,7 +277,7 @@ export const useFocusTimerStore = create<FocusTimerState>()(
           isModalOpen: true,
         });
 
-        playChimeSound('work');
+        playFocusStartCue();
       },
 
       setMode: (mode: TimerMode) => {
@@ -361,6 +367,7 @@ export const useFocusTimerStore = create<FocusTimerState>()(
       },
 
       pause: () => {
+        stopFocusAlarm();
         const state = get();
         if (!state.isRunning) return;
 
@@ -388,6 +395,7 @@ export const useFocusTimerStore = create<FocusTimerState>()(
       },
 
       resume: () => {
+        unlockAudioEngine();
         const state = get();
         if (state.isRunning) return;
 
@@ -619,7 +627,8 @@ export const useFocusTimerStore = create<FocusTimerState>()(
           throw err;
         }
 
-        playChimeSound('complete');
+        playTaskCompleteSound();
+        stopFocusAlarm();
         set({
           isActive: false,
           isRunning: false,
@@ -634,6 +643,7 @@ export const useFocusTimerStore = create<FocusTimerState>()(
       },
 
       discard: () => {
+        stopFocusAlarm();
         set({
           isActive: false,
           isRunning: false,

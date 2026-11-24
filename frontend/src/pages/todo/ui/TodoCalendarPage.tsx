@@ -44,7 +44,10 @@ import {
   isSoundEnabled,
   playTaskCompleteSound,
   playTaskUncheckSound,
+  stopFocusAlarm,
+  unlockAudioEngine,
 } from '../../../shared/lib/audio/soundEffects.ts';
+import { FocusAlarmControls } from '../../../features/focus-timer/ui/FocusAlarmControls.tsx';
 import { CreateTodoModal } from './CreateTodoModal.tsx';
 import { TodoDaySummary } from './TodoDaySummary.tsx';
 import { TodoQuickAdd } from './TodoQuickAdd.tsx';
@@ -133,6 +136,11 @@ export const TodoCalendarPage: React.FC = () => {
     const next = !soundOn;
     setSoundOn(next);
     localStorage.setItem('np_sound_enabled', next ? 'true' : 'false');
+    if (next) {
+      unlockAudioEngine();
+    } else {
+      stopFocusAlarm();
+    }
   };
 
   useEffect(() => {
@@ -866,6 +874,8 @@ export const TodoCalendarPage: React.FC = () => {
                 {soundOn ? 'ON' : 'OFF'}
               </span>
             </button>
+
+            <FocusAlarmControls />
           </Card>
 
           {/* Inline Task Edit Card */}

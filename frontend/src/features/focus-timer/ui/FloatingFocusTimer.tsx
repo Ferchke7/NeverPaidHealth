@@ -15,6 +15,7 @@ import {
   Layers,
 } from 'lucide-react';
 import { useFocusTimerStore, SplitStrategy } from '../model/focusTimerStore.ts';
+import { FocusAlarmControls, FocusAlarmStopBanner } from './FocusAlarmControls.tsx';
 import { useActiveWorkoutStore } from '../../../entities/workout/model/activeWorkoutStore.ts';
 import { useTranslation } from '../../../shared/lib/i18n/i18n.ts';
 
@@ -151,8 +152,9 @@ export const FloatingFocusTimer: React.FC = () => {
       <div
         className={`fixed ${
           hasFloatingWorkoutPill ? 'bottom-36 lg:bottom-24' : 'bottom-20 lg:bottom-6'
-        } right-3 sm:right-4 md:right-6 z-50 transition-all`}
+        } right-3 sm:right-4 md:right-6 z-50 transition-all space-y-1.5`}
       >
+        <FocusAlarmStopBanner compact />
         <div
           onClick={openModal}
           className="cursor-pointer bg-white border border-[#DDD6FE] hover:border-[#6D28D9] royal-float-shadow rounded-[16px] p-2.5 sm:p-3 flex items-center gap-3 transition-colors"
@@ -560,6 +562,8 @@ export const FloatingFocusTimer: React.FC = () => {
             <span>{t('focusTimer.done')}</span>
           </button>
         </div>
+
+        <FocusAlarmControls />
 
         {saveError && (
           <div className="w-full p-2.5 bg-rose-50 border border-rose-200 text-rose-700 text-[12px] rounded-[10px] text-center">
