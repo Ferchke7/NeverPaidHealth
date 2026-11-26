@@ -33,6 +33,12 @@ import { EmptyStateCard, LoadingStateCard } from '../../../shared/ui/SystemState
 import { RoutineEditorModal } from '../../../features/routine-builder/ui/RoutineEditorModal.tsx';
 import { RoutineDetailModal } from '../../../features/routine-preview/ui/RoutineDetailModal.tsx';
 import { ProgramDetailModal } from '../../../features/program-preview/ui/ProgramDetailModal.tsx';
+import { WeeklyWorkoutPlanner } from '../../../features/weekly-workout-plan/ui/WeeklyWorkoutPlanner.tsx';
+import {
+  WeeklyPlanItem,
+  WeeklyPlanResponse,
+  weeklyPlanApi,
+} from '../../../entities/workout/api/weeklyPlanApi.ts';
 import { useStartWorkout } from '../../../features/start-workout/model/useStartWorkout.ts';
 import { applyProgramOverride } from '../../../entities/program/model/programWorkoutSync.ts';
 import { formatWeight } from '../../../shared/lib/units.ts';
@@ -103,6 +109,7 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = ({ onNavigateToPrograms
 
   const [searchQuery, setSearchQuery] = useState('');
   const [isCreateRoutineOpen, setIsCreateRoutineOpen] = useState(false);
+  const [defaultEditorWeekdays, setDefaultEditorWeekdays] = useState<number[]>([]);
   const [editingRoutine, setEditingRoutine] = useState<Routine | null>(null);
   const [selectedRoutinePreview, setSelectedRoutinePreview] = useState<Routine | null>(null);
   const [selectedProgramPreview, setSelectedProgramPreview] = useState<Program | null>(null);
@@ -158,6 +165,12 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = ({ onNavigateToPrograms
   });
   const routines = Array.isArray(rawRoutines) ? rawRoutines : [];
 
+  const { data: weeklyPlanData } = useQuery<WeeklyPlanResponse>({
+    queryKey: ['workouts', 'weekly-plan'],
+    queryFn: () => weeklyPlanApi.getWeeklyPlan(),
+  });
+  const weeklyPlanItems = Array.isArray(weeklyPlanData?.items) ? weeklyPlanData.items : [];
+
   const { data: rawWorkouts } = useQuery<WorkoutHistoryItem[] | { items?: WorkoutHistoryItem[] }>({
     queryKey: ['workouts'],
     queryFn: () => apiClient<WorkoutHistoryItem[] | { items?: WorkoutHistoryItem[] }>('/workouts?limit=40'),
@@ -188,6 +201,7 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = ({ onNavigateToPrograms
       }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['routines'] });
+      void queryClient.invalidateQueries({ queryKey: ['workouts', 'weekly-plan'] });
     },
   });
 
@@ -211,6 +225,7 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = ({ onNavigateToPrograms
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['routines'] });
+      void queryClient.invalidateQueries({ queryKey: ['workouts', 'weekly-plan'] });
     },
   });
 
@@ -264,6 +279,47 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = ({ onNavigateToPrograms
       exercises: day.exercises,
     });
   };
+
+  const handleStartWeeklyPlanItem = async (item: WeeklyPlanItem) => {
+    if (item.item_type === 'program_day' && item.program_id) {
+      await startWorkout({
+        name: item.subtitle ? `${item.subtitle} - ${item.title}` : item.title,
+        programId: item.program_id,
+        programDayNumber: item.program_day_number || 1,
+        exercises: item.exercises,
+      });
+      return;
+    }
+    await startWorkout({
+      name: item.title,
+      routineId: item.routine_id || undefined,
+      exercises: item.exercises,
+    });
+  };
+
+  const routineWeekdayBadges = useMemo(() => {
+    const dayLabels: Record<number, string> = {
+      1: t('weeklyPlan.monShort'),
+      2: t('weeklyPlan.tueShort'),
+      3: t('weeklyPlan.wedShort'),
+      4: t('weeklyPlan.thuShort'),
+      5: t('weeklyPlan.friShort'),
+      6: t('weeklyPlan.satShort'),
+      7: t('weeklyPlan.sunShort'),
+    };
+    const map = new Map<string, string[]>();
+    for (const it of weeklyPlanItems) {
+      if (it.item_type === 'routine' && it.routine_id) {
+        const list = map.get(it.routine_id) || [];
+        const lbl = dayLabels[it.day_of_week];
+        if (lbl && !list.includes(lbl)) {
+          list.push(lbl);
+        }
+        map.set(it.routine_id, list);
+      }
+    }
+    return map;
+  }, [weeklyPlanItems, t]);
 
   const userRoutines = useMemo(() => {
     const isSystem = (r: Routine) =>
@@ -586,6 +642,20 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = ({ onNavigateToPrograms
         </div>
       </Card>
 
+      {/* 2.5 Weekly Workout Schedule Board (Mon–Sun, multi-program & custom order) */}
+      <WeeklyWorkoutPlanner
+        planItems={weeklyPlanItems}
+        routines={userRoutines.length > 0 ? userRoutines : routines}
+        activeProgram={activeProgram}
+        installedPrograms={installedPrograms}
+        onStartPlanItem={handleStartWeeklyPlanItem}
+        onCreateNewRoutineForDay={(day) => {
+          setEditingRoutine(null);
+          setDefaultEditorWeekdays([day]);
+          setIsCreateRoutineOpen(true);
+        }}
+      />
+
       {/* 3. Active Personal Program Split Section (Indigo + Teal Cards with Auto-Save Badge) */}
       {activeProgram ? (
         <Card className="p-5 sm:p-6 space-y-4">
@@ -839,6 +909,18 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = ({ onNavigateToPrograms
                           {t('routines.exercisesCount', { count: routine.exercises.length })} ·{' '}
                           {t('workouts.approxMinutes', { mins: estMinutes })}
                         </div>
+                        {(routineWeekdayBadges.get(routine.id) || []).length > 0 && (
+                          <div className="flex flex-wrap items-center gap-1 mt-1.5">
+                            {(routineWeekdayBadges.get(routine.id) || []).map((lbl) => (
+                              <span
+                                key={lbl}
+                                className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#F0EFFE] text-[#6D28D9] border border-[#DDD6FE]"
+                              >
+                                {lbl}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                       </button>
 
                       {isReorderMode && (
@@ -1017,9 +1099,11 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = ({ onNavigateToPrograms
       <RoutineEditorModal
         isOpen={isCreateRoutineOpen}
         initialRoutine={editingRoutine}
+        defaultWeekdays={defaultEditorWeekdays}
         onClose={() => {
           setIsCreateRoutineOpen(false);
           setEditingRoutine(null);
+          setDefaultEditorWeekdays([]);
         }}
       />
 

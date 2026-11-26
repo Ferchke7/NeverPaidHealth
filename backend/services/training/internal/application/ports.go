@@ -8,6 +8,7 @@ import (
 	"github.com/neverpaidhealth/backend/pkg/outbox"
 	"github.com/neverpaidhealth/backend/services/training/internal/domain/program"
 	"github.com/neverpaidhealth/backend/services/training/internal/domain/routine"
+	"github.com/neverpaidhealth/backend/services/training/internal/domain/weeklyplan"
 	"github.com/neverpaidhealth/backend/services/training/internal/domain/workout"
 )
 
@@ -58,6 +59,13 @@ type UserProgramRepo interface {
 
 type OutboxRepo interface {
 	Save(ctx context.Context, msg outbox.Message) error
+}
+
+type WeeklyPlanRepo interface {
+	ListByUserID(ctx context.Context, userID uuid.UUID) ([]*weeklyplan.PlanItem, error)
+	ReplaceAll(ctx context.Context, userID uuid.UUID, items []*weeklyplan.PlanItem) error
+	ReplaceRoutineDays(ctx context.Context, userID uuid.UUID, routineID uuid.UUID, title string, daysOfWeek []int) error
+	SetCompletedWeek(ctx context.Context, userID uuid.UUID, itemID uuid.UUID, completedWeekStart string) error
 }
 
 type Clock interface {

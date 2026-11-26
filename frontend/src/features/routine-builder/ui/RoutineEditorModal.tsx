@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, ChevronUp, ChevronDown, ArrowLeftRight } from 'lucide-react';
+import { Plus, Trash2, ChevronUp, ChevronDown, ArrowLeftRight, Check } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../../shared/api/client.ts';
 import { Button } from '../../../shared/ui/button.tsx';
@@ -9,6 +9,7 @@ import { ExercisePickerModal } from '../../exercise-picker/ui/ExercisePickerModa
 import { Exercise } from '../../../entities/exercise/model/types.ts';
 import { ExerciseThumbnail } from '../../../entities/exercise/ui/ExerciseThumbnail.tsx';
 import { useTranslation } from '../../../shared/lib/i18n/i18n.ts';
+import { WeeklyPlanResponse, weeklyPlanApi } from '../../../entities/workout/api/weeklyPlanApi.ts';
 
 interface RoutineExerciseFormItem {
   exercise_id: string;
@@ -22,6 +23,7 @@ interface RoutineEditorModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSaved?: (routineId: string) => void;
+  defaultWeekdays?: number[];
   initialRoutine?: {
     id?: string;
     name?: string;
@@ -62,6 +64,7 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
   isOpen,
   onClose,
   onSaved,
+  defaultWeekdays,
   initialRoutine,
 }) => {
   const { t } = useTranslation();
@@ -69,6 +72,8 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
   const [name, setName] = useState('');
   const [notes, setNotes] = useState('');
   const [exercises, setExercises] = useState<RoutineExerciseFormItem[]>([]);
+  const [selectedWeekdays, setSelectedWeekdays] = useState<number[]>([]);
+  const [weekdaysTouched, setWeekdaysTouched] = useState(false);
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [replacingIndex, setReplacingIndex] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -115,12 +120,22 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
         target_reps_max: e.target_reps_max || 12,
       }));
       setExercises(initialExs);
+      const cachedPlan = queryClient.getQueryData<WeeklyPlanResponse>(['workouts', 'weekly-plan']);
+      const targetId = existingPersonalCopy?.id || initialRoutine?.id;
+      const mappedDays = (cachedPlan?.items || [])
+        .filter((it) => it.item_type === 'routine' && it.routine_id === targetId)
+        .map((it) => it.day_of_week);
+      setSelectedWeekdays(Array.from(new Set(mappedDays)).sort((a, b) => a - b));
+      setWeekdaysTouched(false);
     } else if (isOpen && !initialRoutine) {
       setName('');
       setNotes('');
       setExercises([]);
+      const preset = (defaultWeekdays || []).filter((d) => d >= 1 && d <= 7);
+      setSelectedWeekdays(preset);
+      setWeekdaysTouched(preset.length > 0);
     }
-  }, [isOpen, initialRoutine, effectiveSource, existingPersonalCopy, isSystemRoutine, t]);
+  }, [isOpen, initialRoutine, effectiveSource, existingPersonalCopy, isSystemRoutine, defaultWeekdays, queryClient, t]);
 
   const saveMutation = useMutation({
     mutationFn: async () => {
@@ -145,17 +160,32 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
       };
 
       const targetId = existingPersonalCopy?.id || initialRoutine?.id;
-      if (targetId) {
-        return apiClient(`/routines/${targetId}`, {
+      let saved: any;
+      if (targetId && !targetId.startsWith('prebuilt-')) {
+        saved = await apiClient(`/routines/${targetId}`, {
           method: 'PUT',
+          body: JSON.stringify(payload),
+        });
+      } else {
+        saved = await apiClient('/routines', {
+          method: 'POST',
           body: JSON.stringify(payload),
         });
       }
 
-      return apiClient('/routines', {
-        method: 'POST',
-        body: JSON.stringify(payload),
-      });
+      if (saved?.id && (weekdaysTouched || selectedWeekdays.length > 0)) {
+        try {
+          const planRes = await weeklyPlanApi.setRoutineWeekdays(
+            saved.id,
+            selectedWeekdays,
+            saved.name || name.trim()
+          );
+          queryClient.setQueryData(['workouts', 'weekly-plan'], planRes);
+        } catch {
+          // ignore non-blocking schedule sync error
+        }
+      }
+      return saved;
     },
     onSuccess: (data: any) => {
       if (data?.id) {
@@ -169,6 +199,7 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
         });
       }
       void queryClient.invalidateQueries({ queryKey: ['routines'] });
+      void queryClient.invalidateQueries({ queryKey: ['workouts', 'weekly-plan'] });
       setName('');
       setNotes('');
       setExercises([]);
@@ -296,6 +327,47 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
               rows={2}
               onChange={(e) => setNotes(e.target.value)}
             />
+
+            <div className="space-y-1.5 pt-1">
+              <div className="text-[12px] font-semibold text-[#1E1B4B]">
+                {t('weeklyPlan.editorDaysLabel')}
+              </div>
+              <div className="grid grid-cols-7 gap-1.5">
+                {[
+                  { day: 1, label: t('weeklyPlan.monShort') },
+                  { day: 2, label: t('weeklyPlan.tueShort') },
+                  { day: 3, label: t('weeklyPlan.wedShort') },
+                  { day: 4, label: t('weeklyPlan.thuShort') },
+                  { day: 5, label: t('weeklyPlan.friShort') },
+                  { day: 6, label: t('weeklyPlan.satShort') },
+                  { day: 7, label: t('weeklyPlan.sunShort') },
+                ].map((wd) => {
+                  const active = selectedWeekdays.includes(wd.day);
+                  return (
+                    <button
+                      key={wd.day}
+                      type="button"
+                      onClick={() => {
+                        setWeekdaysTouched(true);
+                        setSelectedWeekdays((prev) =>
+                          prev.includes(wd.day)
+                            ? prev.filter((d) => d !== wd.day)
+                            : [...prev, wd.day].sort((a, b) => a - b)
+                        );
+                      }}
+                      className={`h-9 rounded-[10px] border text-xs font-bold transition-colors cursor-pointer flex items-center justify-center gap-1 ${
+                        active
+                          ? 'bg-[#6D28D9] border-[#6D28D9] text-white'
+                          : 'bg-[#F8F7FC] border-[#ECEAF6] text-[#1E1B4B] hover:border-[#C4B5FD]'
+                      }`}
+                    >
+                      {active && <Check className="w-3 h-3" />}
+                      <span>{wd.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           </div>
 
           {/* Exercises Section */}
