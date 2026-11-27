@@ -4,14 +4,18 @@ import {
   Activity,
   ArrowDown,
   ArrowUp,
+  ArrowUpDown,
   BarChart3,
   Bot,
   Calendar,
   CalendarCheck,
+  Check,
+  ChevronsUp,
   Copy,
   Dumbbell,
   Flame,
   FolderKanban,
+  GripVertical,
   NotebookPen,
   Pencil,
   Play,
@@ -33,12 +37,6 @@ import { EmptyStateCard, LoadingStateCard } from '../../../shared/ui/SystemState
 import { RoutineEditorModal } from '../../../features/routine-builder/ui/RoutineEditorModal.tsx';
 import { RoutineDetailModal } from '../../../features/routine-preview/ui/RoutineDetailModal.tsx';
 import { ProgramDetailModal } from '../../../features/program-preview/ui/ProgramDetailModal.tsx';
-import { WeeklyWorkoutPlanner } from '../../../features/weekly-workout-plan/ui/WeeklyWorkoutPlanner.tsx';
-import {
-  WeeklyPlanItem,
-  WeeklyPlanResponse,
-  weeklyPlanApi,
-} from '../../../entities/workout/api/weeklyPlanApi.ts';
 import { useStartWorkout } from '../../../features/start-workout/model/useStartWorkout.ts';
 import { applyProgramOverride } from '../../../entities/program/model/programWorkoutSync.ts';
 import { formatWeight } from '../../../shared/lib/units.ts';
@@ -66,6 +64,7 @@ interface Routine {
   user_id?: string;
   name: string;
   notes?: string;
+  sort_order?: number;
   exercises: RoutineExercise[];
   created_at: string;
 }
@@ -109,7 +108,6 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = ({ onNavigateToPrograms
 
   const [searchQuery, setSearchQuery] = useState('');
   const [isCreateRoutineOpen, setIsCreateRoutineOpen] = useState(false);
-  const [defaultEditorWeekdays, setDefaultEditorWeekdays] = useState<number[]>([]);
   const [editingRoutine, setEditingRoutine] = useState<Routine | null>(null);
   const [selectedRoutinePreview, setSelectedRoutinePreview] = useState<Routine | null>(null);
   const [selectedProgramPreview, setSelectedProgramPreview] = useState<Program | null>(null);
@@ -133,9 +131,13 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = ({ onNavigateToPrograms
     readStoredOrder(routineOrderKey)
   );
   const [isReorderMode, setIsReorderMode] = useState(false);
+  const [draggedRoutineId, setDraggedRoutineId] = useState<string | null>(null);
+  const [dragOverRoutineId, setDragOverRoutineId] = useState<string | null>(null);
+  const syncedInitialOrderRef = React.useRef(false);
 
   useEffect(() => {
     setCustomRoutineOrder(readStoredOrder(routineOrderKey));
+    syncedInitialOrderRef.current = false;
   }, [routineOrderKey]);
 
   const startWorkout = useStartWorkout();
@@ -164,12 +166,6 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = ({ onNavigateToPrograms
     queryFn: () => apiClient<Routine[]>('/routines'),
   });
   const routines = Array.isArray(rawRoutines) ? rawRoutines : [];
-
-  const { data: weeklyPlanData } = useQuery<WeeklyPlanResponse>({
-    queryKey: ['workouts', 'weekly-plan'],
-    queryFn: () => weeklyPlanApi.getWeeklyPlan(),
-  });
-  const weeklyPlanItems = Array.isArray(weeklyPlanData?.items) ? weeklyPlanData.items : [];
 
   const { data: rawWorkouts } = useQuery<WorkoutHistoryItem[] | { items?: WorkoutHistoryItem[] }>({
     queryKey: ['workouts'],
@@ -201,7 +197,6 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = ({ onNavigateToPrograms
       }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['routines'] });
-      void queryClient.invalidateQueries({ queryKey: ['workouts', 'weekly-plan'] });
     },
   });
 
@@ -225,27 +220,74 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = ({ onNavigateToPrograms
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['routines'] });
-      void queryClient.invalidateQueries({ queryKey: ['workouts', 'weekly-plan'] });
     },
   });
 
-  const handleMoveRoutine = (routineId: string, direction: 'up' | 'down') => {
+  const reorderRoutinesMutation = useMutation({
+    mutationFn: async (orderedIds: string[]) => {
+      return apiClient<Routine[]>('/routines/reorder', {
+        method: 'PUT',
+        body: JSON.stringify({ routine_ids: orderedIds }),
+      });
+    },
+    onSuccess: (serverList) => {
+      if (Array.isArray(serverList)) {
+        queryClient.setQueryData(['routines'], serverList);
+      } else {
+        void queryClient.invalidateQueries({ queryKey: ['routines'] });
+      }
+    },
+  });
+
+  useEffect(() => {
     const isSystem = (r: Routine) =>
       !r.user_id || r.user_id === '00000000-0000-0000-0000-000000000000';
-    const users = routines.filter((r) => !isSystem(r));
-    const sortedUserIds = [...users]
-      .sort((a, b) => {
-        const idxA = customRoutineOrder.indexOf(a.id);
-        const idxB = customRoutineOrder.indexOf(b.id);
-        if (idxA !== -1 && idxB !== -1) return idxA - idxB;
-        if (idxA !== -1) return -1;
-        if (idxB !== -1) return 1;
-        return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
-      })
-      .map((r) => r.id);
+    const userOnly = routines.filter((r) => !isSystem(r));
+    if (userOnly.length === 0) return;
 
+    const hasServerOrder = userOnly.some((r) => (r.sort_order ?? 0) > 0);
+    if (hasServerOrder) {
+      const serverOrderedIds = [...userOnly]
+        .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+        .map((r) => r.id);
+      setCustomRoutineOrder(serverOrderedIds);
+      localStorage.setItem(routineOrderKey, JSON.stringify(serverOrderedIds));
+      syncedInitialOrderRef.current = true;
+    } else if (!syncedInitialOrderRef.current && userOnly.length > 1) {
+      syncedInitialOrderRef.current = true;
+      const stored = readStoredOrder(routineOrderKey);
+      if (stored.length > 0 && userOnly.some((r) => stored.includes(r.id))) {
+        const merged = [
+          ...stored.filter((id) => userOnly.some((r) => r.id === id)),
+          ...userOnly.filter((r) => !stored.includes(r.id)).map((r) => r.id),
+        ];
+        reorderRoutinesMutation.mutate(merged);
+      }
+    }
+  }, [routines, routineOrderKey]);
+
+  const applyNewRoutineOrder = (updatedIds: string[]) => {
+    setCustomRoutineOrder(updatedIds);
+    localStorage.setItem(routineOrderKey, JSON.stringify(updatedIds));
+    queryClient.setQueryData<Routine[] | undefined>(['routines'], (old) => {
+      if (!Array.isArray(old)) return old;
+      const rank = new Map(updatedIds.map((id, idx) => [id, idx]));
+      return old.map((r) => (rank.has(r.id) ? { ...r, sort_order: rank.get(r.id) } : r));
+    });
+    reorderRoutinesMutation.mutate(updatedIds);
+  };
+
+  const handleMoveRoutine = (routineId: string, direction: 'up' | 'down' | 'top') => {
+    const sortedUserIds = userRoutines.map((r) => r.id);
     const index = sortedUserIds.indexOf(routineId);
     if (index === -1) return;
+
+    if (direction === 'top') {
+      if (index === 0) return;
+      const updated = [routineId, ...sortedUserIds.filter((id) => id !== routineId)];
+      applyNewRoutineOrder(updated);
+      return;
+    }
 
     const targetIndex = direction === 'up' ? index - 1 : index + 1;
     if (targetIndex < 0 || targetIndex >= sortedUserIds.length) return;
@@ -255,8 +297,20 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = ({ onNavigateToPrograms
     updated[index] = updated[targetIndex];
     updated[targetIndex] = temp;
 
-    setCustomRoutineOrder(updated);
-    localStorage.setItem(routineOrderKey, JSON.stringify(updated));
+    applyNewRoutineOrder(updated);
+  };
+
+  const handleDropRoutineOn = (sourceId: string, targetId: string) => {
+    if (!sourceId || !targetId || sourceId === targetId) return;
+    const sortedUserIds = userRoutines.map((r) => r.id);
+    const fromIdx = sortedUserIds.indexOf(sourceId);
+    const toIdx = sortedUserIds.indexOf(targetId);
+    if (fromIdx === -1 || toIdx === -1) return;
+
+    const updated = [...sortedUserIds];
+    const [moved] = updated.splice(fromIdx, 1);
+    updated.splice(toIdx, 0, moved);
+    applyNewRoutineOrder(updated);
   };
 
   const handleStartRoutine = async (routine: Routine) => {
@@ -280,58 +334,21 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = ({ onNavigateToPrograms
     });
   };
 
-  const handleStartWeeklyPlanItem = async (item: WeeklyPlanItem) => {
-    if (item.item_type === 'program_day' && item.program_id) {
-      await startWorkout({
-        name: item.subtitle ? `${item.subtitle} - ${item.title}` : item.title,
-        programId: item.program_id,
-        programDayNumber: item.program_day_number || 1,
-        exercises: item.exercises,
-      });
-      return;
-    }
-    await startWorkout({
-      name: item.title,
-      routineId: item.routine_id || undefined,
-      exercises: item.exercises,
-    });
-  };
-
-  const routineWeekdayBadges = useMemo(() => {
-    const dayLabels: Record<number, string> = {
-      1: t('weeklyPlan.monShort'),
-      2: t('weeklyPlan.tueShort'),
-      3: t('weeklyPlan.wedShort'),
-      4: t('weeklyPlan.thuShort'),
-      5: t('weeklyPlan.friShort'),
-      6: t('weeklyPlan.satShort'),
-      7: t('weeklyPlan.sunShort'),
-    };
-    const map = new Map<string, string[]>();
-    for (const it of weeklyPlanItems) {
-      if (it.item_type === 'routine' && it.routine_id) {
-        const list = map.get(it.routine_id) || [];
-        const lbl = dayLabels[it.day_of_week];
-        if (lbl && !list.includes(lbl)) {
-          list.push(lbl);
-        }
-        map.set(it.routine_id, list);
-      }
-    }
-    return map;
-  }, [weeklyPlanItems, t]);
-
   const userRoutines = useMemo(() => {
     const isSystem = (r: Routine) =>
       !r.user_id || r.user_id === '00000000-0000-0000-0000-000000000000';
 
     const userOnly = routines.filter((r) => !isSystem(r));
+    const hasServerOrder = userOnly.some((r) => (r.sort_order ?? 0) > 0);
     return [...userOnly].sort((a, b) => {
       const idxA = customRoutineOrder.indexOf(a.id);
       const idxB = customRoutineOrder.indexOf(b.id);
       if (idxA !== -1 && idxB !== -1) return idxA - idxB;
       if (idxA !== -1) return -1;
       if (idxB !== -1) return 1;
+      if (hasServerOrder && (a.sort_order ?? 0) !== (b.sort_order ?? 0)) {
+        return (a.sort_order ?? 0) - (b.sort_order ?? 0);
+      }
       return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
     });
   }, [routines, customRoutineOrder]);
@@ -642,20 +659,6 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = ({ onNavigateToPrograms
         </div>
       </Card>
 
-      {/* 2.5 Weekly Workout Schedule Board (Mon–Sun, multi-program & custom order) */}
-      <WeeklyWorkoutPlanner
-        planItems={weeklyPlanItems}
-        routines={userRoutines.length > 0 ? userRoutines : routines}
-        activeProgram={activeProgram}
-        installedPrograms={installedPrograms}
-        onStartPlanItem={handleStartWeeklyPlanItem}
-        onCreateNewRoutineForDay={(day) => {
-          setEditingRoutine(null);
-          setDefaultEditorWeekdays([day]);
-          setIsCreateRoutineOpen(true);
-        }}
-      />
-
       {/* 3. Active Personal Program Split Section (Indigo + Teal Cards with Auto-Save Badge) */}
       {activeProgram ? (
         <Card className="p-5 sm:p-6 space-y-4">
@@ -858,16 +861,35 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = ({ onNavigateToPrograms
               />
             </div>
 
-            <Button
-              variant={isReorderMode ? 'primary' : 'outline'}
-              size="sm"
-              onClick={() => setIsReorderMode((prev) => !prev)}
-              className="shrink-0"
-            >
-              {t('workouts.reorderMy')}
-            </Button>
+            {userRoutines.length > 1 && (
+              <Button
+                variant={isReorderMode ? 'primary' : 'outline'}
+                size="sm"
+                onClick={() => setIsReorderMode((prev) => !prev)}
+                className="shrink-0"
+              >
+                {isReorderMode ? (
+                  <>
+                    <Check className="w-3.5 h-3.5" />
+                    <span>{t('workouts.reorderDone')}</span>
+                  </>
+                ) : (
+                  <>
+                    <ArrowUpDown className="w-3.5 h-3.5" />
+                    <span>{t('workouts.reorderMy')}</span>
+                  </>
+                )}
+              </Button>
+            )}
           </div>
         </div>
+
+        {isReorderMode && !searchQuery.trim() && userRoutines.length > 1 && (
+          <div className="px-3.5 py-2.5 rounded-[14px] bg-[#F0EFFE] border border-[#DDD6FE] text-[#4C1D95] text-xs font-semibold flex items-center gap-2">
+            <GripVertical className="w-4 h-4 shrink-0 text-[#6D28D9]" />
+            <span>{t('workouts.reorderHint')}</span>
+          </div>
+        )}
 
         {isRoutinesLoading ? (
           <LoadingStateCard eyebrow={t('workouts.myRoutines')} title={t('common.loading')} />
@@ -889,11 +911,53 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = ({ onNavigateToPrograms
               const estMinutes = Math.max(15, routine.exercises.length * 8);
               const orderIndex = userRoutines.findIndex((r) => r.id === routine.id);
               const totalUserRoutines = userRoutines.length;
+              const canDrag = !searchQuery.trim() && totalUserRoutines > 1;
+              const isDragTarget =
+                dragOverRoutineId === routine.id && draggedRoutineId !== routine.id;
 
               return (
                 <Card
                   key={routine.id}
-                  className="p-5 flex flex-col justify-between gap-4 hover:border-[#C4B5FD] transition-all"
+                  draggable={canDrag}
+                  onDragStart={(e) => {
+                    if (!canDrag) return;
+                    setDraggedRoutineId(routine.id);
+                    e.dataTransfer.effectAllowed = 'move';
+                    e.dataTransfer.setData('text/plain', routine.id);
+                  }}
+                  onDragOver={(e) => {
+                    if (!canDrag || !draggedRoutineId || draggedRoutineId === routine.id) return;
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = 'move';
+                    if (dragOverRoutineId !== routine.id) {
+                      setDragOverRoutineId(routine.id);
+                    }
+                  }}
+                  onDragLeave={() => {
+                    if (dragOverRoutineId === routine.id) {
+                      setDragOverRoutineId(null);
+                    }
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    const src = draggedRoutineId || e.dataTransfer.getData('text/plain');
+                    setDraggedRoutineId(null);
+                    setDragOverRoutineId(null);
+                    if (src && src !== routine.id) {
+                      handleDropRoutineOn(src, routine.id);
+                    }
+                  }}
+                  onDragEnd={() => {
+                    setDraggedRoutineId(null);
+                    setDragOverRoutineId(null);
+                  }}
+                  className={`p-5 flex flex-col justify-between gap-4 transition-all ${
+                    isDragTarget
+                      ? 'border-2 border-[#6D28D9] ring-2 ring-[#C4B5FD]/50 bg-[#F8F7FC]'
+                      : isReorderMode
+                      ? 'border-[#C4B5FD] cursor-grab active:cursor-grabbing'
+                      : 'hover:border-[#C4B5FD]'
+                  } ${draggedRoutineId === routine.id ? 'opacity-50' : ''}`}
                 >
                   <div className="space-y-3">
                     <div className="flex items-start justify-between gap-2">
@@ -902,29 +966,36 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = ({ onNavigateToPrograms
                         onClick={() => setSelectedRoutinePreview(routine)}
                         className="text-left min-w-0 cursor-pointer group flex-1"
                       >
-                        <h3 className="text-[17px] font-bold text-[#1E1B4B] group-hover:text-[#6D28D9] transition-colors leading-snug truncate">
-                          {routine.name}
-                        </h3>
+                        <div className="flex items-center gap-2 min-w-0">
+                          {isReorderMode && orderIndex >= 0 && (
+                            <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[11px] font-extrabold bg-[#F0EFFE] text-[#6D28D9] border border-[#DDD6FE] shrink-0">
+                              <GripVertical className="w-3 h-3" />#{orderIndex + 1}
+                            </span>
+                          )}
+                          <h3 className="text-[17px] font-bold text-[#1E1B4B] group-hover:text-[#6D28D9] transition-colors leading-snug truncate">
+                            {routine.name}
+                          </h3>
+                        </div>
                         <div className="text-[12px] font-medium text-[#6B7280] mt-1">
                           {t('routines.exercisesCount', { count: routine.exercises.length })} ·{' '}
                           {t('workouts.approxMinutes', { mins: estMinutes })}
                         </div>
-                        {(routineWeekdayBadges.get(routine.id) || []).length > 0 && (
-                          <div className="flex flex-wrap items-center gap-1 mt-1.5">
-                            {(routineWeekdayBadges.get(routine.id) || []).map((lbl) => (
-                              <span
-                                key={lbl}
-                                className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#F0EFFE] text-[#6D28D9] border border-[#DDD6FE]"
-                              >
-                                {lbl}
-                              </span>
-                            ))}
-                          </div>
-                        )}
                       </button>
 
-                      {isReorderMode && (
+                      {isReorderMode && !searchQuery.trim() && (
                         <div className="flex items-center gap-1 shrink-0">
+                          {orderIndex > 1 && (
+                            <Button
+                              isIconOnly
+                              size="xs"
+                              variant="outline"
+                              onClick={() => handleMoveRoutine(routine.id, 'top')}
+                              title={t('workouts.moveToFirst')}
+                              aria-label={t('workouts.moveToFirst')}
+                            >
+                              <ChevronsUp className="w-3.5 h-3.5" />
+                            </Button>
+                          )}
                           <Button
                             isIconOnly
                             size="xs"
@@ -1099,11 +1170,9 @@ export const WorkoutsPage: React.FC<WorkoutsPageProps> = ({ onNavigateToPrograms
       <RoutineEditorModal
         isOpen={isCreateRoutineOpen}
         initialRoutine={editingRoutine}
-        defaultWeekdays={defaultEditorWeekdays}
         onClose={() => {
           setIsCreateRoutineOpen(false);
           setEditingRoutine(null);
-          setDefaultEditorWeekdays([]);
         }}
       />
 

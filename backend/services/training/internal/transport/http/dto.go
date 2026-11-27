@@ -61,6 +61,10 @@ type createRoutineReq struct {
 	Exercises []command.RoutineExerciseInput `json:"exercises"`
 }
 
+type reorderRoutinesReq struct {
+	RoutineIDs []string `json:"routine_ids"`
+}
+
 type finishExerciseReq struct {
 	ExerciseID      string                   `json:"exercise_id"`
 	ExerciseName    string                   `json:"exercise_name"`
@@ -232,6 +236,7 @@ func mapRoutineDTO(r *routine.Routine) map[string]any {
 		"user_id":    r.UserID().String(),
 		"name":       r.Name(),
 		"notes":      r.Notes(),
+		"sort_order": r.SortOrder(),
 		"exercises":  exList,
 		"created_at": r.CreatedAt().Format("2006-01-02T15:04:05Z07:00"),
 		"updated_at": r.UpdatedAt().Format("2006-01-02T15:04:05Z07:00"),

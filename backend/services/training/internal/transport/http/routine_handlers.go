@@ -129,3 +129,34 @@ func (h *Handler) handleDeleteRoutine(w http.ResponseWriter, r *http.Request, us
 
 	w.WriteHeader(http.StatusNoContent)
 }
+
+func (h *Handler) handleReorderRoutines(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
+	if h.reorderRoutinesCmd == nil {
+		httpx.WriteProblem(w, http.StatusNotImplemented, "Not Implemented", "Routine reorder not configured", "ERR_NOT_IMPLEMENTED")
+		return
+	}
+
+	req, ok := httpx.DecodeJSON[reorderRoutinesReq](w, r)
+	if !ok {
+		return
+	}
+
+	ids := make([]uuid.UUID, 0, len(req.RoutineIDs))
+	for _, raw := range req.RoutineIDs {
+		if parsed, err := uuid.Parse(raw); err == nil && parsed != uuid.Nil {
+			ids = append(ids, parsed)
+		}
+	}
+
+	routines, err := h.reorderRoutinesCmd.Handle(r.Context(), userID, ids)
+	if err != nil {
+		httpx.WriteProblem(w, http.StatusInternalServerError, "Internal Error", err.Error(), "ERR_REORDER_ROUTINES")
+		return
+	}
+
+	dtos := make([]any, 0, len(routines))
+	for _, rot := range routines {
+		dtos = append(dtos, mapRoutineDTO(rot))
+	}
+	httpx.WriteJSON(w, http.StatusOK, dtos)
+}

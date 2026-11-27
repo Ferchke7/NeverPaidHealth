@@ -2,6 +2,7 @@ package memory
 
 import (
 	"context"
+	"sort"
 	"sync"
 
 	"github.com/google/uuid"
@@ -203,6 +204,19 @@ func (r *FakeTrainingRepo) ListByUserID(_ context.Context, userID uuid.UUID) ([]
 			res = append(res, rot)
 		}
 	}
+	sort.Slice(res, func(i, j int) bool {
+		a, b := res[i], res[j]
+		if a.IsSystem() != b.IsSystem() {
+			return !a.IsSystem()
+		}
+		if a.SortOrder() != b.SortOrder() {
+			return a.SortOrder() < b.SortOrder()
+		}
+		if !a.CreatedAt().Equal(b.CreatedAt()) {
+			return a.CreatedAt().After(b.CreatedAt())
+		}
+		return a.ID().String() < b.ID().String()
+	})
 	return res, nil
 }
 

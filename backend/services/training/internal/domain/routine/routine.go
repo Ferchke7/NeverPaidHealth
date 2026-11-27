@@ -13,6 +13,7 @@ type Routine struct {
 	name      string
 	notes     string
 	exercises []*RoutineExercise
+	sortOrder int
 	createdAt time.Time
 	updatedAt time.Time
 }
@@ -52,12 +53,26 @@ func Reconstitute(
 	createdAt time.Time,
 	updatedAt time.Time,
 ) *Routine {
+	return ReconstituteWithOrder(id, userID, name, notes, exercises, 0, createdAt, updatedAt)
+}
+
+func ReconstituteWithOrder(
+	id uuid.UUID,
+	userID uuid.UUID,
+	name string,
+	notes string,
+	exercises []*RoutineExercise,
+	sortOrder int,
+	createdAt time.Time,
+	updatedAt time.Time,
+) *Routine {
 	return &Routine{
 		id:        id,
 		userID:    userID,
 		name:      name,
 		notes:     notes,
 		exercises: exercises,
+		sortOrder: sortOrder,
 		createdAt: createdAt,
 		updatedAt: updatedAt,
 	}
@@ -68,6 +83,8 @@ func (r *Routine) UserID() uuid.UUID { return r.userID }
 func (r *Routine) Name() string { return r.name }
 func (r *Routine) Notes() string { return r.notes }
 func (r *Routine) Exercises() []*RoutineExercise { return r.exercises }
+func (r *Routine) SortOrder() int { return r.sortOrder }
+func (r *Routine) SetSortOrder(order int) { r.sortOrder = order }
 func (r *Routine) CreatedAt() time.Time { return r.createdAt }
 func (r *Routine) UpdatedAt() time.Time { return r.updatedAt }
 

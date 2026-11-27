@@ -520,4 +520,54 @@ func (h *DeleteWorkoutHandler) Handle(ctx context.Context, userID uuid.UUID, id 
 	return h.workoutRepo.Delete(ctx, id)
 }
 
+type ReorderRoutinesHandler struct {
+	routineRepo application.RoutineRepo
+}
+
+func NewReorderRoutinesHandler(repo application.RoutineRepo) *ReorderRoutinesHandler {
+	return &ReorderRoutinesHandler{routineRepo: repo}
+}
+
+func (h *ReorderRoutinesHandler) Handle(ctx context.Context, userID uuid.UUID, orderedIDs []uuid.UUID) ([]*routine.Routine, error) {
+	all, err := h.routineRepo.ListByUserID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	byID := make(map[uuid.UUID]*routine.Routine, len(all))
+	var userOwned []*routine.Routine
+	for _, rot := range all {
+		if rot.UserID() == userID && !rot.IsSystem() {
+			byID[rot.ID()] = rot
+			userOwned = append(userOwned, rot)
+		}
+	}
+
+	seen := make(map[uuid.UUID]bool, len(userOwned))
+	ordered := make([]*routine.Routine, 0, len(userOwned))
+	for _, id := range orderedIDs {
+		if rot, ok := byID[id]; ok && !seen[id] {
+			seen[id] = true
+			ordered = append(ordered, rot)
+		}
+	}
+	for _, rot := range userOwned {
+		if !seen[rot.ID()] {
+			seen[rot.ID()] = true
+			ordered = append(ordered, rot)
+		}
+	}
+
+	for idx, rot := range ordered {
+		if rot.SortOrder() != idx {
+			rot.SetSortOrder(idx)
+			if err := h.routineRepo.Save(ctx, rot); err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	return h.routineRepo.ListByUserID(ctx, userID)
+}
+
 

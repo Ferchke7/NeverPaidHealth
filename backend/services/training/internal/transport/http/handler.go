@@ -6,7 +6,6 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/neverpaidhealth/backend/pkg/httpx"
 	"github.com/neverpaidhealth/backend/services/training/internal/adapters/postgres"
-	"github.com/neverpaidhealth/backend/services/training/internal/application"
 	"github.com/neverpaidhealth/backend/services/training/internal/application/command"
 	"github.com/neverpaidhealth/backend/services/training/internal/application/query"
 )
@@ -21,6 +20,7 @@ type Handler struct {
 	createRoutineCmd    *command.CreateRoutineHandler
 	updateRoutineCmd    *command.UpdateRoutineHandler
 	deleteRoutineCmd    *command.DeleteRoutineHandler
+	reorderRoutinesCmd  *command.ReorderRoutinesHandler
 	deleteWorkoutCmd    *command.DeleteWorkoutHandler
 	createProgramCmd    *command.CreateProgramHandler
 	publishProgramCmd   *command.PublishProgramHandler
@@ -30,7 +30,6 @@ type Handler struct {
 	queries             *query.TrainingQueriesHandler
 	programQueries      *query.ProgramQueriesHandler
 	communityRepo       *postgres.CommunityRepository
-	weeklyPlanSvc       *application.WeeklyPlanService
 }
 
 func NewHandler(
@@ -75,8 +74,8 @@ func NewHandler(
 	}
 }
 
-func (h *Handler) WithWeeklyPlanService(svc *application.WeeklyPlanService) *Handler {
-	h.weeklyPlanSvc = svc
+func (h *Handler) WithReorderRoutines(cmd *command.ReorderRoutinesHandler) *Handler {
+	h.reorderRoutinesCmd = cmd
 	return h
 }
 
@@ -125,19 +124,16 @@ func (h *Handler) Routes() http.Handler {
 	// Routines
 	r.Get("/routines", httpx.RequireAuth(h.handleListRoutines))
 	r.Post("/routines", httpx.RequireAuth(h.handleCreateRoutine))
+	r.Put("/routines/reorder", httpx.RequireAuth(h.handleReorderRoutines))
 	r.Get("/routines/{id}", httpx.RequireAuth(h.handleGetRoutineByID))
 	r.Put("/routines/{id}", httpx.RequireAuth(h.handleUpdateRoutine))
 	r.Delete("/routines/{id}", httpx.RequireAuth(h.handleDeleteRoutine))
 
-	// Workouts & Weekly Plan
+	// Workouts
 	r.Get("/workouts", httpx.RequireAuth(h.handleListWorkouts))
 	r.Post("/workouts", httpx.RequireAuth(h.handleStartWorkout))
 	r.Get("/workouts/active", httpx.RequireAuth(h.handleGetActiveWorkout))
 	r.Get("/workouts/previous", httpx.RequireAuth(h.handleGetPreviousSets))
-	r.Get("/workouts/weekly-plan", httpx.RequireAuth(h.handleGetWeeklyPlan))
-	r.Put("/workouts/weekly-plan", httpx.RequireAuth(h.handleSaveWeeklyPlan))
-	r.Post("/workouts/weekly-plan/routine-days", httpx.RequireAuth(h.handleSetRoutineWeekdays))
-	r.Post("/workouts/weekly-plan/{id}/toggle-complete", httpx.RequireAuth(h.handleToggleWeeklyPlanComplete))
 	r.Get("/workouts/{id}", httpx.RequireAuth(h.handleGetWorkoutByID))
 	r.Put("/workouts/{id}", httpx.RequireAuth(h.handleUpdateActiveWorkout))
 	r.Delete("/workouts/{id}", httpx.RequireAuth(h.handleCancelWorkout))

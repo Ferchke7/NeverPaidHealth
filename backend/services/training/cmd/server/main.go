@@ -110,14 +110,12 @@ func main() {
 	progRepo := postgres.NewProgramRepository(pool)
 	userProgRepo := postgres.NewUserProgramRepository(pool)
 	communityRepo := postgres.NewCommunityRepository(pool)
-	weeklyPlanRepo := postgres.NewWeeklyPlanRepository(pool)
 
 	wRepo := workoutAdapter{repo: repo}
 	rRepo := routineAdapter{repo: repo}
 	oRepo := outboxAdapter{repo: repo, natsClient: natsClient}
 	clock := application.RealClock{}
 	catalogACL := dummyCatalogACL{}
-	weeklyPlanSvc := application.NewWeeklyPlanService(weeklyPlanRepo, rRepo, progRepo, wRepo, clock)
 
 	startWorkoutCmd := command.NewStartWorkoutHandler(wRepo, rRepo, clock)
 	updateWorkoutCmd := command.NewUpdateActiveWorkoutHandler(wRepo)
@@ -128,6 +126,7 @@ func main() {
 	createRotCmd := command.NewCreateRoutineHandler(rRepo, clock)
 	updateRotCmd := command.NewUpdateRoutineHandler(rRepo, clock)
 	deleteRotCmd := command.NewDeleteRoutineHandler(rRepo)
+	reorderRotCmd := command.NewReorderRoutinesHandler(rRepo)
 	deleteWorkoutCmd := command.NewDeleteWorkoutHandler(wRepo)
 
 	createProgCmd := command.NewCreateProgramHandler(progRepo, clock).WithUserProgramRepo(userProgRepo)
@@ -158,7 +157,7 @@ func main() {
 		queries,
 		progQueries,
 		communityRepo,
-	).WithWeeklyPlanService(weeklyPlanSvc)
+	).WithReorderRoutines(reorderRotCmd)
 
 	srv := &http.Server{
 		Addr:         ":" + port,

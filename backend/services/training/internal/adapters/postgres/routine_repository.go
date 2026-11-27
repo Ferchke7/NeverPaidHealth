@@ -85,22 +85,25 @@ func (r *TrainingRepository) InitRoutineSchema(ctx context.Context) {
 	`
 	_, _ = tx.Exec(ctx, dedupRoutinesSQL)
 
+	_, _ = tx.Exec(ctx, `ALTER TABLE routines ADD COLUMN IF NOT EXISTS sort_order INT NOT NULL DEFAULT 0`)
+	_, _ = tx.Exec(ctx, `DROP TABLE IF EXISTS user_weekly_plan_items`)
+
 	_ = tx.Commit(ctx)
 }
 
 // GetByID retrieves a routine by ID.
 func (r *TrainingRepository) GetByID(ctx context.Context, id uuid.UUID) (*routine.Routine, error) {
-	query := `SELECT id, user_id, name, notes, exercises, created_at, updated_at FROM routines WHERE id = $1`
+	query := `SELECT id, user_id, name, notes, exercises, sort_order, created_at, updated_at FROM routines WHERE id = $1`
 	row := r.pool.QueryRow(ctx, query, id)
 	return scanRoutine(row)
 }
 
 func (r *TrainingRepository) ListByUserID(ctx context.Context, userID uuid.UUID) ([]*routine.Routine, error) {
 	query := `
-		SELECT id, user_id, name, notes, exercises, created_at, updated_at 
+		SELECT id, user_id, name, notes, exercises, sort_order, created_at, updated_at 
 		FROM routines 
 		WHERE user_id = $1 OR user_id = '00000000-0000-0000-0000-000000000000' 
-		ORDER BY (user_id = '00000000-0000-0000-0000-000000000000') ASC, id ASC, created_at ASC
+		ORDER BY (user_id = '00000000-0000-0000-0000-000000000000') ASC, sort_order ASC, created_at DESC, id ASC
 	`
 	rows, err := r.pool.Query(ctx, query, userID)
 	if err != nil {
@@ -147,15 +150,16 @@ func (r *TrainingRepository) Save(ctx context.Context, rot *routine.Routine) err
 	}
 
 	query := `
-		INSERT INTO routines (id, user_id, name, notes, exercises, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		INSERT INTO routines (id, user_id, name, notes, exercises, sort_order, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 		ON CONFLICT (id) DO UPDATE SET
 			name = EXCLUDED.name,
 			notes = EXCLUDED.notes,
 			exercises = EXCLUDED.exercises,
+			sort_order = EXCLUDED.sort_order,
 			updated_at = EXCLUDED.updated_at
 	`
-	_, err = r.pool.Exec(ctx, query, rot.ID(), rot.UserID(), rot.Name(), rot.Notes(), exJSON, rot.CreatedAt(), rot.UpdatedAt())
+	_, err = r.pool.Exec(ctx, query, rot.ID(), rot.UserID(), rot.Name(), rot.Notes(), exJSON, rot.SortOrder(), rot.CreatedAt(), rot.UpdatedAt())
 	return err
 }
 
@@ -172,11 +176,12 @@ func scanRoutine(row pgx.Row) (*routine.Routine, error) {
 		name      string
 		notes     *string
 		exJSON    []byte
+		sortOrder int
 		createdAt time.Time
 		updatedAt time.Time
 	)
 
-	err := row.Scan(&id, &userID, &name, &notes, &exJSON, &createdAt, &updatedAt)
+	err := row.Scan(&id, &userID, &name, &notes, &exJSON, &sortOrder, &createdAt, &updatedAt)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, routine.ErrRoutineNotFound
@@ -209,5 +214,5 @@ func scanRoutine(row pgx.Row) (*routine.Routine, error) {
 		notesStr = *notes
 	}
 
-	return routine.Reconstitute(id, userID, name, notesStr, exercises, createdAt, updatedAt), nil
+	return routine.ReconstituteWithOrder(id, userID, name, notesStr, exercises, sortOrder, createdAt, updatedAt), nil
 }
